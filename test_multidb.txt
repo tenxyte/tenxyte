@@ -1,0 +1,77 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\bobop\AppData\Local\Python\pythoncore-3.12-64\python.exe
+cachedir: .pytest_cache
+django: version: 6.0.2, settings: tests.multidb.settings_sqlite (from ini)
+rootdir: C:\Users\bobop\Documents\own\tenxyte
+configfile: pyproject.toml
+plugins: anyio-4.12.1, cov-7.0.0, django-4.11.1
+collecting ... collected 50 items
+
+tests/multidb/test_db_auth_flow.py::TestAuthFlowMultiDB::test_authenticate_by_email PASSED [  2%]
+tests/multidb/test_db_auth_flow.py::TestAuthFlowMultiDB::test_authenticate_wrong_password PASSED [  4%]
+tests/multidb/test_db_auth_flow.py::TestAuthFlowMultiDB::test_authenticate_nonexistent_user PASSED [  6%]
+tests/multidb/test_db_auth_flow.py::TestAuthFlowMultiDB::test_jwt_generate_decode_cycle PASSED [  8%]
+tests/multidb/test_db_auth_flow.py::TestAuthFlowMultiDB::test_jwt_blacklist PASSED [ 10%]
+tests/multidb/test_db_auth_flow.py::TestAuthFlowMultiDB::test_refresh_token_lifecycle PASSED [ 12%]
+tests/multidb/test_db_auth_flow.py::TestAuthFlowMultiDB::test_multiple_applications_isolation PASSED [ 14%]
+tests/multidb/test_db_auth_flow.py::TestOTPFlowMultiDB::test_email_otp_generate_verify PASSED [ 16%]
+tests/multidb/test_db_auth_flow.py::TestOTPFlowMultiDB::test_password_reset_otp PASSED [ 18%]
+tests/multidb/test_db_auth_flow.py::TestOTPFlowMultiDB::test_otp_invalidation PASSED [ 20%]
+tests/multidb/test_db_auth_flow.py::TestTOTPMultiDB::test_setup_and_verify_2fa PASSED [ 22%]
+tests/multidb/test_db_auth_flow.py::TestTOTPMultiDB::test_backup_codes_stored PASSED [ 24%]
+tests/multidb/test_db_auth_flow.py::TestRBACMultiDB::test_user_roles_permissions_chain FAILED [ 26%]
+tests/multidb/test_db_auth_flow.py::TestRBACMultiDB::test_remove_role_from_user PASSED [ 28%]
+tests/multidb/test_db_models.py::TestUserCRUD::test_create_user PASSED   [ 30%]
+tests/multidb/test_db_models.py::TestUserCRUD::test_create_superuser PASSED [ 32%]
+tests/multidb/test_db_models.py::TestUserCRUD::test_read_user PASSED     [ 34%]
+tests/multidb/test_db_models.py::TestUserCRUD::test_update_user PASSED   [ 36%]
+tests/multidb/test_db_models.py::TestUserCRUD::test_delete_user PASSED   [ 38%]
+tests/multidb/test_db_models.py::TestUserCRUD::test_user_with_phone PASSED [ 40%]
+tests/multidb/test_db_models.py::TestUserCRUD::test_user_lock_unlock PASSED [ 42%]
+tests/multidb/test_db_models.py::TestUserCRUD::test_user_email_unique PASSED [ 44%]
+tests/multidb/test_db_models.py::TestUserCRUD::test_user_queryset_filter PASSED [ 46%]
+tests/multidb/test_db_models.py::TestApplicationCRUD::test_create_application_factory PASSED [ 48%]
+tests/multidb/test_db_models.py::TestApplicationCRUD::test_create_application_direct PASSED [ 50%]
+tests/multidb/test_db_models.py::TestApplicationCRUD::test_update_application PASSED [ 52%]
+tests/multidb/test_db_models.py::TestApplicationCRUD::test_deactivate_application PASSED [ 54%]
+tests/multidb/test_db_models.py::TestApplicationCRUD::test_application_access_key_unique PASSED [ 56%]
+tests/multidb/test_db_models.py::TestApplicationCRUD::test_application_queryset PASSED [ 58%]
+tests/multidb/test_db_models.py::TestPermissionRoleCRUD::test_create_permission PASSED [ 60%]
+tests/multidb/test_db_models.py::TestPermissionRoleCRUD::test_create_role PASSED [ 62%]
+tests/multidb/test_db_models.py::TestPermissionRoleCRUD::test_role_permissions_m2m PASSED [ 64%]
+tests/multidb/test_db_models.py::TestPermissionRoleCRUD::test_user_roles_m2m PASSED [ 66%]
+tests/multidb/test_db_models.py::TestPermissionRoleCRUD::test_permission_code_unique PASSED [ 68%]
+tests/multidb/test_db_models.py::TestRefreshTokenCRUD::test_create_refresh_token PASSED [ 70%]
+tests/multidb/test_db_models.py::TestRefreshTokenCRUD::test_refresh_token_expired PASSED [ 72%]
+tests/multidb/test_db_models.py::TestRefreshTokenCRUD::test_refresh_token_revoked PASSED [ 74%]
+tests/multidb/test_db_models.py::TestRefreshTokenCRUD::test_refresh_token_generate PASSED [ 76%]
+tests/multidb/test_db_models.py::TestRefreshTokenCRUD::test_refresh_token_filter_by_user PASSED [ 78%]
+tests/multidb/test_db_models.py::TestOTPCodeCRUD::test_generate_otp PASSED [ 80%]
+tests/multidb/test_db_models.py::TestOTPCodeCRUD::test_otp_expired PASSED [ 82%]
+tests/multidb/test_db_models.py::TestOTPCodeCRUD::test_otp_wrong_code PASSED [ 84%]
+tests/multidb/test_db_models.py::TestOTPCodeCRUD::test_otp_hash_stored PASSED [ 86%]
+tests/multidb/test_db_models.py::TestLoginAttemptCRUD::test_record_login_attempt PASSED [ 88%]
+tests/multidb/test_db_models.py::TestLoginAttemptCRUD::test_record_multiple_attempts PASSED [ 90%]
+tests/multidb/test_db_models.py::TestBlacklistedTokenCRUD::test_blacklist_token PASSED [ 92%]
+tests/multidb/test_db_models.py::TestBlacklistedTokenCRUD::test_not_blacklisted PASSED [ 94%]
+tests/multidb/test_db_models.py::TestAuditLogCRUD::test_create_audit_log PASSED [ 96%]
+tests/multidb/test_db_models.py::TestAuditLogCRUD::test_audit_log_ordering FAILED [ 98%]
+tests/multidb/test_db_models.py::TestPasswordHistoryCRUD::test_add_password_history PASSED [100%]
+
+================================== FAILURES ===================================
+______________ TestRBACMultiDB.test_user_roles_permissions_chain ______________
+tests\multidb\test_db_auth_flow.py:265: in test_user_roles_permissions_chain
+    perm_codes = [p['code'] for p in permissions]
+                  ^^^^^^^^^
+E   TypeError: string indices must be integers, not 'str'
+__________________ TestAuditLogCRUD.test_audit_log_ordering ___________________
+tests\multidb\test_db_models.py:366: in test_audit_log_ordering
+    assert logs.first().action == 'logout'
+E   AssertionError: assert 'login' == 'logout'
+E     
+E     - logout
+E     + login
+=========================== short test summary info ===========================
+FAILED tests/multidb/test_db_auth_flow.py::TestRBACMultiDB::test_user_roles_permissions_chain
+FAILED tests/multidb/test_db_models.py::TestAuditLogCRUD::test_audit_log_ordering
+======================== 2 failed, 48 passed in 14.73s ========================

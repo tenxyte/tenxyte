@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
+    "tenxyte",
 ]
 
 MIDDLEWARE = [
@@ -47,9 +49,29 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "tenxyte.middleware.ApplicationAuthMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
+
+AUTH_USER_MODEL = "tenxyte.User"
+
+TENXYTE_USER_MODEL = "tenxyte.User"
+TENXYTE_APPLICATION_MODEL = "tenxyte.Application"
+TENXYTE_ROLE_MODEL = "tenxyte.Role"
+TENXYTE_PERMISSION_MODEL = "tenxyte.Permission"
+
+TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 3600
+TENXYTE_JWT_REFRESH_TOKEN_LIFETIME = 86400 * 7
+TENXYTE_TOTP_ISSUER = "TenxytePgSQL"
+TENXYTE_SMS_BACKEND = "tenxyte.backends.sms.ConsoleBackend"
+TENXYTE_EMAIL_BACKEND = "tenxyte.backends.email.ConsoleBackend"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "tenxyte.authentication.JWTAuthentication",
+    ],
+}
 
 TEMPLATES = [
     {
@@ -72,10 +94,16 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+import os
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "HOST": os.environ.get("TENXYTE_PG_HOST", "localhost"),
+        "PORT": os.environ.get("TENXYTE_PG_PORT", "5432"),
+        "NAME": os.environ.get("TENXYTE_PG_NAME", "tenxyte_pgsql"),
+        "USER": os.environ.get("TENXYTE_PG_USER", "postgres"),
+        "PASSWORD": os.environ.get("TENXYTE_PG_PASSWORD", "postgres"),
     }
 }
 
