@@ -18,10 +18,10 @@ This document tracks the validation of `vannios-auth` (tenxyte) features, archit
 - [ ] **Override Test**: parameters in `settings.py` and verify they are picked up.
 
 ### Multi-Database Support
-- [ ] **Schema Adaptation**: Verify models work with SQLite.
-- [ ] **PostgreSQL**: Verify models work with PostgreSQL (JSON fields etc.).
-- [ ] **MySQL/MariaDB**: Verify models work with MySQL.
-- [ ] **MongoDB (Djongo/Other)**: Verify compatibility if claimed.
+- [x] **Schema Adaptation**: Verify models work with SQLite. ✅ 50/50 tests passed (in-memory SQLite)
+- [x] **PostgreSQL**: Verify models work with PostgreSQL. ✅ 50/50 tests passed (PostgreSQL 16.11)
+- [x] **MySQL/MariaDB**: Verify models work with MySQL. ✅ 50/50 tests passed (MySQL 8.4.8)
+- [x] **MongoDB**: Verify compatibility. ✅ 50/50 tests passed (MongoDB 8.2.2, django-mongodb-backend 6.0.2). M2M `remove()` skipped (known limitation: through tables lack integer PKs).
 
 ---
 
@@ -61,9 +61,9 @@ This document tracks the validation of `vannios-auth` (tenxyte) features, archit
 - [ ] **Redundancy**: detailed review to ensure they don't duplicate logic.
 
 ### Signals & Logging
-- [ ] **Event Logging**: Locate where events (Login, PasswordChange) are logged.
-    - [ ] **Option A (Services)**: Is it explicit?
-    - [ ] **Option B (Signals)**: Is `signals.py` present and connected?
+- [x] **Event Logging**: Locate where events (Login, PasswordChange) are logged.
+    - [x] **Option A (Services)**: Is it explicit? ✅ Events logged explicitly in `AuthService` and other services.
+    - [x] **Option B (Signals)**: Is `signals.py` present and connected? ✅ `signals.py` now exists with `post_save`/`post_delete` handlers.
 - [ ] **Decoupling**: Ensure logic is not hardcoded inside services if it should be an event.
 
 ### Migrations & Swappable Models
@@ -92,11 +92,12 @@ This document tracks the validation of `vannios-auth` (tenxyte) features, archit
     - [ ] **Run Guide**: `README.md` inside example with install/run steps.
 
 ### Test Visibility
-- [ ] **Test Structure**:
-    - [ ] `tests/unit/` (Services)
-    - [ ] `tests/integration/` (Flows)
-    - [ ] `tests/security/` (Brute-force, Tampering)
-- [ ] **Coverage**: Run coverage tool and verify > 80%.
+- [x] **Test Structure**:
+    - [x] `tests/unit/` (Services) ✅ 6 test files: models, jwt, otp, totp, validators, backends
+    - [x] `tests/integration/` (Flows) ✅ test_views.py — full auth flow integration tests
+    - [x] `tests/security/` (Brute-force, Tampering) ✅ 30 tests: JWT tampering, brute-force, injection, cross-app, unauthenticated access
+    - [x] `tests/multidb/` ✅ 50 tests × 4 backends (SQLite, PostgreSQL, MySQL, MongoDB)
+- [x] **Coverage**: 68.51% (seuil minimum 60% atteint). Objectif 80% reste à atteindre.
 
 ---
 
@@ -127,8 +128,8 @@ This document tracks the validation of `vannios-auth` (tenxyte) features, archit
     - **Fix**: Use `datetime.now(datetime.timezone.utc)` instead. ✅ Also replaced `utcfromtimestamp()` with `fromtimestamp(tz=timezone.utc)`.
 - [x] **`default_app_config` deprecated**: `__init__.py` sets `default_app_config = 'tenxyte.apps.TenxyteConfig'`, deprecated since Django 3.2 and removed in Django 5.1+.
     - **Fix**: Remove this line. Django auto-discovers `AppConfig` from `apps.py`. ✅
-- [ ] **`signals` module missing**: `apps.py` line 19 tries `from . import signals` wrapped in `try/except ImportError`. The module does not exist. This is dead code.
-    - **Fix**: Either create `signals.py` or remove the import entirely.
+- [x] **`signals` module missing**: `apps.py` line 19 tries `from . import signals` wrapped in `try/except ImportError`.
+    - **Fix**: `signals.py` created with `post_save`/`post_delete` handlers for audit logging. ✅
 - [x] **`print()` in `google_auth_service.py`**: Lines 49, 69, 94 use `print()` for error logging instead of the `logger`. Errors will be invisible in production with proper logging configs.
     - **Fix**: Replace `print(...)` with `logger.error(...)`. ✅ Added `import logging` and `logger = logging.getLogger(__name__)`.
 
@@ -136,9 +137,10 @@ This document tracks the validation of `vannios-auth` (tenxyte) features, archit
 
 - [ ] **OTP codes stored in plaintext**: `OTPCode.code` stores the generated code in cleartext in the database. If the DB is compromised, all active OTPs are exposed.
     - **Recommendation**: Store hashed OTP codes (SHA-256) and compare via hash.
-- [ ] **No automatic cleanup tasks**: `BlacklistedToken.cleanup_expired()` and expired `OTPCode`/`RefreshToken` records are never cleaned up automatically. Over time, these tables will grow unbounded.
-    - **Recommendation**: Add a management command `tenxyte_cleanup` or document Celery/cron setup.
-- [ ] **`CHANGELOG.md` missing**: Referenced in `MANIFEST.in` and `pyproject.toml` but does not exist in the project.
+- [x] **No automatic cleanup tasks**: `BlacklistedToken.cleanup_expired()` and expired `OTPCode`/`RefreshToken` records are never cleaned up automatically.
+    - **Fix**: Management command `tenxyte_cleanup` created in `management/commands/tenxyte_cleanup.py`. ✅
+- [x] **`CHANGELOG.md` missing**: Referenced in `MANIFEST.in` and `pyproject.toml` but does not exist in the project.
+    - **Fix**: `CHANGELOG.md` created. ✅
 - [ ] **`MIGRATION_GUIDE.md` missing**: Referenced in `MANIFEST.in` but does not exist.
 
 ---
@@ -285,12 +287,10 @@ This document tracks the validation of `vannios-auth` (tenxyte) features, archit
 - [ ] **Relative vs Absolute imports**: Verify consistency within the package (`from .models` vs `from tenxyte.models`).
 
 ### Dual Configuration Modules
-- [ ] **`conf.py` vs `config.py` audit**:
-    - `conf.py` uses `TenxyteSettings` singleton with `@property` accessors.
-    - `config.py` uses standalone functions `get_*()` and `is_*_enabled()`.
-    - **Issue**: Some setting names differ between the two (e.g., `JWT_ACCESS_TOKEN_LIFETIME` vs `TENXYTE_JWT_ACCESS_TOKEN_LIFETIME`).
-    - [ ] **Verify no contradiction**: Change a setting -> verify both modules return the same value.
-    - **Recommendation**: Consolidate into a single module. Keep `config.py` (function-based) as it's more testable and used by services.
+- [x] **`conf.py` vs `config.py` audit**:
+    - `config.py` a été supprimé et fusionné dans `conf.py`. ✅
+    - `conf.py` est maintenant le module unique de configuration avec noms canoniques `TENXYTE_*`.
+    - [x] **Verify no contradiction**: Plus de contradiction possible — un seul module. ✅
 
 ### Error Response Format
 - [ ] **Consistency**: Verify ALL error responses follow the same format: `{"error": "message", "code": "ERROR_CODE"}`.
@@ -338,18 +338,18 @@ This document tracks the validation of `vannios-auth` (tenxyte) features, archit
 
 ### Ce Qui Devrait Être Amélioré (Priorité Moyenne)
 
-| # | Suggestion | Détail |
-|---|---|---|
-| 1 | **Éclater `views.py`** (1431 lignes) | Séparer en `views/auth.py`, `views/rbac.py`, `views/twofa.py`, `views/applications.py`, `views/password.py` |
-| 2 | **Hasher les codes OTP** | `OTPCode.code` stocké en clair → utiliser SHA-256 comme pour les backup codes |
-| 3 | **Ajouter une commande `tenxyte_cleanup`** | Nettoyer `BlacklistedToken`, `OTPCode`, `RefreshToken` expirés |
-| 4 | **Créer `signals.py`** | `apps.py` essaie de l'importer mais il n'existe pas. Soit le créer pour `post_save`/`post_delete` events, soit retirer l'import |
-| 5 | **Utiliser `ModelViewSet`** pour RBAC/Applications | Les endpoints CRUD (permissions, roles, applications) gagneraient en lisibilité avec des ViewSets + Routers |
-| 6 | **Créer `CHANGELOG.md`** | Référencé dans `MANIFEST.in` et `pyproject.toml` mais inexistant |
-| 7 | **Tests multi-DB** | Actuellement seul SQLite `:memory:` est testé. Ajouter des tests CI pour PostgreSQL et MongoDB |
-| 8 | **Structurer les tests** | Séparer en `tests/unit/`, `tests/integration/`, `tests/security/` |
-| 9 | **Ajouter des tests de sécurité** | Brute-force, token tampering, CSRF, injection, timing attacks sur password comparison |
-| 10 | **Coverage > 80%** | Actuellement non mesuré. Ajouter `pytest-cov` au CI et viser 80%+ |
+| # | Suggestion | Détail | Status |
+|---|---|---|---|
+| 1 | **Éclater `views.py`** (1431 lignes) | Séparé en `views/auth_views.py`, `views/rbac_views.py`, `views/twofa_views.py`, `views/application_views.py`, `views/password_views.py`, `views/otp_views.py`, `views/user_views.py` | ✅ Done |
+| 2 | **Hasher les codes OTP** | `OTPCode.code` stocké en clair → utiliser SHA-256 comme pour les backup codes | ⏳ À faire |
+| 3 | **Ajouter une commande `tenxyte_cleanup`** | `management/commands/tenxyte_cleanup.py` créée | ✅ Done |
+| 4 | **Créer `signals.py`** | `signals.py` créé avec handlers audit logging | ✅ Done |
+| 5 | **Utiliser `ModelViewSet`** pour RBAC/Applications | Les endpoints CRUD gagneraient en lisibilité avec des ViewSets + Routers | ⏳ À faire |
+| 6 | **Créer `CHANGELOG.md`** | `CHANGELOG.md` créé | ✅ Done |
+| 7 | **Tests multi-DB** | 50 tests × 4 backends : SQLite ✅, PostgreSQL 16.11 ✅, MySQL 8.4.8 ✅, MongoDB 8.2.2 ✅ | ✅ Done |
+| 8 | **Structurer les tests** | `tests/unit/` (6 fichiers), `tests/integration/` (1), `tests/security/` (1), `tests/multidb/` (2) | ✅ Done |
+| 9 | **Ajouter des tests de sécurité** | 30 tests : JWT tampering, brute-force, injection SQL/XSS, cross-app tokens, accès non-authentifié | ✅ Done |
+| 10 | **Coverage > 80%** | 68.51% mesuré (seuil 60% atteint). `pytest-cov` intégré. Objectif 80% en cours | ⏳ 68.51% |
 
 ### Métriques Clés du Projet
 
@@ -365,10 +365,27 @@ This document tracks the validation of `vannios-auth` (tenxyte) features, archit
 | Settings configurables | 50+ |
 | Permissions par défaut (seed) | 28 |
 | Rôles par défaut (seed) | 4 (viewer, editor, admin, super_admin) |
-| Fichiers de test | 9 |
+| **Tests totaux** | **192** (unit: 92, integration: 20, security: 30, multidb: 50) |
+| **Coverage** | **68.51%** (seuil minimum: 60%) |
+| **Backends DB vérifiés** | **4** (SQLite, PostgreSQL, MySQL, MongoDB) |
+| Fichiers de test | 10 (6 unit + 1 integration + 1 security + 2 multidb) |
 | Dépendances core | 9 |
 | Dépendances optionnelles | 5 |
 
 ### Verdict Final
 
-**Tenxyte est un package d'authentification Django solide et ambitieux.** L'architecture est professionnelle (abstract models, service layer, pluggable backends), la couverture fonctionnelle est large, et les choix de sécurité sont pertinents. Les principaux risques sont liés à la cohérence interne (double module de config, imports hardcodés) et à la dette technique (fichiers monolithiques, tests incomplets). Avec les corrections prioritaires ci-dessus et un refactoring progressif, ce package a le potentiel de devenir une référence pour l'authentification Django.
+**Tenxyte est un package d'authentification Django solide et ambitieux.** L'architecture est professionnelle (abstract models, service layer, pluggable backends), la couverture fonctionnelle est large, et les choix de sécurité sont pertinents.
+
+**Progrès depuis l'analyse initiale :**
+- ✅ **7/7 bugs prioritaires corrigés** (imports, User hardcodé, deprecations, config dupliquée)
+- ✅ **7/10 suggestions moyennes implémentées** (views éclaté, signals, cleanup, CHANGELOG, tests multi-DB, structure tests, tests sécurité)
+- ✅ **192 tests passent** (unit: 92, integration: 20, security: 30, multidb: 50)
+- ✅ **4 backends DB vérifiés** : SQLite, PostgreSQL 16.11, MySQL 8.4.8, MongoDB 8.2.2
+- ✅ **Coverage 68.51%** (seuil 60% atteint)
+
+**Reste à faire :**
+- ⏳ Hasher les codes OTP (SHA-256)
+- ⏳ ModelViewSet pour RBAC/Applications
+- ⏳ Coverage → 80%
+- ⏳ Tests End-to-End (API Postman + frontend Vue 3)
+- ⏳ Documentation avancée (ARCHITECTURE.md, SECURITY.md, INTEGRATION_GUIDE.md)
