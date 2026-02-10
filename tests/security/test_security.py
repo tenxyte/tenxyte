@@ -382,15 +382,10 @@ class TestUnauthenticatedAccess:
     """Tests d'accès non authentifié aux endpoints protégés."""
 
     def test_me_without_auth(self, app_api_client):
-        """L'endpoint /me/ sans JWT ne doit pas retourner 200."""
-        # Note: /me/ utilise JWTAuthentication via DRF mais pas IsAuthenticated,
-        # ce qui laisse passer AnonymousUser et provoque un 500.
-        # Le test vérifie au minimum que l'accès n'est pas accordé (pas de 200).
-        app_api_client.raise_request_exception = False
+        """L'endpoint /me/ sans JWT doit retourner 401/403."""
         response = app_api_client.get('/api/auth/me/')
 
-        # Pas de 200 = les données ne sont pas exposées
-        assert response.status_code != status.HTTP_200_OK
+        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
 
     def test_change_password_without_auth(self, app_api_client):
         """Le changement de mot de passe sans JWT doit être rejeté."""
