@@ -1,0 +1,360 @@
+"""
+Configuration settings pour Tenxyte.
+
+Toutes les settings sont préfixées par TENXYTE_ pour éviter les conflits.
+Des valeurs par défaut raisonnables sont fournies pour tous les paramètres.
+
+Usage:
+    from tenxyte.conf import auth_settings
+
+    secret = auth_settings.JWT_SECRET_KEY
+    if auth_settings.RATE_LIMITING_ENABLED:
+        ...
+"""
+
+from django.conf import settings
+
+
+class TenxyteSettings:
+    """
+    Settings avec valeurs par défaut pour Tenxyte.
+
+    Toutes les valeurs peuvent être surchargées dans settings.py du projet.
+    """
+
+    # =============================================
+    # JWT Settings
+    # =============================================
+
+    @property
+    def JWT_SECRET_KEY(self):
+        """Clé secrète pour signer les JWT (utilise SECRET_KEY par défaut)."""
+        return getattr(settings, 'TENXYTE_JWT_SECRET_KEY', settings.SECRET_KEY)
+
+    @property
+    def JWT_ALGORITHM(self):
+        """Algorithme de signature JWT."""
+        return getattr(settings, 'TENXYTE_JWT_ALGORITHM', 'HS256')
+
+    @property
+    def JWT_ACCESS_TOKEN_LIFETIME(self):
+        """Durée de vie du access token en secondes (défaut: 1 heure)."""
+        return getattr(settings, 'TENXYTE_JWT_ACCESS_TOKEN_LIFETIME', 3600)
+
+    @property
+    def JWT_REFRESH_TOKEN_LIFETIME(self):
+        """Durée de vie du refresh token en secondes (défaut: 7 jours)."""
+        return getattr(settings, 'TENXYTE_JWT_REFRESH_TOKEN_LIFETIME', 86400 * 7)
+
+    @property
+    def JWT_AUTH_ENABLED(self):
+        """
+        Activer/désactiver l'authentification JWT.
+        WARNING: Désactiver est dangereux, uniquement pour les tests.
+        """
+        return getattr(settings, 'TENXYTE_JWT_AUTH_ENABLED', True)
+
+    @property
+    def TOKEN_BLACKLIST_ENABLED(self):
+        """Activer/désactiver le blacklisting des access tokens JWT."""
+        return getattr(settings, 'TENXYTE_TOKEN_BLACKLIST_ENABLED', True)
+
+    @property
+    def REFRESH_TOKEN_ROTATION(self):
+        """
+        Activer/désactiver la rotation des refresh tokens.
+        Si activé, l'ancien refresh token est invalidé lors du renouvellement.
+        """
+        return getattr(settings, 'TENXYTE_REFRESH_TOKEN_ROTATION', True)
+
+    # =============================================
+    # 2FA / TOTP Settings
+    # =============================================
+
+    @property
+    def TOTP_ISSUER(self):
+        """Nom de l'émetteur TOTP affiché dans l'app authenticator."""
+        return getattr(settings, 'TENXYTE_TOTP_ISSUER', 'MyApp')
+
+    @property
+    def TOTP_VALID_WINDOW(self):
+        """Fenêtre de validité TOTP (nombre de périodes de 30s acceptées avant/après)."""
+        return getattr(settings, 'TENXYTE_TOTP_VALID_WINDOW', 1)
+
+    @property
+    def BACKUP_CODES_COUNT(self):
+        """Nombre de codes de secours générés."""
+        return getattr(settings, 'TENXYTE_BACKUP_CODES_COUNT', 10)
+
+    # =============================================
+    # OTP Settings
+    # =============================================
+
+    @property
+    def OTP_LENGTH(self):
+        """Longueur du code OTP."""
+        return getattr(settings, 'TENXYTE_OTP_LENGTH', 6)
+
+    @property
+    def OTP_EMAIL_VALIDITY(self):
+        """Durée de validité OTP email en minutes."""
+        return getattr(settings, 'TENXYTE_OTP_EMAIL_VALIDITY', 15)
+
+    @property
+    def OTP_PHONE_VALIDITY(self):
+        """Durée de validité OTP SMS en minutes."""
+        return getattr(settings, 'TENXYTE_OTP_PHONE_VALIDITY', 10)
+
+    @property
+    def OTP_MAX_ATTEMPTS(self):
+        """Nombre maximum de tentatives OTP."""
+        return getattr(settings, 'TENXYTE_OTP_MAX_ATTEMPTS', 5)
+
+    # =============================================
+    # SMS Backend
+    # =============================================
+
+    @property
+    def SMS_BACKEND(self):
+        """
+        Backend SMS à utiliser.
+        Options:
+        - 'tenxyte.backends.sms.TwilioBackend'
+        - 'tenxyte.backends.sms.ConsoleBackend' (défaut, pour dev)
+        """
+        return getattr(
+            settings,
+            'TENXYTE_SMS_BACKEND',
+            'tenxyte.backends.sms.ConsoleBackend'
+        )
+
+    @property
+    def SMS_ENABLED(self):
+        """Activer l'envoi réel de SMS."""
+        return getattr(settings, 'TENXYTE_SMS_ENABLED', False)
+
+    @property
+    def SMS_DEBUG(self):
+        """Mode debug SMS (log au lieu d'envoyer)."""
+        return getattr(settings, 'TENXYTE_SMS_DEBUG', True)
+
+    # =============================================
+    # Email Backend
+    # =============================================
+
+    @property
+    def EMAIL_BACKEND(self):
+        """
+        Backend email à utiliser.
+        Options:
+        - 'tenxyte.backends.email.DjangoBackend' (défaut, utilise EMAIL_BACKEND Django)
+        - 'tenxyte.backends.email.TemplateEmailBackend' (avec support templates)
+        - 'tenxyte.backends.email.ConsoleBackend' (pour dev, affiche dans les logs)
+        - 'tenxyte.backends.email.SendGridBackend' (legacy, préférer django-anymail)
+
+        Recommandé: Utilisez DjangoBackend et configurez Django mail:
+            EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+            # ou avec django-anymail:
+            EMAIL_BACKEND = 'anymail.backends.sendgrid.EmailBackend'
+        """
+        return getattr(
+            settings,
+            'TENXYTE_EMAIL_BACKEND',
+            'tenxyte.backends.email.DjangoBackend'
+        )
+
+    # =============================================
+    # Password Validation
+    # =============================================
+
+    @property
+    def PASSWORD_MIN_LENGTH(self):
+        """Longueur minimale du mot de passe."""
+        return getattr(settings, 'TENXYTE_PASSWORD_MIN_LENGTH', 8)
+
+    @property
+    def PASSWORD_MAX_LENGTH(self):
+        """Longueur maximale du mot de passe."""
+        return getattr(settings, 'TENXYTE_PASSWORD_MAX_LENGTH', 128)
+
+    @property
+    def PASSWORD_REQUIRE_UPPERCASE(self):
+        """Exiger au moins une majuscule."""
+        return getattr(settings, 'TENXYTE_PASSWORD_REQUIRE_UPPERCASE', True)
+
+    @property
+    def PASSWORD_REQUIRE_LOWERCASE(self):
+        """Exiger au moins une minuscule."""
+        return getattr(settings, 'TENXYTE_PASSWORD_REQUIRE_LOWERCASE', True)
+
+    @property
+    def PASSWORD_REQUIRE_DIGIT(self):
+        """Exiger au moins un chiffre."""
+        return getattr(settings, 'TENXYTE_PASSWORD_REQUIRE_DIGIT', True)
+
+    @property
+    def PASSWORD_REQUIRE_SPECIAL(self):
+        """Exiger au moins un caractère spécial."""
+        return getattr(settings, 'TENXYTE_PASSWORD_REQUIRE_SPECIAL', True)
+
+    @property
+    def PASSWORD_HISTORY_ENABLED(self):
+        """Activer/désactiver la vérification de l'historique des mots de passe."""
+        return getattr(settings, 'TENXYTE_PASSWORD_HISTORY_ENABLED', True)
+
+    @property
+    def PASSWORD_HISTORY_COUNT(self):
+        """Nombre d'anciens mots de passe à vérifier."""
+        return getattr(settings, 'TENXYTE_PASSWORD_HISTORY_COUNT', 5)
+
+    # =============================================
+    # Security / Rate Limiting
+    # =============================================
+
+    @property
+    def RATE_LIMITING_ENABLED(self):
+        """Activer/désactiver le rate limiting pour les tentatives de login et appels API."""
+        return getattr(settings, 'TENXYTE_RATE_LIMITING_ENABLED', True)
+
+    @property
+    def MAX_LOGIN_ATTEMPTS(self):
+        """Nombre maximum de tentatives de login avant verrouillage."""
+        return getattr(settings, 'TENXYTE_MAX_LOGIN_ATTEMPTS', 5)
+
+    @property
+    def LOCKOUT_DURATION_MINUTES(self):
+        """Durée du verrouillage de compte en minutes."""
+        return getattr(settings, 'TENXYTE_LOCKOUT_DURATION_MINUTES', 30)
+
+    @property
+    def RATE_LIMIT_WINDOW_MINUTES(self):
+        """Fenêtre temporelle pour le comptage des tentatives de login (en minutes)."""
+        return getattr(settings, 'TENXYTE_RATE_LIMIT_WINDOW_MINUTES', 15)
+
+    @property
+    def ACCOUNT_LOCKOUT_ENABLED(self):
+        """Activer/désactiver le verrouillage de compte après échecs."""
+        return getattr(settings, 'TENXYTE_ACCOUNT_LOCKOUT_ENABLED', True)
+
+    # =============================================
+    # Multi-Application
+    # =============================================
+
+    @property
+    def APPLICATION_AUTH_ENABLED(self):
+        """
+        Activer/désactiver l'authentification par application (X-Access-Key / X-Access-Secret).
+        """
+        return getattr(settings, 'TENXYTE_APPLICATION_AUTH_ENABLED', True)
+
+    @property
+    def EXEMPT_PATHS(self):
+        """Chemins exemptés de l'authentification par application (match par préfixe)."""
+        default_paths = ['/admin/', '/api/v1/health/', '/api/v1/docs/']
+        return getattr(settings, 'TENXYTE_EXEMPT_PATHS', default_paths)
+
+    @property
+    def EXACT_EXEMPT_PATHS(self):
+        """Chemins exemptés de l'authentification par application (match exact)."""
+        default_paths = ['/api/v1/']
+        return getattr(settings, 'TENXYTE_EXACT_EXEMPT_PATHS', default_paths)
+
+    # =============================================
+    # Session & Device Limits
+    # =============================================
+
+    @property
+    def SESSION_LIMIT_ENABLED(self):
+        """Activer/désactiver la limite de sessions concurrentes."""
+        return getattr(settings, 'TENXYTE_SESSION_LIMIT_ENABLED', True)
+
+    @property
+    def DEFAULT_MAX_SESSIONS(self):
+        """Nombre max de sessions concurrentes par défaut (surchargeable par utilisateur)."""
+        return getattr(settings, 'TENXYTE_DEFAULT_MAX_SESSIONS', 1)
+
+    @property
+    def SESSION_LIMIT_ACTION(self):
+        """
+        Action lorsque la limite de sessions est dépassée.
+        Options: 'deny' (refuser) ou 'revoke_oldest' (révoquer la plus ancienne).
+        """
+        return getattr(settings, 'TENXYTE_SESSION_LIMIT_ACTION', 'revoke_oldest')
+
+    @property
+    def DEVICE_LIMIT_ENABLED(self):
+        """Activer/désactiver la limite de devices uniques."""
+        return getattr(settings, 'TENXYTE_DEVICE_LIMIT_ENABLED', True)
+
+    @property
+    def DEFAULT_MAX_DEVICES(self):
+        """Nombre max de devices uniques par défaut (surchargeable par utilisateur)."""
+        return getattr(settings, 'TENXYTE_DEFAULT_MAX_DEVICES', 1)
+
+    @property
+    def DEVICE_LIMIT_ACTION(self):
+        """
+        Action lorsque la limite de devices est dépassée.
+        Options: 'deny' (refuser) ou 'revoke_oldest' (révoquer les sessions du plus ancien device).
+        """
+        return getattr(settings, 'TENXYTE_DEVICE_LIMIT_ACTION', 'deny')
+
+    # =============================================
+    # Audit Logging
+    # =============================================
+
+    @property
+    def AUDIT_LOGGING_ENABLED(self):
+        """Activer/désactiver le journal d'audit."""
+        return getattr(settings, 'TENXYTE_AUDIT_LOGGING_ENABLED', True)
+
+    # =============================================
+    # Twilio Settings (si backend Twilio)
+    # =============================================
+
+    @property
+    def TWILIO_ACCOUNT_SID(self):
+        """Twilio Account SID."""
+        return getattr(settings, 'TWILIO_ACCOUNT_SID', '')
+
+    @property
+    def TWILIO_AUTH_TOKEN(self):
+        """Twilio Auth Token."""
+        return getattr(settings, 'TWILIO_AUTH_TOKEN', '')
+
+    @property
+    def TWILIO_PHONE_NUMBER(self):
+        """Twilio Phone Number (format: +1234567890)."""
+        return getattr(settings, 'TWILIO_PHONE_NUMBER', '')
+
+    # =============================================
+    # SendGrid Settings (si backend SendGrid)
+    # =============================================
+
+    @property
+    def SENDGRID_API_KEY(self):
+        """SendGrid API Key."""
+        return getattr(settings, 'SENDGRID_API_KEY', '')
+
+    @property
+    def SENDGRID_FROM_EMAIL(self):
+        """SendGrid email expéditeur."""
+        return getattr(settings, 'SENDGRID_FROM_EMAIL', 'noreply@example.com')
+
+    # =============================================
+    # Google OAuth Settings
+    # =============================================
+
+    @property
+    def GOOGLE_CLIENT_ID(self):
+        """Google OAuth Client ID."""
+        return getattr(settings, 'GOOGLE_CLIENT_ID', '')
+
+    @property
+    def GOOGLE_CLIENT_SECRET(self):
+        """Google OAuth Client Secret."""
+        return getattr(settings, 'GOOGLE_CLIENT_SECRET', '')
+
+
+# Instance singleton accessible partout
+auth_settings = TenxyteSettings()

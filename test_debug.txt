@@ -1,0 +1,58 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\bobop\AppData\Local\Python\pythoncore-3.12-64\python.exe
+cachedir: .pytest_cache
+django: version: 6.0.2, settings: tests.settings (from ini)
+rootdir: C:\Users\bobop\Documents\own\tenxyte
+configfile: pyproject.toml
+plugins: anyio-4.12.1, cov-7.0.0, django-4.11.1
+collecting ... collected 2 items
+
+tests/test_views.py::TestOTPViews::test_request_email_otp FAILED         [ 50%]
+tests/test_views.py::TestUserViews::test_get_me PASSED                   [100%]
+
+================================== FAILURES ===================================
+_____________________ TestOTPViews.test_request_email_otp _____________________
+
+self = <tests.test_views.TestOTPViews object at 0x000001E6CEED0110>
+mock_get_backend = <MagicMock name='get_email_backend' id='2090843238624'>
+authenticated_client = <rest_framework.test.APIClient object at 0x000001E6CFF26360>
+user = <User: test@example.com>
+
+    @pytest.mark.django_db
+    @patch('tenxyte.backends.email.get_email_backend')
+    def test_request_email_otp(self, mock_get_backend, authenticated_client, user):
+        """Test de demande d'OTP par email."""
+        mock_backend = Mock()
+        mock_backend.send_email.return_value = True
+        mock_get_backend.return_value = mock_backend
+    
+        data = {'otp_type': 'email'}
+        response = authenticated_client.post('/api/auth/otp/request/', data)
+    
+>       assert response.status_code == status.HTTP_200_OK
+E       assert 401 == 200
+E        +  where 401 = <JsonResponse status_code=401, "application/json">.status_code
+E        +  and   200 = status.HTTP_200_OK
+
+tests\test_views.py:134: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+Operations to perform:
+  Synchronize unmigrated apps: rest_framework
+  Apply all migrations: auth, contenttypes, tenxyte
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  No migrations to apply.
+  Your models in app(s): 'tenxyte' have changes that are not yet reflected in a migration, and so won't be applied.
+  Run 'manage.py makemigrations' to make new migrations, and then re-run 'manage.py migrate' to apply them.
+---------------------------- Captured stderr setup ----------------------------
+Creating test database for alias 'default'...
+
+---------------------------- Captured stderr call -----------------------------
+Unauthorized: /api/auth/otp/request/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:249 Unauthorized: /api/auth/otp/request/
+=========================== short test summary info ===========================
+FAILED tests/test_views.py::TestOTPViews::test_request_email_otp - assert 401...
+========================= 1 failed, 1 passed in 2.18s =========================

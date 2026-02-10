@@ -1,0 +1,19 @@
+[run]
+source = src/tenxyte
+omit =
+    src/tenxyte/migrations/*
+    src/tenxyte/management/commands/tenxyte_seed.py
+
+[report]
+show_missing = true
+fail_under = 60
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if __name__ == .__main__
+    raise NotImplementedError
+    pass
+    except ImportError
+
+[html]
+directory = htmlcov

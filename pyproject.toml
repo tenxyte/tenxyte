@@ -1,0 +1,124 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tenxyte"
+version = "0.0.8"
+description = "Complete Django authentication package with JWT, RBAC, 2FA (TOTP), OTP verification, and multi-application support"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    { name = "Tenxyte Team", email = "contact@tenxyte.com" }
+]
+keywords = [
+    "django",
+    "authentication",
+    "jwt",
+    "2fa",
+    "totp",
+    "rbac",
+    "otp",
+    "google-authenticator",
+    "role-based-access-control"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Django",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+    "Framework :: Django :: 5.2",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "django>=5.0",
+    "djangorestframework>=3.14",
+    "django-cors-headers>=4.0",
+    "drf-spectacular>=0.27",
+    "PyJWT>=2.8",
+    "bcrypt>=4.0",
+    "pyotp>=2.9",
+    "qrcode[pil]>=8.0",
+    "google-auth>=2.20",
+    "google-auth-oauthlib>=1.0",
+]
+
+[project.optional-dependencies]
+# Support SMS via Twilio
+twilio = [
+    "twilio>=9.0",
+]
+
+# Support email via SendGrid
+sendgrid = [
+    "sendgrid>=6.10",
+]
+
+# Bases de données
+mongodb = [
+    "django-mongodb-backend>=5.0",
+]
+
+postgres = [
+    "psycopg2-binary>=2.9",
+]
+
+mysql = [
+    "mysqlclient>=2.2",
+]
+
+# Tout inclure
+all = [
+    "twilio>=9.0",
+    "sendgrid>=6.10",
+    "django-mongodb-backend>=5.0",
+    "psycopg2-binary>=2.9",
+    "mysqlclient>=2.2",
+]
+
+# Dépendances de développement
+dev = [
+    "pytest>=7.0",
+    "pytest-django>=4.5",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "ruff>=0.1",
+    "mypy>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/tenxyte/tenxyte"
+Documentation = "https://tenxyte.readthedocs.io"
+Repository = "https://github.com/tenxyte/tenxyte"
+Issues = "https://github.com/tenxyte/tenxyte/issues"
+Changelog = "https://github.com/tenxyte/tenxyte/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tenxyte"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+pythonpath = ["."]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--cov=tenxyte --cov-report=html --cov-report=term --reuse-db --create-db"
+
+[tool.black]
+line-length = 120
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"

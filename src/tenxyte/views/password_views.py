@@ -1,0 +1,219 @@
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
+
+from ..serializers import (
+    PasswordResetRequestSerializer, PasswordResetConfirmSerializer,
+    ChangePasswordSerializer
+)
+from ..services import AuthService, OTPService
+from ..models import get_user_model
+from ..decorators import require_jwt
+from ..throttles import PasswordResetThrottle, PasswordResetDailyThrottle, OTPVerifyThrottle
+
+User = get_user_model()
+
+
+class PasswordResetRequestView(APIView):
+    """
+    POST /api/auth/password/reset/request/
+    Demander une réinitialisation de mot de passe
+    """
+    permission_classes = [AllowAny]
+    throttle_classes = [PasswordResetThrottle, PasswordResetDailyThrottle]
+
+    @extend_schema(
+        tags=['Password'],
+        summary="Demander une réinitialisation de mot de passe",
+        description="Envoie un code OTP pour réinitialiser le mot de passe. Ne révèle pas si le compte existe.",
+        request=PasswordResetRequestSerializer,
+        responses={200: OpenApiTypes.OBJECT}
+    )
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'error': 'Validation error',
+                'details': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        user = None
+        if serializer.validated_data.get('email'):
+            user = User.objects.filter(
+                email__iexact=serializer.validated_data['email']
+            ).first()
+        elif serializer.validated_data.get('phone_number'):
+            user = User.objects.filter(
+                phone_country_code=serializer.validated_data['phone_country_code'],
+                phone_number=serializer.validated_data['phone_number']
+            ).first()
+
+        # Ne pas révéler si l'utilisateur existe
+        if user:
+            otp_service = OTPService()
+            otp, raw_code = otp_service.generate_password_reset_otp(user)
+
+            if user.email:
+                otp_service.send_email_otp(user, raw_code, otp.otp_type)
+            elif user.phone_number:
+                otp_service.send_phone_otp(user, raw_code)
+
+        return Response({
+            'message': 'If the account exists, a reset code has been sent'
+        })
+
+
+class PasswordResetConfirmView(APIView):
+    """
+    POST /api/auth/password/reset/confirm/
+    Confirmer la réinitialisation de mot de passe
+    """
+    permission_classes = [AllowAny]
+    throttle_classes = [OTPVerifyThrottle]
+
+    @extend_schema(
+        tags=['Password'],
+        summary="Confirmer la réinitialisation de mot de passe",
+        description="Vérifie le code OTP et définit un nouveau mot de passe. Révoque tous les refresh tokens.",
+        request=PasswordResetConfirmSerializer,
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT}
+    )
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'error': 'Validation error',
+                'details': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # On a besoin de l'identifiant de l'utilisateur
+        email = request.data.get('email')
+        phone_country_code = request.data.get('phone_country_code')
+        phone_number = request.data.get('phone_number')
+
+        user = None
+        if email:
+            user = User.objects.filter(email__iexact=email).first()
+        elif phone_country_code and phone_number:
+            user = User.objects.filter(
+                phone_country_code=phone_country_code,
+                phone_number=phone_number
+            ).first()
+
+        if not user:
+            return Response({
+                'error': 'Invalid reset request',
+                'code': 'RESET_FAILED'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        otp_service = OTPService()
+        success, error = otp_service.verify_password_reset_otp(
+            user,
+            serializer.validated_data['code']
+        )
+
+        if not success:
+            return Response({
+                'error': error,
+                'code': 'RESET_FAILED'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Mettre à jour le mot de passe
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+
+        # Révoquer tous les refresh tokens
+        AuthService().logout_all_devices(user)
+
+        return Response({'message': 'Password reset successfully'})
+
+
+class ChangePasswordView(APIView):
+    """
+    POST /api/auth/password/change/
+    Changer le mot de passe (utilisateur connecté)
+    """
+
+    @extend_schema(
+        tags=['Password'],
+        summary="Changer le mot de passe",
+        description="Change le mot de passe de l'utilisateur connecté. Requiert le mot de passe actuel.",
+        request=ChangePasswordSerializer,
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT}
+    )
+    @require_jwt
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'error': 'Validation error',
+                'details': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not request.user.check_password(serializer.validated_data['current_password']):
+            return Response({
+                'error': 'Current password is incorrect',
+                'code': 'INVALID_PASSWORD'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        request.user.set_password(serializer.validated_data['new_password'])
+        request.user.save()
+
+        return Response({'message': 'Password changed successfully'})
+
+
+class PasswordStrengthView(APIView):
+    """
+    POST /api/auth/password/strength/
+    Verifier la force d'un mot de passe (pour validation frontend)
+    """
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        tags=['Password'],
+        summary="Verifier la force d'un mot de passe",
+        description="Retourne le score et la force d'un mot de passe sans l'enregistrer.",
+        request={"application/json": {"type": "object", "properties": {"password": {"type": "string"}}}},
+        responses={200: OpenApiTypes.OBJECT}
+    )
+    def post(self, request):
+        from ..validators import password_validator
+
+        password = request.data.get('password', '')
+        email = request.data.get('email')
+
+        result = password_validator.validate(password, email=email)
+
+        return Response({
+            'score': result.score,
+            'strength': result.strength,
+            'is_valid': result.is_valid,
+            'errors': result.errors if not result.is_valid else [],
+            'requirements': password_validator.get_requirements()
+        })
+
+
+class PasswordRequirementsView(APIView):
+    """
+    GET /api/auth/password/requirements/
+    Recuperer les exigences de mot de passe
+    """
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        tags=['Password'],
+        summary="Exigences de mot de passe",
+        description="Retourne la liste des exigences pour un mot de passe valide.",
+        responses={200: OpenApiTypes.OBJECT}
+    )
+    def get(self, request):
+        from ..validators import password_validator
+
+        return Response({
+            'requirements': password_validator.get_requirements(),
+            'min_length': password_validator.min_length,
+            'max_length': password_validator.max_length,
+        })
