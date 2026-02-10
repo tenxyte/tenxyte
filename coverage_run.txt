@@ -1,0 +1,53 @@
+........................................................................ [ 37%]
+........................................................................ [ 75%]
+................................................                         [100%]
+============================== warnings summary ===============================
+tests/security/test_security.py::TestJWTSecurity::test_token_with_wrong_secret_rejected
+  C:\Users\bobop\AppData\Local\Python\pythoncore-3.12-64\Lib\site-packages\jwt\api_jwt.py:153: InsecureKeyLengthWarning: The HMAC key is 16 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.10-final-0 _______________
+
+Name                                                 Stmts   Miss  Cover   Missing
+----------------------------------------------------------------------------------
+src\tenxyte\__init__.py                                  9      2    78%   73-74
+src\tenxyte\admin.py                                     1      1     0%   1
+src\tenxyte\apps.py                                      8      0   100%
+src\tenxyte\authentication.py                           35      5    86%   43-44, 47, 50, 69
+src\tenxyte\backends\__init__.py                         0      0   100%
+src\tenxyte\backends\email.py                           82     39    52%   117-127, 140, 177-194, 207-213, 220-246
+src\tenxyte\backends\sms.py                             43     22    49%   54-61, 68-95
+src\tenxyte\conf.py                                    149     18    88%   82, 96, 101, 106, 111, 134, 139, 227, 274, 292, 300, 318, 323, 328, 337, 342, 351, 356
+src\tenxyte\decorators.py                              162    100    38%   26, 31, 39, 57, 64-66, 81, 89, 98, 104, 112-113, 127-140, 147-160, 170-205, 214, 227-242, 250-265, 273-288, 308, 319-334, 342-357
+src\tenxyte\management\__init__.py                       0      0   100%
+src\tenxyte\management\commands\__init__.py              0      0   100%
+src\tenxyte\management\commands\tenxyte_cleanup.py      39     39     0%   12-117
+src\tenxyte\middleware.py                               47     18    62%   21-22, 30, 35, 73-74, 78-94
+src\tenxyte\models.py                                  363     55    85%   39-40, 42-44, 65-66, 77-78, 89-90, 101-102, 193, 296, 300, 304, 348, 352, 356, 368-369, 376-377, 395-401, 405-411, 418, 502-503, 507, 515-522, 739, 761-762, 838, 856, 861-862
+src\tenxyte\serializers.py                             134     21    84%   31, 69-73, 91, 168-173, 176-183
+src\tenxyte\services\__init__.py                         6      0   100%
+src\tenxyte\services\auth_service.py                   104     34    67%   24, 34-40, 218, 250, 256-257, 263-271, 372, 379, 393-398, 434, 441, 454-461, 464-493, 514
+src\tenxyte\services\email_service.py                   28     12    57%   169-206, 300-342
+src\tenxyte\services\google_auth_service.py             71     53    25%   25-27, 33-56, 62-76, 82-101, 112-167
+src\tenxyte\services\jwt_service.py                     66      6    91%   113, 122, 137, 142, 146, 153
+src\tenxyte\services\otp_service.py                     60     15    75%   72-73, 95-96, 103-106, 143-144, 157-159, 181-183
+src\tenxyte\services\totp_service.py                   126     40    68%   70-72, 140-160, 206, 209, 212, 233, 238, 241, 263-277, 286-299
+src\tenxyte\signals.py                                  35      5    86%   33, 36, 65, 68, 74
+src\tenxyte\throttles.py                                71     25    65%   22, 134-139, 143, 152-162, 167-174, 181-184
+src\tenxyte\urls.py                                      3      0   100%
+src\tenxyte\validators.py                               34      0   100%
+src\tenxyte\views\__init__.py                            7      0   100%
+src\tenxyte\views\application_views.py                  64     37    42%   42-44, 48-60, 106-110, 117-137, 141-149, 170-180
+src\tenxyte\views\auth_views.py                         91     28    69%   51, 63-64, 227-273, 294, 331, 357-360
+src\tenxyte\views\otp_views.py                          56     14    75%   31, 41, 56-57, 80, 92, 116-135
+src\tenxyte\views\password_views.py                     23      0   100%
+src\tenxyte\views\rbac_views.py                         95     56    41%   41-43, 47-55, 86-90, 97-113, 117-122, 151-153, 157-165, 196-200, 207-223, 227-232
+src\tenxyte\views\twofa_views.py                        56     13    77%   48, 84, 92, 122, 130, 157-174
+src\tenxyte\views\user_views.py                         25      1    96%   38
+----------------------------------------------------------------------------------
+TOTAL                                                 2093    659    69%
+Coverage HTML written to dir htmlcov
+Required test coverage of 60.0% reached. Total coverage: 68.51%
+192 passed, 1 warning in 70.51s (0:01:10)

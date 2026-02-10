@@ -15,7 +15,23 @@ Usage:
   pytest tests/multidb/ --db=mongodb
 """
 import pytest
+from django.conf import settings
 from django.core.cache import cache
+
+# ─── MongoDB: désactiver les signaux post_migrate problématiques ───
+# django-mongodb-backend v6.0.2 ne fournit pas MongoContentTypesConfig.
+# On garde django.contrib.auth/contenttypes mais on désactive les signaux
+# create_permissions et create_contenttypes qui échouent car ContentType
+# utilise AutoField (integer PK) incompatible avec ObjectId.
+# NOTE: Django enregistre ces signaux avec dispatch_uid, il faut utiliser le même uid.
+if 'mongodb' in settings.DATABASES.get('default', {}).get('ENGINE', ''):
+    from django.db.models.signals import post_migrate
+    post_migrate.disconnect(
+        dispatch_uid='django.contrib.auth.management.create_permissions'
+    )
+    post_migrate.disconnect(
+        dispatch_uid='django.contrib.contenttypes.management.create_contenttypes'
+    )
 
 
 # ─── Mapping backend → settings module ───

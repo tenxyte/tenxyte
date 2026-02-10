@@ -115,37 +115,38 @@ pip install tenxyte[mongodb]
 ```python
 # settings.py
 
-    # 1. INSTALLED_APPS - Use MongoDB-compatible versions
-    INSTALLED_APPS = [
-        # ✅ USE MongoDB-compatible versions:
-        'django_mongodb_backend.apps.MongoContentTypesConfig',  # Replaces django.contrib.contenttypes
+# 1. INSTALLED_APPS
+INSTALLED_APPS = [
+    'django.contrib.contenttypes',
+    'django.contrib.auth',
+    # ❌ REMOVE: 'django.contrib.admin'  (incompatible with ObjectIdAutoField)
 
-        # ❌ REMOVE THESE (incompatible with MongoDB):
-        # 'django.contrib.admin',        # Uses AutoField - no MongoDB version available
-        # 'django.contrib.auth',         # Replaced by tenxyte_auth
-        # 'django.contrib.contenttypes', # Uses AutoField - use MongoContentTypesConfig instead
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
 
-        # ✅ KEEP THESE (compatible):
-        'django.contrib.sessions',
-        'django.contrib.messages',
-        'django.contrib.staticfiles',
+    # Third-party
+    'rest_framework',
+    'corsheaders',
+    'drf_spectacular',
 
-        # Third-party
-        'rest_framework',
-        'corsheaders',
-        'drf_spectacular',
-
-        # Tenxyte Auth
-        'tenxyte_auth',
-    ]
+    # Tenxyte Auth
+    'tenxyte',
+]
 
 # 2. Custom User Model (REQUIRED)
-AUTH_USER_MODEL = 'tenxyte_auth.User'
+AUTH_USER_MODEL = 'tenxyte.User'
 
 # 3. MongoDB-specific AutoField
 DEFAULT_AUTO_FIELD = 'django_mongodb_backend.fields.ObjectIdAutoField'
 
-# 4. Database Configuration
+# 4. Disable migrations for built-in apps (incompatible with ObjectId PKs)
+MIGRATION_MODULES = {
+    'contenttypes': None,
+    'auth': None,
+}
+
+# 5. Database Configuration
 DATABASES = {
     'default': {
         'ENGINE': 'django_mongodb_backend',
@@ -158,7 +159,7 @@ DATABASES = {
     }
 }
 
-# 5. MIDDLEWARE - Remove AuthenticationMiddleware
+# 6. MIDDLEWARE - Remove AuthenticationMiddleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -168,40 +169,22 @@ MIDDLEWARE = [
     # ❌ REMOVE: 'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'tenxyte_auth.middleware.ApplicationAuthMiddleware',
+    'tenxyte.middleware.ApplicationAuthMiddleware',
 ]
 
-# 6. TEMPLATES - Remove auth context processor
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                # ❌ REMOVE: 'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
-# 7. Password validators (optional, tenxyte_auth has its own)
-AUTH_PASSWORD_VALIDATORS = []
-
-# 8. REST Framework authentication
+# 7. REST Framework authentication
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'tenxyte_auth.authentication.JWTAuthentication',
+        'tenxyte.authentication.JWTAuthentication',
     ],
 }
 ```
 
 **Why these changes?**
 - MongoDB uses `ObjectIdAutoField` instead of `AutoField` or `BigAutoField`
-- Django's `admin`, `auth`, and `contenttypes` apps use incompatible field types
-- Tenxyte automatically detects MongoDB and uses the correct field types
+- Django's `admin` app is incompatible with ObjectId primary keys
+- `contenttypes` and `auth` migrations are disabled since their models use integer PKs
+- Tenxyte automatically detects the MongoDB engine and uses the correct field types for its own models
 
 ## Quick Start
 
@@ -216,10 +199,10 @@ REST_FRAMEWORK = {
 
 INSTALLED_APPS = [
     # Django apps (for SQL databases: PostgreSQL, MySQL, SQLite)
-    # Note: If using MongoDB, see MongoDB section - you must remove admin, auth, contenttypes
-    'django.contrib.admin',       # ⚠️ Remove for MongoDB
-    'django.contrib.auth',        # ⚠️ Remove for MongoDB (replaced by tenxyte_auth)
-    'django.contrib.contenttypes', # ⚠️ Remove for MongoDB
+    # Note: If using MongoDB, see MongoDB Configuration section above
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
@@ -230,7 +213,7 @@ INSTALLED_APPS = [
     'drf_spectacular',  # Optional, for API docs
 
     # Tenxyte Auth
-    'tenxyte_auth',
+    'tenxyte',
 
     # Your apps
     ...
@@ -290,13 +273,13 @@ SENDGRID_FROM_EMAIL = "noreply@example.com"
 ```python
 # settings.py
 
-# Custom User Model (REQUIRED if using tenxyte_auth)
-AUTH_USER_MODEL = 'tenxyte_auth.User'
+# Custom User Model (REQUIRED if using tenxyte)
+AUTH_USER_MODEL = 'tenxyte.User'
 
 # REST Framework Authentication
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-    'tenxyte_auth.authentication.JWTAuthentication',
+    'tenxyte.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -665,7 +648,7 @@ app, secret = Application.create_application(name='My App')
 
 ## Configuration Reference
 
-See [Configuration Documentation](docs/configuration.md) for all available settings.
+All available settings are listed below.
 
 ### Essential Settings
 
@@ -765,15 +748,48 @@ pytest --cov=tenxyte --cov-report=html
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (unit + integration + security + multi-DB SQLite)
 pytest
 
-# Run specific test file
-pytest tests/test_auth.py
-
-# Run with coverage
-pytest --cov=tenxyte
+# Run with coverage report
+pytest --cov=tenxyte --cov-report=html
 ```
+
+### Multi-Database Tests
+
+The test suite includes 50 dedicated multi-DB tests that verify all Tenxyte models and auth flows work identically across every supported backend:
+
+```bash
+# SQLite (default, in-memory)
+pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_sqlite" --create-db
+
+# PostgreSQL (requires psycopg2-binary + running server)
+pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_pgsql" --create-db
+
+# MySQL (requires mysqlclient + running server)
+pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_mysql" --create-db
+
+# MongoDB (requires django-mongodb-backend + running server)
+pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_mongodb" --create-db
+```
+
+Database connection settings are configured via environment variables:
+
+| Variable | Default | Backend |
+|----------|---------|---------|
+| `TENXYTE_PG_HOST` / `_PORT` / `_NAME` / `_USER` / `_PASSWORD` | `localhost:5432/tenxyte_test` | PostgreSQL |
+| `TENXYTE_MYSQL_HOST` / `_PORT` / `_NAME` / `_USER` / `_PASSWORD` | `127.0.0.1:3306/tenxyte_test` | MySQL |
+| `TENXYTE_MONGO_HOST` / `_PORT` / `_NAME` | `localhost:27017/tenxyte_test` | MongoDB |
+
+### Test Coverage
+
+| Metric | Value |
+|--------|-------|
+| Total tests | **192** |
+| Pass rate | **100%** |
+| Code coverage | **68.51%** (minimum threshold: 60%) |
+| Multi-DB tests per backend | **50** |
+| Verified backends | SQLite, PostgreSQL, MySQL, MongoDB |
 
 ## Troubleshooting
 
@@ -788,54 +804,36 @@ tenxyte.User.id: (mongodb.E001) MongoDB does not support BigAutoField.
 ```
 
 **Solution:**
-1. Use MongoDB-compatible apps in `INSTALLED_APPS`:
-   ```python
-   INSTALLED_APPS = [
-       # ✅ Use MongoDB version
-       'django_mongodb_backend.apps.MongoContentTypesConfig',
-
-       # ❌ Remove these:
-       # 'django.contrib.admin',
-       # 'django.contrib.auth',
-       # 'django.contrib.contenttypes',  # Use MongoContentTypesConfig instead
-   ]
-   ```
-
-**Problem 2:** `ContentType doesn't declare an explicit app_label`
-
-```
-RuntimeError: Model class django.contrib.contenttypes.models.ContentType
-doesn't declare an explicit app_label and isn't in an application in INSTALLED_APPS.
-```
-
-**Solution:**
-REST Framework needs contenttypes. Use the MongoDB-compatible version:
-```python
-INSTALLED_APPS = [
-    'django_mongodb_backend.apps.MongoContentTypesConfig',  # Add this!
-    # 'django.contrib.contenttypes',  # ❌ NOT this
-    # ... other apps
-]
-```
-
-2. Set the correct default field:
+1. Set the correct default auto field:
    ```python
    DEFAULT_AUTO_FIELD = 'django_mongodb_backend.fields.ObjectIdAutoField'
    ```
 
-3. Set custom user model:
+2. Disable migrations for built-in apps (their models use integer PKs):
    ```python
-   AUTH_USER_MODEL = 'tenxyte.User'
+   MIGRATION_MODULES = {
+       'contenttypes': None,
+       'auth': None,
+   }
    ```
 
-4. Update middleware (remove `AuthenticationMiddleware`):
-   ```python
-   MIDDLEWARE = [
-       # ... other middleware
-       # ❌ Remove: 'django.contrib.auth.middleware.AuthenticationMiddleware',
-       'tenxyte.middleware.ApplicationAuthMiddleware',
-   ]
-   ```
+3. Remove `django.contrib.admin` from `INSTALLED_APPS` (incompatible with ObjectId PKs).
+
+**Problem 2:** `Model instances without primary key value are unhashable`
+
+```
+TypeError: Model instances without primary key value are unhashable
+```
+
+**Solution:**
+This occurs during `migrate` because Django's `create_permissions` and `create_contenttypes` signals
+try to hash ContentType objects with `pk=None`. Add `MIGRATION_MODULES` to disable built-in app
+migrations (see Problem 1). If the error persists, disconnect the problematic signals before migrations:
+```python
+from django.db.models.signals import post_migrate
+post_migrate.disconnect(dispatch_uid='django.contrib.auth.management.create_permissions')
+post_migrate.disconnect(dispatch_uid='django.contrib.contenttypes.management.create_contenttypes')
+```
 
 ### PostgreSQL/MySQL Issues
 
@@ -849,8 +847,8 @@ AUTH_USER_MODEL = 'tenxyte.User'
 For SQL databases, you can keep the standard Django apps:
 ```python
 INSTALLED_APPS = [
-    'django.contrib.admin',  # ✅ OK for SQL databases
-    'django.contrib.auth',   # ❌ Should be removed if using tenxyte
+    'django.contrib.admin',         # ✅ OK for SQL databases
+    'django.contrib.auth',          # ✅ OK for SQL databases
     'django.contrib.contenttypes',  # ✅ OK for SQL databases
     # ... rest
     'tenxyte',
@@ -901,13 +899,16 @@ Authorization: Bearer <jwt_token>
 
 ### MongoDB
 - ✅ NoSQL flexibility
-- ❌ **Requires removing** `admin`, `auth`, `contenttypes` apps
-- ⚠️ Different configuration (see MongoDB section)
 - ⚠️ Requires `django-mongodb-backend` package
+- ⚠️ Requires `DEFAULT_AUTO_FIELD = 'django_mongodb_backend.fields.ObjectIdAutoField'`
+- ⚠️ Requires `MIGRATION_MODULES` to disable `contenttypes` and `auth` migrations
+- ⚠️ Remove `django.contrib.admin` (incompatible with ObjectId PKs)
+- ⚠️ M2M `remove()` not supported on auto-generated through tables (use `set()` or `add()`/`clear()` patterns)
+- See [MongoDB Configuration](#mongodb) for full setup
 
 ## Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) first.
+Contributions are welcome! Please open an issue or pull request on GitHub.
 
 ## License
 

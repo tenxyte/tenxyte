@@ -16,7 +16,7 @@ from .settings_base import *  # noqa: F401,F403
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'HOST': os.environ.get('TENXYTE_MYSQL_HOST', 'localhost'),
+        'HOST': os.environ.get('TENXYTE_MYSQL_HOST', '127.0.0.1'),
         'PORT': os.environ.get('TENXYTE_MYSQL_PORT', '3306'),
         'NAME': os.environ.get('TENXYTE_MYSQL_NAME', 'tenxyte_test'),
         'USER': os.environ.get('TENXYTE_MYSQL_USER', 'root'),

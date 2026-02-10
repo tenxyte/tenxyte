@@ -30,11 +30,23 @@ from django.conf import settings
 from datetime import timedelta
 
 # Détection du backend pour MongoDB
-try:
-    from django_mongodb_backend.fields import ObjectIdAutoField
-    AutoFieldClass = ObjectIdAutoField
-except ImportError:
-    AutoFieldClass = models.BigAutoField
+# On vérifie le moteur DB configuré, pas juste la disponibilité du package,
+# pour éviter d'utiliser ObjectIdAutoField sur SQLite/PG/MySQL quand
+# django-mongodb-backend est installé.
+def _get_auto_field_class():
+    try:
+        db_engine = settings.DATABASES.get('default', {}).get('ENGINE', '')
+    except Exception:
+        db_engine = ''
+    if 'mongodb' in db_engine:
+        try:
+            from django_mongodb_backend.fields import ObjectIdAutoField
+            return ObjectIdAutoField
+        except ImportError:
+            pass
+    return models.BigAutoField
+
+AutoFieldClass = _get_auto_field_class()
 
 
 # =============================================================================
