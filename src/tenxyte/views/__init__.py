@@ -10,7 +10,8 @@ from .password_views import (
 from .user_views import MeView, MyRolesView
 from .rbac_views import (
     PermissionListView, PermissionDetailView,
-    RoleListView, RoleDetailView, UserRolesView
+    RoleListView, RoleDetailView, RolePermissionsView,
+    UserRolesView, UserDirectPermissionsView
 )
 from .twofa_views import (
     TwoFactorStatusView, TwoFactorSetupView, TwoFactorConfirmView,
@@ -28,7 +29,8 @@ __all__ = [
     'PasswordStrengthView', 'PasswordRequirementsView',
     'MeView', 'MyRolesView',
     'PermissionListView', 'PermissionDetailView',
-    'RoleListView', 'RoleDetailView', 'UserRolesView',
+    'RoleListView', 'RoleDetailView', 'RolePermissionsView',
+    'UserRolesView', 'UserDirectPermissionsView',
     'TwoFactorStatusView', 'TwoFactorSetupView', 'TwoFactorConfirmView',
     'TwoFactorDisableView', 'TwoFactorBackupCodesView',
     'ApplicationListView', 'ApplicationDetailView', 'ApplicationRegenerateView',

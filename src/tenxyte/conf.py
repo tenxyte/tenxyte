@@ -120,6 +120,7 @@ class TenxyteSettings:
         Backend SMS à utiliser.
         Options:
         - 'tenxyte.backends.sms.TwilioBackend'
+        - 'tenxyte.backends.sms.NGHBackend'
         - 'tenxyte.backends.sms.ConsoleBackend' (défaut, pour dev)
         """
         return getattr(
@@ -264,40 +265,67 @@ class TenxyteSettings:
     # =============================================
 
     @property
-    def SESSION_LIMIT_ENABLED(self):
+    def TENXYTE_SESSION_LIMIT_ENABLED(self):
         """Activer/désactiver la limite de sessions concurrentes."""
         return getattr(settings, 'TENXYTE_SESSION_LIMIT_ENABLED', True)
 
     @property
-    def DEFAULT_MAX_SESSIONS(self):
+    def TENXYTE_DEFAULT_MAX_SESSIONS(self):
         """Nombre max de sessions concurrentes par défaut (surchargeable par utilisateur)."""
         return getattr(settings, 'TENXYTE_DEFAULT_MAX_SESSIONS', 1)
 
     @property
-    def SESSION_LIMIT_ACTION(self):
+    def TENXYTE_DEFAULT_SESSION_LIMIT_ACTION(self):
         """
         Action lorsque la limite de sessions est dépassée.
         Options: 'deny' (refuser) ou 'revoke_oldest' (révoquer la plus ancienne).
         """
-        return getattr(settings, 'TENXYTE_SESSION_LIMIT_ACTION', 'revoke_oldest')
+        return getattr(settings, 'TENXYTE_DEFAULT_SESSION_LIMIT_ACTION', 'revoke_oldest')
 
     @property
-    def DEVICE_LIMIT_ENABLED(self):
+    def TENXYTE_DEVICE_LIMIT_ENABLED(self):
         """Activer/désactiver la limite de devices uniques."""
         return getattr(settings, 'TENXYTE_DEVICE_LIMIT_ENABLED', True)
 
     @property
-    def DEFAULT_MAX_DEVICES(self):
+    def TENXYTE_DEFAULT_MAX_DEVICES(self):
         """Nombre max de devices uniques par défaut (surchargeable par utilisateur)."""
         return getattr(settings, 'TENXYTE_DEFAULT_MAX_DEVICES', 1)
 
     @property
-    def DEVICE_LIMIT_ACTION(self):
+    def TENXYTE_DEVICE_LIMIT_ACTION(self):
         """
         Action lorsque la limite de devices est dépassée.
         Options: 'deny' (refuser) ou 'revoke_oldest' (révoquer les sessions du plus ancien device).
         """
         return getattr(settings, 'TENXYTE_DEVICE_LIMIT_ACTION', 'deny')
+
+    # =============================================
+    # Simple Throttle Rules
+    # =============================================
+
+    @property
+    def SIMPLE_THROTTLE_RULES(self):
+        """
+        Règles de throttling simples par URL.
+        Permet de throttle n'importe quelle route sans créer de classe custom.
+
+        Format: { 'url_prefix': 'rate' }
+        - Prefix match par défaut: '/api/v1/products/' matche '/api/v1/products/123/'
+        - Match exact avec '$': '/api/v1/health/$'
+        - Rates: 'X/sec', 'X/min', 'X/hour', 'X/day'
+
+        Exemple:
+            TENXYTE_SIMPLE_THROTTLE_RULES = {
+                '/api/v1/products/': '100/hour',
+                '/api/v1/search/': '30/min',
+                '/api/v1/upload/': '5/hour',
+            }
+
+        Nécessite d'ajouter 'tenxyte.throttles.SimpleThrottleRule' dans
+        REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'].
+        """
+        return getattr(settings, 'TENXYTE_SIMPLE_THROTTLE_RULES', {})
 
     # =============================================
     # Audit Logging
@@ -328,6 +356,25 @@ class TenxyteSettings:
         return getattr(settings, 'TWILIO_PHONE_NUMBER', '')
 
     # =============================================
+    # NGH Corp Settings (si backend NGH)
+    # =============================================
+
+    @property
+    def NGH_API_KEY(self):
+        """NGH Corp API Key."""
+        return getattr(settings, 'NGH_API_KEY', '')
+
+    @property
+    def NGH_API_SECRET(self):
+        """NGH Corp API Secret."""
+        return getattr(settings, 'NGH_API_SECRET', '')
+
+    @property
+    def NGH_SENDER_ID(self):
+        """NGH Corp Sender ID affiché comme expéditeur du SMS."""
+        return getattr(settings, 'NGH_SENDER_ID', '')
+
+    # =============================================
     # SendGrid Settings (si backend SendGrid)
     # =============================================
 
@@ -340,6 +387,85 @@ class TenxyteSettings:
     def SENDGRID_FROM_EMAIL(self):
         """SendGrid email expéditeur."""
         return getattr(settings, 'SENDGRID_FROM_EMAIL', 'noreply@example.com')
+
+    # =============================================
+    # CORS Settings
+    # =============================================
+
+    @property
+    def CORS_ENABLED(self):
+        """Activer/désactiver le middleware CORS intégré."""
+        return getattr(settings, 'TENXYTE_CORS_ENABLED', False)
+
+    @property
+    def CORS_ALLOW_ALL_ORIGINS(self):
+        """Autoriser toutes les origines (dangereux en production)."""
+        return getattr(settings, 'TENXYTE_CORS_ALLOW_ALL_ORIGINS', False)
+
+    @property
+    def CORS_ALLOWED_ORIGINS(self):
+        """
+        Liste des origines autorisées.
+        Exemple: ['https://example.com', 'http://localhost:3000']
+        """
+        return getattr(settings, 'TENXYTE_CORS_ALLOWED_ORIGINS', [])
+
+    @property
+    def CORS_ALLOW_CREDENTIALS(self):
+        """Autoriser les credentials (cookies, Authorization header)."""
+        return getattr(settings, 'TENXYTE_CORS_ALLOW_CREDENTIALS', True)
+
+    @property
+    def CORS_ALLOWED_METHODS(self):
+        """Méthodes HTTP autorisées."""
+        return getattr(settings, 'TENXYTE_CORS_ALLOWED_METHODS', [
+            'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'
+        ])
+
+    @property
+    def CORS_ALLOWED_HEADERS(self):
+        """Headers autorisés dans les requêtes."""
+        return getattr(settings, 'TENXYTE_CORS_ALLOWED_HEADERS', [
+            'Accept',
+            'Accept-Language',
+            'Content-Type',
+            'Authorization',
+            'X-Access-Key',
+            'X-Access-Secret',
+            'X-Requested-With',
+        ])
+
+    @property
+    def CORS_EXPOSE_HEADERS(self):
+        """Headers exposés au client."""
+        return getattr(settings, 'TENXYTE_CORS_EXPOSE_HEADERS', [])
+
+    @property
+    def CORS_MAX_AGE(self):
+        """Durée de cache du preflight en secondes (défaut: 24h)."""
+        return getattr(settings, 'TENXYTE_CORS_MAX_AGE', 86400)
+
+    # =============================================
+    # Security Headers
+    # =============================================
+
+    @property
+    def SECURITY_HEADERS_ENABLED(self):
+        """Activer/désactiver les headers de sécurité."""
+        return getattr(settings, 'TENXYTE_SECURITY_HEADERS_ENABLED', False)
+
+    @property
+    def SECURITY_HEADERS(self):
+        """
+        Headers de sécurité à ajouter aux réponses.
+        Peut être surchargé dans settings.py.
+        """
+        return getattr(settings, 'TENXYTE_SECURITY_HEADERS', {
+            'X-Content-Type-Options': 'nosniff',
+            'X-Frame-Options': 'DENY',
+            'X-XSS-Protection': '1; mode=block',
+            'Referrer-Policy': 'strict-origin-when-cross-origin',
+        })
 
     # =============================================
     # Google OAuth Settings

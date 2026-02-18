@@ -16,8 +16,13 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from .views import HomeView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    
+    # Tenxyte endpoints
+    path("api/v1/home/", HomeView.as_view()),
+    path("api/v1/auth/", include("tenxyte.urls"))
 ]

@@ -215,7 +215,8 @@ class SendGridBackend(BaseEmailBackend):
                 "Set SENDGRID_API_KEY in settings."
             )
 
-    def send_email(self, to_email: str, subject: str, message: str) -> bool:
+    def send_email(self, to_email: str, subject: str, message: str,
+                   html_message: Optional[str] = None, context: Optional[Dict[str, Any]] = None) -> bool:
         """Envoie l'email via SendGrid."""
         if not self.api_key:
             logger.error("[SendGrid] Missing API key")
@@ -229,7 +230,8 @@ class SendGridBackend(BaseEmailBackend):
                 from_email=self.from_email,
                 to_emails=to_email,
                 subject=subject,
-                plain_text_content=message
+                plain_text_content=message,
+                html_content=html_message or None
             )
 
             sg = SendGridAPIClient(self.api_key)

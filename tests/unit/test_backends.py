@@ -6,6 +6,7 @@ from unittest.mock import Mock, patch
 
 from tenxyte.backends.sms import (
     ConsoleBackend as SMSConsoleBackend,
+    NGHBackend,
     get_sms_backend
 )
 from tenxyte.backends.email import (
@@ -47,6 +48,90 @@ class TestSMSBackends:
         # Devrait retourner True même avec des données invalides (console)
         result = backend.send_sms("", "")
         assert result is True
+
+
+class TestNGHBackend:
+    """Tests pour le backend NGH Corp SMS."""
+
+    @patch('tenxyte.conf.auth_settings')
+    def test_ngh_backend_missing_credentials(self, mock_settings):
+        """Test que le backend retourne False si les credentials sont manquantes."""
+        mock_settings.NGH_API_KEY = ''
+        mock_settings.NGH_API_SECRET = ''
+        mock_settings.NGH_SENDER_ID = ''
+
+        backend = NGHBackend()
+        result = backend.send_sms("+22892470847", "Test message")
+
+        assert result is False
+
+    @patch('http.client.HTTPSConnection')
+    @patch('tenxyte.conf.auth_settings')
+    def test_ngh_backend_send_sms_success(self, mock_settings, mock_conn_cls):
+        """Test d'envoi SMS réussi via NGH."""
+        mock_settings.NGH_API_KEY = 'k_test_key'
+        mock_settings.NGH_API_SECRET = 's_test_secret'
+        mock_settings.NGH_SENDER_ID = 'MYAPP'
+
+        mock_conn = mock_conn_cls.return_value
+        mock_response = Mock()
+        mock_response.read.return_value = b'{"status": 200, "status_desc": "Success", "messageid": "12345", "credits": 500}'
+        mock_conn.getresponse.return_value = mock_response
+
+        backend = NGHBackend()
+        result = backend.send_sms("+22892470847", "Code: 123456")
+
+        assert result is True
+        mock_conn.request.assert_called_once()
+        args = mock_conn.request.call_args
+        assert args[0][0] == "POST"
+        assert args[0][1] == "/api/send-sms"
+
+    @patch('http.client.HTTPSConnection')
+    @patch('tenxyte.conf.auth_settings')
+    def test_ngh_backend_send_sms_api_error(self, mock_settings, mock_conn_cls):
+        """Test d'erreur API NGH."""
+        mock_settings.NGH_API_KEY = 'k_test_key'
+        mock_settings.NGH_API_SECRET = 's_test_secret'
+        mock_settings.NGH_SENDER_ID = 'MYAPP'
+
+        mock_conn = mock_conn_cls.return_value
+        mock_response = Mock()
+        mock_response.read.return_value = b'{"status": 405, "status_desc": "Invalid param - from"}'
+        mock_conn.getresponse.return_value = mock_response
+
+        backend = NGHBackend()
+        result = backend.send_sms("+22892470847", "Code: 123456")
+
+        assert result is False
+
+    @patch('http.client.HTTPSConnection')
+    @patch('tenxyte.conf.auth_settings')
+    def test_ngh_backend_connection_error(self, mock_settings, mock_conn_cls):
+        """Test d'erreur de connexion NGH."""
+        mock_settings.NGH_API_KEY = 'k_test_key'
+        mock_settings.NGH_API_SECRET = 's_test_secret'
+        mock_settings.NGH_SENDER_ID = 'MYAPP'
+
+        mock_conn = mock_conn_cls.return_value
+        mock_conn.request.side_effect = Exception("Connection refused")
+
+        backend = NGHBackend()
+        result = backend.send_sms("+22892470847", "Code: 123456")
+
+        assert result is False
+
+    @patch('tenxyte.conf.auth_settings')
+    def test_ngh_backend_get_backend_from_settings(self, mock_settings):
+        """Test que get_sms_backend retourne NGHBackend quand configuré."""
+        mock_settings.SMS_BACKEND = 'tenxyte.backends.sms.NGHBackend'
+        mock_settings.NGH_API_KEY = 'k_test'
+        mock_settings.NGH_API_SECRET = 's_test'
+        mock_settings.NGH_SENDER_ID = 'TEST'
+
+        backend = get_sms_backend()
+
+        assert isinstance(backend, NGHBackend)
 
 
 class TestEmailBackends:

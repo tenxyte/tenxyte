@@ -5,7 +5,8 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 from drf_spectacular.types import OpenApiTypes
 
 from ..serializers import (
-    PermissionSerializer, RoleSerializer, RoleListSerializer, AssignRoleSerializer
+    PermissionSerializer, RoleSerializer, RoleListSerializer,
+    ManageRolePermissionsSerializer, AssignRoleSerializer
 )
 from ..models import get_user_model, get_role_model, get_permission_model
 from ..decorators import require_permission
@@ -238,6 +239,181 @@ class RoleDetailView(APIView):
 @extend_schema_view(
     get=extend_schema(
         tags=['RBAC'],
+        summary="Lister les permissions d'un rôle",
+        description="Récupère toutes les permissions assignées à un rôle.",
+        responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+    ),
+    post=extend_schema(
+        tags=['RBAC'],
+        summary="Ajouter des permissions à un rôle",
+        description="Ajoute une ou plusieurs permissions à un rôle existant.",
+        request=ManageRolePermissionsSerializer,
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+    ),
+    delete=extend_schema(
+        tags=['RBAC'],
+        summary="Retirer des permissions d'un rôle",
+        description="Retire une ou plusieurs permissions d'un rôle existant.",
+        request=ManageRolePermissionsSerializer,
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+    )
+)
+class RolePermissionsView(APIView):
+    """
+    GET/POST/DELETE /api/auth/roles/<role_id>/permissions/
+    Gère les permissions d'un rôle
+    """
+
+    def _get_role(self, role_id):
+        try:
+            return Role.objects.get(id=role_id)
+        except Role.DoesNotExist:
+            return None
+
+    def _safe_add_permissions(self, role, permissions):
+        """Add permissions to a role, with MongoDB-compatible fallback."""
+        try:
+            role.permissions.add(*permissions)
+        except TypeError:
+            for perm in permissions:
+                try:
+                    role.permissions.add(perm)
+                except TypeError:
+                    pass
+
+    def _safe_remove_permissions(self, role, permissions):
+        """Remove permissions from a role, with MongoDB-compatible fallback."""
+        try:
+            role.permissions.remove(*permissions)
+        except TypeError:
+            # MongoDB: remove() fails due to deletion collector issue
+            # Fallback: delete through-table entries directly, bypassing collector
+            through = role.permissions.through
+            source = role.permissions.source_field_name
+            target = role.permissions.target_field_name
+            remove_pks = [p.pk for p in permissions]
+            db = role._state.db or 'default'
+            through.objects.using(db).filter(**{
+                source: role.pk,
+                f'{target}__in': remove_pks,
+            })._raw_delete(db)
+
+    @require_permission('roles.manage_permissions')
+    def get(self, request, role_id):
+        role = self._get_role(role_id)
+        if not role:
+            return Response({
+                'error': 'Role not found',
+                'code': 'NOT_FOUND'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        return Response({
+            'role_id': str(role.id),
+            'role_code': role.code,
+            'permissions': PermissionSerializer(role.permissions.all(), many=True).data
+        })
+
+    @require_permission('roles.manage_permissions')
+    def post(self, request, role_id):
+        """Ajoute des permissions au rôle"""
+        role = self._get_role(role_id)
+        if not role:
+            return Response({
+                'error': 'Role not found',
+                'code': 'NOT_FOUND'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ManageRolePermissionsSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'error': 'Validation error',
+                'details': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        permission_codes = serializer.validated_data['permission_codes']
+        permissions = Permission.objects.filter(code__in=permission_codes)
+        found_codes = set(permissions.values_list('code', flat=True))
+
+        not_found = set(permission_codes) - found_codes
+        if not_found:
+            return Response({
+                'error': 'Some permissions not found',
+                'code': 'PERMISSIONS_NOT_FOUND',
+                'not_found': list(not_found)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        existing_codes = set(role.permissions.filter(
+            code__in=permission_codes
+        ).values_list('code', flat=True))
+        new_permissions = [p for p in permissions if p.code not in existing_codes]
+
+        if new_permissions:
+            self._safe_add_permissions(role, new_permissions)
+
+        response_data = {
+            'message': f'{len(new_permissions)} permission(s) added',
+            'added': [p.code for p in new_permissions],
+            'role_code': role.code,
+            'permissions': PermissionSerializer(role.permissions.all(), many=True).data
+        }
+        if existing_codes:
+            response_data['already_assigned'] = list(existing_codes)
+
+        return Response(response_data)
+
+    @require_permission('roles.manage_permissions')
+    def delete(self, request, role_id):
+        """Retire des permissions du rôle"""
+        role = self._get_role(role_id)
+        if not role:
+            return Response({
+                'error': 'Role not found',
+                'code': 'NOT_FOUND'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ManageRolePermissionsSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'error': 'Validation error',
+                'details': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        permission_codes = serializer.validated_data['permission_codes']
+        permissions = Permission.objects.filter(code__in=permission_codes)
+        found_codes = set(permissions.values_list('code', flat=True))
+
+        not_found = set(permission_codes) - found_codes
+        if not_found:
+            return Response({
+                'error': 'Some permissions not found',
+                'code': 'PERMISSIONS_NOT_FOUND',
+                'not_found': list(not_found)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        assigned_codes = set(role.permissions.filter(
+            code__in=permission_codes
+        ).values_list('code', flat=True))
+        to_remove = [p for p in permissions if p.code in assigned_codes]
+        not_removed = [p.code for p in permissions if p.code not in assigned_codes]
+
+        if to_remove:
+            self._safe_remove_permissions(role, to_remove)
+
+        response_data = {
+            'message': f'{len(to_remove)} permission(s) removed',
+            'removed': [p.code for p in to_remove],
+            'role_code': role.code,
+            'permissions': PermissionSerializer(role.permissions.all(), many=True).data
+        }
+        if not_removed:
+            response_data['not_removed'] = not_removed
+
+        return Response(response_data)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=['RBAC'],
         summary="Lister les rôles d'un utilisateur",
         description="Récupère tous les rôles assignés à un utilisateur.",
         responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
@@ -343,3 +519,183 @@ class UserRolesView(APIView):
                 'error': 'Role not found',
                 'code': 'ROLE_NOT_FOUND'
             }, status=status.HTTP_404_NOT_FOUND)
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=['RBAC'],
+        summary="Lister les permissions directes d'un utilisateur",
+        description="Récupère toutes les permissions assignées directement à un utilisateur (hors rôles).",
+        responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+    ),
+    post=extend_schema(
+        tags=['RBAC'],
+        summary="Ajouter des permissions directes à un utilisateur",
+        description="Ajoute une ou plusieurs permissions directement à un utilisateur.",
+        request=ManageRolePermissionsSerializer,
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+    ),
+    delete=extend_schema(
+        tags=['RBAC'],
+        summary="Retirer des permissions directes d'un utilisateur",
+        description="Retire une ou plusieurs permissions directes d'un utilisateur.",
+        request=ManageRolePermissionsSerializer,
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+    )
+)
+class UserDirectPermissionsView(APIView):
+    """
+    GET/POST/DELETE /api/auth/users/<user_id>/permissions/
+    Gère les permissions directes d'un utilisateur
+    """
+
+    def _get_user(self, user_id):
+        try:
+            return User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return None
+
+    def _safe_add_permissions(self, user, permissions):
+        """Add direct permissions to a user, with MongoDB-compatible fallback."""
+        try:
+            user.direct_permissions.add(*permissions)
+        except TypeError:
+            for perm in permissions:
+                try:
+                    user.direct_permissions.add(perm)
+                except TypeError:
+                    pass
+
+    def _safe_remove_permissions(self, user, permissions):
+        """Remove direct permissions from a user, with MongoDB-compatible fallback."""
+        try:
+            user.direct_permissions.remove(*permissions)
+        except TypeError:
+            through = user.direct_permissions.through
+            source = user.direct_permissions.source_field_name
+            target = user.direct_permissions.target_field_name
+            remove_pks = [p.pk for p in permissions]
+            db = user._state.db or 'default'
+            through.objects.using(db).filter(**{
+                source: user.pk,
+                f'{target}__in': remove_pks,
+            })._raw_delete(db)
+
+    @require_permission('users.permissions.view')
+    def get(self, request, user_id):
+        user = self._get_user(user_id)
+        if not user:
+            return Response({
+                'error': 'User not found',
+                'code': 'NOT_FOUND'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        return Response({
+            'user_id': str(user.id),
+            'email': user.email,
+            'direct_permissions': PermissionSerializer(
+                user.direct_permissions.all(), many=True
+            ).data,
+            'all_permissions': user.get_all_permissions()
+        })
+
+    @require_permission('users.permissions.assign')
+    def post(self, request, user_id):
+        """Ajoute des permissions directes à l'utilisateur"""
+        user = self._get_user(user_id)
+        if not user:
+            return Response({
+                'error': 'User not found',
+                'code': 'NOT_FOUND'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ManageRolePermissionsSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'error': 'Validation error',
+                'details': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        permission_codes = serializer.validated_data['permission_codes']
+        permissions = Permission.objects.filter(code__in=permission_codes)
+        found_codes = set(permissions.values_list('code', flat=True))
+
+        not_found = set(permission_codes) - found_codes
+        if not_found:
+            return Response({
+                'error': 'Some permissions not found',
+                'code': 'PERMISSIONS_NOT_FOUND',
+                'not_found': list(not_found)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        existing_codes = set(user.direct_permissions.filter(
+            code__in=permission_codes
+        ).values_list('code', flat=True))
+        new_permissions = [p for p in permissions if p.code not in existing_codes]
+
+        if new_permissions:
+            self._safe_add_permissions(user, new_permissions)
+
+        response_data = {
+            'message': f'{len(new_permissions)} permission(s) added',
+            'added': [p.code for p in new_permissions],
+            'user_id': str(user.id),
+            'direct_permissions': PermissionSerializer(
+                user.direct_permissions.all(), many=True
+            ).data
+        }
+        if existing_codes:
+            response_data['already_assigned'] = list(existing_codes)
+
+        return Response(response_data)
+
+    @require_permission('users.permissions.remove')
+    def delete(self, request, user_id):
+        """Retire des permissions directes de l'utilisateur"""
+        user = self._get_user(user_id)
+        if not user:
+            return Response({
+                'error': 'User not found',
+                'code': 'NOT_FOUND'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ManageRolePermissionsSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'error': 'Validation error',
+                'details': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        permission_codes = serializer.validated_data['permission_codes']
+        permissions = Permission.objects.filter(code__in=permission_codes)
+        found_codes = set(permissions.values_list('code', flat=True))
+
+        not_found = set(permission_codes) - found_codes
+        if not_found:
+            return Response({
+                'error': 'Some permissions not found',
+                'code': 'PERMISSIONS_NOT_FOUND',
+                'not_found': list(not_found)
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        assigned_codes = set(user.direct_permissions.filter(
+            code__in=permission_codes
+        ).values_list('code', flat=True))
+        to_remove = [p for p in permissions if p.code in assigned_codes]
+        not_removed = [p.code for p in permissions if p.code not in assigned_codes]
+
+        if to_remove:
+            self._safe_remove_permissions(user, to_remove)
+
+        response_data = {
+            'message': f'{len(to_remove)} permission(s) removed',
+            'removed': [p.code for p in to_remove],
+            'user_id': str(user.id),
+            'direct_permissions': PermissionSerializer(
+                user.direct_permissions.all(), many=True
+            ).data
+        }
+        if not_removed:
+            response_data['not_removed'] = not_removed
+
+        return Response(response_data)

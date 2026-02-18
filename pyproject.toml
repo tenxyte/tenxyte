@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tenxyte"
-version = "0.0.8"
+version = "0.0.8.3.9.6"
 description = "Complete Django authentication package with JWT, RBAC, 2FA (TOTP), OTP verification, and multi-application support"
 readme = "README.md"
 license = {text = "MIT"}

@@ -24,6 +24,7 @@ import hashlib
 import secrets
 import bcrypt
 import base64
+from django.contrib.auth.models import BaseUserManager
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
@@ -106,7 +107,7 @@ def get_application_model():
 # MANAGERS
 # =============================================================================
 
-class UserManager(models.Manager):
+class UserManager(BaseUserManager):
     """Manager personnalisé pour le modèle User."""
 
     def create_user(self, email=None, password=None, **extra_fields):
@@ -114,6 +115,7 @@ class UserManager(models.Manager):
         if not email:
             raise ValueError('L\'email est requis')
 
+        email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         if password:
             user.set_password(password)
@@ -135,6 +137,9 @@ class AbstractPermission(models.Model):
     """
     Abstract Permission model - Extend this to add custom fields.
 
+    Supports hierarchical permissions via the `parent` field.
+    Having a parent permission automatically grants all its children.
+
     Example:
         class CustomPermission(AbstractPermission):
             category = models.CharField(max_length=50)
@@ -147,6 +152,13 @@ class AbstractPermission(models.Model):
     code = models.CharField(max_length=100, unique=True, db_index=True)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
+    parent = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        related_name='children',
+        on_delete=models.CASCADE
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -155,6 +167,21 @@ class AbstractPermission(models.Model):
 
     def __str__(self):
         return self.code
+
+    def get_all_children(self, include_self=True):
+        """Retourne tous les descendants (récursif)."""
+        result = [self] if include_self else []
+        for child in self.children.all():
+            result.extend(child.get_all_children(include_self=True))
+        return result
+
+    def get_ancestors(self, include_self=False):
+        """Retourne tous les ancêtres (récursif)."""
+        result = [self] if include_self else []
+        if self.parent:
+            result.append(self.parent)
+            result.extend(self.parent.get_ancestors(include_self=False))
+        return result
 
 
 class AbstractRole(models.Model):
@@ -217,7 +244,7 @@ class AbstractUser(models.Model):
     id = AutoFieldClass(primary_key=True)
 
     # Identifiants
-    email = models.EmailField(unique=True, null=True, blank=True, db_index=True)
+    email = models.EmailField(max_length=191, unique=True, null=True, blank=True, db_index=True)
     phone_country_code = models.CharField(max_length=5, null=True, blank=True)
     phone_number = models.CharField(max_length=20, null=True, blank=True)
 
@@ -235,6 +262,11 @@ class AbstractUser(models.Model):
     roles = models.ManyToManyField(
         'tenxyte.Role',
         related_name='users',
+        blank=True
+    )
+    direct_permissions = models.ManyToManyField(
+        'tenxyte.Permission',
+        related_name='users_direct',
         blank=True
     )
 
@@ -355,36 +387,64 @@ class AbstractUser(models.Model):
         """Vérifie si l'utilisateur a tous les rôles"""
         return self.roles.filter(code__in=role_codes).count() == len(role_codes)
 
-    def has_permission(self, permission_code: str) -> bool:
-        """Vérifie si l'utilisateur a une permission via ses rôles"""
+    def _get_effective_permission_codes(self) -> set:
+        """Retourne l'ensemble des codes de permissions effectifs (rôles + directes + hiérarchie)."""
         Permission = get_permission_model()
-        return Permission.objects.filter(
-            roles__users=self,
+        from django.db.models import Q
+
+        # Permissions via rôles + permissions directes
+        user_perms = Permission.objects.filter(
+            Q(roles__users=self) | Q(users_direct=self)
+        ).distinct()
+
+        codes = set(user_perms.values_list('code', flat=True))
+
+        # Ajouter les enfants des permissions parentes (hiérarchie)
+        parent_perms = user_perms.filter(children__isnull=False).distinct()
+        for perm in parent_perms:
+            for child in perm.get_all_children(include_self=False):
+                codes.add(child.code)
+
+        return codes
+
+    def has_permission(self, permission_code: str) -> bool:
+        """Vérifie si l'utilisateur a une permission (via rôles, directe, ou hiérarchie)."""
+        Permission = get_permission_model()
+        from django.db.models import Q
+
+        # Vérification directe (rôles + permissions directes)
+        if Permission.objects.filter(
+            Q(roles__users=self) | Q(users_direct=self),
             code=permission_code
-        ).exists()
+        ).exists():
+            return True
+
+        # Vérification hiérarchique : un ancêtre de cette permission est-il attribué ?
+        try:
+            perm = Permission.objects.get(code=permission_code)
+            ancestors = perm.get_ancestors()
+            if ancestors:
+                ancestor_codes = [a.code for a in ancestors]
+                return Permission.objects.filter(
+                    Q(roles__users=self) | Q(users_direct=self),
+                    code__in=ancestor_codes
+                ).exists()
+        except Permission.DoesNotExist:
+            pass
+
+        return False
 
     def has_any_permission(self, permission_codes: list) -> bool:
-        """Vérifie si l'utilisateur a au moins une des permissions"""
-        Permission = get_permission_model()
-        return Permission.objects.filter(
-            roles__users=self,
-            code__in=permission_codes
-        ).exists()
+        """Vérifie si l'utilisateur a au moins une des permissions."""
+        return any(self.has_permission(code) for code in permission_codes)
 
     def has_all_permissions(self, permission_codes: list) -> bool:
-        """Vérifie si l'utilisateur a toutes les permissions"""
-        Permission = get_permission_model()
-        return Permission.objects.filter(
-            roles__users=self,
-            code__in=permission_codes
-        ).distinct().count() == len(permission_codes)
+        """Vérifie si l'utilisateur a toutes les permissions."""
+        return all(self.has_permission(code) for code in permission_codes)
 
     def get_all_permissions(self) -> list:
-        """Retourne la liste de toutes les permissions de l'utilisateur"""
-        Permission = get_permission_model()
-        return list(Permission.objects.filter(
-            roles__users=self
-        ).distinct().values_list('code', flat=True))
+        """Retourne la liste de toutes les permissions effectives de l'utilisateur."""
+        return list(self._get_effective_permission_codes())
 
     def get_all_roles(self) -> list:
         """Retourne la liste de tous les rôles de l'utilisateur"""
@@ -603,15 +663,15 @@ class OTPCode(models.Model):
         )
 
     def verify(self, code: str) -> bool:
-        self.attempts += 1
-        self.save()
-
         if not self.is_valid():
             return False
 
+        self.attempts += 1
+        self.save(update_fields=['attempts'])
+
         if self.code == self._hash_code(code):
             self.is_used = True
-            self.save()
+            self.save(update_fields=['is_used'])
             return True
         return False
 
@@ -631,7 +691,7 @@ class RefreshToken(models.Model):
         on_delete=models.CASCADE,
         related_name='refresh_tokens'
     )
-    token = models.CharField(max_length=255, unique=True, db_index=True)
+    token = models.CharField(max_length=191, unique=True, db_index=True)
     device_info = models.CharField(max_length=255, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     is_revoked = models.BooleanField(default=False)
@@ -672,7 +732,7 @@ class LoginAttempt(models.Model):
     Suivi des tentatives de connexion pour rate limiting.
     """
     id = AutoFieldClass(primary_key=True)
-    identifier = models.CharField(max_length=255, db_index=True)
+    identifier = models.CharField(max_length=191, db_index=True)
     ip_address = models.GenericIPAddressField()
     application = models.ForeignKey(
         getattr(settings, 'TENXYTE_APPLICATION_MODEL', 'tenxyte.Application'),
@@ -720,7 +780,7 @@ class BlacklistedToken(models.Model):
     Tokens are blacklisted until their natural expiration.
     """
     id = AutoFieldClass(primary_key=True)
-    token_jti = models.CharField(max_length=255, unique=True, db_index=True)  # JWT ID
+    token_jti = models.CharField(max_length=191, unique=True, db_index=True)  # JWT ID
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL if hasattr(settings, 'AUTH_USER_MODEL') else 'tenxyte.User',
         on_delete=models.CASCADE,
@@ -809,6 +869,7 @@ class AuditLog(models.Model):
         ('suspicious_activity', 'Suspicious Activity Detected'),
         ('session_limit_exceeded', 'Session Limit Exceeded'),
         ('device_limit_exceeded', 'Device Limit Exceeded'),
+        ('new_device_detected', 'New Device Detected'),
     ]
 
     user = models.ForeignKey(

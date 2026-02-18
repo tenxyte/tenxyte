@@ -2,6 +2,7 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from .models import get_user_model, get_role_model, get_permission_model, get_application_model
 from .validators import validate_password, get_password_strength
+from .device_info import validate_device_info as _validate_device_info
 
 User = get_user_model()
 Role = get_role_model()
@@ -16,6 +17,25 @@ class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(min_length=8, write_only=True)
     first_name = serializers.CharField(max_length=100, required=False, default='')
     last_name = serializers.CharField(max_length=100, required=False, default='')
+    login = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="Si True, l'utilisateur est connecté immédiatement après l'inscription (tokens JWT retournés)"
+    )
+    device_info = serializers.CharField(
+        max_length=255,
+        required=False,
+        allow_blank=True,
+        default='',
+        help_text="Device info au format v1 (ex: v=1|os=windows;osv=11|device=desktop)"
+    )
+
+    def validate_device_info(self, value):
+        if value:
+            is_valid, errors = _validate_device_info(value)
+            if not is_valid:
+                raise serializers.ValidationError(errors)
+        return value
 
     def validate_password(self, value):
         """Valide la complexite du mot de passe."""
@@ -41,6 +61,20 @@ class LoginEmailSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="Code 2FA (requis si 2FA activé)"
     )
+    device_info = serializers.CharField(
+        max_length=255,
+        required=False,
+        allow_blank=True,
+        default='',
+        help_text="Device info au format v1 (ex: v=1|os=windows;osv=11|device=desktop)"
+    )
+
+    def validate_device_info(self, value):
+        if value:
+            is_valid, errors = _validate_device_info(value)
+            if not is_valid:
+                raise serializers.ValidationError(errors)
+        return value
 
 
 class LoginPhoneSerializer(serializers.Serializer):
@@ -53,6 +87,20 @@ class LoginPhoneSerializer(serializers.Serializer):
         allow_blank=True,
         help_text="Code 2FA (requis si 2FA activé)"
     )
+    device_info = serializers.CharField(
+        max_length=255,
+        required=False,
+        allow_blank=True,
+        default='',
+        help_text="Device info au format v1 (ex: v=1|os=windows;osv=11|device=desktop)"
+    )
+
+    def validate_device_info(self, value):
+        if value:
+            is_valid, errors = _validate_device_info(value)
+            if not is_valid:
+                raise serializers.ValidationError(errors)
+        return value
 
 
 class RefreshTokenSerializer(serializers.Serializer):
@@ -64,6 +112,20 @@ class GoogleAuthSerializer(serializers.Serializer):
     access_token = serializers.CharField(required=False)
     code = serializers.CharField(required=False)
     redirect_uri = serializers.CharField(required=False)
+    device_info = serializers.CharField(
+        max_length=255,
+        required=False,
+        allow_blank=True,
+        default='',
+        help_text="Device info au format v1 (ex: v=1|os=windows;osv=11|device=desktop)"
+    )
+
+    def validate_device_info(self, value):
+        if value:
+            is_valid, errors = _validate_device_info(value)
+            if not is_valid:
+                raise serializers.ValidationError(errors)
+        return value
 
     def validate(self, data):
         if not data.get('id_token') and not data.get('access_token') and not data.get('code'):
@@ -143,11 +205,51 @@ class UserSerializer(serializers.ModelSerializer):
 
 class PermissionSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
+    parent_code = serializers.CharField(
+        write_only=True, required=False, allow_null=True,
+        help_text="Code de la permission parente (hiérarchie)"
+    )
+    parent = serializers.SerializerMethodField()
+    children = serializers.SerializerMethodField()
 
     class Meta:
         model = Permission
-        fields = ['id', 'code', 'name', 'description', 'created_at']
+        fields = ['id', 'code', 'name', 'description', 'parent', 'parent_code', 'children', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+    @extend_schema_field(serializers.DictField(allow_null=True))
+    def get_parent(self, obj):
+        if obj.parent:
+            return {'id': str(obj.parent.id), 'code': obj.parent.code}
+        return None
+
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    def get_children(self, obj):
+        children = obj.children.all()
+        if not children.exists():
+            return []
+        return [{'id': str(c.id), 'code': c.code, 'name': c.name} for c in children]
+
+    def create(self, validated_data):
+        parent_code = validated_data.pop('parent_code', None)
+        if parent_code:
+            try:
+                validated_data['parent'] = Permission.objects.get(code=parent_code)
+            except Permission.DoesNotExist:
+                raise serializers.ValidationError({'parent_code': f'Permission "{parent_code}" not found'})
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        parent_code = validated_data.pop('parent_code', None)
+        if parent_code is not None:
+            if parent_code:
+                try:
+                    validated_data['parent'] = Permission.objects.get(code=parent_code)
+                except Permission.DoesNotExist:
+                    raise serializers.ValidationError({'parent_code': f'Permission "{parent_code}" not found'})
+            else:
+                validated_data['parent'] = None
+        return super().update(instance, validated_data)
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -190,6 +292,14 @@ class RoleListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
         fields = ['id', 'code', 'name', 'is_default']
+
+
+class ManageRolePermissionsSerializer(serializers.Serializer):
+    permission_codes = serializers.ListField(
+        child=serializers.CharField(),
+        min_length=1,
+        help_text="Liste des codes de permissions à ajouter ou retirer"
+    )
 
 
 class AssignRoleSerializer(serializers.Serializer):

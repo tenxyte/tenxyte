@@ -29,7 +29,7 @@ Complete Django authentication package with JWT, RBAC, 2FA (TOTP), OTP verificat
 - Per-user and per-role permissions
 
 📱 **Multi-Channel Communication**
-- SMS via Twilio (optional)
+- SMS via Twilio or NGH Corp (optional)
 - Email via SendGrid or Django (optional)
 - Console backend for development
 
@@ -44,8 +44,11 @@ pip install tenxyte
 ### With Optional Dependencies
 
 ```bash
-# SMS Support
+# SMS Support (Twilio)
 pip install tenxyte[twilio]
+
+# SMS Support (NGH Corp) - no extra dependency needed
+# Just configure NGH_API_KEY, NGH_API_SECRET, NGH_SENDER_ID
 
 # Email Support
 pip install tenxyte[sendgrid]
@@ -127,7 +130,6 @@ INSTALLED_APPS = [
 
     # Third-party
     'rest_framework',
-    'corsheaders',
     'drf_spectacular',
 
     # Tenxyte Auth
@@ -163,7 +165,8 @@ DATABASES = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    'tenxyte.middleware.CORSMiddleware',
+    'tenxyte.middleware.SecurityHeadersMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     # ❌ REMOVE: 'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -209,7 +212,6 @@ INSTALLED_APPS = [
 
     # Third-party
     'rest_framework',
-    'corsheaders',
     'drf_spectacular',  # Optional, for API docs
 
     # Tenxyte Auth
@@ -251,6 +253,9 @@ TENXYTE_JWT_REFRESH_TOKEN_LIFETIME = 86400 * 7  # 7 days
 TENXYTE_TOTP_ISSUER = "MyApp"
 
 # SMS Backend (default: console for development)
+# Options: 'tenxyte.backends.sms.TwilioBackend'
+#          'tenxyte.backends.sms.NGHBackend'
+#          'tenxyte.backends.sms.ConsoleBackend' (default)
 TENXYTE_SMS_BACKEND = 'tenxyte.backends.sms.TwilioBackend'
 TENXYTE_SMS_ENABLED = True
 TENXYTE_SMS_DEBUG = False
@@ -259,6 +264,11 @@ TENXYTE_SMS_DEBUG = False
 TWILIO_ACCOUNT_SID = "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 TWILIO_AUTH_TOKEN = "your_auth_token"
 TWILIO_PHONE_NUMBER = "+1234567890"
+
+# NGH Corp credentials (if using NGH backend)
+# NGH_API_KEY = "your_ngh_api_key"
+# NGH_API_SECRET = "your_ngh_api_secret"
+# NGH_SENDER_ID = "MyApp"
 
 # Email Backend
 TENXYTE_EMAIL_BACKEND = 'tenxyte.backends.email.SendGridBackend'
@@ -286,10 +296,12 @@ REST_FRAMEWORK = {
     ],
 }
 
-# CORS Configuration (if using a frontend)
-CORS_ALLOW_ALL_ORIGINS = True  # For development only!
+# CORS Configuration (built-in, if using a frontend)
+TENXYTE_CORS_ENABLED = True
+TENXYTE_CORS_ALLOW_ALL_ORIGINS = True  # For development only!
 # In production:
-# CORS_ALLOWED_ORIGINS = ['https://yourdomain.com']
+# TENXYTE_CORS_ALLOWED_ORIGINS = ['https://yourdomain.com']
+# TENXYTE_CORS_ALLOW_CREDENTIALS = True
 ```
 
 ### 5. Run Migrations
@@ -319,7 +331,7 @@ python manage.py tenxyte_seed
 
 This creates:
 - **4 Default Roles**: `viewer`, `editor`, `admin`, `super_admin`
-- **28 Default Permissions**: For users, roles, permissions, applications, content, and system
+- **41 Default Permissions**: For users, roles, permissions, applications, content, and system (hierarchical)
 
 | Role | Description | Permissions |
 |------|-------------|-------------|
@@ -508,15 +520,24 @@ curl -X POST http://localhost:8000/api/auth/login/email/ \
 
 ### RBAC (Role-Based Access Control)
 - `GET /api/auth/permissions/` - List all permissions
+- `POST /api/auth/permissions/` - Create permission (admin only)
 - `GET /api/auth/permissions/{id}/` - Get permission details
+- `PUT /api/auth/permissions/{id}/` - Update permission (admin only)
+- `DELETE /api/auth/permissions/{id}/` - Delete permission (admin only)
 - `GET /api/auth/roles/` - List all roles
 - `POST /api/auth/roles/` - Create role (admin only)
 - `GET /api/auth/roles/{id}/` - Get role details
 - `PUT /api/auth/roles/{id}/` - Update role (admin only)
 - `DELETE /api/auth/roles/{id}/` - Delete role (admin only)
+- `GET /api/auth/roles/{id}/permissions/` - List role permissions
+- `POST /api/auth/roles/{id}/permissions/` - Add permissions to role
+- `DELETE /api/auth/roles/{id}/permissions/` - Remove permissions from role
 - `GET /api/auth/users/{id}/roles/` - Get user roles
 - `POST /api/auth/users/{id}/roles/` - Assign role to user (admin only)
 - `DELETE /api/auth/users/{id}/roles/` - Remove role from user (admin only)
+- `GET /api/auth/users/{id}/permissions/` - List user direct permissions
+- `POST /api/auth/users/{id}/permissions/` - Add direct permissions to user
+- `DELETE /api/auth/users/{id}/permissions/` - Remove direct permissions from user
 
 ### Applications
 - `GET /api/auth/applications/` - List applications (admin only)
@@ -866,7 +887,7 @@ pip install djangorestframework
 
 **Problem:** `ModuleNotFoundError: No module named 'corsheaders'`
 
-**Solution:**
+**Solution:** Tenxyte now includes built-in CORS middleware. Remove `corsheaders` from `INSTALLED_APPS` and `MIDDLEWARE`, and use `tenxyte.middleware.CORSMiddleware` instead. Alternatively:
 ```bash
 pip install django-cors-headers
 ```

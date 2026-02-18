@@ -38,10 +38,16 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_spectacular",
     "tenxyte",
 ]
 
 MIDDLEWARE = [
+    # Tenxyte
+    'tenxyte.middleware.CORSMiddleware',
+    'tenxyte.middleware.SecurityHeadersMiddleware',
+    
+    # django
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -49,28 +55,41 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    
+    # Tenxyte
     "tenxyte.middleware.ApplicationAuthMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
 
-AUTH_USER_MODEL = "tenxyte.User"
-
-TENXYTE_USER_MODEL = "tenxyte.User"
-TENXYTE_APPLICATION_MODEL = "tenxyte.Application"
-TENXYTE_ROLE_MODEL = "tenxyte.Role"
-TENXYTE_PERMISSION_MODEL = "tenxyte.Permission"
-
-TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 3600
-TENXYTE_JWT_REFRESH_TOKEN_LIFETIME = 86400 * 7
-TENXYTE_TOTP_ISSUER = "TenxyteSQLite"
-TENXYTE_SMS_BACKEND = "tenxyte.backends.sms.ConsoleBackend"
-TENXYTE_EMAIL_BACKEND = "tenxyte.backends.email.ConsoleBackend"
-
 REST_FRAMEWORK = {
+    
+    # Tenxyte JWT Authentication
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "tenxyte.authentication.JWTAuthentication",
     ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    
+    # Activate Global Simple Throttle
+    'DEFAULT_THROTTLE_CLASSES': [
+        'tenxyte.throttles.SimpleThrottleRule',
+    ],
+    
+    # Tenxyte
+    'DEFAULT_THROTTLE_RATES': {
+        'login': '5/min',
+        'login_hourly': '20/hour',
+        'register': '3/hour',
+        'register_daily': '10/day',
+        'password_reset': '50/hour',
+        'password_reset_daily': '10/day',
+        'otp_request': '5/hour',
+        'otp_verify': '5/min',
+        'refresh': '30/min',
+        'google_auth': '10/min',
+    }
 }
 
 TEMPLATES = [
@@ -141,4 +160,98 @@ STATIC_URL = "static/"
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AUTH_USER_MODEL = "tenxyte.User"
+
+# Twilio credentials (if using Twilio backend)
+TWILIO_ACCOUNT_SID = "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+TWILIO_AUTH_TOKEN = "your_auth_token"
+TWILIO_PHONE_NUMBER = "+1234567890"
+
+# Credentials NGH Corp
+NGH_API_KEY = 'k_-e3k_EoVNjopjZ9oDnzbBziTL5AGChwv'
+NGH_API_SECRET = 's_X_VoqTUDVgply65LMBQVc1H6L1CsG2aR'
+NGH_SENDER_ID = 'VANNIOSS'
+
+# TENXYTE SETTINGS
+
+TENXYTE_CORS_ENABLED = True
+TENXYTE_CORS_ALLOWED_ORIGINS = ['http://localhost:3000']
+
+TENXYTE_APPLICATION_AUTH_ENABLED = True
+TENXYTE_RATE_LIMITING_ENABLED = True
+TENXYTE_JWT_AUTH_ENABLED = True
+TENXYTE_ACCOUNT_LOCKOUT_ENABLED = True
+
+# Account lockout duration (minutes)
+TENXYTE_LOCKOUT_DURATION_MINUTES = 30
+
+# Time window for counting login attempts (minutes)
+TENXYTE_RATE_LIMIT_WINDOW_MINUTES = 15
+
+# Maximum login attempts before lockout
+TENXYTE_MAX_LOGIN_ATTEMPTS = 5
+
+# Tenxyte models
+TENXYTE_USER_MODEL = "tenxyte.User"
+TENXYTE_APPLICATION_MODEL = "tenxyte.Application"
+TENXYTE_ROLE_MODEL = "tenxyte.Role"
+TENXYTE_PERMISSION_MODEL = "tenxyte.Permission"
+
+# 2FA Settings
+TENXYTE_TOTP_ISSUER = "TenxyteSQLite"
+
+# Paths exempt from application authentication (prefix match)
+TENXYTE_EXEMPT_PATHS = [
+    '/home/',
+]
+
+# Exact paths exempt from application authentication
+TENXYTE_EXACT_EXEMPT_PATHS = [
+    '/home/',
+]
+
+# Email Backend
+TENXYTE_EMAIL_BACKEND = "tenxyte.backends.email.SendGridBackend"
+SENDGRID_API_KEY = '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'
+SENDGRID_FROM_EMAIL = 'tenxyte-no-reply@vannios.com'
+
+# JWT Settings
+TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 3600  # 1 hour
+TENXYTE_JWT_REFRESH_TOKEN_LIFETIME = 86400 * 7  # 7 days
+
+# SMS Backend (default: console for development)
+TENXYTE_SMS_ENABLED = True
+TENXYTE_SMS_DEBUG = False
+
+# Activer NGH comme backend SMS
+TENXYTE_SMS_BACKEND = 'tenxyte.backends.sms.NGHBackend'
+TENXYTE_SMS_ENABLED = True
+
+# Session Limiting
+TENXYTE_SESSION_LIMIT_ENABLED = True
+TENXYTE_DEFAULT_MAX_SESSIONS = 2
+TENXYTE_DEFAULT_SESSION_LIMIT_ACTION = 'revoke_oldest'
+
+# Devices Limiting
+TENXYTE_DEVICE_LIMIT_ENABLED = True
+TENXYTE_DEFAULT_MAX_DEVICES = 1
+TENXYTE_DEVICE_LIMIT_ACTION = 'deny'
+
+# Lockout activation status
+TENXYTE_ACCOUNT_LOCKOUT_ENABLED	= True
+
+# Maximum login attempts before lockout
+TENXYTE_MAX_LOGIN_ATTEMPTS = 5
+
+# Time window for counting login attempts (minutes)
+TENXYTE_RATE_LIMIT_WINDOW_MINUTES = 15
+
+# Accout lockout default duration
+TENXYTE_LOCKOUT_DURATION_MINUTES = 30
+
+# Global Simple Throttle Settings
+TENXYTE_SIMPLE_THROTTLE_RULES = {
+    # '/api/v1/home/$': '1/min'
+}

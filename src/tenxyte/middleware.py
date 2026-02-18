@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from .models import Application
 from .services.jwt_service import JWTService
 from .conf import auth_settings
@@ -92,3 +92,102 @@ class JWTAuthMiddleware:
             request.user_id = None
 
         return self.get_response(request)
+
+
+class CORSMiddleware:
+    """
+    Middleware CORS intégré à Tenxyte.
+
+    Gère les requêtes preflight (OPTIONS) et ajoute les headers CORS aux réponses.
+
+    Activation dans settings.py:
+        TENXYTE_CORS_ENABLED = True
+        TENXYTE_CORS_ALLOWED_ORIGINS = ['https://example.com', 'http://localhost:3000']
+
+    Ajoutez dans MIDDLEWARE (avant ApplicationAuthMiddleware):
+        'tenxyte.middleware.CORSMiddleware',
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Si CORS désactivé, passer directement
+        if not auth_settings.CORS_ENABLED:
+            return self.get_response(request)
+
+        origin = request.META.get('HTTP_ORIGIN')
+
+        # Preflight (OPTIONS)
+        if request.method == 'OPTIONS' and origin:
+            response = HttpResponse()
+            response.status_code = 200
+            self._add_cors_headers(response, origin)
+            return response
+
+        response = self.get_response(request)
+
+        if origin:
+            self._add_cors_headers(response, origin)
+
+        return response
+
+    def _is_origin_allowed(self, origin):
+        if auth_settings.CORS_ALLOW_ALL_ORIGINS:
+            return True
+        return origin in auth_settings.CORS_ALLOWED_ORIGINS
+
+    def _add_cors_headers(self, response, origin):
+        if not self._is_origin_allowed(origin):
+            return
+
+        response['Access-Control-Allow-Origin'] = origin
+        response['Vary'] = 'Origin'
+
+        if auth_settings.CORS_ALLOW_CREDENTIALS:
+            response['Access-Control-Allow-Credentials'] = 'true'
+
+        if auth_settings.CORS_EXPOSE_HEADERS:
+            response['Access-Control-Expose-Headers'] = ', '.join(auth_settings.CORS_EXPOSE_HEADERS)
+
+        # Headers spécifiques au preflight
+        response['Access-Control-Allow-Methods'] = ', '.join(auth_settings.CORS_ALLOWED_METHODS)
+        response['Access-Control-Allow-Headers'] = ', '.join(auth_settings.CORS_ALLOWED_HEADERS)
+        response['Access-Control-Max-Age'] = str(auth_settings.CORS_MAX_AGE)
+
+
+class SecurityHeadersMiddleware:
+    """
+    Middleware pour ajouter des headers de sécurité aux réponses.
+
+    Activation dans settings.py:
+        TENXYTE_SECURITY_HEADERS_ENABLED = True
+
+    Headers par défaut:
+        X-Content-Type-Options: nosniff
+        X-Frame-Options: DENY
+        X-XSS-Protection: 1; mode=block
+        Referrer-Policy: strict-origin-when-cross-origin
+
+    Personnalisation:
+        TENXYTE_SECURITY_HEADERS = {
+            'X-Content-Type-Options': 'nosniff',
+            'X-Frame-Options': 'SAMEORIGIN',
+            'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+        }
+
+    Ajoutez dans MIDDLEWARE:
+        'tenxyte.middleware.SecurityHeadersMiddleware',
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+
+        if auth_settings.SECURITY_HEADERS_ENABLED:
+            for header, value in auth_settings.SECURITY_HEADERS.items():
+                response[header] = value
+
+        return response

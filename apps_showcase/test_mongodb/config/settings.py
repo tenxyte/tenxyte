@@ -31,22 +31,30 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    # "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
+    
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    
+    # Third-party
     "rest_framework",
+    'corsheaders',
+    'drf_spectacular',
+
+    # Tenxyte Auth
     "tenxyte",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "tenxyte.middleware.ApplicationAuthMiddleware",
@@ -56,7 +64,18 @@ ROOT_URLCONF = "config.urls"
 
 AUTH_USER_MODEL = "tenxyte.User"
 
-TENXYTE_USER_MODEL = "tenxyte.User"
+# 2. Custom User Model (REQUIRED)
+AUTH_USER_MODEL = 'tenxyte.User'
+
+# 3. MongoDB-specific AutoField
+DEFAULT_AUTO_FIELD = 'django_mongodb_backend.fields.ObjectIdAutoField'
+
+# 4. Disable migrations for built-in apps (incompatible with ObjectId PKs)
+MIGRATION_MODULES = {
+    'contenttypes': None,
+    'auth': None,
+}
+
 TENXYTE_APPLICATION_MODEL = "tenxyte.Application"
 TENXYTE_ROLE_MODEL = "tenxyte.Role"
 TENXYTE_PERMISSION_MODEL = "tenxyte.Permission"
@@ -148,3 +167,28 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 # DEFAULT_AUTO_FIELD set above for MongoDB
+
+
+# JWT Settings
+TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 3600  # 1 hour
+TENXYTE_JWT_REFRESH_TOKEN_LIFETIME = 86400 * 7  # 7 days
+
+# 2FA Settings
+TENXYTE_TOTP_ISSUER = "MyApp"
+
+# SMS Backend (default: console for development)
+TENXYTE_SMS_BACKEND = 'tenxyte.backends.sms.TwilioBackend'
+TENXYTE_SMS_ENABLED = True
+TENXYTE_SMS_DEBUG = False
+
+# Twilio credentials (if using Twilio backend)
+TWILIO_ACCOUNT_SID = "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+TWILIO_AUTH_TOKEN = "your_auth_token"
+TWILIO_PHONE_NUMBER = "+1234567890"
+
+# Email Backend
+TENXYTE_EMAIL_BACKEND = 'tenxyte.backends.email.SendGridBackend'
+
+# SendGrid credentials (if using SendGrid backend)
+SENDGRID_API_KEY = "SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+SENDGRID_FROM_EMAIL = "noreply@example.com"

@@ -11,6 +11,7 @@ from ..serializers import (
 )
 from ..services import AuthService, OTPService, GoogleAuthService
 from ..decorators import require_jwt, get_client_ip
+from ..device_info import build_device_info_from_user_agent
 from ..throttles import (
     LoginThrottle, LoginHourlyThrottle,
     RegisterThrottle, RegisterDailyThrottle,
@@ -45,7 +46,18 @@ class RegisterView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         auth_service = AuthService()
-        success, user, error = auth_service.register_user(**serializer.validated_data)
+        login_after = serializer.validated_data.pop('login', False)
+        device_info = serializer.validated_data.pop('device_info', '') or build_device_info_from_user_agent(
+            request.META.get('HTTP_USER_AGENT', '')
+        )
+        ip_address = get_client_ip(request)
+
+        success, user, error = auth_service.register_user(
+            **serializer.validated_data,
+            ip_address=ip_address,
+            application=request.application,
+            device_info=device_info
+        )
 
         if not success:
             return Response({
@@ -59,18 +71,29 @@ class RegisterView(APIView):
             otp, raw_code = otp_service.generate_email_verification_otp(user)
             otp_service.send_email_otp(user, raw_code, otp.otp_type)
 
-        if user.phone_number:
+        if serializer.validated_data.get('phone_country_code') and serializer.validated_data.get('phone_number'):
             otp, raw_code = otp_service.generate_phone_verification_otp(user)
             otp_service.send_phone_otp(user, raw_code)
 
-        return Response({
+        response_data = {
             'message': 'Registration successful',
             'user': UserSerializer(user).data,
             'verification_required': {
                 'email': bool(user.email and not user.is_email_verified),
                 'phone': bool(user.phone_number and not user.is_phone_verified)
             }
-        }, status=status.HTTP_201_CREATED)
+        }
+
+        if login_after:
+            tokens = auth_service.generate_tokens_for_user(
+                user=user,
+                application=request.application,
+                ip_address=ip_address,
+                device_info=device_info
+            )
+            response_data.update(tokens)
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 class LoginEmailView(APIView):
@@ -104,7 +127,10 @@ class LoginEmailView(APIView):
             email=serializer.validated_data['email'],
             password=serializer.validated_data['password'],
             application=request.application,
-            ip_address=ip_address
+            ip_address=ip_address,
+            device_info=serializer.validated_data.get('device_info', '') or build_device_info_from_user_agent(
+                request.META.get('HTTP_USER_AGENT', '')
+            )
         )
 
         if not success:
@@ -172,7 +198,10 @@ class LoginPhoneView(APIView):
             phone_number=serializer.validated_data['phone_number'],
             password=serializer.validated_data['password'],
             application=request.application,
-            ip_address=ip_address
+            ip_address=ip_address,
+            device_info=serializer.validated_data.get('device_info', '') or build_device_info_from_user_agent(
+                request.META.get('HTTP_USER_AGENT', '')
+            )
         )
 
         if not success:
@@ -261,7 +290,10 @@ class GoogleAuthView(APIView):
         success, data, error = google_service.authenticate_with_google(
             google_data=google_data,
             application=request.application,
-            ip_address=ip_address
+            ip_address=ip_address,
+            device_info=serializer.validated_data.get('device_info', '') or build_device_info_from_user_agent(
+                request.META.get('HTTP_USER_AGENT', '')
+            )
         )
 
         if not success:
@@ -333,8 +365,17 @@ class LogoutView(APIView):
                 'details': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        # Extract access token from Authorization header for blacklisting
+        access_token = None
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            access_token = auth_header[7:]
+
         auth_service = AuthService()
-        auth_service.logout(serializer.validated_data['refresh_token'])
+        auth_service.logout(
+            serializer.validated_data['refresh_token'],
+            access_token=access_token,
+        )
 
         return Response({'message': 'Logged out successfully'})
 
@@ -354,8 +395,14 @@ class LogoutAllView(APIView):
     )
     @require_jwt
     def post(self, request):
+        # Extract access token from Authorization header for blacklisting
+        access_token = None
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            access_token = auth_header[7:]
+
         auth_service = AuthService()
-        count = auth_service.logout_all_devices(request.user)
+        count = auth_service.logout_all_devices(request.user, access_token=access_token)
 
         return Response({
             'message': f'Logged out from {count} devices'

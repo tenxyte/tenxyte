@@ -95,6 +95,72 @@ class TwilioBackend(BaseSMSBackend):
             return False
 
 
+class NGHBackend(BaseSMSBackend):
+    """
+    Backend NGH Corp - envoie les SMS via l'API NGH Corp.
+
+    Requiert:
+    - Settings: NGH_API_KEY, NGH_API_SECRET, NGH_SENDER_ID
+    """
+
+    API_URL = "https://extranet.nghcorp.net/api/send-sms"
+
+    def __init__(self):
+        from ..conf import auth_settings
+
+        self.api_key = auth_settings.NGH_API_KEY
+        self.api_secret = auth_settings.NGH_API_SECRET
+        self.sender_id = auth_settings.NGH_SENDER_ID
+
+        if not all([self.api_key, self.api_secret, self.sender_id]):
+            logger.warning(
+                "[NGH] Credentials not configured. "
+                "Set NGH_API_KEY, NGH_API_SECRET, NGH_SENDER_ID"
+            )
+
+    def send_sms(self, phone_number: str, message: str) -> bool:
+        """Envoie le SMS via l'API NGH Corp."""
+        if not all([self.api_key, self.api_secret, self.sender_id]):
+            logger.error("[NGH] Missing credentials")
+            return False
+
+        try:
+            import json
+            import http.client
+
+            conn = http.client.HTTPSConnection("extranet.nghcorp.net")
+            payload = json.dumps({
+                "from": self.sender_id,
+                "to": phone_number,
+                "text": message,
+                "api_key": self.api_key,
+                "api_secret": self.api_secret,
+            })
+            headers = {"Content-Type": "application/json"}
+
+            conn.request("POST", "/api/send-sms", payload, headers)
+            res = conn.getresponse()
+            data = json.loads(res.read().decode("utf-8"))
+
+            if data.get("status") == 200:
+                logger.info(
+                    f"[NGH] SMS sent to {phone_number} | "
+                    f"MessageID: {data.get('messageid')} | "
+                    f"Credits: {data.get('credits')}"
+                )
+                return True
+            else:
+                logger.error(
+                    f"[NGH] Failed to send SMS: "
+                    f"{data.get('status')} - {data.get('status_desc')}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"[NGH] Unexpected error: {e}")
+            return False
+
+
 def get_sms_backend() -> BaseSMSBackend:
     """
     Factory pour obtenir le backend SMS configuré.

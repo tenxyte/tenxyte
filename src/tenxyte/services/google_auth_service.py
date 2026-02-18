@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 from ..models import get_user_model, get_application_model, RefreshToken
 from .jwt_service import JWTService
+from ..device_info import get_device_summary
 
 User = get_user_model()
 Application = get_application_model()
@@ -104,7 +105,8 @@ class GoogleAuthService:
         self,
         google_data: Dict[str, Any],
         application: Application,
-        ip_address: str
+        ip_address: str,
+        device_info: str = ''
     ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
         """
         Authentifie ou crée un utilisateur via Google
@@ -155,7 +157,8 @@ class GoogleAuthService:
         refresh_token = RefreshToken.generate(
             user=user,
             application=application,
-            ip_address=ip_address
+            ip_address=ip_address,
+            device_info=device_info
         )
 
         tokens = self.jwt_service.generate_token_pair(
@@ -166,6 +169,7 @@ class GoogleAuthService:
 
         return True, {
             **tokens,
+            'device_summary': get_device_summary(device_info) if device_info else None,
             'user': {
                 'id': str(user.id),
                 'email': user.email,

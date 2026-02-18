@@ -72,15 +72,19 @@ class OTPService:
         except OTPCode.DoesNotExist:
             return False, 'No verification code found'
 
+        if not otp.is_valid():
+            return False, 'Code expired or too many attempts. Please request a new code.'
+
         if otp.verify(code):
             user.is_email_verified = True
             user.save(update_fields=['is_email_verified'])
             return True, ''
 
+        otp.refresh_from_db()
         if otp.attempts >= otp.max_attempts:
             return False, 'Too many attempts. Please request a new code.'
 
-        return False, 'Invalid code'
+        return False, f'Invalid code. {otp.max_attempts - otp.attempts} attempt(s) remaining.'
 
     def verify_phone_otp(self, user: User, code: str) -> Tuple[bool, str]:
         """
@@ -95,15 +99,19 @@ class OTPService:
         except OTPCode.DoesNotExist:
             return False, 'No verification code found'
 
+        if not otp.is_valid():
+            return False, 'Code expired or too many attempts. Please request a new code.'
+
         if otp.verify(code):
             user.is_phone_verified = True
             user.save(update_fields=['is_phone_verified'])
             return True, ''
 
+        otp.refresh_from_db()
         if otp.attempts >= otp.max_attempts:
             return False, 'Too many attempts. Please request a new code.'
 
-        return False, 'Invalid code'
+        return False, f'Invalid code. {otp.max_attempts - otp.attempts} attempt(s) remaining.'
 
     def verify_password_reset_otp(self, user: User, code: str) -> Tuple[bool, str]:
         """
@@ -118,13 +126,17 @@ class OTPService:
         except OTPCode.DoesNotExist:
             return False, 'No reset code found'
 
+        if not otp.is_valid():
+            return False, 'Code expired or too many attempts. Please request a new code.'
+
         if otp.verify(code):
             return True, ''
 
+        otp.refresh_from_db()
         if otp.attempts >= otp.max_attempts:
             return False, 'Too many attempts. Please request a new code.'
 
-        return False, 'Invalid code'
+        return False, f'Invalid code. {otp.max_attempts - otp.attempts} attempt(s) remaining.'
 
     def send_email_otp(self, user: User, raw_code: str, otp_type: str = 'email_verification', app_name: str = 'Tenxyte') -> bool:
         """

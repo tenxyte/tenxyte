@@ -9,8 +9,8 @@ from .views import (
     TwoFactorStatusView, TwoFactorSetupView, TwoFactorConfirmView,
     TwoFactorDisableView, TwoFactorBackupCodesView,
     PermissionListView, PermissionDetailView,
-    RoleListView, RoleDetailView,
-    UserRolesView,
+    RoleListView, RoleDetailView, RolePermissionsView,
+    UserRolesView, UserDirectPermissionsView,
     ApplicationListView, ApplicationDetailView, ApplicationRegenerateView
 )
 
@@ -60,9 +60,11 @@ urlpatterns = [
     # RBAC - Roles
     path('roles/', RoleListView.as_view(), name='role_list'),
     path('roles/<str:role_id>/', RoleDetailView.as_view(), name='role_detail'),
+    path('roles/<str:role_id>/permissions/', RolePermissionsView.as_view(), name='role_permissions'),
 
-    # RBAC - User Roles
+    # RBAC - User Roles & Permissions
     path('users/<str:user_id>/roles/', UserRolesView.as_view(), name='user_roles'),
+    path('users/<str:user_id>/permissions/', UserDirectPermissionsView.as_view(), name='user_direct_permissions'),
 
     # Applications
     path('applications/', ApplicationListView.as_view(), name='application_list'),

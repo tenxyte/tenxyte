@@ -5,6 +5,7 @@ from django.db.models import Q
 from ..models import Application, User, RefreshToken, LoginAttempt, AuditLog, PasswordHistory
 from .jwt_service import JWTService
 from ..conf import auth_settings
+from ..device_info import devices_match, get_device_summary, parse_device_info
 
 
 class AuthService:
@@ -44,7 +45,8 @@ class AuthService:
         email: str,
         password: str,
         application: Application,
-        ip_address: str
+        ip_address: str,
+        device_info: str = ''
     ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
         """
         Authentification par email + password
@@ -62,7 +64,7 @@ class AuthService:
             LoginAttempt.record(identifier, ip_address, application, False, 'user_not_found')
             return False, None, 'Invalid credentials'
 
-        return self._complete_authentication(user, password, application, ip_address, identifier)
+        return self._complete_authentication(user, password, application, ip_address, identifier, device_info)
 
     def authenticate_by_phone(
         self,
@@ -70,7 +72,8 @@ class AuthService:
         phone_number: str,
         password: str,
         application: Application,
-        ip_address: str
+        ip_address: str,
+        device_info: str = ''
     ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
         """
         Authentification par téléphone + password
@@ -91,7 +94,7 @@ class AuthService:
             LoginAttempt.record(identifier, ip_address, application, False, 'user_not_found')
             return False, None, 'Invalid credentials'
 
-        return self._complete_authentication(user, password, application, ip_address, identifier)
+        return self._complete_authentication(user, password, application, ip_address, identifier, device_info)
 
     def _complete_authentication(
         self,
@@ -99,7 +102,8 @@ class AuthService:
         password: str,
         application: Application,
         ip_address: str,
-        identifier: str
+        identifier: str,
+        device_info: str = ''
     ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
         """
         Finalise l'authentification après avoir trouvé l'utilisateur
@@ -130,14 +134,18 @@ class AuthService:
         LoginAttempt.record(identifier, ip_address, application, True)
 
         # Enforce session limit
-        session_limit_result = self._enforce_session_limit(user, application, ip_address)
+        session_limit_result = self._enforce_session_limit(user, application, ip_address, device_info=device_info)
         if session_limit_result is not None:
             return session_limit_result
 
         # Enforce device limit
-        device_limit_result = self._enforce_device_limit(user, application, ip_address, device_info='')
+        device_limit_result = self._enforce_device_limit(user, application, ip_address, device_info=device_info)
         if device_limit_result is not None:
             return device_limit_result
+
+        # Détection nouveau device → alerte sécurité
+        if device_info:
+            self._check_new_device_alert(user, device_info, ip_address, application)
 
         # Mettre à jour last_login
         user.last_login = timezone.now()
@@ -147,7 +155,8 @@ class AuthService:
         refresh_token = RefreshToken.generate(
             user=user,
             application=application,
-            ip_address=ip_address
+            ip_address=ip_address,
+            device_info=device_info
         )
 
         tokens = self.jwt_service.generate_token_pair(
@@ -157,13 +166,16 @@ class AuthService:
         )
 
         # Audit log
-        self._audit_log('login', user, ip_address, application)
+        self._audit_log('login', user, ip_address, application, {
+            'device': get_device_summary(device_info)
+        } if device_info else None, device_info=device_info)
 
         return True, {
             'access_token': tokens['access_token'],
             'refresh_token': tokens['refresh_token'],
             'token_type': tokens['token_type'],
             'expires_in': tokens['expires_in'],
+            'device_summary': get_device_summary(device_info) if device_info else None,
             'user': {
                 'id': str(user.id),
                 'email': user.email,
@@ -256,14 +268,20 @@ class AuthService:
         except RefreshToken.DoesNotExist:
             return False
 
-    def logout_all_devices(self, user: User, ip_address: str = None, application=None) -> int:
+    def logout_all_devices(self, user: User, access_token: str = None,
+                            ip_address: str = None, application=None) -> int:
         """
-        Révoque tous les refresh tokens d'un utilisateur
+        Révoque tous les refresh tokens d'un utilisateur.
+        Optionnellement blacklist l'access token courant.
         """
         count = RefreshToken.objects.filter(
             user=user,
             is_revoked=False
         ).update(is_revoked=True)
+
+        # Blacklist current access token if provided
+        if access_token and auth_settings.TOKEN_BLACKLIST_ENABLED:
+            self.jwt_service.blacklist_token(access_token, user, 'logout_all')
 
         # Audit log
         self._audit_log('logout_all', user, ip_address, application, {'devices_count': count})
@@ -277,7 +295,10 @@ class AuthService:
         phone_number: Optional[str] = None,
         password: str = None,
         first_name: str = '',
-        last_name: str = ''
+        last_name: str = '',
+        ip_address: str = None,
+        application=None,
+        device_info: str = ''
     ) -> Tuple[bool, Optional[User], str]:
         """
         Inscription d'un nouvel utilisateur
@@ -320,9 +341,57 @@ class AuthService:
             PasswordHistory.add_password(user, user.password, auth_settings.PASSWORD_HISTORY_COUNT)
 
         # Audit log
-        self._audit_log('account_created', user)
+        self._audit_log('account_created', user, ip_address, application, {
+            'device': get_device_summary(device_info)
+        } if device_info else None, device_info=device_info)
 
         return True, user, ''
+
+    def generate_tokens_for_user(
+        self,
+        user: User,
+        application: Application,
+        ip_address: str = None,
+        device_info: str = ''
+    ) -> Dict[str, Any]:
+        """
+        Génère une paire de tokens JWT pour un utilisateur (post-inscription).
+        Ne fait pas de vérification d'authentification.
+        """
+        # Enregistrer la tentative de login (post-inscription)
+        identifier = user.email or user.full_phone or str(user.id)
+        LoginAttempt.record(identifier, ip_address, application, True)
+
+        # Mettre à jour last_login
+        user.last_login = timezone.now()
+        user.save(update_fields=['last_login'])
+
+        refresh_token = RefreshToken.generate(
+            user=user,
+            application=application,
+            ip_address=ip_address,
+            device_info=device_info
+        )
+
+        tokens = self.jwt_service.generate_token_pair(
+            user_id=str(user.id),
+            application_id=str(application.id),
+            refresh_token_str=refresh_token.token
+        )
+
+        # Audit log
+        self._audit_log('login', user, ip_address, application, {
+            'device': get_device_summary(device_info),
+            'method': 'post_registration'
+        } if device_info else {'method': 'post_registration'}, device_info=device_info)
+
+        return {
+            'access_token': tokens['access_token'],
+            'refresh_token': tokens['refresh_token'],
+            'token_type': tokens['token_type'],
+            'expires_in': tokens['expires_in'],
+            'device_summary': get_device_summary(device_info) if device_info else None,
+        }
 
     def change_password(
         self,
@@ -362,17 +431,19 @@ class AuthService:
         self,
         user: User,
         application,
-        ip_address: str
+        ip_address: str,
+        device_info: str = ''
     ) -> Optional[Tuple[bool, Optional[Dict[str, Any]], str]]:
         """
         Vérifie et applique la limite de sessions.
         Retourne None si OK, sinon retourne le tuple d'erreur.
         """
-        if not auth_settings.SESSION_LIMIT_ENABLED:
+        if not auth_settings.TENXYTE_SESSION_LIMIT_ENABLED:
             return None
 
         # Obtenir la limite de sessions (par utilisateur ou par défaut)
-        max_sessions = user.max_sessions if user.max_sessions > 0 else auth_settings.DEFAULT_MAX_SESSIONS
+        user_max = getattr(user, 'max_sessions', None)
+        max_sessions = user_max if user_max and user_max > 0 else auth_settings.TENXYTE_DEFAULT_MAX_SESSIONS
 
         # 0 = illimité
         if max_sessions == 0:
@@ -386,7 +457,26 @@ class AuthService:
         ).count()
 
         if active_sessions >= max_sessions:
-            action = auth_settings.SESSION_LIMIT_ACTION
+            # Purge conditionnelle : révoquer les tokens zombies (expirés mais non révoqués)
+            zombies = RefreshToken.objects.filter(
+                user=user,
+                is_revoked=False,
+                expires_at__lte=timezone.now()
+            ).update(is_revoked=True)
+
+            if zombies > 0:
+                # Recompter après purge
+                active_sessions = RefreshToken.objects.filter(
+                    user=user,
+                    is_revoked=False,
+                    expires_at__gt=timezone.now()
+                ).count()
+
+                # Si la limite est respectée après purge, on passe
+                if active_sessions < max_sessions:
+                    return None
+
+            action = auth_settings.TENXYTE_DEFAULT_SESSION_LIMIT_ACTION
 
             if action == 'deny':
                 # Refuser la nouvelle connexion
@@ -394,7 +484,7 @@ class AuthService:
                     'action': 'denied',
                     'max_sessions': max_sessions,
                     'active_sessions': active_sessions
-                })
+                }, device_info=device_info)
                 return False, None, f'Session limit exceeded. Maximum {max_sessions} session(s) allowed.'
 
             elif action == 'revoke_oldest':
@@ -415,7 +505,7 @@ class AuthService:
                     'action': 'revoked_oldest',
                     'max_sessions': max_sessions,
                     'revoked_count': revoked_count
-                })
+                }, device_info=device_info)
 
         return None
 
@@ -430,38 +520,70 @@ class AuthService:
         Vérifie et applique la limite de devices.
         Retourne None si OK, sinon retourne le tuple d'erreur.
         """
-        if not auth_settings.DEVICE_LIMIT_ENABLED:
+        if not auth_settings.TENXYTE_DEVICE_LIMIT_ENABLED:
             return None
 
         # Obtenir la limite de devices (par utilisateur ou par défaut)
-        max_devices = user.max_devices if user.max_devices > 0 else auth_settings.DEFAULT_MAX_DEVICES
+        user_max = getattr(user, 'max_devices', None)
+        max_devices = user_max if user_max and user_max > 0 else auth_settings.TENXYTE_DEFAULT_MAX_DEVICES
 
         # 0 = illimité
         if max_devices == 0:
             return None
 
-        # Compter les devices uniques avec sessions actives
-        active_devices = RefreshToken.objects.filter(
+        # Récupérer TOUS les tokens actifs
+        all_active_tokens = RefreshToken.objects.filter(
             user=user,
             is_revoked=False,
             expires_at__gt=timezone.now()
-        ).exclude(
-            device_info=''
-        ).values('device_info').distinct().count()
+        ).values_list('device_info', flat=True)
+
+        # Regrouper par device identique (matching intelligent)
+        # Les tokens avec device_info vide sont chacun comptés comme un device inconnu distinct
+        unique_devices = []
+        unknown_device_count = 0
+        for token_device in all_active_tokens:
+            if not token_device:
+                unknown_device_count += 1
+            elif not any(devices_match(token_device, ud) for ud in unique_devices):
+                unique_devices.append(token_device)
+        active_devices = len(unique_devices) + unknown_device_count
 
         # Si le device actuel est déjà connu, pas de problème
         if device_info:
-            existing_device = RefreshToken.objects.filter(
-                user=user,
-                device_info=device_info,
-                is_revoked=False,
-                expires_at__gt=timezone.now()
-            ).exists()
-            if existing_device:
+            if any(devices_match(device_info, ud) for ud in unique_devices):
                 return None
 
         if active_devices >= max_devices:
-            action = auth_settings.DEVICE_LIMIT_ACTION
+            # Purge conditionnelle : révoquer les tokens zombies (expirés mais non révoqués)
+            zombies = RefreshToken.objects.filter(
+                user=user,
+                is_revoked=False,
+                expires_at__lte=timezone.now()
+            ).update(is_revoked=True)
+
+            if zombies > 0:
+                # Recompter après purge (matching intelligent)
+                all_active_tokens = RefreshToken.objects.filter(
+                    user=user,
+                    is_revoked=False,
+                    expires_at__gt=timezone.now()
+                ).values_list('device_info', flat=True)
+
+                unique_devices = []
+                unknown_device_count = 0
+                for token_device in all_active_tokens:
+                    if not token_device:
+                        unknown_device_count += 1
+                    elif not any(devices_match(token_device, ud) for ud in unique_devices):
+                        unique_devices.append(token_device)
+                active_devices = len(unique_devices) + unknown_device_count
+
+                # Si la limite est respectée après purge, on passe
+                if active_devices < max_devices:
+                    return None
+
+            action = auth_settings.TENXYTE_DEVICE_LIMIT_ACTION
 
             if action == 'deny':
                 # Refuser la nouvelle connexion
@@ -469,35 +591,101 @@ class AuthService:
                     'action': 'denied',
                     'max_devices': max_devices,
                     'active_devices': active_devices,
-                    'new_device': device_info
-                })
+                    'new_device': get_device_summary(device_info)
+                }, device_info=device_info)
                 return False, None, f'Device limit exceeded. Maximum {max_devices} device(s) allowed.'
 
             elif action == 'revoke_oldest':
-                # Révoquer toutes les sessions du device le plus ancien
-                oldest_device = RefreshToken.objects.filter(
+                # Révoquer les sessions du device le plus ancien
+                oldest_token = RefreshToken.objects.filter(
                     user=user,
                     is_revoked=False,
                     expires_at__gt=timezone.now()
-                ).exclude(
-                    device_info=''
-                ).order_by('created_at').values('device_info').first()
+                ).order_by('created_at').first()
 
-                if oldest_device:
-                    revoked_count = RefreshToken.objects.filter(
-                        user=user,
-                        device_info=oldest_device['device_info'],
-                        is_revoked=False
-                    ).update(is_revoked=True)
+                if oldest_token:
+                    oldest_di = oldest_token.device_info
+                    revoked_count = 0
+
+                    if oldest_di:
+                        # Device connu → révoquer tous les tokens du même device
+                        all_tokens = RefreshToken.objects.filter(
+                            user=user,
+                            is_revoked=False
+                        ).exclude(device_info='')
+
+                        for token in all_tokens:
+                            if devices_match(token.device_info, oldest_di):
+                                token.is_revoked = True
+                                token.save(update_fields=['is_revoked'])
+                                revoked_count += 1
+                    else:
+                        # Device inconnu (device_info vide) → révoquer juste ce token
+                        oldest_token.is_revoked = True
+                        oldest_token.save(update_fields=['is_revoked'])
+                        revoked_count = 1
 
                     self._audit_log('device_limit_exceeded', user, ip_address, application, {
                         'action': 'revoked_oldest',
                         'max_devices': max_devices,
-                        'revoked_device': oldest_device['device_info'],
+                        'revoked_device': get_device_summary(oldest_di) if oldest_di else 'unknown',
                         'revoked_sessions': revoked_count
-                    })
+                    }, device_info=device_info)
 
         return None
+
+    def _check_new_device_alert(
+        self,
+        user: User,
+        device_info: str,
+        ip_address: str,
+        application=None
+    ) -> None:
+        """
+        Vérifie si le device est nouveau pour cet utilisateur.
+        Si oui, envoie une alerte de sécurité par email et log dans l'audit.
+        """
+        if not device_info:
+            return
+
+        # Récupérer tous les device_info connus de l'utilisateur
+        known_devices = RefreshToken.objects.filter(
+            user=user
+        ).exclude(
+            device_info=''
+        ).values_list('device_info', flat=True).distinct()
+
+        # Vérifier si le device actuel match un device connu
+        is_known = any(devices_match(device_info, kd) for kd in known_devices)
+
+        if not is_known:
+            summary = get_device_summary(device_info)
+
+            # Audit log
+            self._audit_log('new_device_detected', user, ip_address, application, {
+                'device': summary,
+                'device_info': device_info
+            }, device_info=device_info)
+
+            # Envoyer alerte email si l'utilisateur a un email
+            if user.email:
+                try:
+                    from .email_service import EmailService
+                    email_service = EmailService()
+                    email_service.send_security_alert_email(
+                        to_email=user.email,
+                        alert_type='new_login',
+                        details={
+                            'ip': ip_address or 'Inconnue',
+                            'device': summary,
+                        },
+                        first_name=user.first_name
+                    )
+                except Exception as e:
+                    import logging
+                    logging.getLogger('tenxyte').warning(
+                        f"[DeviceAlert] Failed to send new device alert email: {e}"
+                    )
 
     def _audit_log(
         self,
@@ -505,7 +693,8 @@ class AuthService:
         user: User = None,
         ip_address: str = None,
         application=None,
-        details: Dict[str, Any] = None
+        details: Dict[str, Any] = None,
+        device_info: str = ''
     ) -> None:
         """
         Enregistre une entrée dans le journal d'audit.
@@ -517,6 +706,7 @@ class AuthService:
             action=action,
             user=user,
             ip_address=ip_address,
+            user_agent=device_info,
             application=application,
             details=details
         )

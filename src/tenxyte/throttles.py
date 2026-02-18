@@ -174,6 +174,94 @@ class ProgressiveLoginThrottle(SimpleRateThrottle):
         cache.delete(cache_key)
 
 
+# ============== Simple Throttle Rules ==============
+
+class SimpleThrottleRule(SimpleRateThrottle):
+    """
+    Throttle generique base sur les settings TENXYTE_SIMPLE_THROTTLE_RULES.
+
+    Permet de throttle n'importe quelle route sans creer de classe custom.
+
+    Usage dans settings.py:
+        TENXYTE_SIMPLE_THROTTLE_RULES = {
+            '/api/v1/products/': '100/hour',
+            '/api/v1/search/': '30/min',
+            '/api/v1/upload/': '5/hour',
+        }
+
+    Les URLs sont matchees par prefix: '/api/v1/products/' matchera
+    '/api/v1/products/', '/api/v1/products/123/', etc.
+    Pour un match exact, terminer par '$': '/api/v1/health/$'
+    """
+    scope = 'simple_rule'
+
+    def __init__(self):
+        # Ne pas appeler super().__init__() qui tente de resoudre le rate via scope
+        self.rate = None
+        self.num_requests = None
+        self.duration = None
+
+    def _get_rules(self):
+        """Recupere les regles depuis les settings."""
+        from django.conf import settings
+        return getattr(settings, 'TENXYTE_SIMPLE_THROTTLE_RULES', {})
+
+    def _match_path(self, request_path):
+        """
+        Trouve la regle qui matche le path de la requete.
+        Retourne (pattern, rate) ou (None, None).
+        Les regles les plus longues (plus specifiques) sont testees en premier.
+        """
+        rules = self._get_rules()
+        if not rules:
+            return None, None
+
+        # Trier par longueur decroissante pour matcher le plus specifique d'abord
+        sorted_rules = sorted(rules.items(), key=lambda x: len(x[0]), reverse=True)
+
+        for pattern, rate in sorted_rules:
+            if pattern.endswith('$'):
+                # Match exact (sans le $)
+                if request_path == pattern[:-1] or request_path == pattern[:-1].rstrip('/'):
+                    return pattern, rate
+            else:
+                # Match par prefix
+                if request_path.startswith(pattern):
+                    return pattern, rate
+
+        return None, None
+
+    def get_cache_key(self, request, view):
+        pattern, rate = self._match_path(request.path)
+        if not pattern:
+            return None  # Pas de regle → pas de throttle
+
+        # Stocker le rate pour allow_request
+        self.rate = rate
+        self.num_requests, self.duration = self.parse_rate(rate)
+
+        # Cle de cache basee sur IP + pattern
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+
+        # Nettoyer le pattern pour la cle de cache
+        safe_pattern = pattern.replace('/', '_').strip('_$')
+        return f"throttle_simple_{safe_pattern}_{ip}"
+
+    def allow_request(self, request, view):
+        _, rate = self._match_path(request.path)
+        if not rate:
+            return True  # Pas de regle → autoriser
+
+        # Initialiser rate AVANT super() car DRF verifie self.rate is None en premier
+        self.rate = rate
+        self.num_requests, self.duration = self.parse_rate(rate)
+        return super().allow_request(request, view)
+
+
 # ============== Helpers ==============
 
 def get_client_ip(request):

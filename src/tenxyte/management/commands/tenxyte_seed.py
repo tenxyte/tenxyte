@@ -20,45 +20,60 @@ from tenxyte.models import get_role_model, get_permission_model
 # =============================================================================
 
 DEFAULT_PERMISSIONS = [
+    # -- Parent groups (hierarchical: having a parent grants all its children) --
+    {'code': 'users', 'name': 'Users', 'description': 'All user permissions'},
+    {'code': 'users.roles', 'name': 'User Roles', 'description': 'All user role permissions', 'parent': 'users'},
+    {'code': 'users.permissions', 'name': 'User Permissions', 'description': 'All user direct permission management', 'parent': 'users'},
+    {'code': 'roles', 'name': 'Roles', 'description': 'All role permissions'},
+    {'code': 'permissions', 'name': 'Permissions', 'description': 'All permission permissions'},
+    {'code': 'applications', 'name': 'Applications', 'description': 'All application permissions'},
+    {'code': 'content', 'name': 'Content', 'description': 'All content permissions'},
+    {'code': 'system', 'name': 'System', 'description': 'All system permissions'},
+
     # User permissions
-    {'code': 'users.view', 'name': 'View Users', 'description': 'Can view user list and details'},
-    {'code': 'users.create', 'name': 'Create Users', 'description': 'Can create new users'},
-    {'code': 'users.edit', 'name': 'Edit Users', 'description': 'Can edit user information'},
-    {'code': 'users.delete', 'name': 'Delete Users', 'description': 'Can delete users'},
-    {'code': 'users.manage_roles', 'name': 'Manage User Roles', 'description': 'Can assign/remove roles from users'},
+    {'code': 'users.view', 'name': 'View Users', 'description': 'Can view user list and details', 'parent': 'users'},
+    {'code': 'users.create', 'name': 'Create Users', 'description': 'Can create new users', 'parent': 'users'},
+    {'code': 'users.edit', 'name': 'Edit Users', 'description': 'Can edit user information', 'parent': 'users'},
+    {'code': 'users.delete', 'name': 'Delete Users', 'description': 'Can delete users', 'parent': 'users'},
+    {'code': 'users.roles.view', 'name': 'View User Roles', 'description': 'Can view user roles', 'parent': 'users.roles'},
+    {'code': 'users.roles.assign', 'name': 'Assign User Roles', 'description': 'Can assign roles to users', 'parent': 'users.roles'},
+    {'code': 'users.roles.remove', 'name': 'Remove User Roles', 'description': 'Can remove roles from users', 'parent': 'users.roles'},
+    {'code': 'users.permissions.view', 'name': 'View User Permissions', 'description': 'Can view user direct permissions', 'parent': 'users.permissions'},
+    {'code': 'users.permissions.assign', 'name': 'Assign User Permissions', 'description': 'Can assign direct permissions to users', 'parent': 'users.permissions'},
+    {'code': 'users.permissions.remove', 'name': 'Remove User Permissions', 'description': 'Can remove direct permissions from users', 'parent': 'users.permissions'},
 
     # Role permissions
-    {'code': 'roles.view', 'name': 'View Roles', 'description': 'Can view role list and details'},
-    {'code': 'roles.create', 'name': 'Create Roles', 'description': 'Can create new roles'},
-    {'code': 'roles.edit', 'name': 'Edit Roles', 'description': 'Can edit role information'},
-    {'code': 'roles.delete', 'name': 'Delete Roles', 'description': 'Can delete roles'},
-    {'code': 'roles.manage_permissions', 'name': 'Manage Role Permissions', 'description': 'Can assign/remove permissions from roles'},
+    {'code': 'roles.view', 'name': 'View Roles', 'description': 'Can view role list and details', 'parent': 'roles'},
+    {'code': 'roles.create', 'name': 'Create Roles', 'description': 'Can create new roles', 'parent': 'roles'},
+    {'code': 'roles.update', 'name': 'Update Roles', 'description': 'Can update role information', 'parent': 'roles'},
+    {'code': 'roles.delete', 'name': 'Delete Roles', 'description': 'Can delete roles', 'parent': 'roles'},
+    {'code': 'roles.manage_permissions', 'name': 'Manage Role Permissions', 'description': 'Can assign/remove permissions from roles', 'parent': 'roles'},
 
     # Permission permissions
-    {'code': 'permissions.view', 'name': 'View Permissions', 'description': 'Can view permission list'},
-    {'code': 'permissions.create', 'name': 'Create Permissions', 'description': 'Can create new permissions'},
-    {'code': 'permissions.edit', 'name': 'Edit Permissions', 'description': 'Can edit permission information'},
-    {'code': 'permissions.delete', 'name': 'Delete Permissions', 'description': 'Can delete permissions'},
+    {'code': 'permissions.view', 'name': 'View Permissions', 'description': 'Can view permission list', 'parent': 'permissions'},
+    {'code': 'permissions.create', 'name': 'Create Permissions', 'description': 'Can create new permissions', 'parent': 'permissions'},
+    {'code': 'permissions.update', 'name': 'Update Permissions', 'description': 'Can update permission information', 'parent': 'permissions'},
+    {'code': 'permissions.delete', 'name': 'Delete Permissions', 'description': 'Can delete permissions', 'parent': 'permissions'},
 
     # Application permissions
-    {'code': 'applications.view', 'name': 'View Applications', 'description': 'Can view application list and details'},
-    {'code': 'applications.create', 'name': 'Create Applications', 'description': 'Can create new applications'},
-    {'code': 'applications.edit', 'name': 'Edit Applications', 'description': 'Can edit application information'},
-    {'code': 'applications.delete', 'name': 'Delete Applications', 'description': 'Can delete applications'},
-    {'code': 'applications.regenerate', 'name': 'Regenerate Credentials', 'description': 'Can regenerate application credentials'},
+    {'code': 'applications.view', 'name': 'View Applications', 'description': 'Can view application list and details', 'parent': 'applications'},
+    {'code': 'applications.create', 'name': 'Create Applications', 'description': 'Can create new applications', 'parent': 'applications'},
+    {'code': 'applications.update', 'name': 'Update Applications', 'description': 'Can update application information', 'parent': 'applications'},
+    {'code': 'applications.delete', 'name': 'Delete Applications', 'description': 'Can delete applications', 'parent': 'applications'},
+    {'code': 'applications.regenerate', 'name': 'Regenerate Credentials', 'description': 'Can regenerate application credentials', 'parent': 'applications'},
 
     # Content permissions (generic)
-    {'code': 'content.view', 'name': 'View Content', 'description': 'Can view content'},
-    {'code': 'content.create', 'name': 'Create Content', 'description': 'Can create content'},
-    {'code': 'content.edit', 'name': 'Edit Content', 'description': 'Can edit content'},
-    {'code': 'content.delete', 'name': 'Delete Content', 'description': 'Can delete content'},
-    {'code': 'content.publish', 'name': 'Publish Content', 'description': 'Can publish content'},
+    {'code': 'content.view', 'name': 'View Content', 'description': 'Can view content', 'parent': 'content'},
+    {'code': 'content.create', 'name': 'Create Content', 'description': 'Can create content', 'parent': 'content'},
+    {'code': 'content.edit', 'name': 'Edit Content', 'description': 'Can edit content', 'parent': 'content'},
+    {'code': 'content.delete', 'name': 'Delete Content', 'description': 'Can delete content', 'parent': 'content'},
+    {'code': 'content.publish', 'name': 'Publish Content', 'description': 'Can publish content', 'parent': 'content'},
 
     # System permissions
-    {'code': 'system.admin', 'name': 'System Administration', 'description': 'Full system administration access'},
-    {'code': 'system.settings', 'name': 'Manage Settings', 'description': 'Can manage system settings'},
-    {'code': 'system.logs', 'name': 'View Logs', 'description': 'Can view system logs'},
-    {'code': 'system.audit', 'name': 'View Audit Trail', 'description': 'Can view audit trail'},
+    {'code': 'system.admin', 'name': 'System Administration', 'description': 'Full system administration access', 'parent': 'system'},
+    {'code': 'system.settings', 'name': 'Manage Settings', 'description': 'Can manage system settings', 'parent': 'system'},
+    {'code': 'system.logs', 'name': 'View Logs', 'description': 'Can view system logs', 'parent': 'system'},
+    {'code': 'system.audit', 'name': 'View Audit Trail', 'description': 'Can view audit trail', 'parent': 'system'},
 ]
 
 
@@ -103,7 +118,9 @@ DEFAULT_ROLES = [
             'users.view',
             'users.create',
             'users.edit',
-            'users.manage_roles',
+            'users.roles.view',
+            'users.roles.assign',
+            'users.roles.remove',
             # Roles
             'roles.view',
             # Permissions
@@ -169,30 +186,35 @@ class Command(BaseCommand):
     def _create_permissions(self, Permission, force):
         self.stdout.write(self.style.NOTICE('Creating permissions...'))
 
-        if force:
-            count = Permission.objects.filter(
-                code__in=[p['code'] for p in DEFAULT_PERMISSIONS]
-            ).delete()[0]
-            if count:
-                self.stdout.write(f'  Deleted {count} existing permissions')
-
         created_count = 0
         updated_count = 0
 
+        # First pass: create/update all permissions (without parent)
         for perm_data in DEFAULT_PERMISSIONS:
-            perm, created = Permission.objects.get_or_create(
-                code=perm_data['code'],
-                defaults={
-                    'name': perm_data['name'],
-                    'description': perm_data['description'],
-                }
-            )
+            if force:
+                perm, created = Permission.objects.update_or_create(
+                    code=perm_data['code'],
+                    defaults={
+                        'name': perm_data['name'],
+                        'description': perm_data['description'],
+                    }
+                )
+            else:
+                perm, created = Permission.objects.get_or_create(
+                    code=perm_data['code'],
+                    defaults={
+                        'name': perm_data['name'],
+                        'description': perm_data['description'],
+                    }
+                )
 
             if created:
                 created_count += 1
                 self.stdout.write(f'  + Created: {perm.code}')
+            elif force:
+                updated_count += 1
+                self.stdout.write(f'  ~ Updated: {perm.code}')
             else:
-                # Update existing
                 updated = False
                 if perm.name != perm_data['name']:
                     perm.name = perm_data['name']
@@ -205,19 +227,50 @@ class Command(BaseCommand):
                     updated_count += 1
                     self.stdout.write(f'  ~ Updated: {perm.code}')
 
+        # Second pass: assign parent relationships (hierarchy)
+        parent_count = 0
+        for perm_data in DEFAULT_PERMISSIONS:
+            parent_code = perm_data.get('parent')
+            if parent_code:
+                try:
+                    perm = Permission.objects.get(code=perm_data['code'])
+                    parent = Permission.objects.get(code=parent_code)
+                    if perm.parent_id != parent.pk:
+                        perm.parent = parent
+                        perm.save()
+                        parent_count += 1
+                except Permission.DoesNotExist:
+                    self.stdout.write(self.style.WARNING(
+                        f'  ! Could not set parent "{parent_code}" for "{perm_data["code"]}"'
+                    ))
+
         self.stdout.write(
-            self.style.SUCCESS(f'  Permissions: {created_count} created, {updated_count} updated')
+            self.style.SUCCESS(
+                f'  Permissions: {created_count} created, {updated_count} updated, '
+                f'{parent_count} parent links set'
+            )
         )
+
+    def _safe_set_permissions(self, role, permissions):
+        """Set permissions on a role, with MongoDB-compatible fallback."""
+        try:
+            role.permissions.set(permissions)
+        except TypeError:
+            # MongoDB: set() fails due to deletion collector issue
+            # Fallback: clear through table directly, then re-add
+            try:
+                through = role.permissions.through
+                source = role.permissions.source_field_name
+                db = role._state.db or 'default'
+                through.objects.using(db).filter(**{
+                    source: role.pk,
+                })._raw_delete(db)
+            except Exception:
+                pass
+            role.permissions.add(*permissions)
 
     def _create_roles(self, Role, Permission, force):
         self.stdout.write(self.style.NOTICE('Creating roles...'))
-
-        if force:
-            count = Role.objects.filter(
-                code__in=[r['code'] for r in DEFAULT_ROLES]
-            ).delete()[0]
-            if count:
-                self.stdout.write(f'  Deleted {count} existing roles')
 
         created_count = 0
         updated_count = 0
@@ -226,20 +279,33 @@ class Command(BaseCommand):
         all_permissions = list(Permission.objects.all())
 
         for role_data in DEFAULT_ROLES:
-            role, created = Role.objects.get_or_create(
-                code=role_data['code'],
-                defaults={
-                    'name': role_data['name'],
-                    'description': role_data['description'],
-                    'is_default': role_data['is_default'],
-                }
-            )
+            if force:
+                role, created = Role.objects.update_or_create(
+                    code=role_data['code'],
+                    defaults={
+                        'name': role_data['name'],
+                        'description': role_data['description'],
+                        'is_default': role_data['is_default'],
+                    }
+                )
+            else:
+                role, created = Role.objects.get_or_create(
+                    code=role_data['code'],
+                    defaults={
+                        'name': role_data['name'],
+                        'description': role_data['description'],
+                        'is_default': role_data['is_default'],
+                    }
+                )
 
             if created:
                 created_count += 1
                 self.stdout.write(f'  + Created: {role.code}')
+            elif force:
+                updated_count += 1
+                self.stdout.write(f'  ~ Updated: {role.code}')
             else:
-                # Update existing
+                # Update existing only if changed
                 updated = False
                 if role.name != role_data['name']:
                     role.name = role_data['name']
@@ -259,12 +325,12 @@ class Command(BaseCommand):
             perm_codes = role_data['permissions']
             if '__all__' in perm_codes:
                 # Super admin gets all permissions
-                role.permissions.set(all_permissions)
+                self._safe_set_permissions(role, all_permissions)
                 self.stdout.write(f'    -> Assigned ALL permissions ({len(all_permissions)})')
             else:
-                permissions = Permission.objects.filter(code__in=perm_codes)
-                role.permissions.set(permissions)
-                self.stdout.write(f'    -> Assigned {permissions.count()} permissions')
+                permissions = list(Permission.objects.filter(code__in=perm_codes))
+                self._safe_set_permissions(role, permissions)
+                self.stdout.write(f'    -> Assigned {len(permissions)} permissions')
 
         self.stdout.write(
             self.style.SUCCESS(f'  Roles: {created_count} created, {updated_count} updated')
