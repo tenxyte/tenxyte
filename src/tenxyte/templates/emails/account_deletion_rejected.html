@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demande de Suppression Rejetée</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: #ffc107;
+            color: #333;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background: white;
+            padding: 30px;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+        .notice-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-radius: 0 0 5px 5px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚠️ Demande de Suppression Rejetée</h1>
+    </div>
+    
+    <div class="content">
+        <p>Bonjour {{ user.first_name|default:user.email }},</p>
+        
+        <p>Votre demande de suppression de compte a été <strong>rejetée</strong> par notre équipe d'administration.</p>
+        
+        <div class="notice-box">
+            <strong>ℹ️ Bonne nouvelle :</strong>
+            <ul>
+                <li>✅ Votre compte reste <strong>actif et accessible</strong></li>
+                <li>✅ Aucune donnée n'a été supprimée</li>
+                <li>✅ Vous pouvez continuer à utiliser nos services normalement</li>
+            </ul>
+        </div>
+        
+        {% if admin_notes %}
+        <div class="notice-box">
+            <strong>Raison du rejet :</strong>
+            <p>{{ admin_notes }}</p>
+        </div>
+        {% endif %}
+        
+        <div class="info-box">
+            <strong>📋 Détails de votre demande :</strong>
+            <ul>
+                <li>Date de la demande : {{ requested_at|date:"d/m/Y H:i" }}</li>
+                {% if reason %}<li>Raison demandée : {{ reason }}</li>{% endif %}
+                <li>Statut actuel : Rejeté</li>
+                <li>Traité par : Administration</li>
+            </ul>
+        </div>
+        
+        <p style="text-align: center;">
+            <a href="{{ login_url }}" class="button">Accéder à mon Compte</a>
+        </p>
+        
+        <p>Si vous avez des questions sur cette décision ou si vous souhaitez soumettre une nouvelle demande, n'hésitez pas à contacter notre support.</p>
+        
+        <p>Cordialement,<br>L'équipe {{ site_name|default:"Tenxyte" }}</p>
+    </div>
+    
+    <div class="footer">
+        <p>Cet email est une notification automatique. Merci de ne pas y répondre.</p>
+        <p>Pour contacter le support : {{ support_email|default:"support@example.com" }}</p>
+    </div>
+</body>
+</html>

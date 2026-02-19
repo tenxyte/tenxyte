@@ -10,6 +10,11 @@ Permission = get_permission_model()
 Application = get_application_model()
 
 
+class PasswordSerializer(serializers.Serializer):
+    """Simple password validation serializer."""
+    password = serializers.CharField(write_only=True, min_length=1)
+
+
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False, allow_null=True)
     phone_country_code = serializers.CharField(max_length=5, required=False, allow_null=True)

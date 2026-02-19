@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: tenxyte
-Version: 0.0.8.3.9.6
+Version: 0.0.8.3.9.7
 Summary: Complete Django authentication package with JWT, RBAC, 2FA (TOTP), OTP verification, and multi-application support
 Project-URL: Homepage, https://github.com/tenxyte/tenxyte
 Project-URL: Documentation, https://tenxyte.readthedocs.io

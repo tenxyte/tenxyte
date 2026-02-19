@@ -13,6 +13,10 @@ from .views import (
     UserRolesView, UserDirectPermissionsView,
     ApplicationListView, ApplicationDetailView, ApplicationRegenerateView
 )
+from .views.account_deletion_views import (
+    request_account_deletion, confirm_account_deletion, 
+    cancel_account_deletion, account_deletion_status, export_user_data
+)
 
 app_name = 'authentication'
 
@@ -70,4 +74,11 @@ urlpatterns = [
     path('applications/', ApplicationListView.as_view(), name='application_list'),
     path('applications/<str:app_id>/', ApplicationDetailView.as_view(), name='application_detail'),
     path('applications/<str:app_id>/regenerate/', ApplicationRegenerateView.as_view(), name='application_regenerate'),
+
+    # Account Deletion (RGPD)
+    path('request-account-deletion/', request_account_deletion, name='request_account_deletion'),
+    path('confirm-account-deletion/', confirm_account_deletion, name='confirm_account_deletion'),
+    path('cancel-account-deletion/', cancel_account_deletion, name='cancel_account_deletion'),
+    path('account-deletion-status/', account_deletion_status, name='account_deletion_status'),
+    path('export-user-data/', export_user_data, name='export_user_data'),
 ]

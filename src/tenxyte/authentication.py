@@ -49,6 +49,9 @@ class JWTAuthentication(BaseAuthentication):
         if user.is_account_locked():
             raise AuthenticationFailed('Compte utilisateur verrouillé')
 
+        if user.is_account_banned():
+            raise AuthenticationFailed('Compte utilisateur banni')
+
         # Stocker le payload pour usage ultérieur
         request.jwt_payload = payload
 

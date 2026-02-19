@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation de suppression de compte</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background: white;
+            padding: 30px;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #dc3545;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-radius: 0 0 5px 5px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔒 Demande de Suppression de Compte</h1>
+    </div>
+    
+    <div class="content">
+        <p>Bonjour {{ user.first_name|default:user.email }},</p>
+        
+        <p>Nous avons bien reçu votre demande de suppression de compte. Cette action est <strong>irréversible</strong> et entraînera la perte permanente de toutes vos données.</p>
+        
+        <div class="warning">
+            <strong>⚠️ Attention :</strong>
+            <ul>
+                <li>Toutes vos données personnelles seront anonymisées</li>
+                <li>Vous ne pourrez plus accéder à votre compte</li>
+                <li>Cette action ne peut être annulée après la période de grâce</li>
+            </ul>
+        </div>
+        
+        <p>Pour confirmer votre demande, cliquez sur le bouton ci-dessous :</p>
+        
+        <p style="text-align: center;">
+            <a href="{{ confirmation_url }}" class="button">Confirmer la Suppression</a>
+        </p>
+        
+        <p>Ou copiez-collez ce lien dans votre navigateur :</p>
+        <p style="word-break: break-all; background: #f8f9fa; padding: 10px; border-radius: 3px;">
+            {{ confirmation_url }}
+        </p>
+        
+        <p><strong>Période de grâce :</strong> {{ grace_period_days }} jours</p>
+        <p>Vous pouvez annuler votre demande à tout moment pendant cette période.</p>
+        
+        <p>Si vous n'avez pas demandé cette suppression, veuillez contacter notre support immédiatement.</p>
+        
+        <p>Cordialement,<br>L'équipe {{ site_name|default:"Tenxyte" }}</p>
+    </div>
+    
+    <div class="footer">
+        <p>Cet email a été envoyé depuis l'adresse IP {{ ip_address|default:"inconnue" }}.</p>
+        <p>Si vous ne souhaitez plus recevoir ces emails, veuillez nous contacter.</p>
+    </div>
+</body>
+</html>

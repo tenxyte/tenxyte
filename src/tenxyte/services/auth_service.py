@@ -108,6 +108,11 @@ class AuthService:
         """
         Finalise l'authentification après avoir trouvé l'utilisateur
         """
+        # Vérifier si le compte est banni
+        if user.is_account_banned():
+            LoginAttempt.record(identifier, ip_address, application, False, 'account_banned')
+            return False, None, 'Account is banned'
+
         # Vérifier si le compte est verrouillé (si le lockout est activé)
         if auth_settings.ACCOUNT_LOCKOUT_ENABLED and user.is_account_locked():
             LoginAttempt.record(identifier, ip_address, application, False, 'account_locked')

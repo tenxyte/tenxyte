@@ -344,3 +344,231 @@ L'équipe {app_name}
             subject=alert['subject'],
             message=message.strip()
         )
+    
+    def send_account_deletion_confirmation(self, deletion_request) -> bool:
+        """
+        Envoyer l'email de confirmation de demande de suppression.
+        
+        Args:
+            deletion_request: L'objet AccountDeletionRequest
+            
+        Returns:
+            True si envoyé avec succès
+        """
+        from django.urls import reverse
+        from django.contrib.sites.shortcuts import get_current_site
+        
+        try:
+            site = get_current_site(None)
+            base_url = f"https://{site.domain}" if site.domain else "https://yourapp.com"
+            
+            confirmation_url = f"{base_url}/api/auth/confirm-account-deletion/"
+            confirmation_url_with_token = f"{confirmation_url}?token={deletion_request.confirmation_token}"
+            
+            context = {
+                'user': deletion_request.user,
+                'confirmation_url': confirmation_url_with_token,
+                'grace_period_days': getattr(settings, 'TENXYTE_ACCOUNT_DELETION_GRACE_PERIOD_DAYS', 30),
+                'ip_address': deletion_request.ip_address,
+                'site_name': getattr(settings, 'SITE_NAME', 'Tenxyte'),
+                'requested_at': deletion_request.requested_at,
+                'reason': deletion_request.reason
+            }
+            
+            subject = f"Action requise : Confirmez votre demande de suppression de compte"
+            
+            return self._send_template_email(
+                to_email=deletion_request.user.email,
+                subject=subject,
+                template_name='emails/account_deletion_confirmation.html',
+                context=context
+            )
+            
+        except Exception as e:
+            logger.error(f"Error sending account deletion confirmation: {e}")
+            return False
+    
+    def send_account_deletion_confirmed(self, deletion_request) -> bool:
+        """
+        Envoyer l'email de confirmation de période de grâce.
+        
+        Args:
+            deletion_request: L'objet AccountDeletionRequest
+            
+        Returns:
+            True si envoyé avec succès
+        """
+        from django.urls import reverse
+        from django.contrib.sites.shortcuts import get_current_site
+        from django.utils import timezone
+        
+        try:
+            site = get_current_site(None)
+            base_url = f"https://{site.domain}" if site.domain else "https://yourapp.com"
+            
+            # URL d'annulation (à implémenter dans les vues)
+            cancel_url = f"{base_url}/api/auth/cancel-account-deletion/"
+            
+            days_remaining = 0
+            if deletion_request.grace_period_ends_at:
+                days_remaining = (deletion_request.grace_period_ends_at - timezone.now()).days
+            
+            context = {
+                'user': deletion_request.user,
+                'cancel_url': cancel_url,
+                'days_remaining': max(0, days_remaining),
+                'grace_period_ends_at': deletion_request.grace_period_ends_at,
+                'requested_at': deletion_request.requested_at,
+                'reason': deletion_request.reason,
+                'ip_address': deletion_request.ip_address,
+                'site_name': getattr(settings, 'SITE_NAME', 'Tenxyte'),
+                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@example.com')
+            }
+            
+            subject = f"Votre demande de suppression de compte est confirmée"
+            
+            return self._send_template_email(
+                to_email=deletion_request.user.email,
+                subject=subject,
+                template_name='emails/account_deletion_confirmed.html',
+                context=context
+            )
+            
+        except Exception as e:
+            logger.error(f"Error sending account deletion confirmed: {e}")
+            return False
+    
+    def send_account_deletion_completed(self, deletion_request) -> bool:
+        """
+        Envoyer l'email de notification de suppression effectuée.
+        
+        Args:
+            deletion_request: L'objet AccountDeletionRequest
+            
+        Returns:
+            True si envoyé avec succès
+        """
+        try:
+            context = {
+                'user_email': deletion_request.user.email,
+                'requested_at': deletion_request.requested_at,
+                'confirmed_at': deletion_request.confirmed_at,
+                'completed_at': deletion_request.completed_at,
+                'processed_by': str(deletion_request.processed_by) if deletion_request.processed_by else 'System',
+                'reason': deletion_request.reason,
+                'anonymization_token': deletion_request.user.anonymization_token,
+                'site_name': getattr(settings, 'SITE_NAME', 'Tenxyte'),
+                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@example.com')
+            }
+            
+            subject = f"Votre compte a été supprimé"
+            
+            return self._send_template_email(
+                to_email=deletion_request.user.email,
+                subject=subject,
+                template_name='emails/account_deletion_completed.html',
+                context=context
+            )
+            
+        except Exception as e:
+            logger.error(f"Error sending account deletion completed: {e}")
+            return False
+    
+    def send_deletion_request_rejected(self, deletion_request) -> bool:
+        """
+        Envoyer l'email de rejet de demande de suppression.
+        
+        Args:
+            deletion_request: L'objet AccountDeletionRequest
+            
+        Returns:
+            True si envoyé avec succès
+        """
+        from django.contrib.sites.shortcuts import get_current_site
+        
+        try:
+            site = get_current_site(None)
+            base_url = f"https://{site.domain}" if site.domain else "https://yourapp.com"
+            login_url = f"{base_url}/login/"
+            
+            context = {
+                'user': deletion_request.user,
+                'login_url': login_url,
+                'requested_at': deletion_request.requested_at,
+                'reason': deletion_request.reason,
+                'admin_notes': deletion_request.admin_notes,
+                'site_name': getattr(settings, 'SITE_NAME', 'Tenxyte'),
+                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@example.com')
+            }
+            
+            subject = f"Votre demande de suppression de compte a été rejetée"
+            
+            return self._send_template_email(
+                to_email=deletion_request.user.email,
+                subject=subject,
+                template_name='emails/account_deletion_rejected.html',
+                context=context
+            )
+            
+        except Exception as e:
+            logger.error(f"Error sending deletion request rejected: {e}")
+            return False
+    
+    def _send_template_email(self, to_email: str, subject: str, template_name: str, context: Dict[str, Any]) -> bool:
+        """
+        Envoyer un email à partir d'un template HTML.
+        
+        Args:
+            to_email: Email du destinataire
+            subject: Sujet de l'email
+            template_name: Nom du template
+            context: Contexte pour le template
+            
+        Returns:
+            True si envoyé avec succès
+        """
+        from django.template.loader import render_to_string
+        from django.core.mail import EmailMultiAlternatives
+        
+        try:
+            # Rendre le template HTML
+            html_content = render_to_string(template_name, context)
+            
+            # Créer l'email
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=self._generate_text_alternative(html_content),
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@tenxyte.com'),
+                to=[to_email]
+            )
+            
+            # Ajouter la version HTML
+            email.attach_alternative(html_content, "text/html")
+            
+            # Envoyer
+            email.send()
+            
+            logger.info(f"Template email sent successfully to {to_email}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error sending template email to {to_email}: {e}")
+            return False
+    
+    def _generate_text_alternative(self, html_content: str) -> str:
+        """
+        Générer une version texte alternative à partir du HTML.
+        
+        Args:
+            html_content: Contenu HTML
+            
+        Returns:
+            Version texte
+        """
+        import re
+        
+        # Supprimer les balises HTML et convertir en texte
+        text = re.sub(r'<[^>]+>', '', html_content)
+        text = re.sub(r'\s+', ' ', text).strip()
+        
+        return text

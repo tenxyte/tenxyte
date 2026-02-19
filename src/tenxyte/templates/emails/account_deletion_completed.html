@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suppression de Compte Effectuée</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: #dc3545;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background: white;
+            padding: 30px;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+        .final-notice {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .timeline {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .timeline-item {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 3px solid #dc3545;
+            background: white;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-radius: 0 0 5px 5px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔒 Suppression de Compte Effectuée</h1>
+    </div>
+    
+    <div class="content">
+        <p>Bonjour,</p>
+        
+        <div class="final-notice">
+            <h2>⚠️ Action Irréversible</h2>
+            <p>La suppression du compte associé à l'email <strong>{{ user_email }}</strong> a été <strong>effectuée avec succès</strong>.</p>
+            <p>Toutes les données personnelles ont été anonymisées conformément au RGPD.</p>
+        </div>
+        
+        <div class="timeline">
+            <h3>📋 Historique de la demande</h3>
+            <div class="timeline-item">
+                <strong>Demande initiale :</strong> {{ requested_at|date:"d/m/Y H:i" }}
+            </div>
+            {% if confirmed_at %}
+            <div class="timeline-item">
+                <strong>Confirmation :</strong> {{ confirmed_at|date:"d/m/Y H:i" }}
+            </div>
+            {% endif %}
+            <div class="timeline-item">
+                <strong>Suppression effective :</strong> {{ completed_at|date:"d/m/Y H:i" }}
+            </div>
+            {% if processed_by %}
+            <div class="timeline-item">
+                <strong>Traité par :</strong> {{ processed_by }}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="info-box">
+            <strong>📋 Ce qui a été fait :</strong>
+            <ul>
+                <li>✅ Adresse email anonymisée</li>
+                <li>✅ Nom et prénom supprimés</li>
+                <li>✅ Numéro de téléphone supprimé</li>
+                <li>✅ Authentification 2FA désactivée</li>
+                <li>✅ Compte marqué comme supprimé</li>
+                <li>✅ Token d'anonymisation généré pour audit</li>
+            </ul>
+        </div>
+        
+        <div class="info-box">
+            <strong>🔍 Données conservées (obligation légale) :</strong>
+            <ul>
+                <li>Logs d'audit pour traçabilité</li>
+                <li>Token d'anonymisation pour identification</li>
+                <li>Historique des transactions (si applicable)</li>
+            </ul>
+        </div>
+        
+        {% if reason %}
+        <p><strong>Raison de la suppression :</strong> {{ reason }}</p>
+        {% endif %}
+        
+        <p><strong>Token d'anonymisation :</strong> {{ anonymization_token }}</p>
+        
+        <p>Si vous avez des questions concernant cette suppression ou si vous pensez qu'il s'agit d'une erreur, veuillez contacter notre support immédiatement en mentionnant le token d'anonymisation ci-dessus.</p>
+        
+        <p>Cordialement,<br>L'équipe {{ site_name|default:"Tenxyte" }}</p>
+    </div>
+    
+    <div class="footer">
+        <p>Cet email est une notification automatique. Merci de ne pas y répondre.</p>
+        <p>Pour contacter le support : {{ support_email|default:"support@example.com" }}</p>
+        <p>Référence : {{ anonymization_token }}</p>
+    </div>
+</body>
+</html>

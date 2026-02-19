@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation de Période de Grâce</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: #28a745;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background: white;
+            padding: 30px;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+        .info-box {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .countdown {
+            background: #f8f9fa;
+            border: 2px solid #28a745;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .countdown h2 {
+            color: #28a745;
+            margin: 0;
+            font-size: 24px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #dc3545;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        .button.cancel {
+            background: #6c757d;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-radius: 0 0 5px 5px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>✅ Demande de Suppression Confirmée</h1>
+    </div>
+    
+    <div class="content">
+        <p>Bonjour {{ user.first_name|default:user.email }},</p>
+        
+        <p>Votre demande de suppression de compte a été <strong>confirmée avec succès</strong>.</p>
+        
+        <div class="countdown">
+            <h2>📅 Période de Grâce Activée</h2>
+            <p><strong>{{ days_remaining }} jours</strong> restants avant la suppression effective</p>
+            <p>Date de fin : {{ grace_period_ends_at|date:"d/m/Y H:i" }}</p>
+        </div>
+        
+        <div class="info-box">
+            <strong>ℹ️ Que se passe-t-il maintenant ?</strong>
+            <ul>
+                <li>Votre compte sera définitivement supprimé après la période de grâce</li>
+                <li>Toutes vos données seront anonymisées conformément au RGPD</li>
+                <li>Vous pouvez encore annuler cette demande à tout moment</li>
+            </ul>
+        </div>
+        
+        <p style="text-align: center;">
+            <a href="{{ cancel_url }}" class="button cancel">Annuler la Suppression</a>
+        </p>
+        
+        <p><strong>Rappel de votre demande :</strong></p>
+        <ul>
+            <li>Date de la demande : {{ requested_at|date:"d/m/Y H:i" }}</li>
+            {% if reason %}<li>Raison : {{ reason }}</li>{% endif %}
+            <li>Adresse IP : {{ ip_address|default:"inconnue" }}</li>
+        </ul>
+        
+        <p>Si vous avez des questions ou besoin d'aide, n'hésitez pas à contacter notre support.</p>
+        
+        <p>Cordialement,<br>L'équipe {{ site_name|default:"Tenxyte" }}</p>
+    </div>
+    
+    <div class="footer">
+        <p>Cet email est une notification automatique. Merci de ne pas y répondre.</p>
+        <p>Pour contacter le support : {{ support_email|default:"support@example.com" }}</p>
+    </div>
+</body>
+</html>

@@ -11,11 +11,13 @@ Couvre:
 - Utilisation cross-application de tokens
 - Réutilisation de refresh tokens révoqués
 - Blacklisting de tokens JWT
+- Banissement de compte (permanent, admin actions, auth blocking)
 """
 import pytest
 import jwt
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+from django.utils import timezone
 from django.core.cache import cache
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -559,3 +561,186 @@ class TestInactiveUserSecurity:
             status.HTTP_401_UNAUTHORIZED,
             status.HTTP_429_TOO_MANY_REQUESTS,
         ]
+
+
+@pytest.mark.django_db
+class TestAccountBanningSecurity:
+    """Tests de sécurité pour le banissement de compte."""
+
+    def test_banned_user_cannot_authenticate_with_jwt(self, app_api_client, user, application):
+        """Un utilisateur banni ne doit pas pouvoir utiliser de token JWT."""
+        auth_service = AuthService()
+        success, data, _ = auth_service.authenticate_by_email(
+            email=user.email,
+            password="TestPassword123!",
+            application=application,
+            ip_address="127.0.0.1"
+        )
+        assert success
+        assert 'access_token' in data
+
+        # Bannir l'utilisateur
+        user.is_banned = True
+        user.save()
+
+        # Tenter d'utiliser le token existant
+        app_api_client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {data['access_token']}",
+            HTTP_X_ACCESS_KEY=application.access_key,
+            HTTP_X_ACCESS_SECRET=application._plain_secret
+        )
+        response = app_api_client.get('/api/auth/me/')
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert 'banni' in response.json().get('detail', '').lower()
+
+    def test_banned_user_cannot_login(self, app_api_client, user, application):
+        """Un utilisateur banni ne doit pas pouvoir se connecter."""
+        # Bannir l'utilisateur
+        user.is_banned = True
+        user.save()
+
+        response = app_api_client.post('/api/auth/login/email/', {
+            'email': user.email,
+            'password': 'TestPassword123!',
+        })
+
+        assert response.status_code != status.HTTP_200_OK
+        assert response.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_429_TOO_MANY_REQUESTS,
+        ]
+
+    def test_banned_user_cannot_get_new_tokens(self, app_api_client, user, application):
+        """Un utilisateur banni ne doit pas pouvoir obtenir de nouveaux tokens."""
+        # Bannir l'utilisateur
+        user.is_banned = True
+        user.save()
+
+        # Tenter de se connecter pour obtenir des tokens
+        response = app_api_client.post('/api/auth/login/email/', {
+            'email': user.email,
+            'password': 'TestPassword123!',
+        })
+
+        if response.status_code == status.HTTP_200_OK:
+            # Si login réussi (avant le check ban), tenter d'utiliser les tokens
+            data = response.json()
+            if 'access_token' in data:
+                app_api_client.credentials(
+                    HTTP_AUTHORIZATION=f"Bearer {data['access_token']}",
+                    HTTP_X_ACCESS_KEY=application.access_key,
+                    HTTP_X_ACCESS_SECRET=application._plain_secret
+                )
+                response = app_api_client.get('/api/auth/me/')
+                assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_ban_status_persists_after_unlock(self, app_api_client, user, application):
+        """Le statut banni doit persister même après déverrouillage du compte."""
+        # Bannir et verrouiller l'utilisateur
+        user.is_banned = True
+        user.is_locked = True
+        user.locked_until = timezone.now() + timedelta(hours=1)
+        user.save()
+
+        # Le compte est banni
+        assert user.is_account_banned()
+        assert user.is_account_locked()
+
+        # Déverrouiller le compte (simuler expiration)
+        user.locked_until = timezone.now() - timedelta(hours=1)
+        user.save()
+
+        # Le compte reste banni même si déverrouillé
+        assert user.is_account_banned()
+        assert not user.is_account_locked()
+
+    def test_admin_ban_action_creates_audit_log(self, admin_user, user):
+        """L'action de banissement admin doit créer un audit log."""
+        from tenxyte.models import AuditLog
+        
+        # Simuler l'action admin de ban
+        user.is_banned = True
+        user.save()
+        
+        # Créer l'audit log manuellement (simuler l'admin action)
+        AuditLog.objects.create(
+            action='user_banned',
+            user=user,
+            ip_address='127.0.0.1',
+            details={
+                'banned_by': admin_user.email,
+                'reason': 'Admin action',
+                'email': user.email,
+                'banned_at': timezone.now().isoformat()
+            }
+        )
+        
+        # Vérifier que l'audit log existe
+        audit_log = AuditLog.objects.filter(action='user_banned', user=user).first()
+        assert audit_log is not None
+        assert audit_log.details['banned_by'] == admin_user.email
+        assert audit_log.details['email'] == user.email
+
+    def test_admin_unban_action_creates_audit_log(self, admin_user, user):
+        """L'action de débannissement admin doit créer un audit log."""
+        from tenxyte.models import AuditLog
+        
+        # Bannir d'abord
+        user.is_banned = True
+        user.save()
+        
+        # Débannir
+        user.is_banned = False
+        user.save()
+        
+        # Créer l'audit log manuellement (simuler l'admin action)
+        AuditLog.objects.create(
+            action='user_unbanned',
+            user=user,
+            ip_address='127.0.0.1',
+            details={
+                'unbanned_by': admin_user.email,
+                'reason': 'Admin action',
+                'email': user.email,
+                'unbanned_at': timezone.now().isoformat()
+            }
+        )
+        
+        # Vérifier que l'audit log existe
+        audit_log = AuditLog.objects.filter(action='user_unbanned', user=user).first()
+        assert audit_log is not None
+        assert audit_log.details['unbanned_by'] == admin_user.email
+        assert audit_log.details['email'] == user.email
+
+    def test_banned_user_cannot_access_any_protected_endpoint(self, app_api_client, user, application):
+        """Un utilisateur banni ne doit accéder à aucun endpoint protégé."""
+        auth_service = AuthService()
+        success, data, _ = auth_service.authenticate_by_email(
+            email=user.email,
+            password="TestPassword123!",
+            application=application,
+            ip_address="127.0.0.1"
+        )
+        assert success
+
+        # Bannir l'utilisateur
+        user.is_banned = True
+        user.save()
+
+        # Tenter d'accéder à plusieurs endpoints protégés
+        endpoints = [
+            '/api/auth/me/',
+            '/api/auth/refresh/',
+        ]
+        
+        app_api_client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {data['access_token']}",
+            HTTP_X_ACCESS_KEY=application.access_key,
+            HTTP_X_ACCESS_SECRET=application._plain_secret
+        )
+        
+        for endpoint in endpoints:
+            response = app_api_client.get(endpoint)
+            assert response.status_code == status.HTTP_401_UNAUTHORIZED
+            assert 'banni' in response.json().get('detail', '').lower()

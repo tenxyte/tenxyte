@@ -98,6 +98,10 @@ class Migration(migrations.Migration):
                 ("is_active", models.BooleanField(default=True)),
                 ("is_locked", models.BooleanField(default=False)),
                 ("locked_until", models.DateTimeField(blank=True, null=True)),
+                ("is_banned", models.BooleanField(default=False)),
+                ("is_deleted", models.BooleanField(default=False)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
+                ("anonymization_token", models.CharField(blank=True, max_length=64, null=True)),
                 ("is_staff", models.BooleanField(default=False)),
                 ("is_superuser", models.BooleanField(default=False)),
                 (
@@ -328,5 +332,32 @@ class Migration(migrations.Migration):
         migrations.AddIndex(
             model_name="user",
             index=models.Index(fields=["phone_country_code", "phone_number"], name="users_phone_c_e3358a_idx"),
+        ),
+        migrations.CreateModel(
+            name="AccountDeletionRequest",
+            fields=[
+                ("id", models.BigAutoField(primary_key=True, serialize=False)),
+                ("status", models.CharField(choices=[("pending", "Pending"), ("confirmation_sent", "Confirmation Sent"), ("confirmed", "Confirmed"), ("completed", "Completed"), ("cancelled", "Cancelled")], default="pending", max_length=20)),
+                ("confirmation_token", models.CharField(help_text="Secure token for email confirmation", max_length=64, unique=True)),
+                ("requested_at", models.DateTimeField(auto_now_add=True)),
+                ("confirmed_at", models.DateTimeField(blank=True, null=True)),
+                ("grace_period_ends_at", models.DateTimeField(blank=True, null=True)),
+                ("completed_at", models.DateTimeField(blank=True, null=True)),
+                ("ip_address", models.GenericIPAddressField(blank=True, null=True)),
+                ("user_agent", models.TextField(blank=True)),
+                ("reason", models.TextField(blank=True, help_text="Optional reason for deletion request")),
+                ("admin_notes", models.TextField(blank=True)),
+                ("user", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="deletion_requests", to=settings.AUTH_USER_MODEL)),
+                ("processed_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="processed_deletions", to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+                "db_table": "account_deletion_requests",
+                "ordering": ["-requested_at"],
+                "indexes": [
+                    models.Index(fields=["user", "status"], name="account_del_user_status_idx"),
+                    models.Index(fields=["status", "grace_period_ends_at"], name="account_del_status_grace_idx"),
+                    models.Index(fields=["confirmation_token"], name="account_del_token_idx"),
+                ],
+            },
         ),
     ]
