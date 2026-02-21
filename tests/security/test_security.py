@@ -16,7 +16,7 @@ Couvre:
 import pytest
 import jwt
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 from django.utils import timezone
 from django.core.cache import cache
 from rest_framework import status
@@ -72,8 +72,8 @@ class TestJWTSecurity:
             'jti': 'fake-jti',
             'user_id': str(user.id),
             'app_id': str(application.id),
-            'iat': datetime.now(timezone.utc),
-            'exp': datetime.now(timezone.utc) + timedelta(hours=1),
+            'iat': datetime.now(dt_timezone.utc),
+            'exp': datetime.now(dt_timezone.utc) + timedelta(hours=1),
         }
         fake_token = jwt.encode(payload, 'wrong-secret-key', algorithm='HS256')
 
@@ -95,8 +95,8 @@ class TestJWTSecurity:
             'jti': 'expired-jti',
             'user_id': str(user.id),
             'app_id': str(application.id),
-            'iat': datetime.now(timezone.utc) - timedelta(hours=2),
-            'exp': datetime.now(timezone.utc) - timedelta(hours=1),
+            'iat': datetime.now(dt_timezone.utc) - timedelta(hours=2),
+            'exp': datetime.now(dt_timezone.utc) - timedelta(hours=1),
         }
         expired_token = jwt.encode(payload, jwt_service.secret_key, algorithm=jwt_service.algorithm)
 
@@ -116,8 +116,8 @@ class TestJWTSecurity:
             'jti': 'none-alg-jti',
             'user_id': str(user.id),
             'app_id': str(application.id),
-            'iat': datetime.now(timezone.utc),
-            'exp': datetime.now(timezone.utc) + timedelta(hours=1),
+            'iat': datetime.now(dt_timezone.utc),
+            'exp': datetime.now(dt_timezone.utc) + timedelta(hours=1),
         }
         # Encoder sans signature
         header = jwt.utils.base64url_encode(json.dumps({"alg": "none", "typ": "JWT"}).encode())

@@ -21,6 +21,8 @@ L'utilisateur configure son backend dans settings.py:
 import logging
 from typing import Optional, Dict, Any
 
+from django.conf import settings
+
 from ..backends.email import get_email_backend
 
 logger = logging.getLogger(__name__)
@@ -345,6 +347,96 @@ L'équipe {app_name}
             message=message.strip()
         )
     
+    def send_magic_link_email(
+        self,
+        to_email: str,
+        token: str,
+        first_name: str = '',
+        expiry_minutes: int = 15,
+        app_name: str = 'Tenxyte'
+    ) -> bool:
+        """
+        Envoie un magic link par email.
+
+        Args:
+            to_email: Adresse email du destinataire
+            token: Le token brut (non hashé) à inclure dans le lien
+            first_name: Prénom de l'utilisateur
+            expiry_minutes: Durée de validité en minutes
+            app_name: Nom de l'application
+
+        Returns:
+            True si l'envoi a réussi
+        """
+        from django.conf import settings as django_settings
+
+        greeting = f"Bonjour {first_name}" if first_name else "Bonjour"
+        base_url = getattr(django_settings, 'TENXYTE_MAGIC_LINK_BASE_URL', 'https://yourapp.com')
+        verify_url = f"{base_url}/api/auth/magic-link/verify/?token={token}"
+
+        subject = f"{app_name} - Votre lien de connexion"
+
+        message = f"""
+{greeting},
+
+Cliquez sur le lien ci-dessous pour vous connecter à {app_name}:
+
+{verify_url}
+
+Ce lien est valide pendant {expiry_minutes} minutes et ne peut être utilisé qu'une seule fois.
+
+Si vous n'avez pas demandé ce lien, ignorez cet email.
+
+Cordialement,
+L'équipe {app_name}
+"""
+
+        html_message = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #2c3e50;">Votre lien de connexion</h2>
+        <p>{greeting},</p>
+        <p>Cliquez sur le bouton ci-dessous pour vous connecter à <strong>{app_name}</strong>:</p>
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{verify_url}"
+               style="background: #3498db; color: white; padding: 14px 28px; text-decoration: none;
+                      border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block;">
+                Se connecter
+            </a>
+        </div>
+        <p style="color: #666; font-size: 14px;">
+            Ou copiez ce lien dans votre navigateur:<br>
+            <a href="{verify_url}" style="color: #3498db; word-break: break-all;">{verify_url}</a>
+        </p>
+        <p style="color: #666; font-size: 14px;">
+            Ce lien est valide pendant <strong>{expiry_minutes} minutes</strong>
+            et ne peut être utilisé qu'une seule fois.
+        </p>
+        <p style="color: #999; font-size: 12px; margin-top: 30px;">
+            Si vous n'avez pas demandé ce lien, ignorez cet email.
+        </p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #999; font-size: 12px;">
+            Cordialement,<br>
+            L'équipe {app_name}
+        </p>
+    </div>
+</body>
+</html>
+"""
+
+        return self.send_email(
+            to_email=to_email,
+            subject=subject,
+            message=message.strip(),
+            html_message=html_message
+        )
+
     def send_account_deletion_confirmation(self, deletion_request) -> bool:
         """
         Envoyer l'email de confirmation de demande de suppression.

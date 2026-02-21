@@ -16,6 +16,19 @@ from .models import (
     BlacklistedToken,
     AccountDeletionRequest,
 )
+from .conf import org_settings
+
+# Conditional Organizations import
+if org_settings.ORGANIZATIONS_ENABLED:
+    from .models import (
+        get_organization_model,
+        get_organization_role_model,
+        get_organization_membership_model,
+        OrganizationInvitation,
+    )
+    Organization = get_organization_model()
+    OrganizationRole = get_organization_role_model()
+    OrganizationMembership = get_organization_membership_model()
 
 User = get_user_model()
 Role = get_role_model()
@@ -391,3 +404,109 @@ class AccountDeletionRequestAdmin(admin.ModelAdmin):
                 actions.pop('execute_requests', None)
         
         return actions
+
+
+# =============================================
+# Organizations Admin (Conditional)
+# =============================================
+
+if org_settings.ORGANIZATIONS_ENABLED:
+    
+    @admin.register(Organization)
+    class OrganizationAdmin(admin.ModelAdmin):
+        """Admin for Organization model."""
+        
+        list_display = ('name', 'slug', 'parent', 'is_active', 'member_count', 'created_at', 'created_by')
+        list_filter = ('is_active', 'created_at')
+        search_fields = ('name', 'slug', 'description')
+        readonly_fields = ('slug', 'created_at', 'updated_at', 'created_by')
+        raw_id_fields = ('parent', 'created_by')
+        ordering = ('-created_at',)
+        
+        fieldsets = (
+            (None, {'fields': ('name', 'slug', 'description', 'parent')}),
+            (_('Settings'), {'fields': ('is_active', 'max_members', 'metadata')}),
+            (_('Dates'), {'fields': ('created_at', 'updated_at', 'created_by')}),
+        )
+        
+        def member_count(self, obj):
+            return obj.get_member_count()
+        member_count.short_description = 'Members'
+    
+    
+    @admin.register(OrganizationRole)
+    class OrganizationRoleAdmin(admin.ModelAdmin):
+        """Admin for OrganizationRole model."""
+        
+        list_display = ('name', 'code', 'is_system', 'is_default', 'created_at')
+        list_filter = ('is_system', 'is_default')
+        search_fields = ('name', 'code', 'description')
+        readonly_fields = ('created_at', 'updated_at')
+        ordering = ('name',)
+        
+        fieldsets = (
+            (None, {'fields': ('code', 'name', 'description')}),
+            (_('Properties'), {'fields': ('is_system', 'is_default', 'permissions')}),
+            (_('Dates'), {'fields': ('created_at', 'updated_at')}),
+        )
+    
+    
+    @admin.register(OrganizationMembership)
+    class OrganizationMembershipAdmin(admin.ModelAdmin):
+        """Admin for OrganizationMembership model."""
+        
+        list_display = ('user_email', 'organization_name', 'role_name', 'status', 'created_at')
+        list_filter = ('status', 'role', 'created_at')
+        search_fields = ('user__email', 'organization__name')
+        readonly_fields = ('created_at', 'updated_at', 'invited_by', 'invited_at')
+        raw_id_fields = ('user', 'organization', 'role', 'invited_by')
+        ordering = ('-created_at',)
+        
+        fieldsets = (
+            (None, {'fields': ('user', 'organization', 'role', 'status')}),
+            (_('Invitation'), {'fields': ('invited_by', 'invited_at')}),
+            (_('Dates'), {'fields': ('created_at', 'updated_at')}),
+        )
+        
+        def user_email(self, obj):
+            return obj.user.email if obj.user else "N/A"
+        user_email.short_description = 'User'
+        
+        def organization_name(self, obj):
+            return obj.organization.name if obj.organization else "N/A"
+        organization_name.short_description = 'Organization'
+        
+        def role_name(self, obj):
+            return obj.role.name if obj.role else "N/A"
+        role_name.short_description = 'Role'
+    
+    
+    @admin.register(OrganizationInvitation)
+    class OrganizationInvitationAdmin(admin.ModelAdmin):
+        """Admin for OrganizationInvitation model."""
+        
+        list_display = ('email', 'organization_name', 'role_name', 'status', 'invited_by_email', 'created_at', 'expires_at')
+        list_filter = ('status', 'created_at', 'expires_at')
+        search_fields = ('email', 'organization__name', 'token')
+        readonly_fields = ('token', 'created_at', 'expires_at', 'accepted_at', 'invited_by')
+        raw_id_fields = ('organization', 'role', 'invited_by')
+        ordering = ('-created_at',)
+        
+        fieldsets = (
+            (None, {'fields': ('organization', 'email', 'role', 'status')}),
+            (_('Token'), {'fields': ('token',)}),
+            (_('Invitation'), {'fields': ('invited_by',)}),
+            (_('Dates'), {'fields': ('created_at', 'expires_at', 'accepted_at')}),
+        )
+        
+        def organization_name(self, obj):
+            return obj.organization.name if obj.organization else "N/A"
+        organization_name.short_description = 'Organization'
+        
+        def role_name(self, obj):
+            return obj.role.name if obj.role else "N/A"
+        role_name.short_description = 'Role'
+        
+        def invited_by_email(self, obj):
+            return obj.invited_by.email if obj.invited_by else "N/A"
+        invited_by_email.short_description = 'Invited By'

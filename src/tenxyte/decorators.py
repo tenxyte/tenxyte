@@ -355,3 +355,265 @@ def require_all_permissions(permission_codes: list):
 
         return wrapper
     return decorator
+
+
+# =============================================
+# Organization-Scoped Decorators (Opt-in Feature)
+# =============================================
+
+def require_org_context(view_func):
+    """
+    Require request.organization to be set (via X-Org-Slug header).
+    
+    Usage:
+        @require_jwt
+        @require_org_context
+        def my_view(request): ...
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        from .conf import org_settings
+        
+        if not org_settings.ORGANIZATIONS_ENABLED:
+            return JsonResponse({
+                'error': 'Organizations feature is not enabled',
+                'code': 'ORG_FEATURE_DISABLED'
+            }, status=400)
+        
+        if not hasattr(request, 'organization') or request.organization is None:
+            return JsonResponse({
+                'error': 'Organization context required. Please provide X-Org-Slug header.',
+                'code': 'ORG_CONTEXT_REQUIRED'
+            }, status=400)
+        
+        return view_func(request, *args, **kwargs)
+    
+    return wrapper
+
+
+def require_org_membership(view_func):
+    """
+    Require user to be an active member of request.organization.
+    Attaches request.org_membership.
+    
+    Usage:
+        @require_jwt
+        @require_org_context
+        @require_org_membership
+        def my_view(request): ...
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        from .conf import org_settings
+        
+        if not org_settings.ORGANIZATIONS_ENABLED:
+            return JsonResponse({
+                'error': 'Organizations feature is not enabled',
+                'code': 'ORG_FEATURE_DISABLED'
+            }, status=400)
+        
+        # Check org context
+        if not hasattr(request, 'organization') or request.organization is None:
+            return JsonResponse({
+                'error': 'Organization context required',
+                'code': 'ORG_CONTEXT_REQUIRED'
+            }, status=400)
+        
+        # Check user authentication
+        if not hasattr(request, 'user') or not request.user.is_authenticated:
+            return JsonResponse({
+                'error': 'Authentication required',
+                'code': 'AUTHENTICATION_REQUIRED'
+            }, status=401)
+        
+        # Check membership
+        if not request.user.is_org_member(request.organization):
+            return JsonResponse({
+                'error': 'You are not a member of this organization',
+                'code': 'ORG_MEMBERSHIP_REQUIRED',
+                'organization': request.organization.slug
+            }, status=403)
+        
+        # Attach membership to request
+        request.org_membership = request.user.get_org_membership(request.organization)
+        
+        return view_func(request, *args, **kwargs)
+    
+    return wrapper
+
+
+def require_org_role(role_code: str, check_inheritance: bool = True):
+    """
+    Require user to have a specific role in request.organization.
+    
+    Args:
+        role_code: Role code required (e.g., 'admin', 'owner')
+        check_inheritance: Check parent organizations if enabled
+    
+    Usage:
+        @require_jwt
+        @require_org_context
+        @require_org_role('admin')
+        def my_view(request): ...
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            from .conf import org_settings
+            
+            if not org_settings.ORGANIZATIONS_ENABLED:
+                return JsonResponse({
+                    'error': 'Organizations feature is not enabled',
+                    'code': 'ORG_FEATURE_DISABLED'
+                }, status=400)
+            
+            # Check org context
+            if not hasattr(request, 'organization') or request.organization is None:
+                return JsonResponse({
+                    'error': 'Organization context required',
+                    'code': 'ORG_CONTEXT_REQUIRED'
+                }, status=400)
+            
+            # Check user authentication
+            if not hasattr(request, 'user') or not request.user.is_authenticated:
+                return JsonResponse({
+                    'error': 'Authentication required',
+                    'code': 'AUTHENTICATION_REQUIRED'
+                }, status=401)
+            
+            # Check role
+            if not request.user.has_org_role(request.organization, role_code, check_inheritance=check_inheritance):
+                return JsonResponse({
+                    'error': f'Organization role "{role_code}" required',
+                    'code': 'ORG_ROLE_REQUIRED',
+                    'required_role': role_code
+                }, status=403)
+            
+            # Attach membership to request
+            if not hasattr(request, 'org_membership'):
+                request.org_membership = request.user.get_org_membership(request.organization)
+            
+            return view_func(request, *args, **kwargs)
+        
+        return wrapper
+    return decorator
+
+
+def require_org_permission(permission_code: str, check_inheritance: bool = True):
+    """
+    Require user to have a specific organization-level permission.
+    
+    Args:
+        permission_code: Permission code (e.g., 'org.members.invite')
+        check_inheritance: Check parent organizations if enabled
+    
+    Usage:
+        @require_jwt
+        @require_org_context
+        @require_org_permission('org.members.invite')
+        def my_view(request): ...
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            from .conf import org_settings
+            
+            if not org_settings.ORGANIZATIONS_ENABLED:
+                return JsonResponse({
+                    'error': 'Organizations feature is not enabled',
+                    'code': 'ORG_FEATURE_DISABLED'
+                }, status=400)
+            
+            # Check org context
+            if not hasattr(request, 'organization') or request.organization is None:
+                return JsonResponse({
+                    'error': 'Organization context required',
+                    'code': 'ORG_CONTEXT_REQUIRED'
+                }, status=400)
+            
+            # Check user authentication
+            if not hasattr(request, 'user') or not request.user.is_authenticated:
+                return JsonResponse({
+                    'error': 'Authentication required',
+                    'code': 'AUTHENTICATION_REQUIRED'
+                }, status=401)
+            
+            # Check permission
+            if not request.user.has_org_permission(request.organization, permission_code, check_inheritance=check_inheritance):
+                return JsonResponse({
+                    'error': f'Organization permission "{permission_code}" required',
+                    'code': 'ORG_PERMISSION_REQUIRED',
+                    'required_permission': permission_code
+                }, status=403)
+            
+            # Attach membership to request
+            if not hasattr(request, 'org_membership'):
+                request.org_membership = request.user.get_org_membership(request.organization)
+            
+            return view_func(request, *args, **kwargs)
+        
+        return wrapper
+    return decorator
+
+
+def require_org_owner(view_func):
+    """
+    Shortcut decorator to require organization owner role.
+    
+    Usage:
+        @require_jwt
+        @require_org_context
+        @require_org_owner
+        def my_view(request): ...
+    """
+    return require_org_role('owner', check_inheritance=False)(view_func)
+
+
+def require_org_admin(view_func):
+    """
+    Shortcut decorator to require organization admin role (with inheritance).
+    Owner role also satisfies this check (owner >= admin).
+    
+    Usage:
+        @require_jwt
+        @require_org_context
+        @require_org_admin
+        def my_view(request): ...
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        from .conf import org_settings
+
+        if not org_settings.ORGANIZATIONS_ENABLED:
+            return JsonResponse({
+                'error': 'Organizations feature is not enabled',
+                'code': 'ORG_FEATURE_DISABLED'
+            }, status=400)
+
+        if not hasattr(request, 'organization') or request.organization is None:
+            return JsonResponse({
+                'error': 'Organization context required',
+                'code': 'ORG_CONTEXT_REQUIRED'
+            }, status=400)
+
+        if not hasattr(request, 'user') or not request.user.is_authenticated:
+            return JsonResponse({
+                'error': 'Authentication required',
+                'code': 'AUTHENTICATION_REQUIRED'
+            }, status=401)
+
+        is_admin = request.user.has_org_role(request.organization, 'admin', check_inheritance=True)
+        is_owner = request.user.has_org_role(request.organization, 'owner', check_inheritance=False)
+        if not (is_admin or is_owner):
+            return JsonResponse({
+                'error': 'Organization admin or owner role required',
+                'code': 'ORG_ROLE_REQUIRED',
+                'required_role': 'admin'
+            }, status=403)
+
+        if not hasattr(request, 'org_membership'):
+            request.org_membership = request.user.get_org_membership(request.organization)
+
+        return view_func(request, *args, **kwargs)
+
+    return wrapper

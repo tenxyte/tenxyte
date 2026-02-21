@@ -10,6 +10,7 @@ from ..serializers import (
     ChangePasswordSerializer
 )
 from ..services import AuthService, OTPService
+from ..services.breach_check_service import breach_check_service
 from ..models import get_user_model
 from ..decorators import require_jwt
 from ..throttles import PasswordResetThrottle, PasswordResetDailyThrottle, OTPVerifyThrottle
@@ -157,6 +158,16 @@ class ChangePasswordView(APIView):
             return Response({
                 'error': 'Current password is incorrect',
                 'code': 'INVALID_PASSWORD'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Breach password check (HIBP)
+        breach_ok, breach_error = breach_check_service.check_password(
+            serializer.validated_data['new_password']
+        )
+        if not breach_ok:
+            return Response({
+                'error': breach_error,
+                'code': 'PASSWORD_BREACHED'
             }, status=status.HTTP_400_BAD_REQUEST)
 
         request.user.set_password(serializer.validated_data['new_password'])

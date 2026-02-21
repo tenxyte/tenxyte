@@ -121,6 +121,28 @@ class GoogleAuthThrottle(IPBasedThrottle):
     rate = '10/min'
 
 
+class MagicLinkRequestThrottle(IPBasedThrottle):
+    """
+    Rate limit pour les demandes de magic link.
+    Evite le spam d'emails.
+
+    3 demandes par heure par IP
+    """
+    scope = 'magic_link_request'
+    rate = '3/hour'
+
+
+class MagicLinkVerifyThrottle(IPBasedThrottle):
+    """
+    Rate limit pour la verification de magic link.
+    Evite le brute force sur les tokens.
+
+    10 tentatives par minute par IP
+    """
+    scope = 'magic_link_verify'
+    rate = '10/min'
+
+
 # ============== Throttle avec blocage progressif ==============
 
 class ProgressiveLoginThrottle(SimpleRateThrottle):

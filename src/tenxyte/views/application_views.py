@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
 from ..serializers import (
@@ -9,7 +9,8 @@ from ..serializers import (
 )
 from ..models import get_application_model
 from ..decorators import require_permission
-
+from ..pagination import TenxytePagination
+from ..filters import apply_application_filters
 Application = get_application_model()
 
 
@@ -17,7 +18,14 @@ Application = get_application_model()
     get=extend_schema(
         tags=['Applications'],
         summary="Lister les applications",
-        description="Retourne la liste de toutes les applications enregistrées.",
+        description="Retourne la liste paginée de toutes les applications enregistrées.",
+        parameters=[
+            OpenApiParameter('search', str, description='Recherche dans name et description'),
+            OpenApiParameter('is_active', bool, description='Filtrer par statut actif'),
+            OpenApiParameter('ordering', str, description='Tri: name, is_active, created_at, updated_at'),
+            OpenApiParameter('page', int, description='Numéro de page'),
+            OpenApiParameter('page_size', int, description='Éléments par page (max 100)'),
+        ],
         responses={200: ApplicationSerializer(many=True)}
     ),
     post=extend_schema(
@@ -31,16 +39,25 @@ Application = get_application_model()
 class ApplicationListView(APIView):
     """
     GET /api/v1/auth/applications/
-    Liste toutes les applications
+    Liste toutes les applications (paginé + filtres)
 
     POST /api/v1/auth/applications/
     Crée une nouvelle application
     """
+    pagination_class = TenxytePagination
 
     @require_permission('applications.view')
     def get(self, request):
-        applications = Application.objects.all()
-        serializer = ApplicationSerializer(applications, many=True)
+        queryset = Application.objects.all()
+        queryset = apply_application_filters(queryset, request)
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(queryset, request)
+        if page is not None:
+            serializer = ApplicationSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = ApplicationSerializer(queryset, many=True)
         return Response(serializer.data)
 
     @require_permission('applications.create')

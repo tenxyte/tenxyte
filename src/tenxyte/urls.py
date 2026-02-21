@@ -11,11 +11,32 @@ from .views import (
     PermissionListView, PermissionDetailView,
     RoleListView, RoleDetailView, RolePermissionsView,
     UserRolesView, UserDirectPermissionsView,
-    ApplicationListView, ApplicationDetailView, ApplicationRegenerateView
+    ApplicationListView, ApplicationDetailView, ApplicationRegenerateView,
+    UserListView, UserDetailView,
+    UserBanView, UserUnbanView, UserLockView, UserUnlockView,
+    AuditLogListView, AuditLogDetailView,
+    LoginAttemptListView,
+    BlacklistedTokenListView, BlacklistedTokenCleanupView,
+    RefreshTokenListView, RefreshTokenRevokeView,
 )
 from .views.account_deletion_views import (
     request_account_deletion, confirm_account_deletion, 
     cancel_account_deletion, account_deletion_status, export_user_data
+)
+from .views.gdpr_admin_views import (
+    DeletionRequestListView, DeletionRequestDetailView,
+    ProcessDeletionView, ProcessExpiredDeletionsView,
+)
+from .views.dashboard_views import (
+    DashboardGlobalView, DashboardAuthView, DashboardSecurityView,
+    DashboardGDPRView, DashboardOrganizationsView,
+)
+from .views.magic_link_views import MagicLinkRequestView, MagicLinkVerifyView
+from .views.social_auth_views import SocialAuthView
+from .views.webauthn_views import (
+    WebAuthnRegisterBeginView, WebAuthnRegisterCompleteView,
+    WebAuthnAuthenticateBeginView, WebAuthnAuthenticateCompleteView,
+    WebAuthnCredentialListView, WebAuthnCredentialDeleteView,
 )
 
 app_name = 'authentication'
@@ -81,4 +102,96 @@ urlpatterns = [
     path('cancel-account-deletion/', cancel_account_deletion, name='cancel_account_deletion'),
     path('account-deletion-status/', account_deletion_status, name='account_deletion_status'),
     path('export-user-data/', export_user_data, name='export_user_data'),
+
+    # Admin - User Management
+    path('admin/users/', UserListView.as_view(), name='admin_user_list'),
+    path('admin/users/<str:user_id>/', UserDetailView.as_view(), name='admin_user_detail'),
+    path('admin/users/<str:user_id>/ban/', UserBanView.as_view(), name='admin_user_ban'),
+    path('admin/users/<str:user_id>/unban/', UserUnbanView.as_view(), name='admin_user_unban'),
+    path('admin/users/<str:user_id>/lock/', UserLockView.as_view(), name='admin_user_lock'),
+    path('admin/users/<str:user_id>/unlock/', UserUnlockView.as_view(), name='admin_user_unlock'),
+
+    # Admin - Security
+    path('admin/audit-logs/', AuditLogListView.as_view(), name='admin_audit_log_list'),
+    path('admin/audit-logs/<str:log_id>/', AuditLogDetailView.as_view(), name='admin_audit_log_detail'),
+    path('admin/login-attempts/', LoginAttemptListView.as_view(), name='admin_login_attempt_list'),
+    path('admin/blacklisted-tokens/', BlacklistedTokenListView.as_view(), name='admin_blacklisted_token_list'),
+    path('admin/blacklisted-tokens/cleanup/', BlacklistedTokenCleanupView.as_view(), name='admin_blacklisted_token_cleanup'),
+    path('admin/refresh-tokens/', RefreshTokenListView.as_view(), name='admin_refresh_token_list'),
+    path('admin/refresh-tokens/<str:token_id>/revoke/', RefreshTokenRevokeView.as_view(), name='admin_refresh_token_revoke'),
+
+    # Admin - GDPR
+    path('admin/deletion-requests/', DeletionRequestListView.as_view(), name='admin_deletion_request_list'),
+    path('admin/deletion-requests/process-expired/', ProcessExpiredDeletionsView.as_view(), name='admin_process_expired_deletions'),
+    path('admin/deletion-requests/<str:request_id>/', DeletionRequestDetailView.as_view(), name='admin_deletion_request_detail'),
+    path('admin/deletion-requests/<str:request_id>/process/', ProcessDeletionView.as_view(), name='admin_process_deletion'),
+
+    # Magic Link (Passwordless)
+    path('magic-link/request/', MagicLinkRequestView.as_view(), name='magic_link_request'),
+    path('magic-link/verify/', MagicLinkVerifyView.as_view(), name='magic_link_verify'),
+
+    # Social Login Multi-Provider
+    path('social/<str:provider>/', SocialAuthView.as_view(), name='social_auth'),
+
+    # WebAuthn / Passkeys (FIDO2)
+    path('webauthn/register/begin/', WebAuthnRegisterBeginView.as_view(), name='webauthn_register_begin'),
+    path('webauthn/register/complete/', WebAuthnRegisterCompleteView.as_view(), name='webauthn_register_complete'),
+    path('webauthn/authenticate/begin/', WebAuthnAuthenticateBeginView.as_view(), name='webauthn_authenticate_begin'),
+    path('webauthn/authenticate/complete/', WebAuthnAuthenticateCompleteView.as_view(), name='webauthn_authenticate_complete'),
+    path('webauthn/credentials/', WebAuthnCredentialListView.as_view(), name='webauthn_credential_list'),
+    path('webauthn/credentials/<int:credential_id>/', WebAuthnCredentialDeleteView.as_view(), name='webauthn_credential_delete'),
+
+    # Dashboard
+    path('dashboard/stats/', DashboardGlobalView.as_view(), name='dashboard_global'),
+    path('dashboard/auth/', DashboardAuthView.as_view(), name='dashboard_auth'),
+    path('dashboard/security/', DashboardSecurityView.as_view(), name='dashboard_security'),
+    path('dashboard/gdpr/', DashboardGDPRView.as_view(), name='dashboard_gdpr'),
+    path('dashboard/organizations/', DashboardOrganizationsView.as_view(), name='dashboard_organizations'),
 ]
+
+# =============================================
+# Organizations (Conditional - Opt-in Feature)
+# =============================================
+
+from .conf import org_settings
+
+if org_settings.ORGANIZATIONS_ENABLED:
+    from .views.organization_views import (
+        create_organization,
+        list_organizations,
+        get_organization,
+        update_organization,
+        delete_organization,
+        get_organization_tree,
+        list_members,
+        add_member,
+        update_member_role,
+        remove_member,
+        invite_member,
+        list_org_roles,
+    )
+    
+    # Add organization URLs to urlpatterns
+    urlpatterns += [
+        # Organizations CRUD
+        path('organizations/', create_organization, name='create_organization'),
+        path('organizations/list/', list_organizations, name='list_organizations'),
+        path('organizations/detail/', get_organization, name='get_organization'),
+        path('organizations/update/', update_organization, name='update_organization'),
+        path('organizations/delete/', delete_organization, name='delete_organization'),
+        
+        # Hierarchy
+        path('organizations/tree/', get_organization_tree, name='get_organization_tree'),
+        
+        # Members
+        path('organizations/members/', list_members, name='list_members'),
+        path('organizations/members/add/', add_member, name='add_member'),
+        path('organizations/members/<int:user_id>/', update_member_role, name='update_member_role'),
+        path('organizations/members/<int:user_id>/remove/', remove_member, name='remove_member'),
+        
+        # Invitations
+        path('organizations/invitations/', invite_member, name='invite_member'),
+        
+        # Organization Roles
+        path('org-roles/', list_org_roles, name='list_org_roles'),
+    ]

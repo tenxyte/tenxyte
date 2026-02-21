@@ -191,3 +191,57 @@ class SecurityHeadersMiddleware:
                 response[header] = value
 
         return response
+
+
+class OrganizationContextMiddleware:
+    """
+    Middleware to attach organization context to requests (Couche 3 - opt-in).
+    
+    Active only if TENXYTE_ORGANIZATIONS_ENABLED = True.
+    
+    Reads X-Org-Slug header and attaches request.organization if found.
+    Does NOT enforce membership - that's the job of decorators.
+    """
+    
+    def __init__(self, get_response):
+        self.get_response = get_response
+    
+    def __call__(self, request):
+        from .conf import org_settings
+        
+        # Feature disabled - skip
+        if not org_settings.ORGANIZATIONS_ENABLED:
+            request.organization = None
+            return self.get_response(request)
+        
+        # Read X-Org-Slug header
+        org_slug = request.headers.get('X-Org-Slug')
+        
+        if org_slug:
+            try:
+                from .models import get_organization_model
+                Organization = get_organization_model()
+                
+                organization = Organization.objects.get(
+                    slug=org_slug,
+                    is_active=True
+                )
+                request.organization = organization
+                
+            except Organization.DoesNotExist:
+                return JsonResponse({
+                    'error': 'Organization not found',
+                    'code': 'ORG_NOT_FOUND',
+                    'slug': org_slug
+                }, status=404)
+            except Exception as e:
+                return JsonResponse({
+                    'error': 'Error loading organization',
+                    'code': 'ORG_ERROR',
+                    'message': str(e)
+                }, status=500)
+        else:
+            # No org header - that's OK, not all endpoints need it
+            request.organization = None
+        
+        return self.get_response(request)

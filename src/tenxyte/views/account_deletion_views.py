@@ -199,7 +199,7 @@ def export_user_data(request: Request) -> Response:
                     'name': app.name,
                     'created_at': app.created_at.isoformat()
                 }
-                for app in request.user.applications.all() if hasattr(request.user, 'applications')
+                for app in (request.user.applications.all() if hasattr(request.user, 'applications') else [])
             ],
             'audit_logs': [
                 {

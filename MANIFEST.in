@@ -5,6 +5,7 @@ include MIGRATION_GUIDE.md
 recursive-include src/tenxyte/migrations *.py
 recursive-include src/tenxyte/templates *
 recursive-include src/tenxyte/static *
+recursive-include docs *.md
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 recursive-exclude * .DS_Store

@@ -10,6 +10,8 @@ from ..serializers import (
 )
 from ..models import get_user_model, get_role_model, get_permission_model
 from ..decorators import require_permission
+from ..pagination import TenxytePagination
+from ..filters import apply_permission_filters, apply_role_filters
 
 User = get_user_model()
 Role = get_role_model()
@@ -20,7 +22,14 @@ Permission = get_permission_model()
     get=extend_schema(
         tags=['RBAC'],
         summary="Lister les permissions",
-        description="Retourne la liste de toutes les permissions disponibles.",
+        description="Retourne la liste paginée de toutes les permissions disponibles.",
+        parameters=[
+            OpenApiParameter('search', str, description='Recherche dans code et name'),
+            OpenApiParameter('parent', str, description='Filtrer par parent (null=racines, id=enfants)'),
+            OpenApiParameter('ordering', str, description='Tri: code, name, created_at (prefix - pour DESC)'),
+            OpenApiParameter('page', int, description='Numéro de page'),
+            OpenApiParameter('page_size', int, description='Éléments par page (max 100)'),
+        ],
         responses={200: PermissionSerializer(many=True)}
     ),
     post=extend_schema(
@@ -34,13 +43,22 @@ Permission = get_permission_model()
 class PermissionListView(APIView):
     """
     GET /api/auth/permissions/
-    Liste toutes les permissions
+    Liste toutes les permissions (paginé + filtres)
     """
+    pagination_class = TenxytePagination
 
     @require_permission('permissions.view')
     def get(self, request):
-        permissions = Permission.objects.all()
-        serializer = PermissionSerializer(permissions, many=True)
+        queryset = Permission.objects.all()
+        queryset = apply_permission_filters(queryset, request)
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(queryset, request)
+        if page is not None:
+            serializer = PermissionSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = PermissionSerializer(queryset, many=True)
         return Response(serializer.data)
 
     @require_permission('permissions.create')
@@ -130,7 +148,14 @@ class PermissionDetailView(APIView):
     get=extend_schema(
         tags=['RBAC'],
         summary="Lister les rôles",
-        description="Retourne la liste de tous les rôles disponibles.",
+        description="Retourne la liste paginée de tous les rôles disponibles.",
+        parameters=[
+            OpenApiParameter('search', str, description='Recherche dans code et name'),
+            OpenApiParameter('is_default', bool, description='Filtrer par is_default'),
+            OpenApiParameter('ordering', str, description='Tri: code, name, is_default, created_at'),
+            OpenApiParameter('page', int, description='Numéro de page'),
+            OpenApiParameter('page_size', int, description='Éléments par page (max 100)'),
+        ],
         responses={200: RoleListSerializer(many=True)}
     ),
     post=extend_schema(
@@ -144,13 +169,22 @@ class PermissionDetailView(APIView):
 class RoleListView(APIView):
     """
     GET /api/auth/roles/
-    Liste tous les rôles
+    Liste tous les rôles (paginé + filtres)
     """
+    pagination_class = TenxytePagination
 
     @require_permission('roles.view')
     def get(self, request):
-        roles = Role.objects.all()
-        serializer = RoleListSerializer(roles, many=True)
+        queryset = Role.objects.all()
+        queryset = apply_role_filters(queryset, request)
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(queryset, request)
+        if page is not None:
+            serializer = RoleListSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = RoleListSerializer(queryset, many=True)
         return Response(serializer.data)
 
     @require_permission('roles.create')

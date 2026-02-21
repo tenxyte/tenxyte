@@ -7,7 +7,11 @@ from .password_views import (
     PasswordResetRequestView, PasswordResetConfirmView, ChangePasswordView,
     PasswordStrengthView, PasswordRequirementsView
 )
-from .user_views import MeView, MyRolesView
+from .user_views import (
+    MeView, MyRolesView,
+    UserListView, UserDetailView,
+    UserBanView, UserUnbanView, UserLockView, UserUnlockView,
+)
 from .rbac_views import (
     PermissionListView, PermissionDetailView,
     RoleListView, RoleDetailView, RolePermissionsView,
@@ -20,6 +24,12 @@ from .twofa_views import (
 from .application_views import (
     ApplicationListView, ApplicationDetailView, ApplicationRegenerateView
 )
+from .security_views import (
+    AuditLogListView, AuditLogDetailView,
+    LoginAttemptListView,
+    BlacklistedTokenListView, BlacklistedTokenCleanupView,
+    RefreshTokenListView, RefreshTokenRevokeView,
+)
 
 __all__ = [
     'RegisterView', 'LoginEmailView', 'LoginPhoneView', 'GoogleAuthView',
@@ -28,10 +38,16 @@ __all__ = [
     'PasswordResetRequestView', 'PasswordResetConfirmView', 'ChangePasswordView',
     'PasswordStrengthView', 'PasswordRequirementsView',
     'MeView', 'MyRolesView',
+    'UserListView', 'UserDetailView',
+    'UserBanView', 'UserUnbanView', 'UserLockView', 'UserUnlockView',
     'PermissionListView', 'PermissionDetailView',
     'RoleListView', 'RoleDetailView', 'RolePermissionsView',
     'UserRolesView', 'UserDirectPermissionsView',
     'TwoFactorStatusView', 'TwoFactorSetupView', 'TwoFactorConfirmView',
     'TwoFactorDisableView', 'TwoFactorBackupCodesView',
     'ApplicationListView', 'ApplicationDetailView', 'ApplicationRegenerateView',
+    'AuditLogListView', 'AuditLogDetailView',
+    'LoginAttemptListView',
+    'BlacklistedTokenListView', 'BlacklistedTokenCleanupView',
+    'RefreshTokenListView', 'RefreshTokenRevokeView',
 ]

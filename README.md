@@ -4,8 +4,20 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/tenxyte.svg)](https://pypi.org/project/tenxyte/)
 [![Django versions](https://img.shields.io/badge/django-5.0%2B-blue.svg)](https://www.djangoproject.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Coverage](https://img.shields.io/badge/coverage-80%25-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-700%20passing-brightgreen.svg)]()
 
-Complete Django authentication package with JWT, RBAC, 2FA (TOTP), OTP verification, and multi-application support.
+Complete Django authentication package with JWT, RBAC, 2FA (TOTP), OTP verification, Organizations B2B, and multi-application support.
+
+## Documentation
+
+- [**Quickstart**](docs/quickstart.md) — Up and running in 5 minutes
+- [**Settings Reference**](docs/settings.md) — All 150+ configuration options
+- [**API Endpoints**](docs/endpoints.md) — Full endpoint reference with curl examples
+- [**RBAC Guide**](docs/rbac.md) — Roles, permissions, 8 decorators
+- [**Security Guide**](docs/security.md) — Rate limiting, 2FA, device fingerprinting, JWT hardening
+- [**Organizations Guide**](docs/organizations.md) — B2B multi-tenant setup
+- [**Database Setup**](DATABASE_SETUP.md) — PostgreSQL, MySQL, MongoDB, SQLite
 
 ## Features
 

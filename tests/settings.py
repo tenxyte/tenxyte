@@ -40,6 +40,10 @@ TENXYTE_USER_MODEL = 'tenxyte.User'
 TENXYTE_APPLICATION_MODEL = 'tenxyte.Application'
 TENXYTE_ROLE_MODEL = 'tenxyte.Role'
 TENXYTE_PERMISSION_MODEL = 'tenxyte.Permission'
+TENXYTE_ORGANIZATION_MODEL = 'tenxyte.Organization'
+TENXYTE_ORGANIZATION_ROLE_MODEL = 'tenxyte.OrganizationRole'
+TENXYTE_ORGANIZATION_MEMBERSHIP_MODEL = 'tenxyte.OrganizationMembership'
+TENXYTE_ORGANIZATIONS_ENABLED = True
 
 # Tenxyte Auth settings
 TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 3600

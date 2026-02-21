@@ -301,6 +301,109 @@ class TenxyteSettings:
         return getattr(settings, 'TENXYTE_DEVICE_LIMIT_ACTION', 'deny')
 
     # =============================================
+    # Social Login Multi-Provider
+    # =============================================
+
+    @property
+    def SOCIAL_PROVIDERS(self):
+        """
+        Liste des providers OAuth2 activés.
+        Options: 'google', 'github', 'microsoft', 'facebook'
+        Par défaut: tous activés.
+        """
+        return getattr(settings, 'TENXYTE_SOCIAL_PROVIDERS', ['google', 'github', 'microsoft', 'facebook'])
+
+    @property
+    def GITHUB_CLIENT_ID(self):
+        """GitHub OAuth App Client ID."""
+        return getattr(settings, 'GITHUB_CLIENT_ID', '')
+
+    @property
+    def GITHUB_CLIENT_SECRET(self):
+        """GitHub OAuth App Client Secret."""
+        return getattr(settings, 'GITHUB_CLIENT_SECRET', '')
+
+    @property
+    def MICROSOFT_CLIENT_ID(self):
+        """Microsoft Azure AD Application (client) ID."""
+        return getattr(settings, 'MICROSOFT_CLIENT_ID', '')
+
+    @property
+    def MICROSOFT_CLIENT_SECRET(self):
+        """Microsoft Azure AD Client Secret."""
+        return getattr(settings, 'MICROSOFT_CLIENT_SECRET', '')
+
+    @property
+    def FACEBOOK_APP_ID(self):
+        """Facebook App ID."""
+        return getattr(settings, 'FACEBOOK_APP_ID', '')
+
+    @property
+    def FACEBOOK_APP_SECRET(self):
+        """Facebook App Secret."""
+        return getattr(settings, 'FACEBOOK_APP_SECRET', '')
+
+    # =============================================
+    # WebAuthn / Passkeys (FIDO2)
+    # =============================================
+
+    @property
+    def WEBAUTHN_ENABLED(self):
+        """Activer/désactiver l'authentification par Passkeys (WebAuthn/FIDO2)."""
+        return getattr(settings, 'TENXYTE_WEBAUTHN_ENABLED', False)
+
+    @property
+    def WEBAUTHN_RP_ID(self):
+        """Relying Party ID — doit correspondre au domaine de l'application (ex: 'yourapp.com')."""
+        return getattr(settings, 'TENXYTE_WEBAUTHN_RP_ID', 'localhost')
+
+    @property
+    def WEBAUTHN_RP_NAME(self):
+        """Nom affiché dans le prompt Passkey du navigateur."""
+        return getattr(settings, 'TENXYTE_WEBAUTHN_RP_NAME', 'Tenxyte')
+
+    @property
+    def WEBAUTHN_CHALLENGE_EXPIRY_SECONDS(self):
+        """Durée de validité du challenge WebAuthn en secondes."""
+        return getattr(settings, 'TENXYTE_WEBAUTHN_CHALLENGE_EXPIRY_SECONDS', 300)
+
+    # =============================================
+    # Breach Password Check (HaveIBeenPwned)
+    # =============================================
+
+    @property
+    def BREACH_CHECK_ENABLED(self):
+        """Activer/désactiver la vérification des mots de passe compromis via HIBP."""
+        return getattr(settings, 'TENXYTE_BREACH_CHECK_ENABLED', False)
+
+    @property
+    def BREACH_CHECK_REJECT(self):
+        """
+        Si True, rejette les mots de passe compromis (erreur 400).
+        Si False, avertit seulement dans les logs (mode warn).
+        """
+        return getattr(settings, 'TENXYTE_BREACH_CHECK_REJECT', True)
+
+    # =============================================
+    # Magic Link (Passwordless)
+    # =============================================
+
+    @property
+    def MAGIC_LINK_ENABLED(self):
+        """Activer/désactiver l'authentification par magic link (sans mot de passe)."""
+        return getattr(settings, 'TENXYTE_MAGIC_LINK_ENABLED', False)
+
+    @property
+    def MAGIC_LINK_EXPIRY_MINUTES(self):
+        """Durée de validité du magic link en minutes."""
+        return getattr(settings, 'TENXYTE_MAGIC_LINK_EXPIRY_MINUTES', 15)
+
+    @property
+    def MAGIC_LINK_BASE_URL(self):
+        """URL de base utilisée pour construire le lien de vérification."""
+        return getattr(settings, 'TENXYTE_MAGIC_LINK_BASE_URL', 'https://yourapp.com')
+
+    # =============================================
     # Simple Throttle Rules
     # =============================================
 
@@ -481,6 +584,69 @@ class TenxyteSettings:
         """Google OAuth Client Secret."""
         return getattr(settings, 'GOOGLE_CLIENT_SECRET', '')
 
+    # =============================================
+    # Organizations Settings
+    # =============================================
+
+    @property
+    def ORGANIZATIONS_ENABLED(self):
+        """
+        Enable Organizations feature (opt-in).
+        Default: False (disabled for backward compatibility)
+        """
+        return getattr(settings, 'TENXYTE_ORGANIZATIONS_ENABLED', False)
+
+    @property
+    def ORG_ROLE_INHERITANCE(self):
+        """
+        Enable role inheritance in organization hierarchy.
+        If True, roles propagate down from parent to children.
+        Default: True
+        """
+        return getattr(settings, 'TENXYTE_ORG_ROLE_INHERITANCE', True)
+
+    @property
+    def ORG_MAX_DEPTH(self):
+        """
+        Maximum depth of organization hierarchy.
+        Default: 5 levels
+        """
+        return getattr(settings, 'TENXYTE_ORG_MAX_DEPTH', 5)
+
+    @property
+    def ORG_MAX_MEMBERS(self):
+        """
+        Default maximum members per organization (0 = unlimited).
+        Can be overridden per organization.
+        Default: 0 (unlimited)
+        """
+        return getattr(settings, 'TENXYTE_ORG_MAX_MEMBERS', 0)
+
+    @property
+    def ORGANIZATION_MODEL(self):
+        """
+        Swappable Organization model (like AUTH_USER_MODEL).
+        Default: 'tenxyte.Organization'
+        """
+        return getattr(settings, 'TENXYTE_ORGANIZATION_MODEL', 'tenxyte.Organization')
+
+    @property
+    def ORGANIZATION_ROLE_MODEL(self):
+        """
+        Swappable OrganizationRole model.
+        Default: 'tenxyte.OrganizationRole'
+        """
+        return getattr(settings, 'TENXYTE_ORGANIZATION_ROLE_MODEL', 'tenxyte.OrganizationRole')
+
+    @property
+    def ORGANIZATION_MEMBERSHIP_MODEL(self):
+        """
+        Swappable OrganizationMembership model.
+        Default: 'tenxyte.OrganizationMembership'
+        """
+        return getattr(settings, 'TENXYTE_ORGANIZATION_MEMBERSHIP_MODEL', 'tenxyte.OrganizationMembership')
+
 
 # Instance singleton accessible partout
 auth_settings = TenxyteSettings()
+org_settings = auth_settings  # Alias pour clarté dans le code org

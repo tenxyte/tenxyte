@@ -10,6 +10,7 @@ from ..serializers import (
     RefreshTokenSerializer, GoogleAuthSerializer, UserSerializer
 )
 from ..services import AuthService, OTPService, GoogleAuthService
+from ..services.breach_check_service import breach_check_service
 from ..decorators import require_jwt, get_client_ip
 from ..device_info import build_device_info_from_user_agent
 from ..throttles import (
@@ -51,6 +52,16 @@ class RegisterView(APIView):
             request.META.get('HTTP_USER_AGENT', '')
         )
         ip_address = get_client_ip(request)
+
+        # Breach password check (HIBP)
+        breach_ok, breach_error = breach_check_service.check_password(
+            serializer.validated_data.get('password', '')
+        )
+        if not breach_ok:
+            return Response({
+                'error': breach_error,
+                'code': 'PASSWORD_BREACHED'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         success, user, error = auth_service.register_user(
             **serializer.validated_data,

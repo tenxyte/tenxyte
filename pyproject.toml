@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "tenxyte"
 version = "0.0.8.3.9.7"
-description = "Complete Django authentication package with JWT, RBAC, 2FA (TOTP), OTP verification, and multi-application support"
+description = "Complete Django authentication package with JWT, RBAC, 2FA (TOTP), OTP verification, Organizations B2B, and multi-application support"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -21,7 +21,13 @@ keywords = [
     "rbac",
     "otp",
     "google-authenticator",
-    "role-based-access-control"
+    "role-based-access-control",
+    "organizations",
+    "multi-tenant",
+    "b2b",
+    "device-fingerprinting",
+    "audit-log",
+    "gdpr"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -113,7 +119,7 @@ pythonpath = ["."]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--cov=tenxyte --cov-report=html --cov-report=term --reuse-db --create-db"
+addopts = "--cov=tenxyte --cov-report=html --cov-report=term --cov-fail-under=60 --reuse-db --create-db"
 
 [tool.black]
 line-length = 120

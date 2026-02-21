@@ -10,7 +10,7 @@ from unittest.mock import Mock, patch, MagicMock
 from django.http import HttpResponse, JsonResponse
 from django.test import RequestFactory, override_settings
 
-from tenxyte.middleware import ApplicationAuthMiddleware
+
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def get_response():
 
 @pytest.fixture
 def middleware(get_response):
-    return ApplicationAuthMiddleware(get_response)
+    return __import__('tenxyte.middleware', fromlist=['ApplicationAuthMiddleware']).ApplicationAuthMiddleware(get_response)
 
 
 class TestExemptPathsPrefixMatch:
@@ -72,7 +72,7 @@ class TestExemptPathsPrefixMatch:
     ])
     def test_custom_exempt_paths_are_applied(self, get_response, request_factory):
         """Les chemins personnalisés dans TENXYTE_EXEMPT_PATHS sont appliqués."""
-        mw = ApplicationAuthMiddleware(get_response)
+        mw = __import__('tenxyte.middleware', fromlist=['ApplicationAuthMiddleware']).ApplicationAuthMiddleware(get_response)
 
         # /api/v1/public/ doit être exempté
         request = request_factory.get('/api/v1/public/')
@@ -92,7 +92,7 @@ class TestExemptPathsPrefixMatch:
     ])
     def test_custom_exempt_paths_non_listed_still_requires_auth(self, get_response, request_factory):
         """Un chemin non listé dans les paths personnalisés requiert toujours l'auth."""
-        mw = ApplicationAuthMiddleware(get_response)
+        mw = __import__('tenxyte.middleware', fromlist=['ApplicationAuthMiddleware']).ApplicationAuthMiddleware(get_response)
 
         request = request_factory.get('/api/v1/users/')
         response = mw(request)
@@ -101,7 +101,7 @@ class TestExemptPathsPrefixMatch:
     @override_settings(TENXYTE_EXEMPT_PATHS=['/custom/'])
     def test_overriding_removes_defaults(self, get_response, request_factory):
         """Surcharger TENXYTE_EXEMPT_PATHS remplace les défauts, pas les complète."""
-        mw = ApplicationAuthMiddleware(get_response)
+        mw = __import__('tenxyte.middleware', fromlist=['ApplicationAuthMiddleware']).ApplicationAuthMiddleware(get_response)
 
         # /custom/ est exempté
         request = request_factory.get('/custom/path/')
@@ -132,7 +132,7 @@ class TestExactExemptPaths:
     @override_settings(TENXYTE_EXACT_EXEMPT_PATHS=['/api/v1/', '/'])
     def test_custom_exact_exempt_paths_are_applied(self, get_response, request_factory):
         """Les chemins exacts personnalisés dans TENXYTE_EXACT_EXEMPT_PATHS sont appliqués."""
-        mw = ApplicationAuthMiddleware(get_response)
+        mw = __import__('tenxyte.middleware', fromlist=['ApplicationAuthMiddleware']).ApplicationAuthMiddleware(get_response)
 
         # / doit être exempté
         request = request_factory.get('/')
@@ -147,7 +147,7 @@ class TestExactExemptPaths:
     @override_settings(TENXYTE_EXACT_EXEMPT_PATHS=['/api/v1/', '/'])
     def test_custom_exact_exempt_subpath_not_exempt(self, get_response, request_factory):
         """Les sous-chemins ne sont PAS exemptés par match exact."""
-        mw = ApplicationAuthMiddleware(get_response)
+        mw = __import__('tenxyte.middleware', fromlist=['ApplicationAuthMiddleware']).ApplicationAuthMiddleware(get_response)
 
         request = request_factory.get('/api/v1/users/')
         response = mw(request)
@@ -156,7 +156,7 @@ class TestExactExemptPaths:
     @override_settings(TENXYTE_EXACT_EXEMPT_PATHS=['/'])
     def test_overriding_exact_removes_defaults(self, get_response, request_factory):
         """Surcharger TENXYTE_EXACT_EXEMPT_PATHS remplace les défauts."""
-        mw = ApplicationAuthMiddleware(get_response)
+        mw = __import__('tenxyte.middleware', fromlist=['ApplicationAuthMiddleware']).ApplicationAuthMiddleware(get_response)
 
         # / est exempté
         request = request_factory.get('/')
@@ -200,7 +200,7 @@ class TestFullUserSettings:
     )
     def test_all_prefix_paths_exempt(self, get_response, request_factory):
         """Tous les chemins préfixés sont exemptés."""
-        mw = ApplicationAuthMiddleware(get_response)
+        mw = __import__('tenxyte.middleware', fromlist=['ApplicationAuthMiddleware']).ApplicationAuthMiddleware(get_response)
 
         exempt_paths = [
             '/admin/',
@@ -232,7 +232,7 @@ class TestFullUserSettings:
     )
     def test_all_exact_paths_exempt(self, get_response, request_factory):
         """Tous les chemins exacts sont exemptés."""
-        mw = ApplicationAuthMiddleware(get_response)
+        mw = __import__('tenxyte.middleware', fromlist=['ApplicationAuthMiddleware']).ApplicationAuthMiddleware(get_response)
 
         exact_exempt = ['/', '/api/v1/']
         for path in exact_exempt:
@@ -254,7 +254,7 @@ class TestFullUserSettings:
     )
     def test_protected_paths_require_auth(self, get_response, request_factory):
         """Les chemins non exemptés requièrent l'authentification."""
-        mw = ApplicationAuthMiddleware(get_response)
+        mw = __import__('tenxyte.middleware', fromlist=['ApplicationAuthMiddleware']).ApplicationAuthMiddleware(get_response)
 
         protected_paths = [
             '/api/v1/users/',
@@ -284,7 +284,7 @@ class TestFullUserSettings:
     def test_error_response_format(self, get_response, request_factory):
         """Vérifie le format de la réponse d'erreur 401."""
         import json
-        mw = ApplicationAuthMiddleware(get_response)
+        mw = __import__('tenxyte.middleware', fromlist=['ApplicationAuthMiddleware']).ApplicationAuthMiddleware(get_response)
 
         request = request_factory.get('/api/v1/users/')
         response = mw(request)
@@ -300,7 +300,7 @@ class TestApplicationAuthDisabled:
     @override_settings(TENXYTE_APPLICATION_AUTH_ENABLED=False)
     def test_disabled_auth_passes_all_requests(self, get_response, request_factory):
         """Quand l'auth application est désactivée, toutes les requêtes passent."""
-        mw = ApplicationAuthMiddleware(get_response)
+        mw = __import__('tenxyte.middleware', fromlist=['ApplicationAuthMiddleware']).ApplicationAuthMiddleware(get_response)
 
         paths = ['/api/v1/users/', '/admin/', '/anything/', '/']
         for path in paths:
@@ -317,8 +317,84 @@ class TestApplicationAuthDisabled:
             captured['application'] = getattr(request, 'application', 'NOT_SET')
             return HttpResponse("OK")
 
-        mw = ApplicationAuthMiddleware(capturing_response)
+        mw = __import__('tenxyte.middleware', fromlist=['ApplicationAuthMiddleware']).ApplicationAuthMiddleware(capturing_response)
         request = request_factory.get('/api/v1/users/')
         mw(request)
 
         assert captured['application'] is None
+
+
+# ─── CORSMiddleware ───────────────────────────────────────────────────────────
+
+
+
+
+class TestCORSMiddleware:
+    """Tests de CORSMiddleware : preflight, origines autorisées/refusées, disabled."""
+
+    @override_settings(
+        TENXYTE_CORS_ENABLED=True,
+        TENXYTE_CORS_ALLOW_ALL_ORIGINS=True
+    )
+    def test_preflight_returns_200_with_cors_headers(self):
+        mw = __import__('tenxyte.middleware', fromlist=['CORSMiddleware']).CORSMiddleware(lambda r: HttpResponse("OK"))
+        from django.test import RequestFactory
+        req = RequestFactory().options("/api/test/", HTTP_ORIGIN="https://example.com")
+        response = mw(req)
+        assert response.status_code == 200
+        assert response.get("Access-Control-Allow-Origin") == "https://example.com"
+
+    @override_settings(
+        TENXYTE_CORS_ENABLED=True,
+        TENXYTE_CORS_ALLOW_ALL_ORIGINS=False,
+        TENXYTE_CORS_ALLOWED_ORIGINS=["https://allowed.com"]
+    )
+    def test_disallowed_origin_has_no_cors_headers(self):
+        mw = __import__('tenxyte.middleware', fromlist=['CORSMiddleware']).CORSMiddleware(lambda r: HttpResponse("OK"))
+        from django.test import RequestFactory
+        req = RequestFactory().get("/api/test/", HTTP_ORIGIN="https://evil.com")
+        response = mw(req)
+        assert response.get("Access-Control-Allow-Origin") is None
+
+    @override_settings(TENXYTE_CORS_ENABLED=False)
+    def test_disabled_cors_passes_through_without_headers(self):
+        mw = __import__('tenxyte.middleware', fromlist=['CORSMiddleware']).CORSMiddleware(lambda r: HttpResponse("OK"))
+        from django.test import RequestFactory
+        req = RequestFactory().options("/api/test/", HTTP_ORIGIN="https://example.com")
+        response = mw(req)
+        # Réponse de la vue (200), pas de headers CORS
+        assert response.get("Access-Control-Allow-Origin") is None
+
+    @override_settings(
+        TENXYTE_CORS_ENABLED=True,
+        TENXYTE_CORS_ALLOW_ALL_ORIGINS=True,
+        TENXYTE_CORS_ALLOW_CREDENTIALS=True
+    )
+    def test_credentials_header_added(self):
+        mw = __import__('tenxyte.middleware', fromlist=['CORSMiddleware']).CORSMiddleware(lambda r: HttpResponse("OK"))
+        from django.test import RequestFactory
+        req = RequestFactory().options("/api/test/", HTTP_ORIGIN="https://example.com")
+        response = mw(req)
+        assert response.get("Access-Control-Allow-Credentials") == "true"
+
+    @override_settings(
+        TENXYTE_CORS_ENABLED=True,
+        TENXYTE_CORS_ALLOW_ALL_ORIGINS=True
+    )
+    def test_normal_get_adds_cors_headers(self):
+        mw = __import__('tenxyte.middleware', fromlist=['CORSMiddleware']).CORSMiddleware(lambda r: HttpResponse("OK"))
+        from django.test import RequestFactory
+        req = RequestFactory().get("/api/test/", HTTP_ORIGIN="https://example.com")
+        response = mw(req)
+        assert response.get("Access-Control-Allow-Origin") == "https://example.com"
+
+    @override_settings(
+        TENXYTE_CORS_ENABLED=True,
+        TENXYTE_CORS_ALLOW_ALL_ORIGINS=True
+    )
+    def test_no_origin_header_skips_cors(self):
+        mw = __import__('tenxyte.middleware', fromlist=['CORSMiddleware']).CORSMiddleware(lambda r: HttpResponse("OK"))
+        from django.test import RequestFactory
+        req = RequestFactory().get("/api/test/")  # Pas d'Origin
+        response = mw(req)
+        assert response.get("Access-Control-Allow-Origin") is None
