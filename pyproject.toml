@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tenxyte"
-version = "0.0.8.3.9.7"
-description = "Complete Django authentication package with JWT, RBAC, 2FA (TOTP), OTP verification, Organizations B2B, and multi-application support"
+version = "0.9.0"
+description = "Complete Django authentication package — JWT, RBAC, 2FA (TOTP), Magic Links, Passkeys (WebAuthn), Social Login, Breach Check, Organizations B2B, and multi-application support"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -27,7 +27,15 @@ keywords = [
     "b2b",
     "device-fingerprinting",
     "audit-log",
-    "gdpr"
+    "gdpr",
+    "magic-link",
+    "passkeys",
+    "webauthn",
+    "fido2",
+    "social-login",
+    "oauth2",
+    "breach-check",
+    "haveibeenpwned"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

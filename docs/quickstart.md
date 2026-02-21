@@ -114,6 +114,69 @@ TENXYTE_MAX_LOGIN_ATTEMPTS = 5
 TENXYTE_LOCKOUT_DURATION_MINUTES = 30
 ```
 
+Or use a **Shortcut Secure Mode** to configure everything at once:
+
+```python
+TENXYTE_SHORTCUT_SECURE_MODE = 'medium'  # 'starter' | 'medium' | 'robust'
+```
+
+See [Settings Reference → Shortcut Secure Mode](settings.md#shortcut-secure-mode) for the full preset table.
+
+---
+
+## MongoDB — Django Admin Support
+
+When using MongoDB (`django-mongodb-backend`), Django Admin requires custom app configs to set the correct auto field type. Without this, admin migrations will fail.
+
+### Step 1 — Create custom app configs
+
+In your main app's `apps.py`:
+
+```python
+from django.contrib.admin.apps import AdminConfig
+from django.contrib.auth.apps import AuthConfig
+from django.contrib.contenttypes.apps import ContentTypesConfig
+
+
+class MongoAdminConfig(AdminConfig):
+    default_auto_field = "django_mongodb_backend.fields.ObjectIdAutoField"
+
+
+class MongoAuthConfig(AuthConfig):
+    default_auto_field = "django_mongodb_backend.fields.ObjectIdAutoField"
+
+
+class MongoContentTypesConfig(ContentTypesConfig):
+    default_auto_field = "django_mongodb_backend.fields.ObjectIdAutoField"
+```
+
+### Step 2 — Register them in `INSTALLED_APPS`
+
+Replace the default Django admin/auth/contenttypes entries with your custom configs:
+
+```python
+INSTALLED_APPS = [
+    # Replace these three defaults:
+    # 'django.contrib.admin',
+    # 'django.contrib.auth',
+    # 'django.contrib.contenttypes',
+
+    # With your MongoDB-aware versions:
+    'config.apps.MongoAdminConfig',
+    'config.apps.MongoAuthConfig',
+    'config.apps.MongoContentTypesConfig',
+
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'tenxyte',
+]
+```
+
+> Replace `config` with the name of your main Django app (the one containing `apps.py`).
+
+After this, run `python manage.py migrate` and Django Admin will work correctly with MongoDB.
+
 ## Next Steps
 
 - [Settings Reference](settings.md) — All 150+ configuration options

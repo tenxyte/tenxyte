@@ -5,6 +5,57 @@ Override them in your Django `settings.py`.
 
 ---
 
+## Shortcut Secure Mode
+
+`TENXYTE_SHORTCUT_SECURE_MODE` applies a predefined combination of security settings in one line. Individual settings always take priority over the preset.
+
+**Priority order:** explicit `TENXYTE_*` in `settings.py` > preset > default
+
+```python
+TENXYTE_SHORTCUT_SECURE_MODE = 'medium'  # 'starter' | 'medium' | 'robust'
+```
+
+| Mode | Target use case |
+|---|---|
+| `starter` | Prototypes, local dev, internal tools |
+| `medium` | Public SaaS, B2C apps, startups |
+| `robust` | Fintech, healthcare, B2B, GDPR-strict |
+
+### Preset values
+
+| Setting | `starter` | `medium` | `robust` |
+|---|---|---|---|
+| `TENXYTE_JWT_ACCESS_TOKEN_LIFETIME` | `3600` (1h) | `900` (15min) | `300` (5min) |
+| `TENXYTE_JWT_REFRESH_TOKEN_LIFETIME` | `2592000` (30d) | `604800` (7d) | `86400` (1d) |
+| `TENXYTE_REFRESH_TOKEN_ROTATION` | `False` | `True` | `True` |
+| `TENXYTE_MAX_LOGIN_ATTEMPTS` | `10` | `5` | `3` |
+| `TENXYTE_LOCKOUT_DURATION_MINUTES` | `15` | `30` | `60` |
+| `TENXYTE_PASSWORD_HISTORY_ENABLED` | `False` | `True` | `True` |
+| `TENXYTE_PASSWORD_HISTORY_COUNT` | `0` | `5` | `12` |
+| `TENXYTE_BREACH_CHECK_ENABLED` | `False` | `True` | `True` |
+| `TENXYTE_BREACH_CHECK_REJECT` | `False` | `True` | `True` |
+| `TENXYTE_MAGIC_LINK_ENABLED` | `False` | `True` | `False` |
+| `TENXYTE_WEBAUTHN_ENABLED` | `False` | `False` | `True` |
+| `TENXYTE_AUDIT_LOGGING_ENABLED` | `False` | `True` | `True` |
+| `TENXYTE_DEVICE_LIMIT_ENABLED` | `False` | `True` | `True` |
+| `TENXYTE_DEFAULT_MAX_DEVICES` | — | `5` | `2` |
+| `TENXYTE_DEVICE_LIMIT_ACTION` | — | — | `'deny'` |
+| `TENXYTE_SESSION_LIMIT_ENABLED` | `False` | `True` | `True` |
+| `TENXYTE_DEFAULT_MAX_SESSIONS` | — | — | `1` |
+| `TENXYTE_CORS_ALLOW_ALL_ORIGINS` | `True` | `False` | `False` |
+| `TENXYTE_SECURITY_HEADERS_ENABLED` | `False` | `True` | `True` |
+
+> Settings marked `—` are not set by the preset and fall back to their individual defaults.
+
+You can override any preset value individually:
+```python
+TENXYTE_SHORTCUT_SECURE_MODE = 'robust'
+TENXYTE_WEBAUTHN_ENABLED = False  # opt-out of passkeys despite robust mode
+TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 600  # 10min instead of 5min
+```
+
+---
+
 ## JWT
 
 | Setting | Default | Description |
@@ -150,12 +201,55 @@ Default headers:
 
 ---
 
-## Google OAuth
+## Social Login (OAuth2)
 
 | Setting | Default | Description |
 |---|---|---|
+| `TENXYTE_SOCIAL_PROVIDERS` | `['google', 'github', 'microsoft', 'facebook']` | Enabled OAuth2 providers. |
 | `GOOGLE_CLIENT_ID` | `''` | Google OAuth Client ID. |
 | `GOOGLE_CLIENT_SECRET` | `''` | Google OAuth Client Secret. |
+| `GITHUB_CLIENT_ID` | `''` | GitHub OAuth App Client ID. |
+| `GITHUB_CLIENT_SECRET` | `''` | GitHub OAuth App Client Secret. |
+| `MICROSOFT_CLIENT_ID` | `''` | Microsoft Azure AD Application (client) ID. |
+| `MICROSOFT_CLIENT_SECRET` | `''` | Microsoft Azure AD Client Secret. |
+| `FACEBOOK_APP_ID` | `''` | Facebook App ID. |
+| `FACEBOOK_APP_SECRET` | `''` | Facebook App Secret. |
+
+Endpoints: `POST /api/auth/social/google/`, `/social/github/`, `/social/microsoft/`, `/social/facebook/`
+
+---
+
+## WebAuthn / Passkeys (FIDO2)
+
+| Setting | Default | Description |
+|---|---|---|
+| `TENXYTE_WEBAUTHN_ENABLED` | `False` | Enable passwordless authentication via Passkeys. |
+| `TENXYTE_WEBAUTHN_RP_ID` | `'localhost'` | Relying Party ID — must match your domain (e.g. `'yourapp.com'`). |
+| `TENXYTE_WEBAUTHN_RP_NAME` | `'Tenxyte'` | Name displayed in the browser Passkey prompt. |
+| `TENXYTE_WEBAUTHN_CHALLENGE_EXPIRY_SECONDS` | `300` | WebAuthn challenge validity in seconds. |
+
+Requires: `pip install py-webauthn`
+
+---
+
+## Breach Password Check (HaveIBeenPwned)
+
+| Setting | Default | Description |
+|---|---|---|
+| `TENXYTE_BREACH_CHECK_ENABLED` | `False` | Check passwords against the HIBP Pwned Passwords API. |
+| `TENXYTE_BREACH_CHECK_REJECT` | `True` | If `True`, reject breached passwords (HTTP 400). If `False`, warn in logs only. |
+
+Uses k-anonymity — only the first 5 characters of the SHA-1 hash are sent to the API.
+
+---
+
+## Magic Link (Passwordless)
+
+| Setting | Default | Description |
+|---|---|---|
+| `TENXYTE_MAGIC_LINK_ENABLED` | `False` | Enable passwordless login via email magic links. |
+| `TENXYTE_MAGIC_LINK_EXPIRY_MINUTES` | `15` | Magic link validity in minutes. |
+| `TENXYTE_MAGIC_LINK_BASE_URL` | `'https://yourapp.com'` | Base URL used to build the verification link sent by email. |
 
 ---
 
