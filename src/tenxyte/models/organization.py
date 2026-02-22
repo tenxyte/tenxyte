@@ -17,22 +17,7 @@ from django.utils import timezone
 from datetime import timedelta
 import secrets
 
-
-def get_auto_field():
-    """Get the appropriate auto field based on settings."""
-    try:
-        from django.conf import settings
-        default_auto_field = getattr(settings, 'DEFAULT_AUTO_FIELD', 'django.db.models.BigAutoField')
-        
-        if 'BigAutoField' in default_auto_field:
-            return models.BigAutoField
-        else:
-            return models.AutoField
-    except Exception:
-        return models.BigAutoField
-
-
-AutoFieldClass = get_auto_field()
+from .base import AutoFieldClass
 
 
 class AbstractOrganization(models.Model):
@@ -359,7 +344,7 @@ class AbstractOrganizationInvitation(models.Model):
         on_delete=models.CASCADE,
         related_name='invitations'
     )
-    email = models.EmailField(help_text="Email of invitee")
+    email = models.EmailField(max_length=191, help_text="Email of invitee")
     role = models.ForeignKey(
         'tenxyte.OrganizationRole',
         on_delete=models.CASCADE,

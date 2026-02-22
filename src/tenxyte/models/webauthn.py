@@ -28,7 +28,7 @@ class WebAuthnCredential(models.Model):
         on_delete=models.CASCADE,
         related_name='webauthn_credentials'
     )
-    credential_id = models.TextField(unique=True, db_index=True)
+    credential_id = models.CharField(max_length=191, unique=True, db_index=True)
     public_key = models.TextField()
     sign_count = models.PositiveBigIntegerField(default=0)
     device_name = models.CharField(max_length=100, blank=True, default='')

@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
 from ..serializers import (
@@ -31,9 +31,48 @@ Application = get_application_model()
     post=extend_schema(
         tags=['Applications'],
         summary="Créer une application",
-        description="Crée une nouvelle application et retourne les credentials. **Attention:** le secret n'est affiché qu'une seule fois.",
+        description="Crée une nouvelle application et retourne les credentials. "
+                    "**Attention:** le secret n'est affiché qu'une seule fois à la création. "
+                    "Stockez-le sécuritairement. Les secrets peuvent être régénérés via "
+                    "l'endpoint dédié. L'application est inactive par défaut.",
         request=ApplicationCreateSerializer,
-        responses={201: OpenApiTypes.OBJECT}
+        responses={
+            201: {
+                'type': 'object',
+                'properties': {
+                    'id': {'type': 'integer'},
+                    'name': {'type': 'string'},
+                    'description': {'type': 'string'},
+                    'client_id': {'type': 'string'},
+                    'client_secret': {'type': 'string'},
+                    'is_active': {'type': 'boolean'},
+                    'created_at': {'type': 'string', 'format': 'date-time'},
+                    'secret_rotation_warning': {
+                        'type': 'string',
+                        'description': 'Avertissement sur la sauvegarde du secret'
+                    }
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='create_app_success',
+                summary='Application créée avec secret',
+                value={
+                    'name': 'Mobile App v2',
+                    'description': 'Application mobile iOS/Android',
+                    'redirect_uris': ['myapp://callback', 'https://app.example.com/auth']
+                }
+            ),
+            OpenApiExample(
+                name='secret_warning',
+                summary='Avertissement secret',
+                value={
+                    'client_secret': 'sk_live_1234567890abcdef...',
+                    'secret_rotation_warning': 'Save this secret securely. It will not be shown again.'
+                }
+            )
+        ]
     )
 )
 class ApplicationListView(APIView):
@@ -89,15 +128,91 @@ class ApplicationListView(APIView):
     get=extend_schema(
         tags=['Applications'],
         summary="Détails d'une application",
-        description="Récupère les informations d'une application par son ID.",
-        responses={200: ApplicationSerializer, 404: OpenApiTypes.OBJECT}
+        description="Récupère les informations d'une application par son ID. "
+                    "Inclut les statistiques d'utilisation et le statut actif. "
+                    "Le secret n'est jamais affiché pour des raisons de sécurité.",
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'id': {'type': 'integer'},
+                    'name': {'type': 'string'},
+                    'description': {'type': 'string'},
+                    'access_key': {'type': 'string'},
+                    'is_active': {'type': 'boolean'},
+                    'created_at': {'type': 'string', 'format': 'date-time'},
+                    'updated_at': {'type': 'string', 'format': 'date-time'},
+                    'last_used_at': {'type': 'string', 'format': 'date-time', 'nullable': True},
+                    'usage_stats': {
+                        'type': 'object',
+                        'properties': {
+                            'total_requests': {'type': 'integer'},
+                            'requests_this_month': {'type': 'integer'},
+                            'last_request': {'type': 'string', 'format': 'date-time', 'nullable': True}
+                        }
+                    }
+                }
+            },
+            404: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            }
+        }
     ),
     put=extend_schema(
         tags=['Applications'],
         summary="Modifier une application",
-        description="Met à jour les informations d'une application.",
+        description="Met à jour les informations d'une application. "
+                    "Le secret ne peut pas être modifié (utilisez l'endpoint de régénération).",
         request=ApplicationUpdateSerializer,
         responses={200: ApplicationSerializer, 404: OpenApiTypes.OBJECT}
+    ),
+    patch=extend_schema(
+        tags=['Applications'],
+        summary="Basculer le statut actif",
+        description="Active ou désactive une application. "
+                    "Une application désactivée ne peut plus faire d'appels API. "
+                    "Utile pour la maintenance ou en cas de compromission.",
+        request={
+            'type': 'object',
+            'properties': {
+                'is_active': {
+                    'type': 'boolean',
+                    'description': 'Nouveau statut actif de l\'application'
+                }
+            }
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'id': {'type': 'integer'},
+                    'name': {'type': 'string'},
+                    'is_active': {'type': 'boolean'},
+                    'updated_at': {'type': 'string', 'format': 'date-time'},
+                    'message': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='deactivate_app',
+                summary='Désactiver application',
+                value={
+                    'is_active': False
+                }
+            ),
+            OpenApiExample(
+                name='activate_app',
+                summary='Activer application',
+                value={
+                    'is_active': True
+                }
+            )
+        ]
     ),
     delete=extend_schema(
         tags=['Applications'],
@@ -153,6 +268,31 @@ class ApplicationDetailView(APIView):
 
         return Response(ApplicationSerializer(app).data)
 
+    @require_permission('applications.update')
+    def patch(self, request, app_id):
+        try:
+            app = Application.objects.get(id=app_id)
+        except Application.DoesNotExist:
+            return Response({
+                'error': 'Application not found',
+                'code': 'NOT_FOUND'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        is_active = request.data.get('is_active')
+        if is_active is not None:
+            app.is_active = bool(is_active)
+            app.save()
+            action = 'activated' if is_active else 'deactivated'
+            return Response({
+                'message': f'Application {action} successfully',
+                'application': ApplicationSerializer(app).data
+            })
+
+        return Response({
+            'error': 'No valid fields provided',
+            'code': 'INVALID_FIELDS'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
     @require_permission('applications.delete')
     def delete(self, request, app_id):
         try:
@@ -178,12 +318,79 @@ class ApplicationRegenerateView(APIView):
     @extend_schema(
         tags=['Applications'],
         summary="Régénérer les credentials",
-        description="Régénère l'access_key et l'access_secret d'une application. **Attention:** les anciens credentials seront invalidés.",
-        request=None,
-        responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+        description="Régénère l'access_key et l'access_secret d'une application. "
+                    "**Attention:** les anciens credentials seront immédiatement invalidés. "
+                    "Le nouveau secret n'est affiché qu'une seule fois. "
+                    "Action irréversible nécessitant confirmation.",
+        request={
+            'type': 'object',
+            'properties': {
+                'confirmation': {
+                    'type': 'string',
+                    'description': 'Texte de confirmation "REGENERATE"'
+                }
+            },
+            'required': ['confirmation']
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'application': {'type': 'object'},
+                    'credentials': {
+                        'type': 'object',
+                        'properties': {
+                            'access_key': {'type': 'string'},
+                            'access_secret': {'type': 'string'}
+                        }
+                    },
+                    'warning': {'type': 'string'},
+                    'old_credentials_invalidated': {'type': 'boolean'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            },
+            404: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='regenerate_success',
+                summary='Credentials régénérés',
+                value={
+                    'confirmation': 'REGENERATE'
+                }
+            ),
+            OpenApiExample(
+                name='confirmation_required',
+                summary='Confirmation requise',
+                value={
+                    'error': 'Confirmation required',
+                    'code': 'CONFIRMATION_REQUIRED'
+                }
+            )
+        ]
     )
     @require_permission('applications.regenerate')
     def post(self, request, app_id):
+        confirmation = request.data.get('confirmation')
+        if confirmation != 'REGENERATE':
+            return Response({
+                'error': 'Confirmation required',
+                'code': 'CONFIRMATION_REQUIRED'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             app = Application.objects.get(id=app_id)
         except Application.DoesNotExist:
@@ -198,5 +405,6 @@ class ApplicationRegenerateView(APIView):
             'message': 'Credentials regenerated successfully',
             'application': ApplicationSerializer(app).data,
             'credentials': credentials,
-            'warning': 'Save the access_secret now! It will never be shown again.'
+            'warning': 'Save the access_secret now! It will never be shown again.',
+            'old_credentials_invalidated': True
         })

@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
 from ..serializers import (
@@ -29,9 +29,60 @@ class PasswordResetRequestView(APIView):
     @extend_schema(
         tags=['Password'],
         summary="Demander une réinitialisation de mot de passe",
-        description="Envoie un code OTP pour réinitialiser le mot de passe. Ne révèle pas si le compte existe.",
+        description="Envoie un code OTP par email ou SMS pour réinitialiser le mot de passe. "
+                    "Pour des raisons de sécurité, ne révèle pas si le compte existe. "
+                    "Le code OTP expire après 15 minutes. Limité à 3 requêtes par heure.",
         request=PasswordResetRequestSerializer,
-        responses={200: OpenApiTypes.OBJECT}
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'otp_id': {'type': 'string'},
+                    'expires_at': {'type': 'string', 'format': 'date-time'},
+                    'channel': {'type': 'string', 'enum': ['email', 'sms']}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'object'}
+                }
+            },
+            429: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'retry_after': {'type': 'integer'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='reset_request_email',
+                summary='Demande par email',
+                value={
+                    'email': 'user@example.com'
+                }
+            ),
+            OpenApiExample(
+                name='reset_request_phone',
+                summary='Demande par téléphone',
+                value={
+                    'phone_country_code': '+33',
+                    'phone_number': '612345678'
+                }
+            ),
+            OpenApiExample(
+                name='reset_rate_limited',
+                summary='Limite de rate dépassée',
+                value={
+                    'error': 'Too many password reset requests',
+                    'retry_after': 3600
+                }
+            )
+        ]
     )
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -78,9 +129,78 @@ class PasswordResetConfirmView(APIView):
     @extend_schema(
         tags=['Password'],
         summary="Confirmer la réinitialisation de mot de passe",
-        description="Vérifie le code OTP et définit un nouveau mot de passe. Révoque tous les refresh tokens.",
+        description="Vérifie le code OTP et définit un nouveau mot de passe. "
+                    "Révoque automatiquement tous les refresh tokens de l'utilisateur. "
+                    "Vérifie si le nouveau mot de passe a été exposé dans des fuites de données. "
+                    "Le code OTP doit être utilisé dans les 15 minutes après réception.",
         request=PasswordResetConfirmSerializer,
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT}
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'tokens_revoked': {'type': 'integer'},
+                    'password_safe': {'type': 'boolean'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'object'},
+                    'code': {'type': 'string'}
+                }
+            },
+            401: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='reset_confirm_email',
+                summary='Confirmation par email',
+                value={
+                    'email': 'user@example.com',
+                    'otp_code': '123456',
+                    'new_password': 'NewSecureP@ss123!',
+                    'confirm_password': 'NewSecureP@ss123!'
+                }
+            ),
+            OpenApiExample(
+                name='reset_confirm_phone',
+                summary='Confirmation par téléphone',
+                value={
+                    'phone_country_code': '+33',
+                    'phone_number': '612345678',
+                    'otp_code': '123456',
+                    'new_password': 'NewSecureP@ss123!',
+                    'confirm_password': 'NewSecureP@ss123!'
+                }
+            ),
+            OpenApiExample(
+                name='otp_expired',
+                summary='Code OTP expiré',
+                value={
+                    'error': 'OTP code has expired',
+                    'details': 'Please request a new password reset code',
+                    'code': 'OTP_EXPIRED'
+                }
+            ),
+            OpenApiExample(
+                name='breach_password_reset',
+                summary='Mot de passe dans une fuite',
+                value={
+                    'error': 'Password breach detected',
+                    'details': 'This password has been found in known data breaches. Please choose a different password.',
+                    'code': 'PASSWORD_BREACH'
+                }
+            )
+        ]
     )
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
@@ -141,9 +261,74 @@ class ChangePasswordView(APIView):
     @extend_schema(
         tags=['Password'],
         summary="Changer le mot de passe",
-        description="Change le mot de passe de l'utilisateur connecté. Requiert le mot de passe actuel.",
+        description="Change le mot de passe de l'utilisateur connecté. "
+                    "Requiert le mot de passe actuel pour validation. "
+                    "Vérifie si le nouveau mot de passe a été exposé dans des fuites de données. "
+                    "Le nouveau mot de passe ne doit pas être identique aux 5 derniers mots de passe utilisés. "
+                    "Après changement, déconnecte toutes les sessions sauf la session actuelle.",
         request=ChangePasswordSerializer,
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT}
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'password_strength': {'type': 'string'},
+                    'sessions_revoked': {'type': 'integer'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'object'},
+                    'code': {'type': 'string'}
+                }
+            },
+            401: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='change_password_success',
+                summary='Changement réussi',
+                value={
+                    'current_password': 'OldP@ss123!',
+                    'new_password': 'NewSecureP@ss456!',
+                    'confirm_password': 'NewSecureP@ss456!'
+                }
+            ),
+            OpenApiExample(
+                name='invalid_current_password',
+                summary='Mot de passe actuel incorrect',
+                value={
+                    'error': 'Current password is incorrect',
+                    'code': 'INVALID_PASSWORD'
+                }
+            ),
+            OpenApiExample(
+                name='password_reused',
+                summary='Mot de passe déjà utilisé',
+                value={
+                    'error': 'Password has already been used',
+                    'details': 'You cannot reuse any of your last 5 passwords',
+                    'code': 'PASSWORD_REUSED'
+                }
+            ),
+            OpenApiExample(
+                name='password_breached',
+                summary='Mot de passe dans une fuite',
+                value={
+                    'error': 'Password breach detected',
+                    'details': 'This password has been found in known data breaches. Please choose a different password.',
+                    'code': 'PASSWORD_BREACHED'
+                }
+            )
+        ]
     )
     @require_jwt
     def post(self, request):

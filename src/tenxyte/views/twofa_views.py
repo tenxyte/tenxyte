@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
 from ..decorators import require_jwt
@@ -37,8 +37,47 @@ class TwoFactorSetupView(APIView):
         tags=['2FA'],
         summary="Initialiser 2FA",
         description="Génère un nouveau secret TOTP et retourne le QR code et les codes de secours. "
-                    "L'utilisateur doit ensuite confirmer avec un code TOTP valide.",
-        responses={200: OpenApiTypes.OBJECT}
+                    "Le QR code peut être scanné avec Google Authenticator, Authy, etc. "
+                    "L'utilisateur doit ensuite confirmer avec un code TOTP valide pour activer le 2FA. "
+                    "Les codes de secours (10 codes à usage unique) permettent l'accès si l'appareil est perdu.",
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'secret': {'type': 'string', 'description': 'Secret TOTP base32'},
+                    'qr_code': {'type': 'string', 'description': 'QR code en base64'},
+                    'backup_codes': {
+                        'type': 'array',
+                        'items': {'type': 'string'},
+                        'description': '10 codes de secours à usage unique'
+                    },
+                    'manual_entry_key': {'type': 'string', 'description': 'Clé pour saisie manuelle'},
+                    'instructions': {'type': 'object', 'description': 'Instructions de configuration'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='setup_2fa_success',
+                summary='Configuration 2FA réussie',
+                value={}
+            ),
+            OpenApiExample(
+                name='2fa_already_enabled',
+                summary='2FA déjà activé',
+                value={
+                    'error': '2FA is already enabled',
+                    'code': '2FA_ALREADY_ENABLED'
+                }
+            )
+        ]
     )
     @require_jwt
     def post(self, request):
@@ -71,9 +110,66 @@ class TwoFactorConfirmView(APIView):
     @extend_schema(
         tags=['2FA'],
         summary="Confirmer activation 2FA",
-        description="Vérifie le premier code TOTP pour activer le 2FA.",
-        request={"application/json": {"type": "object", "properties": {"code": {"type": "string"}}}},
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT}
+        description="Vérifie le premier code TOTP pour activer le 2FA. "
+                    "Le code TOTP utilise une fenêtre de 30 secondes avec une tolérance de 1 fenêtre avant/après. "
+                    "Une seule confirmation est requise après l'initialisation. "
+                    "Après activation, tous les codes de secours générés sont valides.",
+        request={
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "description": "Code TOTP à 6 chiffres",
+                    "pattern": "^[0-9]{6}$"
+                }
+            },
+            "required": ["code"]
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'is_enabled': {'type': 'boolean'},
+                    'enabled_at': {'type': 'string', 'format': 'date-time'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='confirm_2fa_success',
+                summary='Confirmation 2FA réussie',
+                value={
+                    'code': '123456'
+                }
+            ),
+            OpenApiExample(
+                name='invalid_totp_code',
+                summary='Code TOTP invalide',
+                value={
+                    'error': 'Invalid TOTP code',
+                    'details': 'The code provided is incorrect or outside the valid time window',
+                    'code': 'INVALID_CODE'
+                }
+            ),
+            OpenApiExample(
+                name='totp_window_expired',
+                summary='Fenêtre TOTP expirée',
+                value={
+                    'error': 'TOTP code expired',
+                    'details': 'The code is outside the valid 30-second window',
+                    'code': 'TOTP_WINDOW_EXPIRED'
+                }
+            )
+        ]
     )
     @require_jwt
     def post(self, request):
@@ -109,9 +205,70 @@ class TwoFactorDisableView(APIView):
     @extend_schema(
         tags=['2FA'],
         summary="Désactiver 2FA",
-        description="Désactive le 2FA après vérification du code TOTP ou d'un code de secours.",
-        request={"application/json": {"type": "object", "properties": {"code": {"type": "string"}}}},
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT}
+        description="Désactive le 2FA après vérification du code TOTP ou d'un code de secours. "
+                    "Pour des raisons de sécurité, le mot de passe de l'utilisateur est également requis. "
+                    "Une fois désactivé, tous les codes de secours restants sont invalidés. "
+                    "Cette action est irréversible et nécessitera une nouvelle configuration complète.",
+        request={
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "description": "Code TOTP ou code de secours à 8 chiffres"
+                },
+                "password": {
+                    "type": "string",
+                    "description": "Mot de passe de l'utilisateur pour confirmation"
+                }
+            },
+            "required": ["code", "password"]
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'is_enabled': {'type': 'boolean'},
+                    'disabled_at': {'type': 'string', 'format': 'date-time'},
+                    'backup_codes_invalidated': {'type': 'boolean'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='disable_2fa_totp',
+                summary='Désactiver 2FA avec code TOTP',
+                value={
+                    'code': '123456',
+                    'password': 'UserP@ss123!'
+                }
+            ),
+            OpenApiExample(
+                name='disable_2fa_backup',
+                summary='Désactiver 2FA avec code de secours',
+                value={
+                    'code': '12345678',
+                    'password': 'UserP@ss123!'
+                }
+            ),
+            OpenApiExample(
+                name='invalid_password_disable',
+                summary='Mot de passe incorrect',
+                value={
+                    'error': 'Invalid password',
+                    'details': 'The password provided is incorrect',
+                    'code': 'INVALID_PASSWORD'
+                }
+            )
+        ]
     )
     @require_jwt
     def post(self, request):
@@ -148,9 +305,75 @@ class TwoFactorBackupCodesView(APIView):
         tags=['2FA'],
         summary="Régénérer codes de secours",
         description="Génère de nouveaux codes de secours (les anciens sont invalidés). "
-                    "Requiert un code TOTP valide.",
-        request={"application/json": {"type": "object", "properties": {"code": {"type": "string"}}}},
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT}
+                    "Requiert un code TOTP valide pour sécurité. "
+                    "Génère 10 codes alphanumériques à usage unique de 8 caractères. "
+                    "Les codes ne seront affichés qu'une seule fois. Stockez-les en sécurité.",
+        request={
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "description": "Code TOTP à 6 chiffres pour validation",
+                    "pattern": "^[0-9]{6}$"
+                }
+            },
+            "required": ["code"]
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'backup_codes': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'string',
+                            'pattern': '^[A-Z0-9]{8}$',
+                            'description': 'Code de secours à usage unique'
+                        }
+                    },
+                    'codes_count': {'type': 'integer'},
+                    'generated_at': {'type': 'string', 'format': 'date-time'},
+                    'warning': {'type': 'string'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='regenerate_backup_codes',
+                summary='Régénérer codes de secours',
+                value={
+                    'code': '123456'
+                }
+            ),
+            OpenApiExample(
+                name='backup_codes_response',
+                summary='Réponse avec nouveaux codes',
+                value={
+                    'message': 'Backup codes regenerated',
+                    'backup_codes': ['AB12CD34', 'EF56GH78', 'IJ90KL12', 'MN34OP56', 'QR78ST90', 'UV12WX34', 'YZ56AB78', 'CD90EF12', 'GH34IJ56', 'KL78MN90'],
+                    'codes_count': 10,
+                    'warning': 'Save these codes securely. They will not be shown again.'
+                }
+            ),
+            OpenApiExample(
+                name='invalid_totp_backup',
+                summary='Code TOTP invalide',
+                value={
+                    'error': 'Invalid TOTP code',
+                    'details': 'The TOTP code provided is incorrect',
+                    'code': 'INVALID_CODE'
+                }
+            )
+        ]
     )
     @require_jwt
     def post(self, request):

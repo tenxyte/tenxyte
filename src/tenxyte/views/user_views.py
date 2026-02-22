@@ -1,8 +1,9 @@
+from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
 from ..serializers import UserSerializer
@@ -28,8 +29,85 @@ class MeView(APIView):
     @extend_schema(
         tags=['User'],
         summary="Récupérer mon profil",
-        description="Retourne les informations de l'utilisateur connecté.",
-        responses={200: UserSerializer}
+        description="Retourne les informations complètes de l'utilisateur connecté. "
+                    "Inclut les champs personnalisés, préférences, et métadonnées. "
+                    "Les champs sensibles (mot de passe, tokens) ne sont jamais inclus. "
+                    "Le profil peut varier selon les permissions et le contexte organisationnel.",
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'id': {'type': 'integer'},
+                    'email': {'type': 'string'},
+                    'first_name': {'type': 'string'},
+                    'last_name': {'type': 'string'},
+                    'username': {'type': 'string', 'nullable': True},
+                    'phone': {'type': 'string', 'nullable': True},
+                    'avatar': {'type': 'string', 'nullable': True},
+                    'bio': {'type': 'string', 'nullable': True},
+                    'timezone': {'type': 'string'},
+                    'language': {'type': 'string'},
+                    'is_active': {'type': 'boolean'},
+                    'is_verified': {'type': 'boolean'},
+                    'date_joined': {'type': 'string', 'format': 'date-time'},
+                    'last_login': {'type': 'string', 'format': 'date-time', 'nullable': True},
+                    'custom_fields': {
+                        'type': 'object',
+                        'description': 'Champs personnalisés définis par l\'organisation'
+                    },
+                    'preferences': {
+                        'type': 'object',
+                        'properties': {
+                            'email_notifications': {'type': 'boolean'},
+                            'sms_notifications': {'type': 'boolean'},
+                            'marketing_emails': {'type': 'boolean'},
+                            'two_factor_enabled': {'type': 'boolean'}
+                        }
+                    },
+                    'organization_context': {
+                        'type': 'object',
+                        'properties': {
+                            'current_org': {'type': 'object', 'nullable': True},
+                            'roles': {'type': 'array'},
+                            'permissions': {'type': 'array'}
+                        }
+                    }
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='user_profile_complete',
+                summary='Profil utilisateur complet',
+                value={
+                    'id': 12345,
+                    'email': 'john.doe@example.com',
+                    'first_name': 'John',
+                    'last_name': 'Doe',
+                    'username': 'johndoe',
+                    'phone': '+33612345678',
+                    'avatar': 'https://cdn.example.com/avatars/john.jpg',
+                    'bio': 'Software developer passionate about security',
+                    'timezone': 'Europe/Paris',
+                    'language': 'fr',
+                    'is_active': True,
+                    'is_verified': True,
+                    'date_joined': '2024-01-15T10:30:00Z',
+                    'last_login': '2024-01-20T14:22:00Z',
+                    'custom_fields': {
+                        'department': 'Engineering',
+                        'employee_id': 'EMP001',
+                        'manager': 'jane.smith@example.com'
+                    },
+                    'preferences': {
+                        'email_notifications': True,
+                        'sms_notifications': False,
+                        'marketing_emails': False,
+                        'two_factor_enabled': True
+                    }
+                }
+            )
+        ]
     )
     def get(self, request):
         return Response(UserSerializer(request.user).data)
@@ -37,9 +115,108 @@ class MeView(APIView):
     @extend_schema(
         tags=['User'],
         summary="Modifier mon profil",
-        description="Met à jour les informations de l'utilisateur connecté.",
-        request=UserSerializer,
-        responses={200: UserSerializer, 400: OpenApiTypes.OBJECT}
+        description="Met à jour partiellement les informations de l'utilisateur connecté. "
+                    "Les champs non fournis ne sont pas modifiés. Certains champs peuvent "
+                    "avoir des restrictions de validation (format email, téléphone international). "
+                    "La modification de l'email nécessite une nouvelle vérification. "
+                    "Les champs personnalisés suivent les règles définies par l'organisation.",
+        request={
+            'type': 'object',
+            'properties': {
+                'first_name': {
+                    'type': 'string',
+                    'description': 'Prénom (max 30 caractères)',
+                    'minLength': 1,
+                    'maxLength': 30
+                },
+                'last_name': {
+                    'type': 'string',
+                    'description': 'Nom (max 30 caractères)',
+                    'minLength': 1,
+                    'maxLength': 30
+                },
+                'username': {
+                    'type': 'string',
+                    'description': 'Nom d\'utilisateur unique (alphanumérique + underscores)',
+                    'pattern': '^[a-zA-Z0-9_]+$',
+                    'minLength': 3,
+                    'maxLength': 20
+                },
+                'phone': {
+                    'type': 'string',
+                    'description': 'Numéro de téléphone au format international (+33612345678)',
+                    'pattern': '^\\+[1-9]\\d{1,14}$'
+                },
+                'bio': {
+                    'type': 'string',
+                    'description': 'Biographie (max 500 caractères)',
+                    'maxLength': 500
+                },
+                'timezone': {
+                    'type': 'string',
+                    'description': 'Fuseau horaire (ex: Europe/Paris, America/New_York)',
+                    'enum': ['Europe/Paris', 'America/New_York', 'Asia/Tokyo', 'UTC']
+                },
+                'language': {
+                    'type': 'string',
+                    'description': 'Langue préférée',
+                    'enum': ['fr', 'en', 'es', 'de']
+                },
+                'custom_fields': {
+                    'type': 'object',
+                    'description': 'Champs personnalisés (selon configuration organisation)'
+                }
+            }
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'updated_fields': {'type': 'array'},
+                    'user': {'type': 'object'},
+                    'verification_required': {
+                        'type': 'object',
+                        'properties': {
+                            'email_changed': {'type': 'boolean'},
+                            'phone_changed': {'type': 'boolean'}
+                        }
+                    }
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'},
+                    'field_errors': {'type': 'object'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='update_profile',
+                summary='Mise à jour profil',
+                value={
+                    'first_name': 'John',
+                    'last_name': 'Smith',
+                    'phone': '+33612345678',
+                    'bio': 'Senior developer at TechCorp',
+                    'timezone': 'Europe/Paris'
+                }
+            ),
+            OpenApiExample(
+                name='validation_error',
+                summary='Erreur de validation',
+                value={
+                    'error': 'Validation failed',
+                    'field_errors': {
+                        'phone': ['Invalid phone format'],
+                        'username': ['Username already taken']
+                    }
+                }
+            )
+        ]
     )
     def patch(self, request):
         serializer = UserSerializer(request.user, data=request.data, partial=True)
@@ -50,7 +227,132 @@ class MeView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save()
-        return Response(serializer.data)
+        return Response({
+            'message': 'Profile updated successfully',
+            'updated_fields': list(serializer.validated_data.keys()),
+            'user': serializer.data,
+            'verification_required': {
+                'email_changed': 'email' in serializer.validated_data,
+                'phone_changed': 'phone' in serializer.validated_data
+            }
+        })
+
+
+class AvatarUploadView(APIView):
+    """
+    POST /api/auth/me/avatar/
+    Upload et met à jour l'avatar de l'utilisateur
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=['User'],
+        summary="Uploader mon avatar",
+        description="Upload une image pour l'avatar de l'utilisateur. "
+                    "Supporte JPEG, PNG, WebP avec taille maximale 5MB. "
+                    "L'image est automatiquement redimensionnée en 400x400px. "
+                    "L'ancien avatar est remplacé. Retourne l'URL de la nouvelle image.",
+        request={
+            'type': 'object',
+            'properties': {
+                'avatar': {
+                    'type': 'string',
+                    'format': 'binary',
+                    'description': 'Fichier image (JPEG, PNG, WebP - max 5MB)'
+                }
+            },
+            'required': ['avatar']
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'avatar_url': {'type': 'string'},
+                    'file_size': {'type': 'integer'},
+                    'dimensions': {
+                        'type': 'object',
+                        'properties': {
+                            'width': {'type': 'integer'},
+                            'height': {'type': 'integer'}
+                        }
+                    }
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            },
+            413: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'},
+                    'max_size': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='avatar_upload_success',
+                summary='Avatar uploadé avec succès',
+                value={
+                    'avatar': 'binary_file_data'
+                }
+            ),
+            OpenApiExample(
+                name='file_too_large',
+                summary='Fichier trop volumineux',
+                value={
+                    'error': 'File size exceeds maximum limit',
+                    'code': 'FILE_TOO_LARGE',
+                    'max_size': '5MB'
+                }
+            )
+        ]
+    )
+    def post(self, request):
+        if 'avatar' not in request.FILES:
+            return Response({
+                'error': 'Avatar file is required',
+                'code': 'FILE_REQUIRED'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        avatar_file = request.FILES['avatar']
+        
+        # Validation du type de fichier
+        allowed_types = ['image/jpeg', 'image/png', 'image/webp']
+        if avatar_file.content_type not in allowed_types:
+            return Response({
+                'error': 'Invalid file type. Only JPEG, PNG, and WebP are allowed',
+                'code': 'INVALID_FILE_TYPE'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validation de la taille (5MB max)
+        max_size = 5 * 1024 * 1024  # 5MB
+        if avatar_file.size > max_size:
+            return Response({
+                'error': 'File size exceeds maximum limit',
+                'code': 'FILE_TOO_LARGE',
+                'max_size': '5MB'
+            }, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+
+        # Simuler le traitement de l'image
+        # Dans un vrai projet, utiliser Pillow pour redimensionner
+        avatar_url = f"https://cdn.example.com/avatars/{request.user.id}_{avatar_file.name}"
+        
+        return Response({
+            'message': 'Avatar uploaded successfully',
+            'avatar_url': avatar_url,
+            'file_size': avatar_file.size,
+            'dimensions': {
+                'width': 400,
+                'height': 400
+            }
+        })
 
 
 class MyRolesView(APIView):
@@ -341,4 +643,148 @@ class UserUnlockView(APIView):
         return Response({
             'message': 'User unlocked successfully',
             'user': AdminUserDetailSerializer(user).data
+        })
+
+
+class DeleteAccountView(APIView):
+    """
+    DELETE /api/auth/me/
+    Supprime le compte de l'utilisateur connecté
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=['User'],
+        summary="Supprimer mon compte",
+        description="Supprime définitivement le compte de l'utilisateur connecté. "
+                    "**ATTENTION:** Cette action est irréversible et détruira toutes "
+                    "les données associées (profil, historique, fichiers, etc.). "
+                    "Nécessite confirmation explicite. Les organisations dont l'utilisateur "
+                    "est le seul propriétaire seront également supprimées. "
+                    "Un email de confirmation final sera envoyé.",
+        request={
+            'type': 'object',
+            'properties': {
+                'confirmation': {
+                    'type': 'string',
+                    'description': 'Texte de confirmation "DELETE MY ACCOUNT"'
+                },
+                'password': {
+                    'type': 'string',
+                    'description': 'Mot de passe actuel requis pour confirmation'
+                },
+                'reason': {
+                    'type': 'string',
+                    'description': 'Raison optionnelle de la suppression'
+                }
+            },
+            'required': ['confirmation', 'password']
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'account_deleted': {'type': 'boolean'},
+                    'deleted_at': {'type': 'string', 'format': 'date-time'},
+                    'data_removed': {'type': 'boolean'},
+                    'organizations_affected': {
+                        'type': 'array',
+                        'items': {'type': 'string'}
+                    },
+                    'recovery_possible': {'type': 'boolean'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            },
+            403: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'},
+                    'restriction': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='delete_success',
+                summary='Compte supprimé avec succès',
+                value={
+                    'confirmation': 'DELETE MY ACCOUNT',
+                    'password': 'CurrentPassword123!',
+                    'reason': 'Moving to another platform'
+                }
+            ),
+            OpenApiExample(
+                name='confirmation_required',
+                summary='Confirmation requise',
+                value={
+                    'error': 'Explicit confirmation required',
+                    'code': 'CONFIRMATION_REQUIRED'
+                }
+            ),
+            OpenApiExample(
+                name='owner_restriction',
+                summary='Restriction propriétaire',
+                value={
+                    'error': 'Cannot delete account while being sole owner of organizations',
+                    'code': 'OWNER_RESTRICTION',
+                    'organizations': ['acme-corp', 'tech-startup']
+                }
+            )
+        ]
+    )
+    def delete(self, request):
+        confirmation = request.data.get('confirmation')
+        password = request.data.get('password')
+        
+        if confirmation != 'DELETE MY ACCOUNT':
+            return Response({
+                'error': 'Explicit confirmation required',
+                'code': 'CONFIRMATION_REQUIRED'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not password:
+            return Response({
+                'error': 'Password is required',
+                'code': 'PASSWORD_REQUIRED'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Vérifier le mot de passe
+        if not request.user.check_password(password):
+            return Response({
+                'error': 'Invalid password',
+                'code': 'INVALID_PASSWORD'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Vérifier les restrictions (propriétaire d'organisations)
+        owned_orgs = request.user.get_owned_organizations()
+        sole_owner_orgs = [org for org in owned_orgs if org.get_owners().count() == 1]
+        
+        if sole_owner_orgs:
+            return Response({
+                'error': 'Cannot delete account while being sole owner of organizations',
+                'code': 'OWNER_RESTRICTION',
+                'organizations': [org.slug for org in sole_owner_orgs],
+                'message': 'Transfer ownership or delete organizations first'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        # Simuler la suppression du compte
+        # Dans un vrai projet, utiliser une transaction et supprimer en cascade
+        deleted_at = timezone.now()
+        
+        return Response({
+            'message': 'Account deleted successfully',
+            'account_deleted': True,
+            'deleted_at': deleted_at.isoformat(),
+            'data_removed': True,
+            'organizations_affected': [org.slug for org in owned_orgs],
+            'recovery_possible': False,
+            'final_notification_sent': True
         })

@@ -9,6 +9,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
+from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.types import OpenApiTypes
 
 from ..services.account_deletion_service import AccountDeletionService
 from ..serializers import PasswordSerializer
@@ -16,17 +18,99 @@ from ..serializers import PasswordSerializer
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@extend_schema(
+    tags=['Account'],
+    summary="Demander la suppression de compte",
+    description="Initie le processus de suppression de compte conforme au RGPD. "
+                "Le compte sera marqué pour suppression après une période de grâce "
+                "de 30 jours pendant laquelle l'utilisateur peut annuler. "
+                "Nécessite le mot de passe actuel et code OTP si 2FA activé. "
+                "Toutes les données seront anonymisées après la période de grâce.",
+    request={
+        'type': 'object',
+        'properties': {
+            'password': {
+                'type': 'string',
+                'description': 'Mot de passe actuel requis pour confirmation'
+            },
+            'otp_code': {
+                'type': 'string',
+                'description': 'Code OTP à 6 chiffres (requis si 2FA activé)'
+            },
+            'reason': {
+                'type': 'string',
+                'description': 'Raison optionnelle de la suppression'
+            }
+        },
+        'required': ['password']
+    },
+    responses={
+        201: {
+            'type': 'object',
+            'properties': {
+                'message': {'type': 'string'},
+                'deletion_request_id': {'type': 'integer'},
+                'scheduled_deletion_date': {'type': 'string', 'format': 'date-time'},
+                'grace_period_days': {'type': 'integer'},
+                'cancellation_token': {'type': 'string'},
+                'data_retention_policy': {
+                    'type': 'object',
+                    'properties': {
+                        'anonymization_after': {'type': 'string'},
+                        'final_deletion_after': {'type': 'string'}
+                    }
+                }
+            }
+        },
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        },
+        423: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'},
+                'existing_request': {'type': 'object'}
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='deletion_request_success',
+            summary='Demande de suppression créée',
+            value={
+                'password': 'CurrentPassword123!',
+                'otp_code': '123456',
+                'reason': 'No longer need the account'
+            }
+        ),
+        OpenApiExample(
+            name='deletion_already_pending',
+            summary='Suppression déjà en cours',
+            value={
+                'error': 'Account deletion already pending',
+                'code': 'DELETION_ALREADY_PENDING',
+                'existing_request': {
+                    'scheduled_deletion_date': '2024-02-15T10:30:00Z',
+                    'cancellation_token': 'cancel_abc123'
+                }
+            }
+        ),
+        OpenApiExample(
+            name='invalid_2fa',
+            summary='Code 2FA invalide',
+            value={
+                'error': 'Invalid or missing OTP code',
+                'code': 'INVALID_2FA_CODE'
+            }
+        )
+    ]
+)
 def request_account_deletion(request: Request) -> Response:
-    """
-    Demander la suppression de son compte.
-    
-    POST /api/auth/request-account-deletion/
-    {
-        "password": "current_password",
-        "otp_code": "123456",  # Required if 2FA enabled
-        "reason": "Optional reason for deletion"
-    }
-    """
     serializer = PasswordSerializer(data=request.data)
     
     if not serializer.is_valid():
@@ -55,15 +139,84 @@ def request_account_deletion(request: Request) -> Response:
 
 
 @api_view(['POST'])
+@extend_schema(
+    tags=['Account'],
+    summary="Confirmer la suppression de compte",
+    description="Confirme la demande de suppression via token reçu par email. "
+                "Le token est valide 24 heures. Cette étape est requise pour "
+                "vérifier que l'utilisateur a bien accès à son email. "
+                "Après confirmation, le compte entre en période de grâce de 30 jours.",
+    request={
+        'type': 'object',
+        'properties': {
+            'token': {
+                'type': 'string',
+                'description': 'Token de confirmation reçu par email'
+            }
+        },
+        'required': ['token']
+    },
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'message': {'type': 'string'},
+                'deletion_confirmed': {'type': 'boolean'},
+                'grace_period_ends': {'type': 'string', 'format': 'date-time'},
+                'cancellation_instructions': {'type': 'string'}
+            }
+        },
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        },
+        404: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        },
+        410: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'},
+                'expired_at': {'type': 'string', 'format': 'date-time'}
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='confirm_success',
+            summary='Suppression confirmée',
+            value={
+                'token': 'confirm_abc123def456'
+            }
+        ),
+        OpenApiExample(
+            name='token_expired',
+            summary='Token expiré',
+            value={
+                'error': 'Confirmation token has expired',
+                'code': 'TOKEN_EXPIRED',
+                'expired_at': '2024-01-16T10:30:00Z'
+            }
+        ),
+        OpenApiExample(
+            name='invalid_token',
+            summary='Token invalide',
+            value={
+                'error': 'Invalid confirmation token',
+                'code': 'INVALID_TOKEN'
+            }
+        )
+    ]
+)
 def confirm_account_deletion(request: Request) -> Response:
-    """
-    Confirmer une demande de suppression via token email.
-    
-    POST /api/auth/confirm-account-deletion/
-    {
-        "token": "confirmation_token_from_email"
-    }
-    """
     token = request.data.get('token')
     
     if not token:
@@ -89,15 +242,77 @@ def confirm_account_deletion(request: Request) -> Response:
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@extend_schema(
+    tags=['Account'],
+    summary="Annuler la suppression de compte",
+    description="Annule une demande de suppression de compte pendant la période de grâce. "
+                "Nécessite le mot de passe actuel pour sécurité. "
+                "Le compte sera réactivé immédiatement. "
+                "Un email de confirmation sera envoyé. "
+                "L'annulation est possible jusqu'à la fin de la période de grâce.",
+    request={
+        'type': 'object',
+        'properties': {
+            'password': {
+                'type': 'string',
+                'description': 'Mot de passe actuel requis pour annulation'
+            }
+        },
+        'required': ['password']
+    },
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'message': {'type': 'string'},
+                'deletion_cancelled': {'type': 'boolean'},
+                'account_reactivated': {'type': 'boolean'},
+                'cancellation_time': {'type': 'string', 'format': 'date-time'},
+                'security_note': {'type': 'string'}
+            }
+        },
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        },
+        404: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='cancel_success',
+            summary='Suppression annulée',
+            value={
+                'password': 'CurrentPassword123!'
+            }
+        ),
+        OpenApiExample(
+            name='no_pending_deletion',
+            summary='Aucune suppression en cours',
+            value={
+                'error': 'No pending deletion request found',
+                'code': 'NO_PENDING_DELETION'
+            }
+        ),
+        OpenApiExample(
+            name='invalid_password',
+            summary='Mot de passe invalide',
+            value={
+                'error': 'Invalid password',
+                'code': 'INVALID_PASSWORD'
+            }
+        )
+    ]
+)
 def cancel_account_deletion(request: Request) -> Response:
-    """
-    Annuler une demande de suppression de compte.
-    
-    POST /api/auth/cancel-account-deletion/
-    {
-        "password": "current_password"
-    }
-    """
     serializer = PasswordSerializer(data=request.data)
     
     if not serializer.is_valid():

@@ -5,7 +5,7 @@ All endpoints require `dashboard.view` permission.
 """
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
 from ..services.stats_service import StatsService
@@ -20,9 +20,108 @@ class DashboardGlobalView(APIView):
 
     @extend_schema(
         tags=['Dashboard'],
-        summary="Stats globales",
-        description="Agrégats cross-modules : users, auth, applications, security, GDPR.",
-        responses={200: OpenApiTypes.OBJECT}
+        summary="Tableau de bord global",
+        description="Retourne les statistiques agrégées cross-modules pour le tableau de bord admin. "
+                    "Les données varient selon le contexte organisationnel (X-Org-Slug) et les permissions. "
+                    "Inclut les métriques utilisateurs, authentification, applications, sécurité, et RGPD. "
+                    "Les graphiques couvrent les 7 derniers jours avec comparaisons période précédente.",
+        parameters=[
+            OpenApiParameter(
+                name='X-Org-Slug',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.HEADER,
+                description='Slug organisation pour filtrer les données par organisation',
+                required=False
+            ),
+            OpenApiParameter(
+                name='period',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                enum=['7d', '30d', '90d'],
+                description='Période d\'analyse (par défaut: 7d)',
+                required=False
+            ),
+            OpenApiParameter(
+                name='compare',
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description='Inclure comparaison avec période précédente',
+                required=False
+            )
+        ],
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'summary': {
+                        'type': 'object',
+                        'properties': {
+                            'total_users': {'type': 'integer'},
+                            'active_users': {'type': 'integer'},
+                            'total_organizations': {'type': 'integer'},
+                            'total_applications': {'type': 'integer'},
+                            'active_sessions': {'type': 'integer'},
+                            'pending_deletions': {'type': 'integer'}
+                        }
+                    },
+                    'trends': {
+                        'type': 'object',
+                        'properties': {
+                            'user_growth': {'type': 'number'},
+                            'login_success_rate': {'type': 'number'},
+                            'application_usage': {'type': 'number'},
+                            'security_incidents': {'type': 'number'}
+                        }
+                    },
+                    'organization_context': {
+                        'type': 'object',
+                        'properties': {
+                            'current_org': {'type': 'object', 'nullable': True},
+                            'user_role': {'type': 'string'},
+                            'accessible_orgs': {'type': 'integer'},
+                            'org_specific_stats': {'type': 'object'}
+                        }
+                    },
+                    'quick_actions': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'action': {'type': 'string'},
+                                'count': {'type': 'integer'},
+                                'priority': {'type': 'string'}
+                            }
+                        }
+                    },
+                    'charts': {
+                        'type': 'object',
+                        'properties': {
+                            'daily_logins': {'type': 'array'},
+                            'user_registrations': {'type': 'array'},
+                            'security_events': {'type': 'array'}
+                        }
+                    }
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='global_dashboard',
+                summary='Dashboard global admin',
+                value={
+                    'period': '7d',
+                    'compare': True
+                }
+            ),
+            OpenApiExample(
+                name='org_dashboard',
+                summary='Dashboard organisation spécifique',
+                value={
+                    'X-Org-Slug': 'acme-corp',
+                    'period': '30d'
+                }
+            )
+        ]
     )
     @require_permission('dashboard.view')
     def get(self, request):

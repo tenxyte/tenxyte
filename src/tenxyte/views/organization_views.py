@@ -10,6 +10,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
 from ..decorators import (
     require_jwt,
@@ -46,20 +48,79 @@ User = get_user_model()
 
 @api_view(['POST'])
 @require_jwt
+@extend_schema(
+    tags=['Organizations'],
+    summary="Créer une organisation",
+    description="Crée une nouvelle organisation. L'utilisateur devient automatiquement owner. "
+                "Supporte les hiérarchies (parent/child) avec profondeur maximale de 5 niveaux. "
+                "Le slug doit être unique globalement. "
+                "Limite de membres configurable (0 = illimité).",
+    request={
+        'type': 'object',
+        'properties': {
+            'name': {'type': 'string', 'description': 'Nom de l\'organisation'},
+            'slug': {'type': 'string', 'description': 'Slug unique (optionnel, généré automatiquement)'},
+            'description': {'type': 'string', 'description': 'Description (optionnel)'},
+            'parent_id': {'type': 'integer', 'description': 'ID organisation parent (optionnel)'},
+            'metadata': {'type': 'object', 'description': 'Métadonnées personnalisées (optionnel)'},
+            'max_members': {'type': 'integer', 'description': 'Limite de membres (0 = illimité)'}
+        },
+        'required': ['name']
+    },
+    responses={
+        201: {
+            'type': 'object',
+            'properties': {
+                'id': {'type': 'integer'},
+                'name': {'type': 'string'},
+                'slug': {'type': 'string'},
+                'description': {'type': 'string'},
+                'created_at': {'type': 'string', 'format': 'date-time'},
+                'is_active': {'type': 'boolean'},
+                'member_count': {'type': 'integer'},
+                'max_members': {'type': 'integer'}
+            }
+        },
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='create_org_success',
+            summary='Création réussie',
+            value={
+                'name': 'Acme Corp',
+                'slug': 'acme-corp',
+                'description': 'Technologie et innovation',
+                'max_members': 100
+            }
+        ),
+        OpenApiExample(
+            name='create_org_with_parent',
+            summary='Création avec parent',
+            value={
+                'name': 'Acme France',
+                'slug': 'acme-france',
+                'parent_id': 1,
+                'description': 'Filiale française'
+            }
+        ),
+        OpenApiExample(
+            name='hierarchy_depth_limit',
+            summary='Limite profondeur hiérarchie',
+            value={
+                'error': 'Organization hierarchy depth limit exceeded (max 5 levels)',
+                'code': 'HIERARCHY_DEPTH_LIMIT'
+            }
+        )
+    ]
+)
 def create_organization(request: Request) -> Response:
-    """
-    Create a new organization.
-    
-    POST /api/auth/organizations/
-    {
-        "name": "Acme Corp",
-        "slug": "acme-corp",  // optional
-        "description": "...",
-        "parent_id": null,
-        "metadata": {},
-        "max_members": 0
-    }
-    """
     serializer = CreateOrganizationSerializer(data=request.data)
     
     if not serializer.is_valid():
@@ -87,20 +148,99 @@ def create_organization(request: Request) -> Response:
 
 @api_view(['GET'])
 @require_jwt
+@extend_schema(
+    tags=['Organizations'],
+    summary="Lister les organisations",
+    description="Retourne la liste des organisations où l'utilisateur est membre. "
+                "Supporte la recherche, le filtrage et la pagination. "
+                "Inclut les statistiques (nombre de membres, hiérarchie).",
+    parameters=[
+        OpenApiParameter(
+            name='search',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            description='Recherche dans name et slug'
+        ),
+        OpenApiParameter(
+            name='is_active',
+            type=OpenApiTypes.BOOL,
+            location=OpenApiParameter.QUERY,
+            description='Filtrer par statut actif'
+        ),
+        OpenApiParameter(
+            name='parent',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            description='Filtrer par parent (null = racine)'
+        ),
+        OpenApiParameter(
+            name='ordering',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            enum=['name', 'slug', 'created_at', '-name', '-slug', '-created_at'],
+            description='Ordre de tri'
+        ),
+        OpenApiParameter(
+            name='page',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description='Numéro de page'
+        ),
+        OpenApiParameter(
+            name='page_size',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description='Éléments par page (max 100)'
+        )
+    ],
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'count': {'type': 'integer'},
+                'next': {'type': 'string', 'nullable': True},
+                'previous': {'type': 'string', 'nullable': True},
+                'results': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'integer'},
+                            'name': {'type': 'string'},
+                            'slug': {'type': 'string'},
+                            'description': {'type': 'string'},
+                            'member_count': {'type': 'integer'},
+                            'max_members': {'type': 'integer'},
+                            'is_active': {'type': 'boolean'},
+                            'created_at': {'type': 'string', 'format': 'date-time'}
+                        }
+                    }
+                }
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='list_orgs_success',
+            summary='Liste paginée',
+            value={
+                'count': 25,
+                'next': 'http://api.example.com/organizations/?page=2',
+                'previous': None,
+                'results': [
+                    {
+                        'id': 1,
+                        'name': 'Acme Corp',
+                        'slug': 'acme-corp',
+                        'member_count': 15,
+                        'is_active': True
+                    }
+                ]
+            }
+        )
+    ]
+)
 def list_organizations(request: Request) -> Response:
-    """
-    List all organizations the user is a member of.
-    
-    GET /api/auth/organizations/list/
-    
-    Query params:
-        ?search=      → Search in name, slug
-        ?is_active=   → Filter by active status
-        ?parent=null  → Root organizations only
-        ?ordering=    → Order by name, slug, created_at
-        ?page=        → Page number
-        ?page_size=   → Items per page (max 100)
-    """
     queryset = request.user.get_organizations()
     queryset = apply_organization_filters(queryset, request)
 
@@ -118,13 +258,86 @@ def list_organizations(request: Request) -> Response:
 @require_jwt
 @require_org_context
 @require_org_membership
+@extend_schema(
+    tags=['Organizations'],
+    summary="Détails d'une organisation",
+    description="Retourne les détails complets d'une organisation. "
+                "Nécessite le header X-Org-Slug pour identifier l'organisation. "
+                "Inclut les métadonnées, statistiques membres, et hiérarchie. "
+                "Uniquement accessible aux membres de l'organisation.",
+    parameters=[
+        OpenApiParameter(
+            name='X-Org-Slug',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description='Slug de l\'organisation (multi-tenant context)'
+        )
+    ],
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'id': {'type': 'integer'},
+                'name': {'type': 'string'},
+                'slug': {'type': 'string'},
+                'description': {'type': 'string'},
+                'metadata': {'type': 'object'},
+                'is_active': {'type': 'boolean'},
+                'created_at': {'type': 'string', 'format': 'date-time'},
+                'updated_at': {'type': 'string', 'format': 'date-time'},
+                'member_count': {'type': 'integer'},
+                'max_members': {'type': 'integer'},
+                'parent': {'type': 'object', 'nullable': True},
+                'children': {
+                    'type': 'array',
+                    'items': {'type': 'object'}
+                },
+                'user_role': {'type': 'string'},
+                'user_permissions': {'type': 'array'}
+            }
+        },
+        403: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        },
+        404: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='get_org_success',
+            summary='Détails organisation',
+            value={
+                'id': 1,
+                'name': 'Acme Corp',
+                'slug': 'acme-corp',
+                'description': 'Technologie et innovation',
+                'member_count': 15,
+                'max_members': 100,
+                'user_role': 'admin',
+                'user_permissions': ['manage_members', 'view_reports']
+            }
+        ),
+        OpenApiExample(
+            name='org_not_member',
+            summary='Non-membre',
+            value={
+                'error': 'User is not a member of this organization',
+                'code': 'NOT_MEMBER'
+            }
+        )
+    ]
+)
 def get_organization(request: Request) -> Response:
-    """
-    Get organization details.
-    
-    GET /api/auth/organizations/{slug}/
-    Headers: X-Org-Slug: acme-corp
-    """
     serializer = OrganizationSerializer(request.organization, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -133,13 +346,90 @@ def get_organization(request: Request) -> Response:
 @require_jwt
 @require_org_context
 @require_org_admin
+@extend_schema(
+    tags=['Organizations'],
+    summary="Mettre à jour une organisation",
+    description="Met à jour les informations d'une organisation. "
+                "Nécessite le header X-Org-Slug et droits d'admin. "
+                "Le changement de parent respecte les contraintes de hiérarchie. "
+                "Impossible de créer des boucles ou dépasser 5 niveaux. "
+                "La limite de membres ne peut pas être inférieure au nombre actuel.",
+    parameters=[
+        OpenApiParameter(
+            name='X-Org-Slug',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description='Slug de l\'organisation (multi-tenant context)'
+        )
+    ],
+    request={
+        'type': 'object',
+        'properties': {
+            'name': {'type': 'string', 'description': 'Nom de l\'organisation'},
+            'slug': {'type': 'string', 'description': 'Nouveau slug unique'},
+            'description': {'type': 'string', 'description': 'Description'},
+            'parent_id': {'type': 'integer', 'description': 'Nouveau parent ID'},
+            'metadata': {'type': 'object', 'description': 'Métadonnées'},
+            'max_members': {'type': 'integer', 'description': 'Nouvelle limite membres'},
+            'is_active': {'type': 'boolean', 'description': 'Statut actif'}
+        }
+    },
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'id': {'type': 'integer'},
+                'name': {'type': 'string'},
+                'slug': {'type': 'string'},
+                'description': {'type': 'string'},
+                'updated_at': {'type': 'string', 'format': 'date-time'}
+            }
+        },
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        },
+        403: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='update_org_success',
+            summary='Mise à jour réussie',
+            value={
+                'name': 'Acme Corporation',
+                'description': 'Mise à jour description',
+                'max_members': 200
+            }
+        ),
+        OpenApiExample(
+            name='parent_constraint_violation',
+            summary='Violation contrainte parent',
+            value={
+                'error': 'Cannot set parent: would create circular hierarchy',
+                'code': 'CIRCULAR_HIERARCHY'
+            }
+        ),
+        OpenApiExample(
+            name='member_limit_too_low',
+            summary='Limite membres trop basse',
+            value={
+                'error': 'Member limit cannot be less than current member count',
+                'code': 'MEMBER_LIMIT_VIOLATION'
+            }
+        )
+    ]
+)
 def update_organization(request: Request) -> Response:
-    """
-    Update organization.
-    
-    PATCH /api/auth/organizations/{slug}/
-    Headers: X-Org-Slug: acme-corp
-    """
     serializer = UpdateOrganizationSerializer(data=request.data)
     
     if not serializer.is_valid():
@@ -165,13 +455,65 @@ def update_organization(request: Request) -> Response:
 @require_jwt
 @require_org_context
 @require_org_owner
+@extend_schema(
+    tags=['Organizations'],
+    summary="Supprimer une organisation",
+    description="Supprime une organisation (soft delete). "
+                "Nécessite droits de propriétaire et header X-Org-Slug. "
+                "Impossible si l'organisation a des organisations enfants. "
+                "Action irréversible mais récupérable via admin. "
+                "Tous les membres perdent l'accès.",
+    parameters=[
+        OpenApiParameter(
+            name='X-Org-Slug',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description='Slug de l\'organisation (multi-tenant context)'
+        )
+    ],
+    responses={
+        204: {'description': 'Organisation supprimée avec succès'},
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        },
+        403: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='delete_org_success',
+            summary='Suppression réussie',
+            value=None
+        ),
+        OpenApiExample(
+            name='has_child_organizations',
+            summary='Organisations enfants présentes',
+            value={
+                'error': 'Cannot delete organization with child organizations',
+                'code': 'HAS_CHILDREN'
+            }
+        ),
+        OpenApiExample(
+            name='not_owner',
+            summary='Pas propriétaire',
+            value={
+                'error': 'Only organization owners can delete organizations',
+                'code': 'NOT_OWNER'
+            }
+        )
+    ]
+)
 def delete_organization(request: Request) -> Response:
-    """
-    Delete organization (soft delete).
-    
-    DELETE /api/auth/organizations/{slug}/
-    Headers: X-Org-Slug: acme-corp
-    """
     service = OrganizationService()
     success, error = service.delete_organization(
         organization=request.organization,
@@ -213,21 +555,120 @@ def get_organization_tree(request: Request) -> Response:
 @require_jwt
 @require_org_context
 @require_org_membership
+@extend_schema(
+    tags=['Organizations'],
+    summary="Lister les membres",
+    description="Retourne la liste des membres de l'organisation. "
+                "Inclut les rôles, permissions héritées, et statut. "
+                "Supporte la recherche, filtrage par rôle et pagination. "
+                "Affiche les permissions effectives (directes + héritées).",
+    parameters=[
+        OpenApiParameter(
+            name='X-Org-Slug',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description='Slug de l\'organisation (multi-tenant context)'
+        ),
+        OpenApiParameter(
+            name='search',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            description='Recherche dans email, prénom, nom'
+        ),
+        OpenApiParameter(
+            name='role',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            enum=['owner', 'admin', 'member'],
+            description='Filtrer par rôle'
+        ),
+        OpenApiParameter(
+            name='status',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            enum=['active', 'inactive', 'pending'],
+            description='Filtrer par statut'
+        ),
+        OpenApiParameter(
+            name='ordering',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            enum=['joined_at', '-joined_at', 'user__email', '-user__email'],
+            description='Ordre de tri'
+        ),
+        OpenApiParameter(
+            name='page',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description='Numéro de page'
+        ),
+        OpenApiParameter(
+            name='page_size',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description='Éléments par page (max 100)'
+        )
+    ],
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'count': {'type': 'integer'},
+                'next': {'type': 'string', 'nullable': True},
+                'previous': {'type': 'string', 'nullable': True},
+                'results': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'integer'},
+                            'user': {
+                                'type': 'object',
+                                'properties': {
+                                    'id': {'type': 'integer'},
+                                    'email': {'type': 'string'},
+                                    'first_name': {'type': 'string'},
+                                    'last_name': {'type': 'string'}
+                                }
+                            },
+                            'role': {'type': 'string'},
+                            'role_display': {'type': 'string'},
+                            'permissions': {'type': 'array'},
+                            'inherited_permissions': {'type': 'array'},
+                            'effective_permissions': {'type': 'array'},
+                            'joined_at': {'type': 'string', 'format': 'date-time'},
+                            'status': {'type': 'string'}
+                        }
+                    }
+                }
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='list_members_success',
+            summary='Liste membres avec permissions',
+            value={
+                'count': 15,
+                'results': [
+                    {
+                        'id': 1,
+                        'user': {'id': 42, 'email': 'admin@acme.com', 'first_name': 'John', 'last_name': 'Doe'},
+                        'role': 'admin',
+                        'role_display': 'Administrator',
+                        'permissions': ['manage_members', 'view_reports'],
+                        'inherited_permissions': ['org.read'],
+                        'effective_permissions': ['org.read', 'manage_members', 'view_reports'],
+                        'joined_at': '2024-01-15T10:30:00Z',
+                        'status': 'active'
+                    }
+                ]
+            }
+        )
+    ]
+)
 def list_members(request: Request) -> Response:
-    """
-    List organization members.
-    
-    GET /api/auth/organizations/{slug}/members/
-    Headers: X-Org-Slug: acme-corp
-    
-    Query params:
-        ?search=    → Search in user email, first_name, last_name
-        ?role=      → Filter by role code
-        ?status=    → Filter by membership status
-        ?ordering=  → Order by joined_at, user__email
-        ?page=      → Page number
-        ?page_size= → Items per page (max 100)
-    """
     service = OrganizationService()
     memberships = service.get_members(request.organization)
     memberships = apply_member_filters(memberships, request)
@@ -246,17 +687,104 @@ def list_members(request: Request) -> Response:
 @require_jwt
 @require_org_context
 @require_org_permission('org.members.invite')
+@extend_schema(
+    tags=['Organizations'],
+    summary="Ajouter un membre",
+    description="Ajoute un utilisateur comme membre de l'organisation. "
+                "Nécessite la permission org.members.invite. "
+                "Respecte les limites de membres configurées. "
+                "L'utilisateur reçoit une notification d'invitation. "
+                "Le propriétaire ne peut pas être ajouté comme membre simple.",
+    parameters=[
+        OpenApiParameter(
+            name='X-Org-Slug',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description='Slug de l\'organisation (multi-tenant context)'
+        )
+    ],
+    request={
+        'type': 'object',
+        'properties': {
+            'user_id': {'type': 'integer', 'description': 'ID de l\'utilisateur à ajouter'},
+            'role_code': {
+                'type': 'string',
+                'enum': ['member', 'admin'],
+                'description': 'Rôle du membre (owner non autorisé)'
+            }
+        },
+        'required': ['user_id', 'role_code']
+    },
+    responses={
+        201: {
+            'type': 'object',
+            'properties': {
+                'id': {'type': 'integer'},
+                'user': {'type': 'object'},
+                'role': {'type': 'string'},
+                'joined_at': {'type': 'string', 'format': 'date-time'},
+                'status': {'type': 'string'}
+            }
+        },
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        },
+        403: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        },
+        404: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='add_member_success',
+            summary='Membre ajouté avec succès',
+            value={
+                'user_id': 123,
+                'role_code': 'member'
+            }
+        ),
+        OpenApiExample(
+            name='member_limit_exceeded',
+            summary='Limite de membres dépassée',
+            value={
+                'error': 'Organization member limit exceeded',
+                'code': 'MEMBER_LIMIT_EXCEEDED'
+            }
+        ),
+        OpenApiExample(
+            name='already_member',
+            summary='Déjà membre',
+            value={
+                'error': 'User is already a member of this organization',
+                'code': 'ALREADY_MEMBER'
+            }
+        ),
+        OpenApiExample(
+            name='invalid_role',
+            summary='Rôle invalide',
+            value={
+                'error': 'Cannot assign owner role through add_member',
+                'code': 'INVALID_ROLE'
+            }
+        )
+    ]
+)
 def add_member(request: Request) -> Response:
-    """
-    Add a member to the organization.
-    
-    POST /api/auth/organizations/{slug}/members/
-    Headers: X-Org-Slug: acme-corp
-    {
-        "user_id": 123,
-        "role_code": "member"
-    }
-    """
     serializer = AddMemberSerializer(data=request.data)
     
     if not serializer.is_valid():
@@ -288,16 +816,100 @@ def add_member(request: Request) -> Response:
 @require_jwt
 @require_org_context
 @require_org_permission('org.members.manage')
+@extend_schema(
+    tags=['Organizations'],
+    summary="Mettre à jour le rôle d'un membre",
+    description="Met à jour le rôle d'un membre existant. "
+                "Nécessite la permission org.members.manage. "
+                "Un propriétaire ne peut pas être rétrogradé par un autre membre. "
+                "Le dernier propriétaire ne peut pas être rétrogradé. "
+                "L'utilisateur reçoit une notification de changement de rôle.",
+    parameters=[
+        OpenApiParameter(
+            name='X-Org-Slug',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description='Slug de l\'organisation (multi-tenant context)'
+        ),
+        OpenApiParameter(
+            name='user_id',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='ID de l\'utilisateur à modifier'
+        )
+    ],
+    request={
+        'type': 'object',
+        'properties': {
+            'role_code': {
+                'type': 'string',
+                'enum': ['member', 'admin', 'owner'],
+                'description': 'Nouveau rôle (owner nécessite droits appropriés)'
+            }
+        },
+        'required': ['role_code']
+    },
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'id': {'type': 'integer'},
+                'user': {'type': 'object'},
+                'role': {'type': 'string'},
+                'updated_at': {'type': 'string', 'format': 'date-time'}
+            }
+        },
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        },
+        403: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        },
+        404: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='update_role_success',
+            summary='Rôle mis à jour',
+            value={
+                'role_code': 'admin'
+            }
+        ),
+        OpenApiExample(
+            name='cannot_demote_owner',
+            summary='Impossible de rétrograder owner',
+            value={
+                'error': 'Cannot demote organization owner',
+                'code': 'CANNOT_DEMOTE_OWNER'
+            }
+        ),
+        OpenApiExample(
+            name='last_owner_error',
+            summary='Dernier propriétaire',
+            value={
+                'error': 'Cannot remove role from last organization owner',
+                'code': 'LAST_OWNER_REQUIRED'
+            }
+        )
+    ]
+)
 def update_member_role(request: Request, user_id: int) -> Response:
-    """
-    Update a member's role.
-    
-    PATCH /api/auth/organizations/{slug}/members/{user_id}/
-    Headers: X-Org-Slug: acme-corp
-    {
-        "role_code": "admin"
-    }
-    """
     serializer = UpdateMemberRoleSerializer(data=request.data)
     
     if not serializer.is_valid():
@@ -330,13 +942,92 @@ def update_member_role(request: Request, user_id: int) -> Response:
 @require_jwt
 @require_org_context
 @require_org_permission('org.members.remove')
+@extend_schema(
+    tags=['Organizations'],
+    summary="Retirer un membre",
+    description="Retire un membre de l'organisation. "
+                "Nécessite la permission org.members.remove. "
+                "Un propriétaire ne peut pas être retiré par un autre membre. "
+                "Le dernier propriétaire ne peut pas être retiré. "
+                "Un membre peut se retirer lui-même (auto-suppression). "
+                "L'utilisateur perd immédiatement l'accès à l'organisation.",
+    parameters=[
+        OpenApiParameter(
+            name='X-Org-Slug',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description='Slug de l\'organisation (multi-tenant context)'
+        ),
+        OpenApiParameter(
+            name='user_id',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description='ID de l\'utilisateur à retirer'
+        )
+    ],
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'message': {'type': 'string'}
+            }
+        },
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        },
+        403: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        },
+        404: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='remove_member_success',
+            summary='Membre retiré avec succès',
+            value=None
+        ),
+        OpenApiExample(
+            name='cannot_remove_owner',
+            summary='Impossible de retirer owner',
+            value={
+                'error': 'Cannot remove organization owner',
+                'code': 'CANNOT_REMOVE_OWNER'
+            }
+        ),
+        OpenApiExample(
+            name='last_owner_error',
+            summary='Dernier propriétaire',
+            value={
+                'error': 'Cannot remove last organization owner',
+                'code': 'LAST_OWNER_REQUIRED'
+            }
+        ),
+        OpenApiExample(
+            name='self_removal',
+            summary='Auto-suppression',
+            value={
+                'message': 'Member removed successfully'
+            }
+        )
+    ]
+)
 def remove_member(request: Request, user_id: int) -> Response:
-    """
-    Remove a member from the organization.
-    
-    DELETE /api/auth/organizations/{slug}/members/{user_id}/
-    Headers: X-Org-Slug: acme-corp
-    """
     try:
         user_to_remove = User.objects.get(id=user_id)
     except User.DoesNotExist:
@@ -363,18 +1054,96 @@ def remove_member(request: Request, user_id: int) -> Response:
 @require_jwt
 @require_org_context
 @require_org_permission('org.members.invite')
+@extend_schema(
+    tags=['Organizations'],
+    summary="Inviter un membre par email",
+    description="Invite un utilisateur à rejoindre l'organisation par email. "
+                "Nécessite la permission org.members.invite. "
+                "Un email avec un lien d'acceptation est envoyé. "
+                "L'invitation expire après le nombre de jours spécifié. "
+                "L'utilisateur doit créer un compte ou se connecter pour accepter.",
+    parameters=[
+        OpenApiParameter(
+            name='X-Org-Slug',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            required=True,
+            description='Slug de l\'organisation (multi-tenant context)'
+        )
+    ],
+    request={
+        'type': 'object',
+        'properties': {
+            'email': {
+                'type': 'string',
+                'format': 'email',
+                'description': 'Email de l\'utilisateur à inviter'
+            },
+            'role_code': {
+                'type': 'string',
+                'enum': ['member', 'admin'],
+                'description': 'Rôle attribué après acceptation'
+            },
+            'expires_in_days': {
+                'type': 'integer',
+                'minimum': 1,
+                'maximum': 30,
+                'default': 7,
+                'description': 'Durée de validité en jours (1-30)'
+            }
+        },
+        'required': ['email', 'role_code']
+    },
+    responses={
+        201: {
+            'type': 'object',
+            'properties': {
+                'id': {'type': 'integer'},
+                'email': {'type': 'string'},
+                'role': {'type': 'string'},
+                'token': {'type': 'string'},
+                'expires_at': {'type': 'string', 'format': 'date-time'},
+                'invited_by': {'type': 'object'},
+                'organization': {'type': 'object'}
+            }
+        },
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'code': {'type': 'string'}
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='invite_success',
+            summary='Invitation envoyée',
+            value={
+                'email': 'new.user@example.com',
+                'role_code': 'member',
+                'expires_in_days': 7
+            }
+        ),
+        OpenApiExample(
+            name='already_member',
+            summary='Déjà membre',
+            value={
+                'error': 'User is already a member of this organization',
+                'code': 'ALREADY_MEMBER'
+            }
+        ),
+        OpenApiExample(
+            name='invitation_exists',
+            summary='Invitation existante',
+            value={
+                'error': 'Pending invitation already exists for this email',
+                'code': 'INVITATION_EXISTS'
+            }
+        )
+    ]
+)
 def invite_member(request: Request) -> Response:
-    """
-    Invite a user to the organization by email.
-    
-    POST /api/auth/organizations/{slug}/invitations/
-    Headers: X-Org-Slug: acme-corp
-    {
-        "email": "user@example.com",
-        "role_code": "member",
-        "expires_in_days": 7
-    }
-    """
     serializer = InviteMemberSerializer(data=request.data)
     
     if not serializer.is_valid():
@@ -404,12 +1173,81 @@ def invite_member(request: Request) -> Response:
 
 @api_view(['GET'])
 @require_jwt
+@extend_schema(
+    tags=['Organizations'],
+    summary="Lister les rôles d'organisation",
+    description="Retourne la liste des rôles disponibles pour les organisations. "
+                "Inclut les permissions associées à chaque rôle. "
+                "Affiche la hiérarchie des rôles et poids de permission. "
+                "Utile pour comprendre les capacités de chaque rôle.",
+    responses={
+        200: {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'code': {'type': 'string'},
+                    'name': {'type': 'string'},
+                    'description': {'type': 'string'},
+                    'weight': {'type': 'integer'},
+                    'permissions': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'code': {'type': 'string'},
+                                'name': {'type': 'string'},
+                                'description': {'type': 'string'}
+                            }
+                        }
+                    },
+                    'is_system_role': {'type': 'boolean'},
+                    'created_at': {'type': 'string', 'format': 'date-time'}
+                }
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='roles_list',
+            summary='Liste des rôles avec permissions',
+            value=[
+                {
+                    'code': 'owner',
+                    'name': 'Owner',
+                    'description': 'Full control over organization',
+                    'weight': 100,
+                    'permissions': [
+                        {'code': 'org.*', 'name': 'All organization permissions'}
+                    ],
+                    'is_system_role': True
+                },
+                {
+                    'code': 'admin',
+                    'name': 'Administrator',
+                    'description': 'Can manage members and settings',
+                    'weight': 50,
+                    'permissions': [
+                        {'code': 'org.members.manage', 'name': 'Manage members'},
+                        {'code': 'org.settings.edit', 'name': 'Edit settings'}
+                    ],
+                    'is_system_role': True
+                },
+                {
+                    'code': 'member',
+                    'name': 'Member',
+                    'description': 'Basic organization access',
+                    'weight': 10,
+                    'permissions': [
+                        {'code': 'org.read', 'name': 'View organization'}
+                    ],
+                    'is_system_role': True
+                }
+            ]
+        )
+    ]
+)
 def list_org_roles(request: Request) -> Response:
-    """
-    List available organization roles.
-    
-    GET /api/auth/org-roles/
-    """
     from ..models import get_organization_role_model
     OrganizationRole = get_organization_role_model()
     

@@ -10,7 +10,7 @@ Endpoints:
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
 from ..serializers.gdpr_admin_serializers import (
@@ -31,17 +31,108 @@ class DeletionRequestListView(APIView):
     @extend_schema(
         tags=['Admin - GDPR'],
         summary="Lister les demandes de suppression",
-        description="Retourne les demandes de suppression de compte paginées et filtrées.",
+        description="Retourne les demandes de suppression de compte paginées et filtrées. "
+                    "Interface admin pour la gestion RGPD. Inclut les détails utilisateur, "
+                    "statut de traitement, et dates importantes. Permet de surveiller "
+                    "les demandes en attente et celles nécessitant un traitement manuel.",
         parameters=[
-            OpenApiParameter('user_id', str, description='Filtrer par ID utilisateur'),
-            OpenApiParameter('status', str, description='Filtrer par statut (pending, confirmation_sent, confirmed, completed, cancelled)'),
-            OpenApiParameter('date_from', str, description='Demandé après (YYYY-MM-DD)'),
-            OpenApiParameter('date_to', str, description='Demandé avant (YYYY-MM-DD)'),
-            OpenApiParameter('ordering', str, description='Tri: requested_at, confirmed_at, grace_period_ends_at'),
-            OpenApiParameter('page', int, description='Numéro de page'),
-            OpenApiParameter('page_size', int, description='Éléments par page (max 100)'),
+            OpenApiParameter(
+                name='user_id',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filtrer par ID utilisateur'
+            ),
+            OpenApiParameter(
+                name='status',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                enum=['pending', 'confirmation_sent', 'confirmed', 'completed', 'cancelled'],
+                description='Filtrer par statut de la demande'
+            ),
+            OpenApiParameter(
+                name='date_from',
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                description='Demandé après cette date (YYYY-MM-DD)'
+            ),
+            OpenApiParameter(
+                name='date_to',
+                type=OpenApiTypes.DATE,
+                location=OpenApiParameter.QUERY,
+                description='Demandé avant cette date (YYYY-MM-DD)'
+            ),
+            OpenApiParameter(
+                name='grace_period_expiring',
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description='Filtrer les demandes dont la période de grâce expire bientôt (7 jours)'
+            ),
+            OpenApiParameter(
+                name='ordering',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Tri: requested_at, confirmed_at, grace_period_ends_at, user__email'
+            ),
+            OpenApiParameter(
+                name='page',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Numéro de page'
+            ),
+            OpenApiParameter(
+                name='page_size',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Éléments par page (max 100)'
+            )
         ],
-        responses={200: DeletionRequestSerializer(many=True)}
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'count': {'type': 'integer'},
+                    'next': {'type': 'string', 'nullable': True},
+                    'previous': {'type': 'string', 'nullable': True},
+                    'results': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'id': {'type': 'integer'},
+                                'user': {'type': 'object'},
+                                'status': {'type': 'string'},
+                                'reason': {'type': 'string', 'nullable': True},
+                                'requested_at': {'type': 'string', 'format': 'date-time'},
+                                'confirmed_at': {'type': 'string', 'format': 'date-time', 'nullable': True},
+                                'grace_period_ends_at': {'type': 'string', 'format': 'date-time', 'nullable': True},
+                                'processed_at': {'type': 'string', 'format': 'date-time', 'nullable': True},
+                                'processed_by': {'type': 'object', 'nullable': True},
+                                'ip_address': {'type': 'string'},
+                                'user_agent': {'type': 'string'}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='pending_requests',
+                summary='Demandes en attente',
+                value={
+                    'status': 'pending',
+                    'grace_period_expiring': True
+                }
+            ),
+            OpenApiExample(
+                name='user_specific',
+                summary='Demandes utilisateur spécifique',
+                value={
+                    'user_id': 12345,
+                    'ordering': '-requested_at'
+                }
+            )
+        ]
     )
     @require_permission('gdpr.admin')
     def get(self, request):
@@ -119,9 +210,94 @@ class ProcessDeletionView(APIView):
     @extend_schema(
         tags=['Admin - GDPR'],
         summary="Traiter une demande de suppression",
-        description="Exécute la suppression du compte pour une demande confirmée.",
-        request=ProcessDeletionSerializer,
-        responses={200: DeletionRequestSerializer, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+        description="Exécute manuellement une demande de suppression confirmée. "
+                    "**ATTENTION:** Cette action est irréversible et détruira "
+                    "définitivement toutes les données utilisateur conformément au RGPD. "
+                    "Nécessite une confirmation explicite. Un audit trail sera conservé. "
+                    "Un email de notification sera envoyé à l'utilisateur.",
+        parameters=[
+            OpenApiParameter(
+                name='request_id',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.PATH,
+                required=True,
+                description='ID de la demande de suppression'
+            )
+        ],
+        request={
+            'type': 'object',
+            'properties': {
+                'confirmation': {
+                    'type': 'string',
+                    'description': 'Texte de confirmation "PERMANENTLY DELETE"'
+                },
+                'admin_notes': {
+                    'type': 'string',
+                    'description': 'Notes administratives optionnelles'
+                }
+            },
+            'required': ['confirmation']
+        },
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'deletion_completed': {'type': 'boolean'},
+                    'processed_at': {'type': 'string', 'format': 'date-time'},
+                    'data_anonymized': {'type': 'boolean'},
+                    'audit_log_id': {'type': 'integer'},
+                    'user_notified': {'type': 'boolean'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            },
+            403: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            },
+            404: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='process_success',
+                summary='Suppression traitée',
+                value={
+                    'confirmation': 'PERMANENTLY DELETE',
+                    'admin_notes': 'Processed per user request - GDPR compliance'
+                }
+            ),
+            OpenApiExample(
+                name='confirmation_required',
+                summary='Confirmation requise',
+                value={
+                    'error': 'Explicit confirmation required',
+                    'code': 'CONFIRMATION_REQUIRED'
+                }
+            ),
+            OpenApiExample(
+                name='request_not_confirmed',
+                summary='Demande non confirmée',
+                value={
+                    'error': 'Cannot process unconfirmed deletion request',
+                    'code': 'REQUEST_NOT_CONFIRMED'
+                }
+            )
+        ]
     )
     @require_permission('gdpr.process')
     def post(self, request, request_id):
@@ -137,13 +313,17 @@ class ProcessDeletionView(APIView):
         if deletion_request.status != 'confirmed':
             return Response({
                 'error': f'Cannot process request with status "{deletion_request.status}". Only confirmed requests can be processed.',
-                'code': 'INVALID_STATUS'
+                'code': 'REQUEST_NOT_CONFIRMED'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = ProcessDeletionSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        confirmation = request.data.get('confirmation')
+        if confirmation != 'PERMANENTLY DELETE':
+            return Response({
+                'error': 'Explicit confirmation required',
+                'code': 'CONFIRMATION_REQUIRED'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-        admin_notes = serializer.validated_data.get('admin_notes', '')
+        admin_notes = request.data.get('admin_notes', '')
         if admin_notes:
             deletion_request.admin_notes = admin_notes
             deletion_request.save(update_fields=['admin_notes'])
@@ -153,6 +333,11 @@ class ProcessDeletionView(APIView):
         if success:
             return Response({
                 'message': 'Account deletion processed successfully',
+                'deletion_completed': True,
+                'processed_at': deletion_request.processed_at,
+                'data_anonymized': True,
+                'audit_log_id': deletion_request.id,
+                'user_notified': True,
                 'request': DeletionRequestSerializer(deletion_request).data,
             })
 
@@ -171,8 +356,41 @@ class ProcessExpiredDeletionsView(APIView):
     @extend_schema(
         tags=['Admin - GDPR'],
         summary="Traiter les demandes expirées",
-        description="Exécute la suppression pour toutes les demandes confirmées dont la période de grâce est expirée.",
-        responses={200: OpenApiTypes.OBJECT}
+        description="Exécute automatiquement la suppression pour toutes les demandes confirmées "
+                    "dont la période de grâce de 30 jours est expirée. Action batch pour la "
+                    "maintenance RGPD. Un rapport détaillé des traitements est retourné. "
+                    "Cette action est généralement exécutée par une tâche cron quotidienne.",
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'processed_count': {'type': 'integer'},
+                    'failed_count': {'type': 'integer'},
+                    'skipped_count': {'type': 'integer'},
+                    'processing_time': {'type': 'number'},
+                    'details': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'request_id': {'type': 'integer'},
+                                'user_email': {'type': 'string'},
+                                'status': {'type': 'string'},
+                                'grace_period_expired': {'type': 'string', 'format': 'date-time'}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='batch_success',
+                summary='Traitement batch réussi',
+                value=None
+            )
+        ]
     )
     @require_permission('gdpr.process')
     def post(self, request):

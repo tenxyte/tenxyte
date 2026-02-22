@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
 from ..serializers import (
@@ -31,12 +31,55 @@ class RegisterView(APIView):
     @extend_schema(
         tags=['Auth'],
         summary="Inscription d'un nouvel utilisateur",
-        description="Crée un nouveau compte utilisateur. Envoie automatiquement un code OTP de vérification.",
+        description="Crée un nouveau compte utilisateur. Envoie automatiquement un code OTP de vérification si configuré. Vérifie si le mot de passe a été exposé dans des fuites de données.",
         request=RegisterSerializer,
         responses={
-            201: OpenApiTypes.OBJECT,
-            400: OpenApiTypes.OBJECT,
-        }
+            201: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'user': {'$ref': '#/components/schemas/User'},
+                    'requires_otp': {'type': 'boolean'},
+                    'otp_id': {'type': 'string', 'nullable': True}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'object'},
+                    'code': {'type': 'string'}
+                }
+            },
+            429: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'retry_after': {'type': 'integer'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='register_success',
+                summary='Inscription réussie',
+                value={
+                    'email': 'user@example.com',
+                    'password': 'SecureP@ss123!',
+                    'first_name': 'John',
+                    'last_name': 'Doe'
+                }
+            ),
+            OpenApiExample(
+                name='breach_password',
+                summary='Mot de passe trouvé dans une fuite',
+                value={
+                    'error': 'Password breach detected',
+                    'details': 'This password has been found in known data breaches. Please choose a different password.',
+                    'code': 'PASSWORD_BREACH'
+                }
+            )
+        ]
     )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -119,9 +162,93 @@ class LoginEmailView(APIView):
         tags=['Auth'],
         summary="Connexion par email",
         description="Authentifie un utilisateur avec son email et mot de passe. "
-                    "Si 2FA est activé, le champ totp_code est requis.",
+                    "Si 2FA est activé, le champ totp_code est requis. "
+                    "Le device fingerprinting est automatiquement effectué via User-Agent. "
+                    "Les limites de session et de device sont respectées.",
         request=LoginEmailSerializer,
-        responses={200: OpenApiTypes.OBJECT, 401: OpenApiTypes.OBJECT}
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'access': {'type': 'string'},
+                    'refresh': {'type': 'string'},
+                    'user': {'$ref': '#/components/schemas/User'},
+                    'requires_2fa': {'type': 'boolean'},
+                    'session_id': {'type': 'string'},
+                    'device_id': {'type': 'string'}
+                }
+            },
+            401: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'},
+                    'code': {'type': 'string'},
+                    'retry_after': {'type': 'integer', 'nullable': True}
+                }
+            },
+            409: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            },
+            423: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            },
+            429: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'retry_after': {'type': 'integer'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='login_success',
+                summary='Connexion réussie',
+                value={
+                    'email': 'user@example.com',
+                    'password': 'SecureP@ss123!'
+                }
+            ),
+            OpenApiExample(
+                name='login_with_2fa',
+                summary='Connexion avec 2FA',
+                value={
+                    'email': 'user@example.com',
+                    'password': 'SecureP@ss123!',
+                    'totp_code': '123456'
+                }
+            ),
+            OpenApiExample(
+                name='session_limit_exceeded',
+                summary='Limite de session dépassée',
+                value={
+                    'error': 'Session limit exceeded',
+                    'details': 'Maximum concurrent sessions (1) already reached. Please logout from other devices.',
+                    'code': 'SESSION_LIMIT_EXCEEDED'
+                }
+            ),
+            OpenApiExample(
+                name='account_locked',
+                summary='Compte verrouillé',
+                value={
+                    'error': 'Account locked',
+                    'details': 'Account has been locked due to too many failed login attempts.',
+                    'code': 'ACCOUNT_LOCKED',
+                    'retry_after': 1800
+                }
+            )
+        ]
     )
     def post(self, request):
         serializer = LoginEmailSerializer(data=request.data)
@@ -189,9 +316,70 @@ class LoginPhoneView(APIView):
         tags=['Auth'],
         summary="Connexion par téléphone",
         description="Authentifie un utilisateur avec son numéro de téléphone et mot de passe. "
-                    "Si 2FA est activé, le champ totp_code est requis.",
+                    "Le numéro doit être au format international (ex: +33 pour la France). "
+                    "Si 2FA est activé, le champ totp_code est requis. "
+                    "Le device fingerprinting est automatiquement effectué.",
         request=LoginPhoneSerializer,
-        responses={200: OpenApiTypes.OBJECT, 401: OpenApiTypes.OBJECT}
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'access': {'type': 'string'},
+                    'refresh': {'type': 'string'},
+                    'user': {'$ref': '#/components/schemas/User'},
+                    'requires_2fa': {'type': 'boolean'},
+                    'session_id': {'type': 'string'},
+                    'device_id': {'type': 'string'}
+                }
+            },
+            401: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'object'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='login_phone_success',
+                summary='Connexion par téléphone réussie',
+                value={
+                    'phone_country_code': '+33',
+                    'phone_number': '612345678',
+                    'password': 'SecureP@ss123!'
+                }
+            ),
+            OpenApiExample(
+                name='login_phone_with_2fa',
+                summary='Connexion par téléphone avec 2FA',
+                value={
+                    'phone_country_code': '+33',
+                    'phone_number': '612345678',
+                    'password': 'SecureP@ss123!',
+                    'totp_code': '123456'
+                }
+            ),
+            OpenApiExample(
+                name='invalid_phone_format',
+                summary='Format de téléphone invalide',
+                value={
+                    'error': 'Validation error',
+                    'details': {
+                        'phone_country_code': ['Invalid country code format. Use +XX format.'],
+                        'phone_number': ['Phone number must be 9-15 digits.']
+                    }
+                }
+            )
+        ]
     )
     def post(self, request):
         serializer = LoginPhoneSerializer(data=request.data)
@@ -327,9 +515,62 @@ class RefreshTokenView(APIView):
     @extend_schema(
         tags=['Auth'],
         summary="Rafraîchir le token d'accès",
-        description="Génère un nouveau access token à partir d'un refresh token valide.",
+        description="Génère un nouveau access token à partir d'un refresh token valide. "
+                    "Le refresh token est automatiquement roté pour améliorer la sécurité. "
+                    "Les refresh tokens expirés ou blacklistés sont rejetés.",
         request=RefreshTokenSerializer,
-        responses={200: OpenApiTypes.OBJECT, 401: OpenApiTypes.OBJECT}
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'access': {'type': 'string'},
+                    'refresh': {'type': 'string', 'description': 'Nouveau refresh token (rotation)'},
+                    'user': {'$ref': '#/components/schemas/User'}
+                }
+            },
+            401: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            },
+            429: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'retry_after': {'type': 'integer'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='refresh_success',
+                summary='Rafraîchissement réussi',
+                value={
+                    'refresh_token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'
+                }
+            ),
+            OpenApiExample(
+                name='refresh_expired',
+                summary='Refresh token expiré',
+                value={
+                    'error': 'Refresh token expired',
+                    'details': 'Please login again to get a new refresh token',
+                    'code': 'REFRESH_EXPIRED'
+                }
+            ),
+            OpenApiExample(
+                name='refresh_blacklisted',
+                summary='Refresh token blacklisté',
+                value={
+                    'error': 'Refresh token has been revoked',
+                    'details': 'This refresh token has been blacklisted due to logout',
+                    'code': 'REFRESH_BLACKLISTED'
+                }
+            )
+        ]
     )
     def post(self, request):
         serializer = RefreshTokenSerializer(data=request.data)
@@ -364,9 +605,46 @@ class LogoutView(APIView):
     @extend_schema(
         tags=['Auth'],
         summary="Déconnexion",
-        description="Révoque le refresh token fourni pour déconnecter l'utilisateur.",
+        description="Révoque le refresh token fourni pour déconnecter l'utilisateur. "
+                    "Si un access token est fourni dans l'en-tête Authorization, "
+                    "il est également blacklisté pour une déconnexion immédiate.",
         request=RefreshTokenSerializer,
-        responses={200: OpenApiTypes.OBJECT}
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'access_token_blacklisted': {'type': 'boolean'},
+                    'refresh_token_revoked': {'type': 'boolean'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'object'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='logout_success',
+                summary='Déconnexion réussie',
+                value={
+                    'refresh_token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'
+                }
+            ),
+            OpenApiExample(
+                name='logout_with_access_token',
+                summary='Déconnexion avec blacklistage access token',
+                value={
+                    'refresh_token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'
+                },
+                request_headers={
+                    'Authorization': 'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'
+                }
+            )
+        ]
     )
     def post(self, request):
         serializer = RefreshTokenSerializer(data=request.data)
@@ -400,9 +678,38 @@ class LogoutAllView(APIView):
     @extend_schema(
         tags=['Auth'],
         summary="Déconnexion de tous les appareils",
-        description="Révoque tous les refresh tokens de l'utilisateur connecté.",
+        description="Révoque tous les refresh tokens de l'utilisateur connecté. "
+                    "L'access token actuel est également blacklisté. "
+                    "Utile pour une déconnexion de sécurité sur tous les appareils.",
         request=None,
-        responses={200: OpenApiTypes.OBJECT}
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'devices_logged_out': {'type': 'integer'},
+                    'access_token_blacklisted': {'type': 'boolean'}
+                }
+            },
+            401: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='logout_all_success',
+                summary='Déconnexion de tous les appareils réussie',
+                value={
+                    'message': 'Logged out from 3 devices',
+                    'devices_logged_out': 3,
+                    'access_token_blacklisted': True
+                }
+            )
+        ]
     )
     @require_jwt
     def post(self, request):

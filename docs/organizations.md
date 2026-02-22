@@ -15,6 +15,7 @@ TENXYTE_ORGANIZATIONS_ENABLED = True
 
 Then run migrations:
 ```bash
+python manage.py makemigrations
 python manage.py migrate
 ```
 

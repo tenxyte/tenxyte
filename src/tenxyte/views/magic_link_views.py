@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
 from ..services.magic_link_service import MagicLinkService
@@ -27,23 +27,79 @@ class MagicLinkRequestView(APIView):
         summary="Demander un magic link",
         description=(
             "Envoie un lien de connexion à usage unique par email. "
-            "Valide pendant TENXYTE_MAGIC_LINK_EXPIRY_MINUTES (défaut: 15 min). "
+            "Valide pendant 15 minutes par défaut (configurable via TENXYTE_MAGIC_LINK_EXPIRY_MINUTES). "
+            "Le lien contient un token unique et peut être utilisé une seule fois. "
+            "Pour des raisons de sécurité, ne révèle pas si l'email existe. "
+            "Limité à 3 requêtes par heure par email. "
             "Nécessite TENXYTE_MAGIC_LINK_ENABLED = True."
         ),
         request={
-            'application/json': {
-                'type': 'object',
-                'properties': {
-                    'email': {'type': 'string', 'format': 'email'},
-                },
-                'required': ['email'],
-            }
+            'type': 'object',
+            'properties': {
+                'email': {
+                    'type': 'string',
+                    'format': 'email',
+                    'description': 'Adresse email pour recevoir le magic link'
+                }
+            },
+            'required': ['email']
         },
         responses={
-            200: OpenApiTypes.OBJECT,
-            400: OpenApiTypes.OBJECT,
-            503: OpenApiTypes.OBJECT,
-        }
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'expires_in_minutes': {'type': 'integer'},
+                    'sent_to': {'type': 'string', 'description': 'Email masqué pour sécurité'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'object'}
+                }
+            },
+            429: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'retry_after': {'type': 'integer'}
+                }
+            },
+            503: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='request_magic_link',
+                summary='Demander magic link',
+                value={
+                    'email': 'user@example.com'
+                }
+            ),
+            OpenApiExample(
+                name='magic_link_disabled',
+                summary='Magic link désactivé',
+                value={
+                    'error': 'Magic links are disabled',
+                    'details': 'Contact administrator to enable magic link authentication'
+                }
+            ),
+            OpenApiExample(
+                name='magic_link_rate_limited',
+                summary='Limite de rate dépassée',
+                value={
+                    'error': 'Too many magic link requests',
+                    'retry_after': 3600
+                }
+            )
+        ]
     )
     def post(self, request):
         email = request.data.get('email', '').strip().lower()
@@ -94,13 +150,93 @@ class MagicLinkVerifyView(APIView):
         summary="Valider un magic link",
         description=(
             "Valide le token du magic link et retourne des tokens JWT si valide. "
-            "Le token est à usage unique — il est invalidé après la première utilisation."
+            "Le token est à usage unique — il est invalidé après la première utilisation. "
+            "Le token expire après 15 minutes par défaut. "
+            "Le device fingerprinting est automatiquement effectué via User-Agent. "
+            "Une fois utilisé, le token ne peut plus être utilisé même si non expiré."
         ),
+        parameters=[
+            {
+                'name': 'token',
+                'in': 'query',
+                'required': True,
+                'type': 'string',
+                'description': 'Token unique du magic link reçu par email'
+            }
+        ],
         responses={
-            200: OpenApiTypes.OBJECT,
-            400: OpenApiTypes.OBJECT,
-            401: OpenApiTypes.OBJECT,
-        }
+            200: {
+                'type': 'object',
+                'properties': {
+                    'access': {'type': 'string'},
+                    'refresh': {'type': 'string'},
+                    'user': {'$ref': '#/components/schemas/User'},
+                    'message': {'type': 'string'},
+                    'session_id': {'type': 'string'},
+                    'device_id': {'type': 'string'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            },
+            401: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'details': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='verify_magic_link_success',
+                summary='Vérification magic link réussie',
+                value={
+                    'access': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
+                    'refresh': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
+                    'user': {
+                        'id': 42,
+                        'email': 'user@example.com',
+                        'first_name': 'John',
+                        'last_name': 'Doe'
+                    },
+                    'message': 'Magic link verified successfully'
+                }
+            ),
+            OpenApiExample(
+                name='magic_link_already_used',
+                summary='Magic link déjà utilisé',
+                value={
+                    'error': 'Magic link has already been used',
+                    'details': 'This magic link was already used and cannot be used again',
+                    'code': 'LINK_ALREADY_USED'
+                }
+            ),
+            OpenApiExample(
+                name='magic_link_expired',
+                summary='Magic link expiré',
+                value={
+                    'error': 'Magic link has expired',
+                    'details': 'Please request a new magic link',
+                    'code': 'LINK_EXPIRED'
+                }
+            ),
+            OpenApiExample(
+                name='invalid_magic_link_token',
+                summary='Token magic link invalide',
+                value={
+                    'error': 'Invalid magic link token',
+                    'details': 'The token provided is not valid',
+                    'code': 'INVALID_TOKEN'
+                }
+            )
+        ]
     )
     def get(self, request):
         token = request.query_params.get('token', '').strip()

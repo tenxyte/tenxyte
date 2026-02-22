@@ -39,7 +39,10 @@ urlpatterns = [
 
 ## 5. Run Migrations
 
+Tenxyte does not ship a pre-built initial migration. Generate and apply migrations from your project:
+
 ```bash
+python manage.py makemigrations
 python manage.py migrate
 ```
 
@@ -175,7 +178,12 @@ INSTALLED_APPS = [
 
 > Replace `config` with the name of your main Django app (the one containing `apps.py`).
 
-After this, run `python manage.py migrate` and Django Admin will work correctly with MongoDB.
+After this, run migrations and Django Admin will work correctly with MongoDB:
+
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
 
 ## Next Steps
 

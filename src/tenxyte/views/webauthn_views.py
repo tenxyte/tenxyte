@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
 from ..services.webauthn_service import WebAuthnService
@@ -34,7 +34,75 @@ class WebAuthnRegisterBeginView(APIView):
     @extend_schema(
         tags=['WebAuthn'],
         summary="Commencer l'enregistrement d'une passkey",
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT}
+        description="Génère un challenge WebAuthn pour l'enregistrement d'une nouvelle passkey. "
+                    "Le challenge expire après 5 minutes. "
+                    "Supporte l'authentification biométrique (Face ID, Touch ID, Windows Hello). "
+                    "Les options incluent user verification (required/preferred/discouraged) "
+                    "et les algorithmes cryptographiques supportés (ES256, RS256, EdDSA).",
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'challenge': {'type': 'string', 'description': 'Challenge base64url encodé'},
+                    'rp': {
+                        'type': 'object',
+                        'properties': {
+                            'name': {'type': 'string'},
+                            'id': {'type': 'string'}
+                        }
+                    },
+                    'user': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'string'},
+                            'name': {'type': 'string'},
+                            'displayName': {'type': 'string'}
+                        }
+                    },
+                    'pubKeyCredParams': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'type': {'type': 'string'},
+                                'alg': {'type': 'integer'}
+                            }
+                        }
+                    },
+                    'timeout': {'type': 'integer', 'description': 'Timeout en millisecondes'},
+                    'authenticatorSelection': {
+                        'type': 'object',
+                        'properties': {
+                            'authenticatorAttachment': {'type': 'string'},
+                            'userVerification': {'type': 'string'},
+                            'requireResidentKey': {'type': 'boolean'}
+                        }
+                    }
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='register_begin_success',
+                summary='Début enregistrement réussi',
+                value={}
+            ),
+            OpenApiExample(
+                name='webauthn_disabled',
+                summary='WebAuthn désactivé',
+                value={
+                    'error': 'WebAuthn is not enabled',
+                    'code': 'WEBAUTHN_DISABLED'
+                }
+            )
+        ]
     )
     @require_jwt
     def post(self, request):
@@ -54,18 +122,61 @@ class WebAuthnRegisterCompleteView(APIView):
     @extend_schema(
         tags=['WebAuthn'],
         summary="Finaliser l'enregistrement d'une passkey",
+        description="Vérifie la réponse WebAuthn du navigateur et enregistre la credential. "
+                    "Prévient les doublons via credential exclusion. "
+                    "Valide l'attestation et le format de la clé publique. "
+                    "Enregistre les métadonnées du device (nom, type, date).",
         request={
-            'application/json': {
+            'type': 'object',
+            'properties': {
+                'challenge_id': {'type': 'integer', 'description': 'ID du challenge généré'},
+                'credential': {'type': 'object', 'description': 'Credential WebAuthn du navigateur'},
+                'device_name': {'type': 'string', 'description': 'Nom optionnel du device'}
+            },
+            'required': ['challenge_id', 'credential']
+        },
+        responses={
+            201: {
                 'type': 'object',
                 'properties': {
-                    'challenge_id': {'type': 'integer'},
-                    'credential': {'type': 'object'},
-                    'device_name': {'type': 'string'},
-                },
-                'required': ['challenge_id', 'credential'],
+                    'message': {'type': 'string'},
+                    'credential': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'string'},
+                            'name': {'type': 'string'},
+                            'created_at': {'type': 'string', 'format': 'date-time'}
+                        }
+                    }
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
             }
         },
-        responses={201: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT}
+        examples=[
+            OpenApiExample(
+                name='register_complete_success',
+                summary='Enregistrement réussi',
+                value={
+                    'challenge_id': 123,
+                    'credential': {'id': 'credentialId', 'rawId': 'rawId', 'response': {}},
+                    'device_name': 'iPhone 14'
+                }
+            ),
+            OpenApiExample(
+                name='credential_already_exists',
+                summary='Credential déjà existante',
+                value={
+                    'error': 'Credential already registered',
+                    'code': 'CREDENTIAL_EXISTS'
+                }
+            )
+        ]
     )
     @require_jwt
     def post(self, request):
@@ -110,15 +221,59 @@ class WebAuthnAuthenticateBeginView(APIView):
     @extend_schema(
         tags=['WebAuthn'],
         summary="Commencer l'authentification par passkey",
+        description="Génère un challenge WebAuthn pour l'authentification. "
+                    "Supporte les passkeys resident keys (username-less). "
+                    "Le challenge expire après 5 minutes. "
+                    "User verification configurable (required/preferred/discouraged). "
+                    "AllowCredentials peut être vide pour resident keys ou spécifique.",
         request={
-            'application/json': {
-                'type': 'object',
-                'properties': {
-                    'email': {'type': 'string', 'description': 'Optional — for user-specific credentials'},
-                },
+            'type': 'object',
+            'properties': {
+                'email': {'type': 'string', 'format': 'email', 'description': 'Optionnel — pour credentials utilisateur spécifiques'}
             }
         },
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT}
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'challenge': {'type': 'string', 'description': 'Challenge base64url encodé'},
+                    'rpId': {'type': 'string'},
+                    'allowCredentials': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'id': {'type': 'string'},
+                                'type': {'type': 'string'}
+                            }
+                        }
+                    },
+                    'userVerification': {'type': 'string'},
+                    'timeout': {'type': 'integer'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            }
+        },
+        examples=[
+            OpenApiExample(
+                name='auth_begin_resident_key',
+                summary='Auth resident key',
+                value={}
+            ),
+            OpenApiExample(
+                name='auth_begin_user_specific',
+                summary='Auth utilisateur spécifique',
+                value={
+                    'email': 'user@example.com'
+                }
+            )
+        ]
     )
     def post(self, request):
         email = request.data.get('email', '').strip().lower()
@@ -143,18 +298,64 @@ class WebAuthnAuthenticateCompleteView(APIView):
     @extend_schema(
         tags=['WebAuthn'],
         summary="Finaliser l'authentification par passkey",
+        description="Vérifie l'assertion WebAuthn et retourne des tokens JWT. "
+                    "Valide le signature, le challenge et le counter de la credential. "
+                    "Le counter prévient les attaques replay. "
+                    "Device fingerprinting automatique via User-Agent. "
+                    "Supporte les resident keys (username-less authentication).",
         request={
-            'application/json': {
+            'type': 'object',
+            'properties': {
+                'challenge_id': {'type': 'integer', 'description': 'ID du challenge généré'},
+                'credential': {'type': 'object', 'description': 'Assertion WebAuthn du navigateur'},
+                'device_info': {'type': 'string', 'description': 'Informations sur le device (optionnel)'}
+            },
+            'required': ['challenge_id', 'credential']
+        },
+        responses={
+            200: {
                 'type': 'object',
                 'properties': {
-                    'challenge_id': {'type': 'integer'},
-                    'credential': {'type': 'object'},
-                    'device_info': {'type': 'string'},
-                },
-                'required': ['challenge_id', 'credential'],
+                    'access': {'type': 'string'},
+                    'refresh': {'type': 'string'},
+                    'user': {'$ref': '#/components/schemas/User'},
+                    'message': {'type': 'string'},
+                    'credential_used': {'type': 'string'}
+                }
+            },
+            400: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            },
+            401: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
             }
         },
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 401: OpenApiTypes.OBJECT}
+        examples=[
+            OpenApiExample(
+                name='auth_complete_success',
+                summary='Authentification réussie',
+                value={
+                    'challenge_id': 456,
+                    'credential': {'id': 'credentialId', 'rawId': 'rawId', 'response': {}}
+                }
+            ),
+            OpenApiExample(
+                name='counter_replay_attack',
+                summary='Attaque replay détectée',
+                value={
+                    'error': 'Credential counter replay detected',
+                    'code': 'REPLAY_ATTACK'
+                }
+            )
+        ]
     )
     def post(self, request):
         challenge_id = request.data.get('challenge_id')
@@ -195,7 +396,32 @@ class WebAuthnCredentialListView(APIView):
     @extend_schema(
         tags=['WebAuthn'],
         summary="Lister les passkeys",
-        responses={200: OpenApiTypes.OBJECT}
+        description="Retourne la liste des passkeys enregistrées pour l'utilisateur. "
+                    "Inclut les métadonnées (nom, date de création, dernière utilisation). "
+                    "Le credential ID est masqué pour sécurité. "
+                    "Affiche le type d'authentificateur (platform, cross-platform).",
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'credentials': {
+                        'type': 'array',
+                        'items': {
+                            'type': 'object',
+                            'properties': {
+                                'id': {'type': 'integer'},
+                                'device_name': {'type': 'string'},
+                                'created_at': {'type': 'string', 'format': 'date-time'},
+                                'last_used_at': {'type': 'string', 'format': 'date-time', 'nullable': True},
+                                'authenticator_type': {'type': 'string'},
+                                'is_resident_key': {'type': 'boolean'}
+                            }
+                        }
+                    },
+                    'count': {'type': 'integer'}
+                }
+            }
+        }
     )
     @require_jwt
     def get(self, request):
@@ -213,7 +439,29 @@ class WebAuthnCredentialDeleteView(APIView):
     @extend_schema(
         tags=['WebAuthn'],
         summary="Supprimer une passkey",
-        responses={204: None, 404: OpenApiTypes.OBJECT}
+        description="Supprime définitivement une passkey de l'utilisateur. "
+                    "Action irréversible. "
+                    "Prévient l'accès depuis ce device à l'avenir. "
+                    "Vérifie que la credential appartient bien à l'utilisateur.",
+        parameters=[
+            {
+                'name': 'credential_id',
+                'in': 'path',
+                'required': True,
+                'type': 'integer',
+                'description': 'ID de la passkey à supprimer'
+            }
+        ],
+        responses={
+            204: {'description': 'Passkey supprimée avec succès'},
+            404: {
+                'type': 'object',
+                'properties': {
+                    'error': {'type': 'string'},
+                    'code': {'type': 'string'}
+                }
+            }
+        }
     )
     @require_jwt
     def delete(self, request, credential_id: int):
