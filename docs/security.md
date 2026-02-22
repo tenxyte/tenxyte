@@ -12,14 +12,18 @@ Tenxyte ships with pre-configured throttle classes for sensitive endpoints:
 
 | Class | Default Rate | Applied to |
 |---|---|---|
-| `LoginThrottle` | 10/min | Login endpoints |
-| `LoginHourlyThrottle` | 50/hour | Login endpoints |
-| `RegisterThrottle` | 5/min | Register endpoint |
-| `RegisterDailyThrottle` | 20/day | Register endpoint |
+| `LoginThrottle` | 5/min | Login endpoints |
+| `LoginHourlyThrottle` | 20/hour | Login endpoints |
+| `RegisterThrottle` | 3/hour | Register endpoint |
+| `RegisterDailyThrottle` | 10/day | Register endpoint |
 | `RefreshTokenThrottle` | 30/min | Token refresh |
 | `GoogleAuthThrottle` | 10/min | Google OAuth |
-| `OTPRequestThrottle` | 3/min | OTP request |
+| `OTPRequestThrottle` | 5/hour | OTP request |
 | `OTPVerifyThrottle` | 5/min | OTP verification |
+| `PasswordResetThrottle` | 3/hour | Password reset request |
+| `PasswordResetDailyThrottle` | 10/day | Password reset request |
+| `MagicLinkRequestThrottle` | 3/hour | Magic link request |
+| `MagicLinkVerifyThrottle` | 10/min | Magic link verification |
 
 ### Custom URL-Based Throttling
 

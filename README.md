@@ -5,7 +5,7 @@
 [![Django versions](https://img.shields.io/badge/django-5.0%2B-blue.svg)](https://www.djangoproject.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Coverage](https://img.shields.io/badge/coverage-80%25-brightgreen.svg)]()
-[![Tests](https://img.shields.io/badge/tests-893%20passing-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-1069%20passing-brightgreen.svg)]()
 
 Complete Django authentication package — JWT, RBAC, 2FA (TOTP), Magic Links, Passkeys (WebAuthn), Social Login, Breach Check, Organizations B2B, and multi-application support.
 
@@ -262,7 +262,7 @@ Full examples with responses: [docs/endpoints.md](docs/endpoints.md)
 | **Auth** | `register`, `login/email`, `login/phone`, `refresh`, `logout`, `logout/all` |
 | **Social** | `social/google`, `social/github`, `social/microsoft`, `social/facebook` |
 | **Magic Link** | `magic-link/request`, `magic-link/verify` |
-| **Passkeys** | `webauthn/register/begin+complete`, `webauthn/auth/begin+complete` |
+| **Passkeys** | `webauthn/register/begin+complete`, `webauthn/authenticate/begin+complete` |
 | **OTP** | `otp/request`, `otp/verify/email`, `otp/verify/phone` |
 | **Password** | `password/reset/request`, `password/reset/confirm`, `password/change` |
 | **2FA** | `2fa/setup`, `2fa/confirm`, `2fa/disable`, `2fa/backup-codes` |

@@ -102,13 +102,15 @@ GET /api/auth/organizations/list/
 ### Get Organization Details
 
 ```bash
-GET /api/auth/organizations/detail/?org_id=1
+GET /api/auth/organizations/detail/
+X-Org-Slug: acme-corp
 ```
 
 ### Get Organization Tree
 
 ```bash
-GET /api/auth/organizations/tree/?org_id=1
+GET /api/auth/organizations/tree/
+X-Org-Slug: acme-corp
 ```
 
 **Response:**
@@ -132,7 +134,9 @@ GET /api/auth/organizations/tree/?org_id=1
 ### Update an Organization
 
 ```bash
-PUT /api/auth/organizations/update/?org_id=1
+PATCH /api/auth/organizations/update/
+X-Org-Slug: acme-corp
+
 {
   "name": "Acme Corporation",
   "description": "Updated description"
@@ -142,7 +146,8 @@ PUT /api/auth/organizations/update/?org_id=1
 ### Delete an Organization
 
 ```bash
-DELETE /api/auth/organizations/delete/?org_id=1
+DELETE /api/auth/organizations/delete/
+X-Org-Slug: acme-corp
 ```
 
 ---
@@ -152,7 +157,8 @@ DELETE /api/auth/organizations/delete/?org_id=1
 ### List Members
 
 ```bash
-GET /api/auth/organizations/members/?org_id=1
+GET /api/auth/organizations/members/
+X-Org-Slug: acme-corp
 ```
 
 **Response:**
@@ -171,36 +177,42 @@ GET /api/auth/organizations/members/?org_id=1
 
 ```bash
 POST /api/auth/organizations/members/add/
+X-Org-Slug: acme-corp
+
 {
-  "org_id": 1,
   "user_id": 42,
-  "role": "member"
+  "role_code": "member"
 }
 ```
 
 ### Update a Member's Role
 
 ```bash
-PUT /api/auth/organizations/members/42/?org_id=1
+PATCH /api/auth/organizations/members/42/
+X-Org-Slug: acme-corp
+
 {
-  "role": "admin"
+  "role_code": "admin"
 }
 ```
 
 ### Remove a Member
 
 ```bash
-DELETE /api/auth/organizations/members/42/remove/?org_id=1
+DELETE /api/auth/organizations/members/42/remove/
+X-Org-Slug: acme-corp
 ```
 
 ### Invite a Member by Email
 
 ```bash
 POST /api/auth/organizations/invitations/
+X-Org-Slug: acme-corp
+
 {
-  "org_id": 1,
   "email": "newmember@example.com",
-  "role": "member"
+  "role_code": "member",
+  "expires_in_days": 7
 }
 ```
 
@@ -258,15 +270,14 @@ service = OrganizationService()
 success, org, error = service.create_organization(
     name="Acme Corp",
     slug="acme-corp",
-    owner=user,
-    application=app
+    created_by=user
 )
 
 # Add member
 success, membership, error = service.add_member(
     organization=org,
-    user=new_user,
-    role_name="member",
+    user_to_add=new_user,
+    role_code="member",
     added_by=admin_user
 )
 
@@ -294,7 +305,7 @@ class OrgSettingsView(APIView):
         ...
 ```
 
-The middleware resolves the organization from the request (e.g. via `X-Org-ID` header or query param).
+The middleware resolves the organization from the `X-Org-Slug` request header.
 
 ---
 
@@ -324,9 +335,22 @@ OrganizationMembership
 ├── user (FK → User)
 ├── organization (FK → Organization)
 ├── role (FK → OrganizationRole)
+├── status
 ├── invited_by (FK → User, nullable)
+├── invited_at
 ├── joined_at
 └── is_active
+
+OrganizationInvitation
+├── id
+├── organization (FK → Organization)
+├── email
+├── role (FK → OrganizationRole)
+├── invited_by (FK → User)
+├── token (unique)
+├── expires_at
+├── accepted_at (nullable)
+└── created_at
 ```
 
 ---

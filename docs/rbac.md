@@ -81,7 +81,7 @@ Allow access if the user has **at least one** of the listed permissions.
 from tenxyte.decorators import require_any_permission
 
 class ContentView(APIView):
-    @require_any_permission('posts.edit', 'posts.publish')
+    @require_any_permission(['posts.edit', 'posts.publish'])
     def get(self, request):
         ...
 ```
@@ -94,20 +94,20 @@ Allow access only if the user has **all** listed permissions.
 from tenxyte.decorators import require_all_permissions
 
 class AdminView(APIView):
-    @require_all_permissions('users.view', 'users.manage')
+    @require_all_permissions(['users.view', 'users.manage'])
     def get(self, request):
         ...
 ```
 
 ### `@require_role`
 
-Allow access only if the user has a specific role (by name).
+Allow access only if the user has a specific role (by **code**, not name).
 
 ```python
 from tenxyte.decorators import require_role
 
 class EditorView(APIView):
-    @require_role('Editor')
+    @require_role('editor')
     def post(self, request):
         ...
 ```
@@ -135,19 +135,6 @@ from tenxyte.decorators import require_verified_email
 
 class SensitiveView(APIView):
     @require_verified_email
-    def post(self, request):
-        ...
-```
-
-### `@require_2fa`
-
-Require 2FA to be enabled for the user.
-
-```python
-from tenxyte.decorators import require_2fa
-
-class HighSecurityView(APIView):
-    @require_2fa
     def post(self, request):
         ...
 ```

@@ -215,7 +215,7 @@ Default headers:
 | `FACEBOOK_APP_ID` | `''` | Facebook App ID. |
 | `FACEBOOK_APP_SECRET` | `''` | Facebook App Secret. |
 
-Endpoints: `POST /api/auth/social/google/`, `/social/github/`, `/social/microsoft/`, `/social/facebook/`
+Endpoint: `POST /api/auth/social/<provider>/` — where `<provider>` is `google`, `github`, `microsoft`, or `facebook`.
 
 ---
 

@@ -109,6 +109,45 @@ Authenticate via Google OAuth.
 
 ---
 
+## Magic Link (Passwordless)
+
+Requires `TENXYTE_MAGIC_LINK_ENABLED = True`.
+
+### `POST /magic-link/request/`
+Request a magic link sent by email.
+
+**Request:**
+```json
+{ "email": "user@example.com" }
+```
+
+**Response `200`:**
+```json
+{ "message": "Magic link sent" }
+```
+
+---
+
+### `POST /magic-link/verify/`
+Verify a magic link token and receive JWT tokens.
+
+**Request:**
+```json
+{ "token": "<magic-link-token>" }
+```
+
+**Response `200`:**
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}
+```
+
+---
+
 ### `POST /refresh/`
 Refresh the access token.
 
@@ -547,6 +586,11 @@ Organization statistics (only if `TENXYTE_ORGANIZATIONS_ENABLED=True`).
 
 Enable with `TENXYTE_ORGANIZATIONS_ENABLED = True`.
 
+All organization endpoints require the `X-Org-Slug` header to identify the target organization:
+```
+X-Org-Slug: acme-corp
+```
+
 ### `POST /organizations/` 🔒
 Create an organization.
 
@@ -556,7 +600,7 @@ List organizations the current user belongs to.
 ### `GET /organizations/detail/` 🔒
 Get organization details.
 
-### `PUT /organizations/update/` 🔒
+### `PATCH /organizations/update/` 🔒
 Update an organization.
 
 ### `DELETE /organizations/delete/` 🔒
@@ -571,7 +615,7 @@ List organization members.
 ### `POST /organizations/members/add/` 🔒
 Add a member to an organization.
 
-### `PUT /organizations/members/<user_id>/` 🔒
+### `PATCH /organizations/members/<user_id>/` 🔒
 Update a member's role.
 
 ### `DELETE /organizations/members/<user_id>/remove/` 🔒
@@ -582,6 +626,70 @@ Invite a user to an organization by email.
 
 ### `GET /org-roles/` 🔒
 List organization-scoped roles.
+
+---
+
+## WebAuthn / Passkeys (FIDO2)
+
+Requires `TENXYTE_WEBAUTHN_ENABLED = True` and `pip install py-webauthn`.
+
+### `POST /webauthn/register/begin/` 🔒
+Begin passkey registration. Returns a challenge.
+
+**Response `200`:**
+```json
+{ "challenge": "...", "rp": { "id": "yourapp.com", "name": "Your App" }, ... }
+```
+
+---
+
+### `POST /webauthn/register/complete/` 🔒
+Complete passkey registration with the authenticator response.
+
+**Request:**
+```json
+{ "id": "...", "rawId": "...", "response": { ... }, "type": "public-key" }
+```
+
+---
+
+### `POST /webauthn/authenticate/begin/`
+Begin passkey authentication. Returns a challenge.
+
+**Request:**
+```json
+{ "email": "user@example.com" }
+```
+
+---
+
+### `POST /webauthn/authenticate/complete/`
+Complete passkey authentication. Returns JWT tokens.
+
+**Request:**
+```json
+{ "id": "...", "rawId": "...", "response": { ... }, "type": "public-key" }
+```
+
+**Response `200`:**
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}
+```
+
+---
+
+### `GET /webauthn/credentials/` 🔒
+List registered passkeys for the current user.
+
+---
+
+### `DELETE /webauthn/credentials/<id>/` 🔒
+Delete a registered passkey.
 
 ---
 
