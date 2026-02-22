@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
 from ..serializers import (
@@ -608,6 +608,16 @@ class LogoutView(APIView):
         description="Révoque le refresh token fourni pour déconnecter l'utilisateur. "
                     "Si un access token est fourni dans l'en-tête Authorization, "
                     "il est également blacklisté pour une déconnexion immédiate.",
+        parameters=[
+            OpenApiParameter(
+                name='Authorization',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.HEADER,
+                description='Bearer token pour blacklistage immédiat (optionnel)',
+                required=False,
+                pattern='Bearer [a-zA-Z0-9._-]+'
+            )
+        ],
         request=RefreshTokenSerializer,
         responses={
             200: {
@@ -639,9 +649,6 @@ class LogoutView(APIView):
                 summary='Déconnexion avec blacklistage access token',
                 value={
                     'refresh_token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'
-                },
-                request_headers={
-                    'Authorization': 'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'
                 }
             )
         ]

@@ -73,3 +73,30 @@ class RefreshTokenAdminSerializer(serializers.ModelSerializer):
     def get_is_expired(self, obj):
         from django.utils import timezone
         return obj.expires_at < timezone.now()
+
+
+class SessionSerializer(serializers.Serializer):
+    """Serializer for user session information."""
+    id = serializers.CharField(read_only=True)
+    user_id = serializers.CharField(read_only=True)
+    device_info = serializers.DictField(read_only=True)
+    ip_address = serializers.IPAddressField(read_only=True)
+    user_agent = serializers.CharField(read_only=True)
+    is_current = serializers.BooleanField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+    last_activity = serializers.DateTimeField(read_only=True)
+    expires_at = serializers.DateTimeField(read_only=True)
+
+
+class DeviceSerializer(serializers.Serializer):
+    """Serializer for device information."""
+    id = serializers.CharField(read_only=True)
+    user_id = serializers.CharField(read_only=True)
+    device_fingerprint = serializers.CharField(read_only=True)
+    device_name = serializers.CharField(read_only=True)
+    device_type = serializers.CharField(read_only=True)
+    platform = serializers.CharField(read_only=True)
+    browser = serializers.CharField(read_only=True)
+    is_trusted = serializers.BooleanField(read_only=True)
+    last_seen = serializers.DateTimeField(read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
