@@ -308,3 +308,49 @@ Available email backends:
 | `TENXYTE_ORGANIZATION_MODEL` | `'tenxyte.Organization'` | Swappable Organization model. |
 | `TENXYTE_ORGANIZATION_ROLE_MODEL` | `'tenxyte.OrganizationRole'` | Swappable OrganizationRole model. |
 | `TENXYTE_ORGANIZATION_MEMBERSHIP_MODEL` | `'tenxyte.OrganizationMembership'` | Swappable OrganizationMembership model. |
+
+---
+
+## Swappable Models
+
+Replace any core model with your own by pointing to a custom class that extends the corresponding `Abstract*` base.
+
+| Setting | Default | Description |
+|---|---|---|
+| `TENXYTE_USER_MODEL` | `'tenxyte.User'` | Swappable User model. Also set Django's `AUTH_USER_MODEL`. |
+| `TENXYTE_APPLICATION_MODEL` | `'tenxyte.Application'` | Swappable Application model (multi-app auth). |
+| `TENXYTE_ROLE_MODEL` | `'tenxyte.Role'` | Swappable Role model (RBAC). |
+| `TENXYTE_PERMISSION_MODEL` | `'tenxyte.Permission'` | Swappable Permission model (RBAC). |
+
+Example — custom User model:
+
+```python
+# myapp/models.py
+from tenxyte.models import AbstractUser
+
+class CustomUser(AbstractUser):
+    bio = models.TextField(blank=True)
+
+    class Meta(AbstractUser.Meta):
+        db_table = 'custom_users'
+
+# settings.py
+TENXYTE_USER_MODEL = 'myapp.CustomUser'
+AUTH_USER_MODEL = 'myapp.CustomUser'  # required by Django
+```
+
+Example — custom Application model:
+
+```python
+# myapp/models.py
+from tenxyte.models import AbstractApplication
+
+class CustomApplication(AbstractApplication):
+    webhook_url = models.URLField(blank=True)
+
+    class Meta(AbstractApplication.Meta):
+        db_table = 'custom_applications'
+
+# settings.py
+TENXYTE_APPLICATION_MODEL = 'myapp.CustomApplication'
+```

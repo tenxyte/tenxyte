@@ -400,17 +400,17 @@ class TenxyteSettings:
     # =============================================
 
     @property
-    def TENXYTE_SESSION_LIMIT_ENABLED(self):
+    def SESSION_LIMIT_ENABLED(self):
         """Activer/désactiver la limite de sessions concurrentes."""
         return self._get('SESSION_LIMIT_ENABLED', True)
 
     @property
-    def TENXYTE_DEFAULT_MAX_SESSIONS(self):
+    def DEFAULT_MAX_SESSIONS(self):
         """Nombre max de sessions concurrentes par défaut (surchargeable par utilisateur)."""
         return self._get('DEFAULT_MAX_SESSIONS', 1)
 
     @property
-    def TENXYTE_DEFAULT_SESSION_LIMIT_ACTION(self):
+    def DEFAULT_SESSION_LIMIT_ACTION(self):
         """
         Action lorsque la limite de sessions est dépassée.
         Options: 'deny' (refuser) ou 'revoke_oldest' (révoquer la plus ancienne).
@@ -418,17 +418,17 @@ class TenxyteSettings:
         return self._get('DEFAULT_SESSION_LIMIT_ACTION', 'revoke_oldest')
 
     @property
-    def TENXYTE_DEVICE_LIMIT_ENABLED(self):
+    def DEVICE_LIMIT_ENABLED(self):
         """Activer/désactiver la limite de devices uniques."""
         return self._get('DEVICE_LIMIT_ENABLED', True)
 
     @property
-    def TENXYTE_DEFAULT_MAX_DEVICES(self):
+    def DEFAULT_MAX_DEVICES(self):
         """Nombre max de devices uniques par défaut (surchargeable par utilisateur)."""
         return self._get('DEFAULT_MAX_DEVICES', 1)
 
     @property
-    def TENXYTE_DEVICE_LIMIT_ACTION(self):
+    def DEVICE_LIMIT_ACTION(self):
         """
         Action lorsque la limite de devices est dépassée.
         Options: 'deny' (refuser) ou 'revoke_oldest' (révoquer les sessions du plus ancien device).

@@ -443,12 +443,12 @@ class AuthService:
         Vérifie et applique la limite de sessions.
         Retourne None si OK, sinon retourne le tuple d'erreur.
         """
-        if not auth_settings.TENXYTE_SESSION_LIMIT_ENABLED:
+        if not auth_settings.SESSION_LIMIT_ENABLED:
             return None
 
         # Obtenir la limite de sessions (par utilisateur ou par défaut)
         user_max = getattr(user, 'max_sessions', None)
-        max_sessions = user_max if user_max and user_max > 0 else auth_settings.TENXYTE_DEFAULT_MAX_SESSIONS
+        max_sessions = user_max if user_max and user_max > 0 else auth_settings.DEFAULT_MAX_SESSIONS
 
         # 0 = illimité
         if max_sessions == 0:
@@ -481,7 +481,7 @@ class AuthService:
                 if active_sessions < max_sessions:
                     return None
 
-            action = auth_settings.TENXYTE_DEFAULT_SESSION_LIMIT_ACTION
+            action = auth_settings.DEFAULT_SESSION_LIMIT_ACTION
 
             if action == 'deny':
                 # Refuser la nouvelle connexion
@@ -525,12 +525,12 @@ class AuthService:
         Vérifie et applique la limite de devices.
         Retourne None si OK, sinon retourne le tuple d'erreur.
         """
-        if not auth_settings.TENXYTE_DEVICE_LIMIT_ENABLED:
+        if not auth_settings.DEVICE_LIMIT_ENABLED:
             return None
 
         # Obtenir la limite de devices (par utilisateur ou par défaut)
         user_max = getattr(user, 'max_devices', None)
-        max_devices = user_max if user_max and user_max > 0 else auth_settings.TENXYTE_DEFAULT_MAX_DEVICES
+        max_devices = user_max if user_max and user_max > 0 else auth_settings.DEFAULT_MAX_DEVICES
 
         # 0 = illimité
         if max_devices == 0:
@@ -588,7 +588,7 @@ class AuthService:
                 if active_devices < max_devices:
                     return None
 
-            action = auth_settings.TENXYTE_DEVICE_LIMIT_ACTION
+            action = auth_settings.DEVICE_LIMIT_ACTION
 
             if action == 'deny':
                 # Refuser la nouvelle connexion
