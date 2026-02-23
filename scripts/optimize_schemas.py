@@ -459,7 +459,8 @@ class SchemaOptimizer:
         """Generate optimization recommendations."""
         recommendations = []
         
-        if self.stats['size_reduction_bytes'] > 0:
+        size_reduction = self.stats.get('original_size', 0) - self.stats.get('optimized_size', 0)
+        if size_reduction > 0:
             recommendations.append("Consider using the optimized schema for production")
         
         if self.stats['duplicates_found'] > 0:

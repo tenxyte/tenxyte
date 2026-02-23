@@ -1,0 +1,24 @@
+{
+  "pages": [
+    {
+      "title": "API Reference",
+      "url": "api-reference.html",
+      "content": "Complete API reference with all endpoints"
+    },
+    {
+      "title": "Code Examples",
+      "url": "examples.html",
+      "content": "Practical code examples for integration"
+    },
+    {
+      "title": "Authentication Guide",
+      "url": "authentication.html",
+      "content": "Authentication methods and security features"
+    },
+    {
+      "title": "Migration Guide",
+      "url": "migration.html",
+      "content": "Migration guide for API documentation"
+    }
+  ]
+}

@@ -1,8 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiExample, inline_serializer
 from drf_spectacular.types import OpenApiTypes
+from rest_framework import serializers
 
 from ..serializers import (
     ApplicationSerializer, ApplicationCreateSerializer, ApplicationUpdateSerializer
@@ -176,15 +177,12 @@ class ApplicationListView(APIView):
         description="Active ou désactive une application. "
                     "Une application désactivée ne peut plus faire d'appels API. "
                     "Utile pour la maintenance ou en cas de compromission.",
-        request={
-            'type': 'object',
-            'properties': {
-                'is_active': {
-                    'type': 'boolean',
-                    'description': 'Nouveau statut actif de l\'application'
-                }
+        request=inline_serializer(
+            name='ToggleApplicationStatus',
+            fields={
+                'is_active': serializers.BooleanField(help_text='Nouveau statut actif de l\'application')
             }
-        },
+        ),
         responses={
             200: {
                 'type': 'object',
@@ -322,16 +320,12 @@ class ApplicationRegenerateView(APIView):
                     "**Attention:** les anciens credentials seront immédiatement invalidés. "
                     "Le nouveau secret n'est affiché qu'une seule fois. "
                     "Action irréversible nécessitant confirmation.",
-        request={
-            'type': 'object',
-            'properties': {
-                'confirmation': {
-                    'type': 'string',
-                    'description': 'Texte de confirmation "REGENERATE"'
-                }
-            },
-            'required': ['confirmation']
-        },
+        request=inline_serializer(
+            name='RegenerateApplicationCredentials',
+            fields={
+                'confirmation': serializers.CharField(help_text='Texte de confirmation "REGENERATE"')
+            }
+        ),
         responses={
             200: {
                 'type': 'object',

@@ -2,7 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer
+from rest_framework import serializers
 from drf_spectacular.types import OpenApiTypes
 
 from ..serializers import (
@@ -372,7 +373,13 @@ class PasswordStrengthView(APIView):
         tags=['Password'],
         summary="Verifier la force d'un mot de passe",
         description="Retourne le score et la force d'un mot de passe sans l'enregistrer.",
-        request={"application/json": {"type": "object", "properties": {"password": {"type": "string"}}}},
+        request=inline_serializer(
+            name='PasswordStrengthRequest',
+            fields={
+                'password': serializers.CharField(),
+                'email': serializers.EmailField(required=False, allow_blank=True)
+            }
+        ),
         responses={200: OpenApiTypes.OBJECT}
     )
     def post(self, request):

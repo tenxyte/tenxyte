@@ -10,8 +10,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter, inline_serializer
 from drf_spectacular.types import OpenApiTypes
+from rest_framework import serializers
 
 from ..decorators import (
     require_jwt,
@@ -46,8 +47,6 @@ User = get_user_model()
 # Organization CRUD
 # =============================================
 
-@api_view(['POST'])
-@require_jwt
 @extend_schema(
     tags=['Organizations'],
     summary="Créer une organisation",
@@ -55,18 +54,17 @@ User = get_user_model()
                 "Supporte les hiérarchies (parent/child) avec profondeur maximale de 5 niveaux. "
                 "Le slug doit être unique globalement. "
                 "Limite de membres configurable (0 = illimité).",
-    request={
-        'type': 'object',
-        'properties': {
-            'name': {'type': 'string', 'description': 'Nom de l\'organisation'},
-            'slug': {'type': 'string', 'description': 'Slug unique (optionnel, généré automatiquement)'},
-            'description': {'type': 'string', 'description': 'Description (optionnel)'},
-            'parent_id': {'type': 'integer', 'description': 'ID organisation parent (optionnel)'},
-            'metadata': {'type': 'object', 'description': 'Métadonnées personnalisées (optionnel)'},
-            'max_members': {'type': 'integer', 'description': 'Limite de membres (0 = illimité)'}
-        },
-        'required': ['name']
-    },
+    request=inline_serializer(
+        name='CreateOrganizationRequest',
+        fields={
+            'name': serializers.CharField(help_text='Nom de l\'organisation'),
+            'slug': serializers.CharField(required=False, allow_blank=True, help_text='Slug unique (optionnel, généré automatiquement)'),
+            'description': serializers.CharField(required=False, allow_blank=True, help_text='Description (optionnel)'),
+            'parent_id': serializers.IntegerField(required=False, allow_null=True, help_text='ID organisation parent (optionnel)'),
+            'metadata': serializers.DictField(required=False, allow_null=True, help_text='Métadonnées personnalisées (optionnel)'),
+            'max_members': serializers.IntegerField(required=False, default=0, help_text='Limite de membres (0 = illimité)')
+        }
+    ),
     responses={
         201: {
             'type': 'object',
@@ -120,6 +118,8 @@ User = get_user_model()
         )
     ]
 )
+@api_view(['POST'])
+@require_jwt
 def create_organization(request: Request) -> Response:
     serializer = CreateOrganizationSerializer(data=request.data)
     
@@ -146,8 +146,6 @@ def create_organization(request: Request) -> Response:
     )
 
 
-@api_view(['GET'])
-@require_jwt
 @extend_schema(
     tags=['Organizations'],
     summary="Lister les organisations",
@@ -240,6 +238,8 @@ def create_organization(request: Request) -> Response:
         )
     ]
 )
+@api_view(['GET'])
+@require_jwt
 def list_organizations(request: Request) -> Response:
     queryset = request.user.get_organizations()
     queryset = apply_organization_filters(queryset, request)
@@ -254,10 +254,6 @@ def list_organizations(request: Request) -> Response:
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@api_view(['GET'])
-@require_jwt
-@require_org_context
-@require_org_membership
 @extend_schema(
     tags=['Organizations'],
     summary="Détails d'une organisation",
@@ -337,15 +333,15 @@ def list_organizations(request: Request) -> Response:
         )
     ]
 )
+@api_view(['GET'])
+@require_jwt
+@require_org_context
+@require_org_membership
 def get_organization(request: Request) -> Response:
     serializer = OrganizationSerializer(request.organization, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@api_view(['PATCH'])
-@require_jwt
-@require_org_context
-@require_org_admin
 @extend_schema(
     tags=['Organizations'],
     summary="Mettre à jour une organisation",
@@ -363,18 +359,18 @@ def get_organization(request: Request) -> Response:
             description='Slug de l\'organisation (multi-tenant context)'
         )
     ],
-    request={
-        'type': 'object',
-        'properties': {
-            'name': {'type': 'string', 'description': 'Nom de l\'organisation'},
-            'slug': {'type': 'string', 'description': 'Nouveau slug unique'},
-            'description': {'type': 'string', 'description': 'Description'},
-            'parent_id': {'type': 'integer', 'description': 'Nouveau parent ID'},
-            'metadata': {'type': 'object', 'description': 'Métadonnées'},
-            'max_members': {'type': 'integer', 'description': 'Nouvelle limite membres'},
-            'is_active': {'type': 'boolean', 'description': 'Statut actif'}
+    request=inline_serializer(
+        name='UpdateOrganizationRequest',
+        fields={
+            'name': serializers.CharField(required=False, allow_blank=True, help_text='Nom de l\'organisation'),
+            'slug': serializers.CharField(required=False, allow_blank=True, help_text='Nouveau slug unique'),
+            'description': serializers.CharField(required=False, allow_blank=True, help_text='Description'),
+            'parent_id': serializers.IntegerField(required=False, allow_null=True, help_text='Nouveau parent ID'),
+            'metadata': serializers.DictField(required=False, allow_null=True, help_text='Métadonnées'),
+            'max_members': serializers.IntegerField(required=False, allow_null=True, help_text='Nouvelle limite membres'),
+            'is_active': serializers.BooleanField(required=False, allow_null=True, help_text='Statut actif')
         }
-    },
+    ),
     responses={
         200: {
             'type': 'object',
@@ -429,6 +425,10 @@ def get_organization(request: Request) -> Response:
         )
     ]
 )
+@api_view(['PATCH'])
+@require_jwt
+@require_org_context
+@require_org_admin
 def update_organization(request: Request) -> Response:
     serializer = UpdateOrganizationSerializer(data=request.data)
     
@@ -451,10 +451,6 @@ def update_organization(request: Request) -> Response:
     )
 
 
-@api_view(['DELETE'])
-@require_jwt
-@require_org_context
-@require_org_owner
 @extend_schema(
     tags=['Organizations'],
     summary="Supprimer une organisation",
@@ -473,7 +469,7 @@ def update_organization(request: Request) -> Response:
         )
     ],
     responses={
-        204: {'description': 'Organisation supprimée avec succès'},
+        200: {'description': 'Organisation supprimée avec succès', 'type': 'object'},
         400: {
             'type': 'object',
             'properties': {
@@ -513,6 +509,10 @@ def update_organization(request: Request) -> Response:
         )
     ]
 )
+@api_view(['DELETE'])
+@require_jwt
+@require_org_context
+@require_org_owner
 def delete_organization(request: Request) -> Response:
     service = OrganizationService()
     success, error = service.delete_organization(
@@ -530,6 +530,20 @@ def delete_organization(request: Request) -> Response:
 # Hierarchy
 # =============================================
 
+@extend_schema(
+    tags=['Organizations'],
+    summary="Hiérarchie de l'organisation",
+    description="Retourne l'arbre hiérarchique de l'organisation.",
+    parameters=[
+        OpenApiParameter(
+            name='X-Org-Slug',
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.HEADER,
+            required=True,
+        )
+    ],
+    responses={200: OpenApiTypes.OBJECT}
+)
 @api_view(['GET'])
 @require_jwt
 @require_org_context
@@ -551,10 +565,6 @@ def get_organization_tree(request: Request) -> Response:
 # Members
 # =============================================
 
-@api_view(['GET'])
-@require_jwt
-@require_org_context
-@require_org_membership
 @extend_schema(
     tags=['Organizations'],
     summary="Lister les membres",
@@ -668,6 +678,10 @@ def get_organization_tree(request: Request) -> Response:
         )
     ]
 )
+@api_view(['GET'])
+@require_jwt
+@require_org_context
+@require_org_membership
 def list_members(request: Request) -> Response:
     service = OrganizationService()
     memberships = service.get_members(request.organization)
@@ -683,10 +697,6 @@ def list_members(request: Request) -> Response:
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-@api_view(['POST'])
-@require_jwt
-@require_org_context
-@require_org_permission('org.members.invite')
 @extend_schema(
     tags=['Organizations'],
     summary="Ajouter un membre",
@@ -704,18 +714,13 @@ def list_members(request: Request) -> Response:
             description='Slug de l\'organisation (multi-tenant context)'
         )
     ],
-    request={
-        'type': 'object',
-        'properties': {
-            'user_id': {'type': 'integer', 'description': 'ID de l\'utilisateur à ajouter'},
-            'role_code': {
-                'type': 'string',
-                'enum': ['member', 'admin'],
-                'description': 'Rôle du membre (owner non autorisé)'
-            }
-        },
-        'required': ['user_id', 'role_code']
-    },
+    request=inline_serializer(
+        name='AddOrganizationMemberRequest',
+        fields={
+            'user_id': serializers.IntegerField(help_text='ID de l\'utilisateur à ajouter'),
+            'role_code': serializers.CharField(help_text='Rôle du membre (owner non autorisé)')
+        }
+    ),
     responses={
         201: {
             'type': 'object',
@@ -784,6 +789,10 @@ def list_members(request: Request) -> Response:
         )
     ]
 )
+@api_view(['POST'])
+@require_jwt
+@require_org_context
+@require_org_permission('org.members.invite')
 def add_member(request: Request) -> Response:
     serializer = AddMemberSerializer(data=request.data)
     
@@ -812,10 +821,6 @@ def add_member(request: Request) -> Response:
     )
 
 
-@api_view(['PATCH'])
-@require_jwt
-@require_org_context
-@require_org_permission('org.members.manage')
 @extend_schema(
     tags=['Organizations'],
     summary="Mettre à jour le rôle d'un membre",
@@ -840,17 +845,12 @@ def add_member(request: Request) -> Response:
             description='ID de l\'utilisateur à modifier'
         )
     ],
-    request={
-        'type': 'object',
-        'properties': {
-            'role_code': {
-                'type': 'string',
-                'enum': ['member', 'admin', 'owner'],
-                'description': 'Nouveau rôle (owner nécessite droits appropriés)'
-            }
-        },
-        'required': ['role_code']
-    },
+    request=inline_serializer(
+        name='UpdateOrganizationMemberRoleRequest',
+        fields={
+            'role_code': serializers.CharField(help_text='Nouveau rôle (owner nécessite droits appropriés)')
+        }
+    ),
     responses={
         200: {
             'type': 'object',
@@ -909,6 +909,10 @@ def add_member(request: Request) -> Response:
         )
     ]
 )
+@api_view(['PATCH'])
+@require_jwt
+@require_org_context
+@require_org_permission('org.members.manage')
 def update_member_role(request: Request, user_id: int) -> Response:
     serializer = UpdateMemberRoleSerializer(data=request.data)
     
@@ -938,10 +942,6 @@ def update_member_role(request: Request, user_id: int) -> Response:
     )
 
 
-@api_view(['DELETE'])
-@require_jwt
-@require_org_context
-@require_org_permission('org.members.remove')
 @extend_schema(
     tags=['Organizations'],
     summary="Retirer un membre",
@@ -1027,6 +1027,10 @@ def update_member_role(request: Request, user_id: int) -> Response:
         )
     ]
 )
+@api_view(['DELETE'])
+@require_jwt
+@require_org_context
+@require_org_permission('org.members.remove')
 def remove_member(request: Request, user_id: int) -> Response:
     try:
         user_to_remove = User.objects.get(id=user_id)
@@ -1050,10 +1054,6 @@ def remove_member(request: Request, user_id: int) -> Response:
 # Invitations
 # =============================================
 
-@api_view(['POST'])
-@require_jwt
-@require_org_context
-@require_org_permission('org.members.invite')
 @extend_schema(
     tags=['Organizations'],
     summary="Inviter un membre par email",
@@ -1071,29 +1071,14 @@ def remove_member(request: Request, user_id: int) -> Response:
             description='Slug de l\'organisation (multi-tenant context)'
         )
     ],
-    request={
-        'type': 'object',
-        'properties': {
-            'email': {
-                'type': 'string',
-                'format': 'email',
-                'description': 'Email de l\'utilisateur à inviter'
-            },
-            'role_code': {
-                'type': 'string',
-                'enum': ['member', 'admin'],
-                'description': 'Rôle attribué après acceptation'
-            },
-            'expires_in_days': {
-                'type': 'integer',
-                'minimum': 1,
-                'maximum': 30,
-                'default': 7,
-                'description': 'Durée de validité en jours (1-30)'
-            }
-        },
-        'required': ['email', 'role_code']
-    },
+    request=inline_serializer(
+        name='InviteOrganizationMemberRequest',
+        fields={
+            'email': serializers.EmailField(help_text='Email de l\'utilisateur à inviter'),
+            'role_code': serializers.CharField(help_text='Rôle attribué après acceptation'),
+            'expires_in_days': serializers.IntegerField(required=False, default=7, min_value=1, max_value=30, help_text='Durée de validité en jours (1-30)')
+        }
+    ),
     responses={
         201: {
             'type': 'object',
@@ -1143,6 +1128,10 @@ def remove_member(request: Request, user_id: int) -> Response:
         )
     ]
 )
+@api_view(['POST'])
+@require_jwt
+@require_org_context
+@require_org_permission('org.members.invite')
 def invite_member(request: Request) -> Response:
     serializer = InviteMemberSerializer(data=request.data)
     
@@ -1171,8 +1160,6 @@ def invite_member(request: Request) -> Response:
 # Organization Roles
 # =============================================
 
-@api_view(['GET'])
-@require_jwt
 @extend_schema(
     tags=['Organizations'],
     summary="Lister les rôles d'organisation",
@@ -1247,6 +1234,8 @@ def invite_member(request: Request) -> Response:
         )
     ]
 )
+@api_view(['GET'])
+@require_jwt
 def list_org_roles(request: Request) -> Response:
     from ..models import get_organization_role_model
     OrganizationRole = get_organization_role_model()

@@ -9,15 +9,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer
+from rest_framework import serializers
 from drf_spectacular.types import OpenApiTypes
 
 from ..services.account_deletion_service import AccountDeletionService
 from ..serializers import PasswordSerializer
 
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
 @extend_schema(
     tags=['Account'],
     summary="Demander la suppression de compte",
@@ -26,24 +24,14 @@ from ..serializers import PasswordSerializer
                 "de 30 jours pendant laquelle l'utilisateur peut annuler. "
                 "Nécessite le mot de passe actuel et code OTP si 2FA activé. "
                 "Toutes les données seront anonymisées après la période de grâce.",
-    request={
-        'type': 'object',
-        'properties': {
-            'password': {
-                'type': 'string',
-                'description': 'Mot de passe actuel requis pour confirmation'
-            },
-            'otp_code': {
-                'type': 'string',
-                'description': 'Code OTP à 6 chiffres (requis si 2FA activé)'
-            },
-            'reason': {
-                'type': 'string',
-                'description': 'Raison optionnelle de la suppression'
-            }
-        },
-        'required': ['password']
-    },
+    request=inline_serializer(
+        name='RequestAccountDeletion',
+        fields={
+            'password': serializers.CharField(help_text='Mot de passe actuel requis pour confirmation'),
+            'otp_code': serializers.CharField(required=False, allow_blank=True, help_text='Code OTP à 6 chiffres (requis si 2FA activé)'),
+            'reason': serializers.CharField(required=False, allow_blank=True, help_text='Raison optionnelle de la suppression')
+        }
+    ),
     responses={
         201: {
             'type': 'object',
@@ -110,6 +98,8 @@ from ..serializers import PasswordSerializer
         )
     ]
 )
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def request_account_deletion(request: Request) -> Response:
     serializer = PasswordSerializer(data=request.data)
     
@@ -137,8 +127,6 @@ def request_account_deletion(request: Request) -> Response:
         status=status.HTTP_400_BAD_REQUEST
     )
 
-
-@api_view(['POST'])
 @extend_schema(
     tags=['Account'],
     summary="Confirmer la suppression de compte",
@@ -146,16 +134,12 @@ def request_account_deletion(request: Request) -> Response:
                 "Le token est valide 24 heures. Cette étape est requise pour "
                 "vérifier que l'utilisateur a bien accès à son email. "
                 "Après confirmation, le compte entre en période de grâce de 30 jours.",
-    request={
-        'type': 'object',
-        'properties': {
-            'token': {
-                'type': 'string',
-                'description': 'Token de confirmation reçu par email'
-            }
-        },
-        'required': ['token']
-    },
+    request=inline_serializer(
+        name='ConfirmAccountDeletion',
+        fields={
+            'token': serializers.CharField(help_text='Token de confirmation reçu par email')
+        }
+    ),
     responses={
         200: {
             'type': 'object',
@@ -216,6 +200,7 @@ def request_account_deletion(request: Request) -> Response:
         )
     ]
 )
+@api_view(['POST'])
 def confirm_account_deletion(request: Request) -> Response:
     token = request.data.get('token')
     
@@ -239,9 +224,6 @@ def confirm_account_deletion(request: Request) -> Response:
         status=status.HTTP_400_BAD_REQUEST
     )
 
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
 @extend_schema(
     tags=['Account'],
     summary="Annuler la suppression de compte",
@@ -250,16 +232,12 @@ def confirm_account_deletion(request: Request) -> Response:
                 "Le compte sera réactivé immédiatement. "
                 "Un email de confirmation sera envoyé. "
                 "L'annulation est possible jusqu'à la fin de la période de grâce.",
-    request={
-        'type': 'object',
-        'properties': {
-            'password': {
-                'type': 'string',
-                'description': 'Mot de passe actuel requis pour annulation'
-            }
-        },
-        'required': ['password']
-    },
+    request=inline_serializer(
+        name='CancelAccountDeletion',
+        fields={
+            'password': serializers.CharField(help_text='Mot de passe actuel requis pour annulation')
+        }
+    ),
     responses={
         200: {
             'type': 'object',
@@ -312,6 +290,8 @@ def confirm_account_deletion(request: Request) -> Response:
         )
     ]
 )
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def cancel_account_deletion(request: Request) -> Response:
     serializer = PasswordSerializer(data=request.data)
     
@@ -336,7 +316,13 @@ def cancel_account_deletion(request: Request) -> Response:
         status=status.HTTP_400_BAD_REQUEST
     )
 
-
+@extend_schema(
+    tags=['Account'],
+    summary="Statut de suppression de compte",
+    description="Obtenir le statut des demandes de suppression de compte de l'utilisateur actuel, "
+                "y compris les demandes en attente, confirmées ou annulées.",
+    responses={200: OpenApiTypes.OBJECT}
+)
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def account_deletion_status(request: Request) -> Response:
@@ -350,7 +336,75 @@ def account_deletion_status(request: Request) -> Response:
     
     return Response(data, status=status.HTTP_200_OK)
 
-
+@extend_schema(
+    tags=['Account'],
+    summary="Exporter mes données",
+    description="Exporte toutes les données personnelles de l'utilisateur conformément au droit à la portabilité du RGPD. "
+                "Nécessite le mot de passe actuel pour des raisons de sécurité.",
+    request=inline_serializer(
+        name='ExportUserData',
+        fields={
+            'password': serializers.CharField(help_text='Mot de passe actuel requis pour exporter les données')
+        }
+    ),
+    responses={
+        200: {
+            'type': 'object',
+            'description': 'Données de l\'utilisateur exportées avec succès.',
+            'properties': {
+                'user_info': {'type': 'object'},
+                'roles': {'type': 'array'},
+                'permissions': {'type': 'array'},
+                'applications': {'type': 'array'},
+                'audit_logs': {'type': 'array'},
+                'export_metadata': {'type': 'object'}
+            }
+        },
+        400: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'details': {'type': 'object'}
+            }
+        },
+        401: {
+            'type': 'object',
+            'properties': {
+                'detail': {'type': 'string'}
+            }
+        },
+        403: {
+            'type': 'object',
+            'properties': {
+                'detail': {'type': 'string'}
+            }
+        },
+        500: {
+            'type': 'object',
+            'properties': {
+                'error': {'type': 'string'},
+                'user_id': {'type': 'integer'},
+                'export_requested_at': {'type': 'string', 'format': 'date-time'}
+            }
+        }
+    },
+    examples=[
+        OpenApiExample(
+            name='export_success',
+            summary='Exportation des données réussie',
+            value={
+                'password': 'CurrentPassword123!'
+            }
+        ),
+        OpenApiExample(
+            name='invalid_password',
+            summary='Mot de passe invalide',
+            value={
+                'error': 'Invalid password'
+            }
+        )
+    ]
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def export_user_data(request: Request) -> Response:

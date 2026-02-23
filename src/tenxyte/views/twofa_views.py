@@ -1,7 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer
+from rest_framework import serializers
 from drf_spectacular.types import OpenApiTypes
 
 from ..decorators import require_jwt
@@ -77,7 +78,8 @@ class TwoFactorSetupView(APIView):
                     'code': '2FA_ALREADY_ENABLED'
                 }
             )
-        ]
+        ],
+        request=None
     )
     @require_jwt
     def post(self, request):
@@ -114,17 +116,12 @@ class TwoFactorConfirmView(APIView):
                     "Le code TOTP utilise une fenêtre de 30 secondes avec une tolérance de 1 fenêtre avant/après. "
                     "Une seule confirmation est requise après l'initialisation. "
                     "Après activation, tous les codes de secours générés sont valides.",
-        request={
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "description": "Code TOTP à 6 chiffres",
-                    "pattern": "^[0-9]{6}$"
-                }
-            },
-            "required": ["code"]
-        },
+        request=inline_serializer(
+            name='TwoFactorConfirmRequest',
+            fields={
+                'code': serializers.CharField(help_text='Code TOTP à 6 chiffres')
+            }
+        ),
         responses={
             200: {
                 'type': 'object',
@@ -209,20 +206,13 @@ class TwoFactorDisableView(APIView):
                     "Pour des raisons de sécurité, le mot de passe de l'utilisateur est également requis. "
                     "Une fois désactivé, tous les codes de secours restants sont invalidés. "
                     "Cette action est irréversible et nécessitera une nouvelle configuration complète.",
-        request={
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "description": "Code TOTP ou code de secours à 8 chiffres"
-                },
-                "password": {
-                    "type": "string",
-                    "description": "Mot de passe de l'utilisateur pour confirmation"
-                }
-            },
-            "required": ["code", "password"]
-        },
+        request=inline_serializer(
+            name='TwoFactorDisableRequest',
+            fields={
+                'code': serializers.CharField(help_text='Code TOTP ou code de secours à 8 chiffres'),
+                'password': serializers.CharField(help_text='Mot de passe de l\'utilisateur pour confirmation')
+            }
+        ),
         responses={
             200: {
                 'type': 'object',
@@ -308,17 +298,12 @@ class TwoFactorBackupCodesView(APIView):
                     "Requiert un code TOTP valide pour sécurité. "
                     "Génère 10 codes alphanumériques à usage unique de 8 caractères. "
                     "Les codes ne seront affichés qu'une seule fois. Stockez-les en sécurité.",
-        request={
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "description": "Code TOTP à 6 chiffres pour validation",
-                    "pattern": "^[0-9]{6}$"
-                }
-            },
-            "required": ["code"]
-        },
+        request=inline_serializer(
+            name='TwoFactorBackupCodesRequest',
+            fields={
+                'code': serializers.CharField(help_text='Code TOTP à 6 chiffres pour validation')
+            }
+        ),
         responses={
             200: {
                 'type': 'object',

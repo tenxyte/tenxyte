@@ -13,7 +13,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from rest_framework import serializers
+from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
 from ..services.webauthn_service import WebAuthnService
@@ -88,6 +89,7 @@ class WebAuthnRegisterBeginView(APIView):
                 }
             }
         },
+        request=None,
         examples=[
             OpenApiExample(
                 name='register_begin_success',
@@ -126,15 +128,14 @@ class WebAuthnRegisterCompleteView(APIView):
                     "Prévient les doublons via credential exclusion. "
                     "Valide l'attestation et le format de la clé publique. "
                     "Enregistre les métadonnées du device (nom, type, date).",
-        request={
-            'type': 'object',
-            'properties': {
-                'challenge_id': {'type': 'integer', 'description': 'ID du challenge généré'},
-                'credential': {'type': 'object', 'description': 'Credential WebAuthn du navigateur'},
-                'device_name': {'type': 'string', 'description': 'Nom optionnel du device'}
-            },
-            'required': ['challenge_id', 'credential']
-        },
+        request=inline_serializer(
+            name='WebAuthnRegisterCompleteRequest',
+            fields={
+                'challenge_id': serializers.IntegerField(help_text='ID du challenge généré'),
+                'credential': serializers.DictField(help_text='Credential WebAuthn du navigateur'),
+                'device_name': serializers.CharField(required=False, allow_blank=True, help_text='Nom optionnel du device')
+            }
+        ),
         responses={
             201: {
                 'type': 'object',
@@ -226,12 +227,12 @@ class WebAuthnAuthenticateBeginView(APIView):
                     "Le challenge expire après 5 minutes. "
                     "User verification configurable (required/preferred/discouraged). "
                     "AllowCredentials peut être vide pour resident keys ou spécifique.",
-        request={
-            'type': 'object',
-            'properties': {
-                'email': {'type': 'string', 'format': 'email', 'description': 'Optionnel — pour credentials utilisateur spécifiques'}
+        request=inline_serializer(
+            name='WebAuthnAuthenticateBeginRequest',
+            fields={
+                'email': serializers.EmailField(required=False, help_text='Optionnel — pour credentials utilisateur spécifiques')
             }
-        },
+        ),
         responses={
             200: {
                 'type': 'object',
@@ -303,15 +304,14 @@ class WebAuthnAuthenticateCompleteView(APIView):
                     "Le counter prévient les attaques replay. "
                     "Device fingerprinting automatique via User-Agent. "
                     "Supporte les resident keys (username-less authentication).",
-        request={
-            'type': 'object',
-            'properties': {
-                'challenge_id': {'type': 'integer', 'description': 'ID du challenge généré'},
-                'credential': {'type': 'object', 'description': 'Assertion WebAuthn du navigateur'},
-                'device_info': {'type': 'string', 'description': 'Informations sur le device (optionnel)'}
-            },
-            'required': ['challenge_id', 'credential']
-        },
+        request=inline_serializer(
+            name='WebAuthnAuthenticateCompleteRequest',
+            fields={
+                'challenge_id': serializers.IntegerField(help_text='ID du challenge généré'),
+                'credential': serializers.DictField(help_text='Assertion WebAuthn du navigateur'),
+                'device_info': serializers.CharField(required=False, allow_blank=True, help_text='Informations sur le device (optionnel)')
+            }
+        ),
         responses={
             200: {
                 'type': 'object',
@@ -444,13 +444,13 @@ class WebAuthnCredentialDeleteView(APIView):
                     "Prévient l'accès depuis ce device à l'avenir. "
                     "Vérifie que la credential appartient bien à l'utilisateur.",
         parameters=[
-            {
-                'name': 'credential_id',
-                'in': 'path',
-                'required': True,
-                'type': 'integer',
-                'description': 'ID de la passkey à supprimer'
-            }
+            OpenApiParameter(
+                name='credential_id',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.PATH,
+                required=True,
+                description='ID de la passkey à supprimer'
+            )
         ],
         responses={
             204: {'description': 'Passkey supprimée avec succès'},

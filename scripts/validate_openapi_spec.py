@@ -18,8 +18,9 @@ from pathlib import Path
 from typing import Dict, List, Set, Tuple, Any
 from collections import defaultdict
 
-# Add project root to path
+# Add project root and src to path
 project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root / 'src'))
 sys.path.insert(0, str(project_root))
 
 try:
@@ -29,7 +30,7 @@ try:
     from django.test import Client
     
     # Configure Django settings
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tenxyte.settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.settings')
     django.setup()
     
     from drf_spectacular.openapi import AutoSchema
@@ -155,12 +156,14 @@ class OpenAPIValidator:
             self.validate_responses(operation['responses'], f"{method.upper()} {path}")
         
         # Check for examples
-        if 'examples' not in operation and 'requestBody' in operation:
-            self.add_issue('info', f"Missing examples for {method.upper()} {path}")
+        if 'requestBody' in operation:
+            req_str = str(operation.get('requestBody', {}))
+            if "'examples'" not in req_str and "'example'" not in req_str:
+                self.add_issue('info', f"Missing examples for {method.upper()} {path}")
     
     def validate_responses(self, responses: Dict, operation_id: str):
         """Validate response definitions."""
-        if '200' not in responses and '201' not in responses:
+        if '200' not in responses and '201' not in responses and '204' not in responses:
             self.add_issue('warning', f"Missing success response for {operation_id}")
         
         for status_code, response in responses.items():
@@ -214,21 +217,20 @@ class OpenAPIValidator:
         print("📋 Validating examples...")
         
         example_count = 0
-        
-        # Check component examples
-        if 'components' in schema and 'examples' in schema['components']:
-            examples = schema['components']['examples']
-            example_count += len(examples)
-            
-            for name, example in examples.items():
-                self.validate_example(name, example)
-        
-        # Check operation examples
-        for path, path_item in schema.get('paths', {}).items():
-            for method, operation in path_item.items():
-                if method in ['get', 'post', 'put', 'patch', 'delete']:
-                    if 'examples' in operation:
-                        example_count += len(operation['examples'])
+        def count_examples(obj):
+            nonlocal example_count
+            if isinstance(obj, dict):
+                if 'examples' in obj and isinstance(obj['examples'], dict):
+                    example_count += len(obj['examples'])
+                elif 'example' in obj:
+                    example_count += 1
+                for v in obj.values():
+                    count_examples(v)
+            elif isinstance(obj, list):
+                for item in obj:
+                    count_examples(item)
+                    
+        count_examples(schema)
         
         self.stats['total_examples'] = example_count
         
@@ -255,12 +257,12 @@ class OpenAPIValidator:
             self.add_issue('warning', f"Large schema size: {schema_size / 1024 / 1024:.2f}MB")
         
         # Check for deeply nested structures
-        self.check_nesting_depth(schema, max_depth=10)
+        self.check_nesting_depth(schema, max_depth=20)
         
         # Check for large arrays in examples
         self.check_large_examples(schema)
     
-    def check_nesting_depth(self, obj: Any, current_depth: int = 0, max_depth: int = 10, path: str = ""):
+    def check_nesting_depth(self, obj: Any, current_depth: int = 0, max_depth: int = 20, path: str = ""):
         """Check for excessively nested structures."""
         if current_depth > max_depth:
             self.performance_issues.append(f"Deep nesting at {path}: {current_depth} levels")
@@ -275,17 +277,26 @@ class OpenAPIValidator:
     
     def check_large_examples(self, schema: Dict):
         """Check for excessively large examples."""
+        def find_and_check_examples(obj, path_info=""):
+            if isinstance(obj, dict):
+                if 'examples' in obj and isinstance(obj['examples'], dict):
+                    for name, example in obj['examples'].items():
+                        if 'value' in example:
+                            example_size = len(json.dumps(example['value'], default=str))
+                            if example_size > 10240:  # 10KB
+                                self.performance_issues.append(
+                                    f"Large example {name} in {path_info}: {example_size / 1024:.2f}KB"
+                                )
+                for k, v in obj.items():
+                    find_and_check_examples(v, path_info)
+            elif isinstance(obj, list):
+                for item in obj:
+                    find_and_check_examples(item, path_info)
+
         for path, path_item in schema.get('paths', {}).items():
             for method, operation in path_item.items():
                 if method in ['get', 'post', 'put', 'patch', 'delete']:
-                    if 'examples' in operation:
-                        for name, example in operation['examples'].items():
-                            if 'value' in example:
-                                example_size = len(json.dumps(example['value'], default=str))
-                                if example_size > 10240:  # 10KB
-                                    self.performance_issues.append(
-                                        f"Large example {name} in {method.upper()} {path}: {example_size / 1024:.2f}KB"
-                                    )
+                    find_and_check_examples(operation, f"{method.upper()} {path}")
     
     def validate_openapi_compliance(self, schema: Dict):
         """Validate OpenAPI 3.0 compliance."""

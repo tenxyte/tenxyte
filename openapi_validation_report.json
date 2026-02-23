@@ -1,0 +1,87 @@
+{
+  "summary": {
+    "total_issues": 14,
+    "critical_issues": 0,
+    "warnings": 0,
+    "info": 14,
+    "quality_score": 86.0,
+    "performance_issues": 0
+  },
+  "statistics": {
+    "total_paths": 80,
+    "total_operations": 99,
+    "total_examples": 255,
+    "schema_size_bytes": 183455,
+    "security_coverage": 100.0,
+    "org_header_operations": 13
+  },
+  "issues": [
+    {
+      "severity": "info",
+      "message": "Missing examples for PATCH /api/auth/admin/users/{user_id}/"
+    },
+    {
+      "severity": "info",
+      "message": "Missing examples for POST /api/auth/admin/users/{user_id}/ban/"
+    },
+    {
+      "severity": "info",
+      "message": "Missing examples for POST /api/auth/admin/users/{user_id}/lock/"
+    },
+    {
+      "severity": "info",
+      "message": "Missing examples for PUT /api/auth/applications/{app_id}/"
+    },
+    {
+      "severity": "info",
+      "message": "Missing examples for POST /api/auth/google/"
+    },
+    {
+      "severity": "info",
+      "message": "Missing examples for POST /api/auth/password/strength/"
+    },
+    {
+      "severity": "info",
+      "message": "Missing examples for POST /api/auth/permissions/"
+    },
+    {
+      "severity": "info",
+      "message": "Missing examples for PUT /api/auth/permissions/{permission_id}/"
+    },
+    {
+      "severity": "info",
+      "message": "Missing examples for POST /api/auth/roles/"
+    },
+    {
+      "severity": "info",
+      "message": "Missing examples for PUT /api/auth/roles/{role_id}/"
+    },
+    {
+      "severity": "info",
+      "message": "Missing examples for POST /api/auth/roles/{role_id}/permissions/"
+    },
+    {
+      "severity": "info",
+      "message": "Missing examples for POST /api/auth/users/{user_id}/permissions/"
+    },
+    {
+      "severity": "info",
+      "message": "Missing examples for POST /api/auth/users/{user_id}/roles/"
+    },
+    {
+      "severity": "info",
+      "message": "No global security requirements defined"
+    }
+  ],
+  "performance_issues": [],
+  "duplicates": {},
+  "recommendations": [
+    "Excellent! OpenAPI specification is production-ready"
+  ],
+  "schema_info": {
+    "version": "3.0.3",
+    "title": "",
+    "paths_count": 80,
+    "components_count": 2
+  }
+}

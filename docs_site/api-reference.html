@@ -1,0 +1,2795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference - Tenxyte API</title>
+    <meta name="description" content="Complete API reference with all endpoints, parameters, and responses">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <h1>Tenxyte API</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="api-reference.html">API Reference</a></li>
+                    <li><a href="examples.html">Examples</a></li>
+                    <li><a href="authentication.html">Authentication</a></li>
+                    <li><a href="migration.html">Migration</a></li>
+                </ul>
+                <div class="search-box">
+                    <input type="text" placeholder="Search documentation..." id="searchInput">
+                    <button onclick="performSearch()">🔍</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+    
+    <main class="main">
+        <div class="container">
+            <div class='api-reference'><div class='api-category'><h2 id='authentication'>Authentication</h2><div class='api-endpoint'><h3 id='endpoint-api-auth-login-email'>/api/auth/login/email/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Connexion par email</h4></div><p class='method-description'>Authentifie un utilisateur avec son email et mot de passe. Si 2FA est activé, le champ totp_code est requis. Le device fingerprinting est automatiquement effectué via User-Agent. Les limites de session et de device sont respectées.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/LoginEmail"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/LoginEmail"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/LoginEmail"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "access": {
+      "type": "string"
+    },
+    "refresh": {
+      "type": "string"
+    },
+    "user": {
+      "$ref": "#/components/schemas/User"
+    },
+    "requires_2fa": {
+      "type": "boolean"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "device_id": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 401 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "retry_after": {
+      "type": "integer",
+      "nullable": true
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 409 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 423 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 429 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "retry_after": {
+      "type": "integer"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-login-phone'>/api/auth/login/phone/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Connexion par téléphone</h4></div><p class='method-description'>Authentifie un utilisateur avec son numéro de téléphone et mot de passe. Le numéro doit être au format international (ex: +33 pour la France). Si 2FA est activé, le champ totp_code est requis. Le device fingerprinting est automatiquement effectué.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/LoginPhone"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/LoginPhone"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/LoginPhone"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "access": {
+      "type": "string"
+    },
+    "refresh": {
+      "type": "string"
+    },
+    "user": {
+      "$ref": "#/components/schemas/User"
+    },
+    "requires_2fa": {
+      "type": "boolean"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "device_id": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 401 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-logout'>/api/auth/logout/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Déconnexion</h4></div><p class='method-description'>Révoque le refresh token fourni pour déconnecter l'utilisateur. Si un access token est fourni dans l'en-tête Authorization, il est également blacklisté pour une déconnexion immédiate.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>string</td><td>No</td><td>Bearer token pour blacklistage immédiat (optionnel)</td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RefreshToken"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RefreshToken"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RefreshToken"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "access_token_blacklisted": {
+      "type": "boolean"
+    },
+    "refresh_token_revoked": {
+      "type": "boolean"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-logout-all'>/api/auth/logout/all/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Déconnexion de tous les appareils</h4></div><p class='method-description'>Révoque tous les refresh tokens de l'utilisateur connecté. L'access token actuel est également blacklisté. Utile pour une déconnexion de sécurité sur tous les appareils.</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "devices_logged_out": {
+      "type": "integer"
+    },
+    "access_token_blacklisted": {
+      "type": "boolean"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 401 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-refresh'>/api/auth/refresh/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Rafraîchir le token d'accès</h4></div><p class='method-description'>Génère un nouveau access token à partir d'un refresh token valide. Le refresh token est automatiquement roté pour améliorer la sécurité. Les refresh tokens expirés ou blacklistés sont rejetés.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RefreshToken"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RefreshToken"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RefreshToken"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "access": {
+      "type": "string"
+    },
+    "refresh": {
+      "type": "string",
+      "description": "Nouveau refresh token (rotation)"
+    },
+    "user": {
+      "$ref": "#/components/schemas/User"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 401 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 429 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "retry_after": {
+      "type": "integer"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-register'>/api/auth/register/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Inscription d'un nouvel utilisateur</h4></div><p class='method-description'>Crée un nouveau compte utilisateur. Envoie automatiquement un code OTP de vérification si configuré. Vérifie si le mot de passe a été exposé dans des fuites de données.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Register"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Register"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Register"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 201 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "user": {
+      "$ref": "#/components/schemas/User"
+    },
+    "requires_otp": {
+      "type": "boolean"
+    },
+    "otp_id": {
+      "type": "string",
+      "nullable": true
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 429 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "retry_after": {
+      "type": "integer"
+    }
+  }
+}</code></pre></div></div></div></div></div></div><div class='api-category'><h2 id='user-management'>User Management</h2><div class='api-endpoint'><h3 id='endpoint-api-auth-me'>/api/auth/me/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Récupérer mon profil</h4></div><p class='method-description'>Retourne les informations complètes de l'utilisateur connecté. Inclut les champs personnalisés, préférences, et métadonnées. Les champs sensibles (mot de passe, tokens) ne sont jamais inclus. Le profil peut varier selon les permissions et le contexte organisationnel.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Org-Slug</code></td><td>string</td><td>No</td><td>Slug de l'organisation (optionnel)</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "email": {
+      "type": "string"
+    },
+    "first_name": {
+      "type": "string"
+    },
+    "last_name": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string",
+      "nullable": true
+    },
+    "phone": {
+      "type": "string",
+      "nullable": true
+    },
+    "avatar": {
+      "type": "string",
+      "nullable": true
+    },
+    "bio": {
+      "type": "string",
+      "nullable": true
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "language": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean"
+    },
+    "is_verified": {
+      "type": "boolean"
+    },
+    "date_joined": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_login": {
+      "type": "string",
+      "format": "date-time",
+      "nullable": true
+    },
+    "custom_fields": {
+      "type": "object",
+      "description": "Champs personnalis\u00e9s d\u00e9finis par l'organisation"
+    },
+    "preferences": {
+      "type": "object",
+      "properties": {
+        "email_notifications": {
+          "type": "boolean"
+        },
+        "sms_notifications": {
+          "type": "boolean"
+        },
+        "marketing_emails": {
+          "type": "boolean"
+        },
+        "two_factor_enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "organization_context": {
+      "type": "object",
+      "properties": {
+        "current_org": {
+          "type": "object",
+          "nullable": true
+        },
+        "roles": {
+          "type": "array"
+        },
+        "permissions": {
+          "type": "array"
+        }
+      }
+    }
+  }
+}</code></pre></div></div></div></div><div class='method-section method-patch'><div class='method-header'><span class='method-badge method-patch'>PATCH</span><h4>Modifier mon profil</h4></div><p class='method-description'>Met à jour partiellement les informations de l'utilisateur connecté. Les champs non fournis ne sont pas modifiés. Certains champs peuvent avoir des restrictions de validation (format email, téléphone international). La modification de l'email nécessite une nouvelle vérification. Les champs personnalisés suivent les règles définies par l'organisation.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Org-Slug</code></td><td>string</td><td>No</td><td>Slug de l'organisation (optionnel)</td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedUpdateProfileRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedUpdateProfileRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedUpdateProfileRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "updated_fields": {
+      "type": "array"
+    },
+    "user": {
+      "type": "object"
+    },
+    "verification_required": {
+      "type": "object",
+      "properties": {
+        "email_changed": {
+          "type": "boolean"
+        },
+        "phone_changed": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "field_errors": {
+      "type": "object"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-me-roles'>/api/auth/me/roles/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Récupérer mes rôles et permissions</h4></div><p class='method-description'>Retourne la liste des rôles et permissions de l'utilisateur connecté.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Org-Slug</code></td><td>string</td><td>No</td><td>Slug de l'organisation (optionnel)</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div></div><div class='api-category'><h2 id='organizations'>Organizations</h2><div class='api-endpoint'><h3 id='endpoint-api-auth-dashboard-organizations'>/api/auth/dashboard/organizations/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Stats organisations</h4></div><p class='method-description'>Organisations, membres, rôles, top organisations.</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-organizations'>/api/auth/organizations/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Créer une organisation</h4></div><p class='method-description'>Crée une nouvelle organisation. L'utilisateur devient automatiquement owner. Supporte les hiérarchies (parent/child) avec profondeur maximale de 5 niveaux. Le slug doit être unique globalement. Limite de membres configurable (0 = illimité).</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/CreateOrganizationRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/CreateOrganizationRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/CreateOrganizationRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 201 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_active": {
+      "type": "boolean"
+    },
+    "member_count": {
+      "type": "integer"
+    },
+    "max_members": {
+      "type": "integer"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-organizations-delete'>/api/auth/organizations/delete/</h3><div class='method-section method-delete'><div class='method-header'><span class='method-badge method-delete'>DELETE</span><h4>Supprimer une organisation</h4></div><p class='method-description'>Supprime une organisation (soft delete). Nécessite droits de propriétaire et header X-Org-Slug. Impossible si l'organisation a des organisations enfants. Action irréversible mais récupérable via admin. Tous les membres perdent l'accès.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Org-Slug</code></td><td>string</td><td>Yes</td><td>Slug de l'organisation (multi-tenant context)</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "description": "Organisation supprim\u00e9e avec succ\u00e8s",
+  "type": "object"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 403 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-organizations-detail'>/api/auth/organizations/detail/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Détails d'une organisation</h4></div><p class='method-description'>Retourne les détails complets d'une organisation. Nécessite le header X-Org-Slug pour identifier l'organisation. Inclut les métadonnées, statistiques membres, et hiérarchie. Uniquement accessible aux membres de l'organisation.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Org-Slug</code></td><td>string</td><td>Yes</td><td>Slug de l'organisation (multi-tenant context)</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "is_active": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "member_count": {
+      "type": "integer"
+    },
+    "max_members": {
+      "type": "integer"
+    },
+    "parent": {
+      "type": "object",
+      "nullable": true
+    },
+    "children": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "user_role": {
+      "type": "string"
+    },
+    "user_permissions": {
+      "type": "array"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 403 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-organizations-invitations'>/api/auth/organizations/invitations/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Inviter un membre par email</h4></div><p class='method-description'>Invite un utilisateur à rejoindre l'organisation par email. Nécessite la permission org.members.invite. Un email avec un lien d'acceptation est envoyé. L'invitation expire après le nombre de jours spécifié. L'utilisateur doit créer un compte ou se connecter pour accepter.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Org-Slug</code></td><td>string</td><td>Yes</td><td>Slug de l'organisation (multi-tenant context)</td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/InviteOrganizationMemberRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/InviteOrganizationMemberRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/InviteOrganizationMemberRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 201 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "email": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string"
+    },
+    "token": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "invited_by": {
+      "type": "object"
+    },
+    "organization": {
+      "type": "object"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-organizations-list'>/api/auth/organizations/list/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les organisations</h4></div><p class='method-description'>Retourne la liste des organisations où l'utilisateur est membre. Supporte la recherche, le filtrage et la pagination. Inclut les statistiques (nombre de membres, hiérarchie).</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>is_active</code></td><td>boolean</td><td>No</td><td>Filtrer par statut actif</td></tr><tr><td><code>ordering</code></td><td>string</td><td>No</td><td>Ordre de tri</td></tr><tr><td><code>page</code></td><td>integer</td><td>No</td><td>Numéro de page</td></tr><tr><td><code>page_size</code></td><td>integer</td><td>No</td><td>Éléments par page (max 100)</td></tr><tr><td><code>parent</code></td><td>string</td><td>No</td><td>Filtrer par parent (null = racine)</td></tr><tr><td><code>search</code></td><td>string</td><td>No</td><td>Recherche dans name et slug</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "count": {
+      "type": "integer"
+    },
+    "next": {
+      "type": "string",
+      "nullable": true
+    },
+    "previous": {
+      "type": "string",
+      "nullable": true
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "member_count": {
+            "type": "integer"
+          },
+          "max_members": {
+            "type": "integer"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-organizations-members'>/api/auth/organizations/members/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les membres</h4></div><p class='method-description'>Retourne la liste des membres de l'organisation. Inclut les rôles, permissions héritées, et statut. Supporte la recherche, filtrage par rôle et pagination. Affiche les permissions effectives (directes + héritées).</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Org-Slug</code></td><td>string</td><td>Yes</td><td>Slug de l'organisation (multi-tenant context)</td></tr><tr><td><code>ordering</code></td><td>string</td><td>No</td><td>Ordre de tri</td></tr><tr><td><code>page</code></td><td>integer</td><td>No</td><td>Numéro de page</td></tr><tr><td><code>page_size</code></td><td>integer</td><td>No</td><td>Éléments par page (max 100)</td></tr><tr><td><code>role</code></td><td>string</td><td>No</td><td>Filtrer par rôle</td></tr><tr><td><code>search</code></td><td>string</td><td>No</td><td>Recherche dans email, prénom, nom</td></tr><tr><td><code>status</code></td><td>string</td><td>No</td><td>Filtrer par statut</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "count": {
+      "type": "integer"
+    },
+    "next": {
+      "type": "string",
+      "nullable": true
+    },
+    "previous": {
+      "type": "string",
+      "nullable": true
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "email": {
+                "type": "string"
+              },
+              "first_name": {
+                "type": "string"
+              },
+              "last_name": {
+                "type": "string"
+              }
+            }
+          },
+          "role": {
+            "type": "string"
+          },
+          "role_display": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array"
+          },
+          "inherited_permissions": {
+            "type": "array"
+          },
+          "effective_permissions": {
+            "type": "array"
+          },
+          "joined_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-organizations-members-{user_id}'>/api/auth/organizations/members/{user_id}/</h3><div class='method-section method-patch'><div class='method-header'><span class='method-badge method-patch'>PATCH</span><h4>Mettre à jour le rôle d'un membre</h4></div><p class='method-description'>Met à jour le rôle d'un membre existant. Nécessite la permission org.members.manage. Un propriétaire ne peut pas être rétrogradé par un autre membre. Le dernier propriétaire ne peut pas être rétrogradé. L'utilisateur reçoit une notification de changement de rôle.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Org-Slug</code></td><td>string</td><td>Yes</td><td>Slug de l'organisation (multi-tenant context)</td></tr><tr><td><code>user_id</code></td><td>integer</td><td>Yes</td><td>ID de l'utilisateur à modifier</td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "user": {
+      "type": "object"
+    },
+    "role": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 403 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-organizations-members-{user_id}-remove'>/api/auth/organizations/members/{user_id}/remove/</h3><div class='method-section method-delete'><div class='method-header'><span class='method-badge method-delete'>DELETE</span><h4>Retirer un membre</h4></div><p class='method-description'>Retire un membre de l'organisation. Nécessite la permission org.members.remove. Un propriétaire ne peut pas être retiré par un autre membre. Le dernier propriétaire ne peut pas être retiré. Un membre peut se retirer lui-même (auto-suppression). L'utilisateur perd immédiatement l'accès à l'organisation.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Org-Slug</code></td><td>string</td><td>Yes</td><td>Slug de l'organisation (multi-tenant context)</td></tr><tr><td><code>user_id</code></td><td>integer</td><td>Yes</td><td>ID de l'utilisateur à retirer</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 403 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-organizations-members-add'>/api/auth/organizations/members/add/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Ajouter un membre</h4></div><p class='method-description'>Ajoute un utilisateur comme membre de l'organisation. Nécessite la permission org.members.invite. Respecte les limites de membres configurées. L'utilisateur reçoit une notification d'invitation. Le propriétaire ne peut pas être ajouté comme membre simple.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Org-Slug</code></td><td>string</td><td>Yes</td><td>Slug de l'organisation (multi-tenant context)</td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/AddOrganizationMemberRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/AddOrganizationMemberRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/AddOrganizationMemberRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 201 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "user": {
+      "type": "object"
+    },
+    "role": {
+      "type": "string"
+    },
+    "joined_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 403 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-organizations-tree'>/api/auth/organizations/tree/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Hiérarchie de l'organisation</h4></div><p class='method-description'>Retourne l'arbre hiérarchique de l'organisation.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Org-Slug</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-organizations-update'>/api/auth/organizations/update/</h3><div class='method-section method-patch'><div class='method-header'><span class='method-badge method-patch'>PATCH</span><h4>Mettre à jour une organisation</h4></div><p class='method-description'>Met à jour les informations d'une organisation. Nécessite le header X-Org-Slug et droits d'admin. Le changement de parent respecte les contraintes de hiérarchie. Impossible de créer des boucles ou dépasser 5 niveaux. La limite de membres ne peut pas être inférieure au nombre actuel.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Org-Slug</code></td><td>string</td><td>Yes</td><td>Slug de l'organisation (multi-tenant context)</td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedUpdateOrganizationRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedUpdateOrganizationRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedUpdateOrganizationRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 403 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div></div><div class='api-category'><h2 id='security'>Security</h2><div class='api-endpoint'><h3 id='endpoint-api-auth-2fa-backup-codes'>/api/auth/2fa/backup-codes/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Régénérer codes de secours</h4></div><p class='method-description'>Génère de nouveaux codes de secours (les anciens sont invalidés). Requiert un code TOTP valide pour sécurité. Génère 10 codes alphanumériques à usage unique de 8 caractères. Les codes ne seront affichés qu'une seule fois. Stockez-les en sécurité.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/TwoFactorBackupCodesRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/TwoFactorBackupCodesRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/TwoFactorBackupCodesRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "backup_codes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z0-9]{8}$",
+        "description": "Code de secours \u00e0 usage unique"
+      }
+    },
+    "codes_count": {
+      "type": "integer"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "warning": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-2fa-confirm'>/api/auth/2fa/confirm/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Confirmer activation 2FA</h4></div><p class='method-description'>Vérifie le premier code TOTP pour activer le 2FA. Le code TOTP utilise une fenêtre de 30 secondes avec une tolérance de 1 fenêtre avant/après. Une seule confirmation est requise après l'initialisation. Après activation, tous les codes de secours générés sont valides.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/TwoFactorConfirmRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/TwoFactorConfirmRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/TwoFactorConfirmRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "is_enabled": {
+      "type": "boolean"
+    },
+    "enabled_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-2fa-disable'>/api/auth/2fa/disable/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Désactiver 2FA</h4></div><p class='method-description'>Désactive le 2FA après vérification du code TOTP ou d'un code de secours. Pour des raisons de sécurité, le mot de passe de l'utilisateur est également requis. Une fois désactivé, tous les codes de secours restants sont invalidés. Cette action est irréversible et nécessitera une nouvelle configuration complète.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/TwoFactorDisableRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/TwoFactorDisableRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/TwoFactorDisableRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "is_enabled": {
+      "type": "boolean"
+    },
+    "disabled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "backup_codes_invalidated": {
+      "type": "boolean"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-2fa-setup'>/api/auth/2fa/setup/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Initialiser 2FA</h4></div><p class='method-description'>Génère un nouveau secret TOTP et retourne le QR code et les codes de secours. Le QR code peut être scanné avec Google Authenticator, Authy, etc. L'utilisateur doit ensuite confirmer avec un code TOTP valide pour activer le 2FA. Les codes de secours (10 codes à usage unique) permettent l'accès si l'appareil est perdu.</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "secret": {
+      "type": "string",
+      "description": "Secret TOTP base32"
+    },
+    "qr_code": {
+      "type": "string",
+      "description": "QR code en base64"
+    },
+    "backup_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "10 codes de secours \u00e0 usage unique"
+    },
+    "manual_entry_key": {
+      "type": "string",
+      "description": "Cl\u00e9 pour saisie manuelle"
+    },
+    "instructions": {
+      "type": "object",
+      "description": "Instructions de configuration"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-2fa-status'>/api/auth/2fa/status/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Statut 2FA</h4></div><p class='method-description'>Retourne si le 2FA est activé et le nombre de codes de secours restants.</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-account-deletion-status'>/api/auth/account-deletion-status/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Statut de suppression de compte</h4></div><p class='method-description'>Obtenir le statut des demandes de suppression de compte de l'utilisateur actuel, y compris les demandes en attente, confirmées ou annulées.</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-cancel-account-deletion'>/api/auth/cancel-account-deletion/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Annuler la suppression de compte</h4></div><p class='method-description'>Annule une demande de suppression de compte pendant la période de grâce. Nécessite le mot de passe actuel pour sécurité. Le compte sera réactivé immédiatement. Un email de confirmation sera envoyé. L'annulation est possible jusqu'à la fin de la période de grâce.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/CancelAccountDeletion"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/CancelAccountDeletion"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/CancelAccountDeletion"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "deletion_cancelled": {
+      "type": "boolean"
+    },
+    "account_reactivated": {
+      "type": "boolean"
+    },
+    "cancellation_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "security_note": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-confirm-account-deletion'>/api/auth/confirm-account-deletion/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Confirmer la suppression de compte</h4></div><p class='method-description'>Confirme la demande de suppression via token reçu par email. Le token est valide 24 heures. Cette étape est requise pour vérifier que l'utilisateur a bien accès à son email. Après confirmation, le compte entre en période de grâce de 30 jours.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ConfirmAccountDeletion"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ConfirmAccountDeletion"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ConfirmAccountDeletion"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "deletion_confirmed": {
+      "type": "boolean"
+    },
+    "grace_period_ends": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "cancellation_instructions": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 410 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "expired_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-export-user-data'>/api/auth/export-user-data/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Exporter mes données</h4></div><p class='method-description'>Exporte toutes les données personnelles de l'utilisateur conformément au droit à la portabilité du RGPD. Nécessite le mot de passe actuel pour des raisons de sécurité.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ExportUserData"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ExportUserData"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ExportUserData"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "description": "Donn\u00e9es de l'utilisateur export\u00e9es avec succ\u00e8s.",
+  "properties": {
+    "user_info": {
+      "type": "object"
+    },
+    "roles": {
+      "type": "array"
+    },
+    "permissions": {
+      "type": "array"
+    },
+    "applications": {
+      "type": "array"
+    },
+    "audit_logs": {
+      "type": "array"
+    },
+    "export_metadata": {
+      "type": "object"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 401 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "detail": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 403 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "detail": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 500 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "integer"
+    },
+    "export_requested_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-google'>/api/auth/google/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Authentification Google OAuth</h4></div><p class='method-description'>Authentifie un utilisateur via Google OAuth. Accepte id_token, access_token ou code.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/GoogleAuth"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/GoogleAuth"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/GoogleAuth"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 401 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-magic-link-request'>/api/auth/magic-link/request/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Demander un magic link</h4></div><p class='method-description'>Envoie un lien de connexion à usage unique par email. Valide pendant 15 minutes par défaut (configurable via TENXYTE_MAGIC_LINK_EXPIRY_MINUTES). Le lien contient un token unique et peut être utilisé une seule fois. Pour des raisons de sécurité, ne révèle pas si l'email existe. Limité à 3 requêtes par heure par email. Nécessite TENXYTE_MAGIC_LINK_ENABLED = True.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/MagicLinkRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/MagicLinkRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/MagicLinkRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "expires_in_minutes": {
+      "type": "integer"
+    },
+    "sent_to": {
+      "type": "string",
+      "description": "Email masqu\u00e9 pour s\u00e9curit\u00e9"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 429 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "retry_after": {
+      "type": "integer"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 503 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-magic-link-verify'>/api/auth/magic-link/verify/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Valider un magic link</h4></div><p class='method-description'>Valide le token du magic link et retourne des tokens JWT si valide. Le token est à usage unique — il est invalidé après la première utilisation. Le token expire après 15 minutes par défaut. Le device fingerprinting est automatiquement effectué via User-Agent. Une fois utilisé, le token ne peut plus être utilisé même si non expiré.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>token</code></td><td>string</td><td>Yes</td><td>Token unique du magic link reçu par email</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "access": {
+      "type": "string"
+    },
+    "refresh": {
+      "type": "string"
+    },
+    "user": {
+      "$ref": "#/components/schemas/User"
+    },
+    "message": {
+      "type": "string"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "device_id": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 401 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-org-roles'>/api/auth/org-roles/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les rôles d'organisation</h4></div><p class='method-description'>Retourne la liste des rôles disponibles pour les organisations. Inclut les permissions associées à chaque rôle. Affiche la hiérarchie des rôles et poids de permission. Utile pour comprendre les capacités de chaque rôle.</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string"
+      },
+      "name": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "weight": {
+        "type": "integer"
+      },
+      "permissions": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "is_system_role": {
+        "type": "boolean"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time"
+      }
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-otp-request'>/api/auth/otp/request/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Demander un code OTP</h4></div><p class='method-description'>Génère et envoie un code OTP par email ou SMS selon le type demandé. Le code expire après 10 minutes. Limité à 5 requêtes par heure par utilisateur. Supporte les types : email_verification, phone_verification, password_reset.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RequestOTP"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RequestOTP"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RequestOTP"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "otp_id": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "email",
+        "sms"
+      ]
+    },
+    "masked_recipient": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 429 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "retry_after": {
+      "type": "integer"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-otp-verify-email'>/api/auth/otp/verify/email/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Vérifier le code OTP email</h4></div><p class='method-description'>Vérifie le code OTP envoyé par email pour valider l'adresse email. Le code doit être utilisé dans les 10 minutes après réception. Après 3 tentatives échouées, le code est invalidé. Une fois vérifiée, l'adresse email ne peut plus être modifiée.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/VerifyOTP"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/VerifyOTP"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/VerifyOTP"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "email_verified": {
+      "type": "boolean"
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 401 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-otp-verify-phone'>/api/auth/otp/verify/phone/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Vérifier le code OTP téléphone</h4></div><p class='method-description'>Vérifie le code OTP envoyé par SMS pour valider le numéro de téléphone. Le code doit être utilisé dans les 10 minutes après réception. Après 3 tentatives échouées, le code est invalidé. Le numéro de téléphone doit être au format international enregistré.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/VerifyOTP"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/VerifyOTP"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/VerifyOTP"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "phone_verified": {
+      "type": "boolean"
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "phone_number": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 401 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-password-change'>/api/auth/password/change/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Changer le mot de passe</h4></div><p class='method-description'>Change le mot de passe de l'utilisateur connecté. Requiert le mot de passe actuel pour validation. Vérifie si le nouveau mot de passe a été exposé dans des fuites de données. Le nouveau mot de passe ne doit pas être identique aux 5 derniers mots de passe utilisés. Après changement, déconnecte toutes les sessions sauf la session actuelle.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ChangePassword"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ChangePassword"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ChangePassword"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "password_strength": {
+      "type": "string"
+    },
+    "sessions_revoked": {
+      "type": "integer"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 401 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-password-requirements'>/api/auth/password/requirements/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Exigences de mot de passe</h4></div><p class='method-description'>Retourne la liste des exigences pour un mot de passe valide.</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-password-reset-confirm'>/api/auth/password/reset/confirm/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Confirmer la réinitialisation de mot de passe</h4></div><p class='method-description'>Vérifie le code OTP et définit un nouveau mot de passe. Révoque automatiquement tous les refresh tokens de l'utilisateur. Vérifie si le nouveau mot de passe a été exposé dans des fuites de données. Le code OTP doit être utilisé dans les 15 minutes après réception.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PasswordResetConfirm"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PasswordResetConfirm"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PasswordResetConfirm"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "tokens_revoked": {
+      "type": "integer"
+    },
+    "password_safe": {
+      "type": "boolean"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 401 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-password-reset-request'>/api/auth/password/reset/request/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Demander une réinitialisation de mot de passe</h4></div><p class='method-description'>Envoie un code OTP par email ou SMS pour réinitialiser le mot de passe. Pour des raisons de sécurité, ne révèle pas si le compte existe. Le code OTP expire après 15 minutes. Limité à 3 requêtes par heure.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PasswordResetRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PasswordResetRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PasswordResetRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "otp_id": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "email",
+        "sms"
+      ]
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 429 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "retry_after": {
+      "type": "integer"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-password-strength'>/api/auth/password/strength/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Verifier la force d'un mot de passe</h4></div><p class='method-description'>Retourne le score et la force d'un mot de passe sans l'enregistrer.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PasswordStrengthRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PasswordStrengthRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PasswordStrengthRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-permissions'>/api/auth/permissions/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les permissions</h4></div><p class='method-description'>Retourne la liste paginée de toutes les permissions disponibles.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>ordering</code></td><td>string</td><td>No</td><td>Tri: code, name, created_at (prefix - pour DESC)</td></tr><tr><td><code>page</code></td><td>integer</td><td>No</td><td>Numéro de page</td></tr><tr><td><code>page_size</code></td><td>integer</td><td>No</td><td>Éléments par page (max 100)</td></tr><tr><td><code>parent</code></td><td>string</td><td>No</td><td>Filtrer par parent (null=racines, id=enfants)</td></tr><tr><td><code>search</code></td><td>string</td><td>No</td><td>Recherche dans code et name</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/PaginatedPermissionList"
+}</code></pre></div></div></div></div><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Créer une permission</h4></div><p class='method-description'>Crée une nouvelle permission.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Permission"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Permission"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Permission"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 201 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/Permission"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-permissions-{permission_id}'>/api/auth/permissions/{permission_id}/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Détails d'une permission</h4></div><p class='method-description'>Récupère les informations d'une permission par son ID.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>permission_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/Permission"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div><div class='method-section method-put'><div class='method-header'><span class='method-badge method-put'>PUT</span><h4>Modifier une permission</h4></div><p class='method-description'>Met à jour les informations d'une permission.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>permission_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Permission"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Permission"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Permission"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/Permission"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div><div class='method-section method-delete'><div class='method-header'><span class='method-badge method-delete'>DELETE</span><h4>Supprimer une permission</h4></div><p class='method-description'>Supprime définitivement une permission.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>permission_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-request-account-deletion'>/api/auth/request-account-deletion/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Demander la suppression de compte</h4></div><p class='method-description'>Initie le processus de suppression de compte conforme au RGPD. Le compte sera marqué pour suppression après une période de grâce de 30 jours pendant laquelle l'utilisateur peut annuler. Nécessite le mot de passe actuel et code OTP si 2FA activé. Toutes les données seront anonymisées après la période de grâce.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RequestAccountDeletion"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RequestAccountDeletion"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RequestAccountDeletion"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 201 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "deletion_request_id": {
+      "type": "integer"
+    },
+    "scheduled_deletion_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "grace_period_days": {
+      "type": "integer"
+    },
+    "cancellation_token": {
+      "type": "string"
+    },
+    "data_retention_policy": {
+      "type": "object",
+      "properties": {
+        "anonymization_after": {
+          "type": "string"
+        },
+        "final_deletion_after": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 423 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "existing_request": {
+      "type": "object"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-roles'>/api/auth/roles/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les rôles</h4></div><p class='method-description'>Retourne la liste paginée de tous les rôles disponibles.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>is_default</code></td><td>boolean</td><td>No</td><td>Filtrer par is_default</td></tr><tr><td><code>ordering</code></td><td>string</td><td>No</td><td>Tri: code, name, is_default, created_at</td></tr><tr><td><code>page</code></td><td>integer</td><td>No</td><td>Numéro de page</td></tr><tr><td><code>page_size</code></td><td>integer</td><td>No</td><td>Éléments par page (max 100)</td></tr><tr><td><code>search</code></td><td>string</td><td>No</td><td>Recherche dans code et name</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/PaginatedRoleListList"
+}</code></pre></div></div></div></div><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Créer un rôle</h4></div><p class='method-description'>Crée un nouveau rôle avec les permissions spécifiées.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Role"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Role"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Role"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 201 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/Role"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-roles-{role_id}'>/api/auth/roles/{role_id}/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Détails d'un rôle</h4></div><p class='method-description'>Récupère les informations d'un rôle par son ID.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>role_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/Role"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div><div class='method-section method-put'><div class='method-header'><span class='method-badge method-put'>PUT</span><h4>Modifier un rôle</h4></div><p class='method-description'>Met à jour les informations d'un rôle.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>role_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Role"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Role"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/Role"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/Role"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div><div class='method-section method-delete'><div class='method-header'><span class='method-badge method-delete'>DELETE</span><h4>Supprimer un rôle</h4></div><p class='method-description'>Supprime définitivement un rôle.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>role_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-roles-{role_id}-permissions'>/api/auth/roles/{role_id}/permissions/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les permissions d'un rôle</h4></div><p class='method-description'>Récupère toutes les permissions assignées à un rôle.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>role_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Ajouter des permissions à un rôle</h4></div><p class='method-description'>Ajoute une ou plusieurs permissions à un rôle existant.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>role_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ManageRolePermissions"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ManageRolePermissions"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ManageRolePermissions"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div><div class='method-section method-delete'><div class='method-header'><span class='method-badge method-delete'>DELETE</span><h4>Retirer des permissions d'un rôle</h4></div><p class='method-description'>Retire une ou plusieurs permissions d'un rôle existant.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>role_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-social-{provider}'>/api/auth/social/{provider}/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Authentification sociale OAuth2</h4></div><p class='method-description'>Authentifie un utilisateur via un provider OAuth2 (google, github, microsoft, facebook). Accepte un access_token, un authorization code, ou un id_token (Google uniquement). Crée automatiquement un compte si l'utilisateur n'existe pas encore. Device fingerprinting automatique via User-Agent. Rate limiting appliqué par provider (10 requêtes/heure).</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>provider</code></td><td>string</td><td>Yes</td><td>Provider OAuth2 à utiliser</td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/SocialAuthRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/SocialAuthRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/SocialAuthRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "access": {
+      "type": "string"
+    },
+    "refresh": {
+      "type": "string"
+    },
+    "user": {
+      "$ref": "#/components/schemas/User"
+    },
+    "message": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "is_new_user": {
+      "type": "boolean"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "supported_providers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 401 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-users-{user_id}-permissions'>/api/auth/users/{user_id}/permissions/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les permissions directes d'un utilisateur</h4></div><p class='method-description'>Récupère toutes les permissions assignées directement à un utilisateur (hors rôles).</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>user_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Ajouter des permissions directes à un utilisateur</h4></div><p class='method-description'>Ajoute une ou plusieurs permissions directement à un utilisateur.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>user_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ManageRolePermissions"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ManageRolePermissions"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ManageRolePermissions"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div><div class='method-section method-delete'><div class='method-header'><span class='method-badge method-delete'>DELETE</span><h4>Retirer des permissions directes d'un utilisateur</h4></div><p class='method-description'>Retire une ou plusieurs permissions directes d'un utilisateur.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>user_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-users-{user_id}-roles'>/api/auth/users/{user_id}/roles/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les rôles d'un utilisateur</h4></div><p class='method-description'>Récupère tous les rôles assignés à un utilisateur.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>user_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Assigner un rôle</h4></div><p class='method-description'>Ajoute un rôle à un utilisateur.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>user_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/AssignRole"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/AssignRole"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/AssignRole"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div><div class='method-section method-delete'><div class='method-header'><span class='method-badge method-delete'>DELETE</span><h4>Retirer un rôle</h4></div><p class='method-description'>Retire un rôle d'un utilisateur. Le role_code doit être passé en query parameter.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>role_code</code></td><td>string</td><td>Yes</td><td>Le code du rôle à retirer</td></tr><tr><td><code>user_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-webauthn-authenticate-begin'>/api/auth/webauthn/authenticate/begin/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Commencer l'authentification par passkey</h4></div><p class='method-description'>Génère un challenge WebAuthn pour l'authentification. Supporte les passkeys resident keys (username-less). Le challenge expire après 5 minutes. User verification configurable (required/preferred/discouraged). AllowCredentials peut être vide pour resident keys ou spécifique.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "challenge": {
+      "type": "string",
+      "description": "Challenge base64url encod\u00e9"
+    },
+    "rpId": {
+      "type": "string"
+    },
+    "allowCredentials": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "userVerification": {
+      "type": "string"
+    },
+    "timeout": {
+      "type": "integer"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-webauthn-authenticate-complete'>/api/auth/webauthn/authenticate/complete/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Finaliser l'authentification par passkey</h4></div><p class='method-description'>Vérifie l'assertion WebAuthn et retourne des tokens JWT. Valide le signature, le challenge et le counter de la credential. Le counter prévient les attaques replay. Device fingerprinting automatique via User-Agent. Supporte les resident keys (username-less authentication).</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "access": {
+      "type": "string"
+    },
+    "refresh": {
+      "type": "string"
+    },
+    "user": {
+      "$ref": "#/components/schemas/User"
+    },
+    "message": {
+      "type": "string"
+    },
+    "credential_used": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 401 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-webauthn-credentials'>/api/auth/webauthn/credentials/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les passkeys</h4></div><p class='method-description'>Retourne la liste des passkeys enregistrées pour l'utilisateur. Inclut les métadonnées (nom, date de création, dernière utilisation). Le credential ID est masqué pour sécurité. Affiche le type d'authentificateur (platform, cross-platform).</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "credentials": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "device_name": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_used_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "authenticator_type": {
+            "type": "string"
+          },
+          "is_resident_key": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "count": {
+      "type": "integer"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-webauthn-credentials-{credential_id}'>/api/auth/webauthn/credentials/{credential_id}/</h3><div class='method-section method-delete'><div class='method-header'><span class='method-badge method-delete'>DELETE</span><h4>Supprimer une passkey</h4></div><p class='method-description'>Supprime définitivement une passkey de l'utilisateur. Action irréversible. Prévient l'accès depuis ce device à l'avenir. Vérifie que la credential appartient bien à l'utilisateur.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>credential_id</code></td><td>integer</td><td>Yes</td><td>ID de la passkey à supprimer</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 204 - </h6><div class='response-schema'><pre><code>{
+  "description": "Passkey supprim\u00e9e avec succ\u00e8s"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-webauthn-register-begin'>/api/auth/webauthn/register/begin/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Commencer l'enregistrement d'une passkey</h4></div><p class='method-description'>Génère un challenge WebAuthn pour l'enregistrement d'une nouvelle passkey. Le challenge expire après 5 minutes. Supporte l'authentification biométrique (Face ID, Touch ID, Windows Hello). Les options incluent user verification (required/preferred/discouraged) et les algorithmes cryptographiques supportés (ES256, RS256, EdDSA).</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "challenge": {
+      "type": "string",
+      "description": "Challenge base64url encod\u00e9"
+    },
+    "rp": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "user": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        }
+      }
+    },
+    "pubKeyCredParams": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "alg": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "timeout": {
+      "type": "integer",
+      "description": "Timeout en millisecondes"
+    },
+    "authenticatorSelection": {
+      "type": "object",
+      "properties": {
+        "authenticatorAttachment": {
+          "type": "string"
+        },
+        "userVerification": {
+          "type": "string"
+        },
+        "requireResidentKey": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-webauthn-register-complete'>/api/auth/webauthn/register/complete/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Finaliser l'enregistrement d'une passkey</h4></div><p class='method-description'>Vérifie la réponse WebAuthn du navigateur et enregistre la credential. Prévient les doublons via credential exclusion. Valide l'attestation et le format de la clé publique. Enregistre les métadonnées du device (nom, type, date).</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 201 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "credential": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div></div><div class='api-category'><h2 id='admin'>Admin</h2><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-audit-logs'>/api/auth/admin/audit-logs/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les audit logs</h4></div><p class='method-description'>Retourne les événements d'audit paginés et filtrés.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>action</code></td><td>string</td><td>No</td><td>Filtrer par action (login, login_failed, password_change, etc.)</td></tr><tr><td><code>application_id</code></td><td>string</td><td>No</td><td>Filtrer par ID application</td></tr><tr><td><code>date_from</code></td><td>string</td><td>No</td><td>Après (YYYY-MM-DD)</td></tr><tr><td><code>date_to</code></td><td>string</td><td>No</td><td>Avant (YYYY-MM-DD)</td></tr><tr><td><code>ip_address</code></td><td>string</td><td>No</td><td>Filtrer par adresse IP</td></tr><tr><td><code>ordering</code></td><td>string</td><td>No</td><td>Tri: created_at, action, user</td></tr><tr><td><code>page</code></td><td>integer</td><td>No</td><td>Numéro de page</td></tr><tr><td><code>page_size</code></td><td>integer</td><td>No</td><td>Éléments par page (max 100)</td></tr><tr><td><code>user_id</code></td><td>string</td><td>No</td><td>Filtrer par ID utilisateur</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/PaginatedAuditLogList"
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-audit-logs-{log_id}'>/api/auth/admin/audit-logs/{log_id}/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Détails d'un audit log</h4></div><p class='method-description'>GET /api/auth/admin/audit-logs/<log_id>/</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>log_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/AuditLog"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-blacklisted-tokens'>/api/auth/admin/blacklisted-tokens/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les tokens blacklistés</h4></div><p class='method-description'>Retourne les tokens JWT révoqués.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>expired</code></td><td>boolean</td><td>No</td><td>Filtrer par expiré (true/false)</td></tr><tr><td><code>ordering</code></td><td>string</td><td>No</td><td>Tri: blacklisted_at, expires_at</td></tr><tr><td><code>page</code></td><td>integer</td><td>No</td><td>Numéro de page</td></tr><tr><td><code>page_size</code></td><td>integer</td><td>No</td><td>Éléments par page (max 100)</td></tr><tr><td><code>reason</code></td><td>string</td><td>No</td><td>Filtrer par raison (logout, password_change, security)</td></tr><tr><td><code>user_id</code></td><td>string</td><td>No</td><td>Filtrer par ID utilisateur</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/PaginatedBlacklistedTokenList"
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-blacklisted-tokens-cleanup'>/api/auth/admin/blacklisted-tokens/cleanup/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Nettoyer les tokens expirés</h4></div><p class='method-description'>Supprime les tokens blacklistés qui ont déjà expiré naturellement.</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-deletion-requests'>/api/auth/admin/deletion-requests/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les demandes de suppression</h4></div><p class='method-description'>Retourne les demandes de suppression de compte paginées et filtrées. Interface admin pour la gestion RGPD. Inclut les détails utilisateur, statut de traitement, et dates importantes. Permet de surveiller les demandes en attente et celles nécessitant un traitement manuel.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>date_from</code></td><td>string</td><td>No</td><td>Demandé après cette date (YYYY-MM-DD)</td></tr><tr><td><code>date_to</code></td><td>string</td><td>No</td><td>Demandé avant cette date (YYYY-MM-DD)</td></tr><tr><td><code>grace_period_expiring</code></td><td>boolean</td><td>No</td><td>Filtrer les demandes dont la période de grâce expire bientôt (7 jours)</td></tr><tr><td><code>ordering</code></td><td>string</td><td>No</td><td>Tri: requested_at, confirmed_at, grace_period_ends_at, user__email</td></tr><tr><td><code>page</code></td><td>integer</td><td>No</td><td>Numéro de page</td></tr><tr><td><code>page_size</code></td><td>integer</td><td>No</td><td>Éléments par page (max 100)</td></tr><tr><td><code>status</code></td><td>string</td><td>No</td><td>Filtrer par statut de la demande</td></tr><tr><td><code>user_id</code></td><td>integer</td><td>No</td><td>Filtrer par ID utilisateur</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "count": {
+      "type": "integer"
+    },
+    "next": {
+      "type": "string",
+      "nullable": true
+    },
+    "previous": {
+      "type": "string",
+      "nullable": true
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "user": {
+            "type": "object"
+          },
+          "status": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "grace_period_ends_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "processed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "processed_by": {
+            "type": "object",
+            "nullable": true
+          },
+          "ip_address": {
+            "type": "string"
+          },
+          "user_agent": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-deletion-requests-{request_id}'>/api/auth/admin/deletion-requests/{request_id}/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Détails d'une demande de suppression</h4></div><p class='method-description'>GET /api/auth/admin/deletion-requests/<request_id>/</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>request_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/DeletionRequest"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-deletion-requests-{request_id}-process'>/api/auth/admin/deletion-requests/{request_id}/process/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Traiter une demande de suppression</h4></div><p class='method-description'>Exécute manuellement une demande de suppression confirmée. **ATTENTION:** Cette action est irréversible et détruira définitivement toutes les données utilisateur conformément au RGPD. Nécessite une confirmation explicite. Un audit trail sera conservé. Un email de notification sera envoyé à l'utilisateur.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>request_id</code></td><td>integer</td><td>Yes</td><td>ID de la demande de suppression</td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ProcessDeletionRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ProcessDeletionRequest"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ProcessDeletionRequest"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "deletion_completed": {
+      "type": "boolean"
+    },
+    "processed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "data_anonymized": {
+      "type": "boolean"
+    },
+    "audit_log_id": {
+      "type": "integer"
+    },
+    "user_notified": {
+      "type": "boolean"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 403 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-deletion-requests-process-expired'>/api/auth/admin/deletion-requests/process-expired/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Traiter les demandes expirées</h4></div><p class='method-description'>Exécute automatiquement la suppression pour toutes les demandes confirmées dont la période de grâce de 30 jours est expirée. Action batch pour la maintenance RGPD. Un rapport détaillé des traitements est retourné. Cette action est généralement exécutée par une tâche cron quotidienne.</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "processed_count": {
+      "type": "integer"
+    },
+    "failed_count": {
+      "type": "integer"
+    },
+    "skipped_count": {
+      "type": "integer"
+    },
+    "processing_time": {
+      "type": "number"
+    },
+    "details": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "integer"
+          },
+          "user_email": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "grace_period_expired": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-login-attempts'>/api/auth/admin/login-attempts/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les tentatives de connexion</h4></div><p class='method-description'>Retourne les tentatives de connexion paginées et filtrées.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>date_from</code></td><td>string</td><td>No</td><td>Après (YYYY-MM-DD)</td></tr><tr><td><code>date_to</code></td><td>string</td><td>No</td><td>Avant (YYYY-MM-DD)</td></tr><tr><td><code>identifier</code></td><td>string</td><td>No</td><td>Filtrer par identifiant (email/phone)</td></tr><tr><td><code>ip_address</code></td><td>string</td><td>No</td><td>Filtrer par adresse IP</td></tr><tr><td><code>ordering</code></td><td>string</td><td>No</td><td>Tri: created_at, identifier, ip_address</td></tr><tr><td><code>page</code></td><td>integer</td><td>No</td><td>Numéro de page</td></tr><tr><td><code>page_size</code></td><td>integer</td><td>No</td><td>Éléments par page (max 100)</td></tr><tr><td><code>success</code></td><td>boolean</td><td>No</td><td>Filtrer par succès/échec</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/PaginatedLoginAttemptList"
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-refresh-tokens'>/api/auth/admin/refresh-tokens/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les refresh tokens</h4></div><p class='method-description'>Retourne les refresh tokens (valeur du token masquée).</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>application_id</code></td><td>string</td><td>No</td><td>Filtrer par ID application</td></tr><tr><td><code>expired</code></td><td>boolean</td><td>No</td><td>Filtrer par expiré</td></tr><tr><td><code>is_revoked</code></td><td>boolean</td><td>No</td><td>Filtrer par révoqué</td></tr><tr><td><code>ordering</code></td><td>string</td><td>No</td><td>Tri: created_at, expires_at, last_used_at</td></tr><tr><td><code>page</code></td><td>integer</td><td>No</td><td>Numéro de page</td></tr><tr><td><code>page_size</code></td><td>integer</td><td>No</td><td>Éléments par page (max 100)</td></tr><tr><td><code>user_id</code></td><td>string</td><td>No</td><td>Filtrer par ID utilisateur</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/PaginatedRefreshTokenAdminList"
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-refresh-tokens-{token_id}-revoke'>/api/auth/admin/refresh-tokens/{token_id}/revoke/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Révoquer un refresh token</h4></div><p class='method-description'>Révoque un refresh token spécifique.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>token_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/RefreshTokenAdmin"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-users'>/api/auth/admin/users/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les utilisateurs</h4></div><p class='method-description'>Retourne la liste paginée de tous les utilisateurs. Réservé aux admins.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>date_from</code></td><td>string</td><td>No</td><td>Créé après (YYYY-MM-DD)</td></tr><tr><td><code>date_to</code></td><td>string</td><td>No</td><td>Créé avant (YYYY-MM-DD)</td></tr><tr><td><code>is_2fa_enabled</code></td><td>boolean</td><td>No</td><td>Filtrer par 2FA activé</td></tr><tr><td><code>is_active</code></td><td>boolean</td><td>No</td><td>Filtrer par statut actif</td></tr><tr><td><code>is_banned</code></td><td>boolean</td><td>No</td><td>Filtrer par compte banni</td></tr><tr><td><code>is_deleted</code></td><td>boolean</td><td>No</td><td>Filtrer par compte supprimé</td></tr><tr><td><code>is_email_verified</code></td><td>boolean</td><td>No</td><td>Filtrer par email vérifié</td></tr><tr><td><code>is_locked</code></td><td>boolean</td><td>No</td><td>Filtrer par compte verrouillé</td></tr><tr><td><code>ordering</code></td><td>string</td><td>No</td><td>Tri: email, created_at, last_login, first_name</td></tr><tr><td><code>page</code></td><td>integer</td><td>No</td><td>Numéro de page</td></tr><tr><td><code>page_size</code></td><td>integer</td><td>No</td><td>Éléments par page (max 100)</td></tr><tr><td><code>role</code></td><td>string</td><td>No</td><td>Filtrer par code de rôle</td></tr><tr><td><code>search</code></td><td>string</td><td>No</td><td>Recherche dans email, first_name, last_name</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/PaginatedAdminUserListList"
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-users-{user_id}'>/api/auth/admin/users/{user_id}/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Détails d'un utilisateur</h4></div><p class='method-description'>Récupère les informations complètes d'un utilisateur.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>user_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/AdminUserDetail"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div><div class='method-section method-patch'><div class='method-header'><span class='method-badge method-patch'>PATCH</span><h4>Modifier un utilisateur (admin)</h4></div><p class='method-description'>Met à jour les informations d'un utilisateur. Réservé aux admins.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>user_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedAdminUserUpdate"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedAdminUserUpdate"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedAdminUserUpdate"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/AdminUserDetail"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div><div class='method-section method-delete'><div class='method-header'><span class='method-badge method-delete'>DELETE</span><h4>Supprimer un utilisateur (soft delete)</h4></div><p class='method-description'>Suppression logique d'un utilisateur (anonymisation RGPD).</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>user_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-users-{user_id}-ban'>/api/auth/admin/users/{user_id}/ban/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Bannir un utilisateur</h4></div><p class='method-description'>Bannit un utilisateur de manière permanente. Nécessite la permission users.ban.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>user_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/BanUser"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/BanUser"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/BanUser"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/AdminUserDetail"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-users-{user_id}-lock'>/api/auth/admin/users/{user_id}/lock/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Verrouiller un compte</h4></div><p class='method-description'>Verrouille temporairement un compte utilisateur.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>user_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/LockUser"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/LockUser"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/LockUser"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/AdminUserDetail"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-users-{user_id}-unban'>/api/auth/admin/users/{user_id}/unban/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Débannir un utilisateur</h4></div><p class='method-description'>Lève le bannissement d'un utilisateur.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>user_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/AdminUserDetail"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-admin-users-{user_id}-unlock'>/api/auth/admin/users/{user_id}/unlock/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Déverrouiller un compte</h4></div><p class='method-description'>Déverrouille un compte utilisateur.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>user_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/AdminUserDetail"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-dashboard-auth'>/api/auth/dashboard/auth/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Stats d'authentification</h4></div><p class='method-description'>Login stats, méthodes, registrations, tokens, top failure reasons, graphiques 7j.</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-dashboard-gdpr'>/api/auth/dashboard/gdpr/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Stats RGPD</h4></div><p class='method-description'>Demandes de suppression par statut, exports de données.</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-dashboard-security'>/api/auth/dashboard/security/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Stats de sécurité</h4></div><p class='method-description'>Audit summary, blacklisted tokens, activité suspecte, adoption 2FA.</p><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-dashboard-stats'>/api/auth/dashboard/stats/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Tableau de bord global</h4></div><p class='method-description'>Retourne les statistiques agrégées cross-modules pour le tableau de bord admin. Les données varient selon le contexte organisationnel (X-Org-Slug) et les permissions. Inclut les métriques utilisateurs, authentification, applications, sécurité, et RGPD. Les graphiques couvrent les 7 derniers jours avec comparaisons période précédente.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>X-Org-Slug</code></td><td>string</td><td>No</td><td>Slug organisation pour filtrer les données par organisation</td></tr><tr><td><code>compare</code></td><td>boolean</td><td>No</td><td>Inclure comparaison avec période précédente</td></tr><tr><td><code>period</code></td><td>string</td><td>No</td><td>Période d'analyse (par défaut: 7d)</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total_users": {
+          "type": "integer"
+        },
+        "active_users": {
+          "type": "integer"
+        },
+        "total_organizations": {
+          "type": "integer"
+        },
+        "total_applications": {
+          "type": "integer"
+        },
+        "active_sessions": {
+          "type": "integer"
+        },
+        "pending_deletions": {
+          "type": "integer"
+        }
+      }
+    },
+    "trends": {
+      "type": "object",
+      "properties": {
+        "user_growth": {
+          "type": "number"
+        },
+        "login_success_rate": {
+          "type": "number"
+        },
+        "application_usage": {
+          "type": "number"
+        },
+        "security_incidents": {
+          "type": "number"
+        }
+      }
+    },
+    "organization_context": {
+      "type": "object",
+      "properties": {
+        "current_org": {
+          "type": "object",
+          "nullable": true
+        },
+        "user_role": {
+          "type": "string"
+        },
+        "accessible_orgs": {
+          "type": "integer"
+        },
+        "org_specific_stats": {
+          "type": "object"
+        }
+      }
+    },
+    "quick_actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "priority": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "charts": {
+      "type": "object",
+      "properties": {
+        "daily_logins": {
+          "type": "array"
+        },
+        "user_registrations": {
+          "type": "array"
+        },
+        "security_events": {
+          "type": "array"
+        }
+      }
+    }
+  }
+}</code></pre></div></div></div></div></div></div><div class='api-category'><h2 id='applications'>Applications</h2><div class='api-endpoint'><h3 id='endpoint-api-auth-applications'>/api/auth/applications/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Lister les applications</h4></div><p class='method-description'>Retourne la liste paginée de toutes les applications enregistrées.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>is_active</code></td><td>boolean</td><td>No</td><td>Filtrer par statut actif</td></tr><tr><td><code>ordering</code></td><td>string</td><td>No</td><td>Tri: name, is_active, created_at, updated_at</td></tr><tr><td><code>page</code></td><td>integer</td><td>No</td><td>Numéro de page</td></tr><tr><td><code>page_size</code></td><td>integer</td><td>No</td><td>Éléments par page (max 100)</td></tr><tr><td><code>search</code></td><td>string</td><td>No</td><td>Recherche dans name et description</td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/PaginatedApplicationList"
+}</code></pre></div></div></div></div><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Créer une application</h4></div><p class='method-description'>Crée une nouvelle application et retourne les credentials. **Attention:** le secret n'est affiché qu'une seule fois à la création. Stockez-le sécuritairement. Les secrets peuvent être régénérés via l'endpoint dédié. L'application est inactive par défaut.</p><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ApplicationCreate"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ApplicationCreate"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ApplicationCreate"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 201 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "client_id": {
+      "type": "string"
+    },
+    "client_secret": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "secret_rotation_warning": {
+      "type": "string",
+      "description": "Avertissement sur la sauvegarde du secret"
+    }
+  }
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-applications-{app_id}'>/api/auth/applications/{app_id}/</h3><div class='method-section method-get'><div class='method-header'><span class='method-badge method-get'>GET</span><h4>Détails d'une application</h4></div><p class='method-description'>Récupère les informations d'une application par son ID. Inclut les statistiques d'utilisation et le statut actif. Le secret n'est jamais affiché pour des raisons de sécurité.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>app_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "access_key": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_used_at": {
+      "type": "string",
+      "format": "date-time",
+      "nullable": true
+    },
+    "usage_stats": {
+      "type": "object",
+      "properties": {
+        "total_requests": {
+          "type": "integer"
+        },
+        "requests_this_month": {
+          "type": "integer"
+        },
+        "last_request": {
+          "type": "string",
+          "format": "date-time",
+          "nullable": true
+        }
+      }
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div><div class='method-section method-put'><div class='method-header'><span class='method-badge method-put'>PUT</span><h4>Modifier une application</h4></div><p class='method-description'>Met à jour les informations d'une application. Le secret ne peut pas être modifié (utilisez l'endpoint de régénération).</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>app_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ApplicationUpdate"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ApplicationUpdate"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/ApplicationUpdate"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "$ref": "#/components/schemas/Application"
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div><div class='method-section method-patch'><div class='method-header'><span class='method-badge method-patch'>PATCH</span><h4>Basculer le statut actif</h4></div><p class='method-description'>Active ou désactive une application. Une application désactivée ne peut plus faire d'appels API. Utile pour la maintenance ou en cas de compromission.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>app_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedToggleApplicationStatus"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedToggleApplicationStatus"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/PatchedToggleApplicationStatus"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "message": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div><div class='method-section method-delete'><div class='method-header'><span class='method-badge method-delete'>DELETE</span><h4>Supprimer une application</h4></div><p class='method-description'>Supprime définitivement une application.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>app_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "additionalProperties": {}
+}</code></pre></div></div></div></div></div><div class='api-endpoint'><h3 id='endpoint-api-auth-applications-{app_id}-regenerate'>/api/auth/applications/{app_id}/regenerate/</h3><div class='method-section method-post'><div class='method-header'><span class='method-badge method-post'>POST</span><h4>Régénérer les credentials</h4></div><p class='method-description'>Régénère l'access_key et l'access_secret d'une application. **Attention:** les anciens credentials seront immédiatement invalidés. Le nouveau secret n'est affiché qu'une seule fois. Action irréversible nécessitant confirmation.</p><div class='parameters-section'><h5>Parameters</h5><table class='parameters-table'><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>app_id</code></td><td>string</td><td>Yes</td><td></td></tr></tbody></table></div><div class='request-body-section'><h5>Request Body</h5><div class='content-type'><h6>Content-Type: application/json</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RegenerateApplicationCredentials"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: application/x-www-form-urlencoded</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RegenerateApplicationCredentials"
+}</code></pre></div></div><div class='content-type'><h6>Content-Type: multipart/form-data</h6><div class='schema-example'><pre><code>{
+  "$ref": "#/components/schemas/RegenerateApplicationCredentials"
+}</code></pre></div></div></div><div class='responses-section'><h5>Responses</h5><div class='response-item'><h6>HTTP 200 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "application": {
+      "type": "object"
+    },
+    "credentials": {
+      "type": "object",
+      "properties": {
+        "access_key": {
+          "type": "string"
+        },
+        "access_secret": {
+          "type": "string"
+        }
+      }
+    },
+    "warning": {
+      "type": "string"
+    },
+    "old_credentials_invalidated": {
+      "type": "boolean"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 400 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div><div class='response-item'><h6>HTTP 404 - </h6><div class='response-schema'><pre><code>{
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    }
+  }
+}</code></pre></div></div></div></div></div></div></div>
+        </div>
+    </main>
+    
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Tenxyte. Enhanced DRF Spectacular Documentation.</p>
+            <div class="footer-links">
+                <a href="https://github.com/tenxyte/tenxyte">GitHub</a>
+                <a href="https://api.tenxyte.com/api/docs/">Swagger UI</a>
+                <a href="https://api.tenxyte.com/api/redoc/">ReDoc</a>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="script.js"></script>
+</body>
+</html>

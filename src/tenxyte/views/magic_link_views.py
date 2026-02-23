@@ -5,7 +5,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer, OpenApiParameter
+from rest_framework import serializers
 from drf_spectacular.types import OpenApiTypes
 
 from ..services.magic_link_service import MagicLinkService
@@ -33,17 +34,12 @@ class MagicLinkRequestView(APIView):
             "Limité à 3 requêtes par heure par email. "
             "Nécessite TENXYTE_MAGIC_LINK_ENABLED = True."
         ),
-        request={
-            'type': 'object',
-            'properties': {
-                'email': {
-                    'type': 'string',
-                    'format': 'email',
-                    'description': 'Adresse email pour recevoir le magic link'
-                }
-            },
-            'required': ['email']
-        },
+        request=inline_serializer(
+            name='MagicLinkRequest',
+            fields={
+                'email': serializers.EmailField(help_text='Adresse email pour recevoir le magic link')
+            }
+        ),
         responses={
             200: {
                 'type': 'object',
@@ -156,13 +152,13 @@ class MagicLinkVerifyView(APIView):
             "Une fois utilisé, le token ne peut plus être utilisé même si non expiré."
         ),
         parameters=[
-            {
-                'name': 'token',
-                'in': 'query',
-                'required': True,
-                'type': 'string',
-                'description': 'Token unique du magic link reçu par email'
-            }
+            OpenApiParameter(
+                name='token',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description='Token unique du magic link reçu par email'
+            )
         ],
         responses={
             200: {

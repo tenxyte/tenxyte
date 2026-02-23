@@ -1,0 +1,75 @@
+{
+  "summary": {
+    "total_issues": 0,
+    "critical_issues": 0,
+    "warnings": 0,
+    "endpoint_coverage": 62.0,
+    "example_coverage": 40.0,
+    "error_coverage": 100.0
+  },
+  "statistics": {
+    "extend_schema_decorators": 92,
+    "openapi_examples": 154,
+    "error_examples": 13,
+    "multi_tenant_documented": 3
+  },
+  "coverage": {
+    "endpoints": [
+      "POST /security_views/",
+      "GET /dashboard_views/",
+      "POST /twofa_views/",
+      "POST /social_auth_views/",
+      "GET /webauthn_views/",
+      "PATCH /application_views/",
+      "PUT /rbac_views/",
+      "POST /magic_link_views/",
+      "POST /password_views/",
+      "POST /webauthn_views/",
+      "GET /twofa_views/",
+      "POST /otp_views/",
+      "POST /auth_views/",
+      "PATCH /user_views/",
+      "DELETE /webauthn_views/",
+      "GET /magic_link_views/",
+      "GET /password_views/",
+      "GET /social_auth_views/",
+      "GET /user_views/",
+      "GET /gdpr_admin_views/",
+      "POST /application_views/",
+      "GET /security_views/",
+      "POST /user_views/",
+      "POST /rbac_views/",
+      "GET /application_views/",
+      "GET /rbac_views/",
+      "DELETE /application_views/",
+      "PUT /application_views/",
+      "DELETE /rbac_views/",
+      "POST /gdpr_admin_views/",
+      "DELETE /user_views/"
+    ],
+    "examples": [
+      "success_login_success",
+      "success_file_upload_success",
+      "auth_validation_error",
+      "error_permission_denied",
+      "success_multi_tenant_success",
+      "auth_login_success",
+      "error_validation_error",
+      "error_not_found"
+    ],
+    "error_codes": [
+      "423",
+      "403",
+      "500",
+      "400",
+      "409",
+      "401",
+      "404",
+      "429"
+    ]
+  },
+  "issues": [],
+  "recommendations": [
+    "Documentation looks good! Consider adding more edge case examples."
+  ]
+}

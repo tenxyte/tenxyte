@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Examples - Tenxyte API</title>
+    <meta name="description" content="Practical code examples for integrating with the Tenxyte API">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <h1>Tenxyte API</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="api-reference.html">API Reference</a></li>
+                    <li><a href="examples.html">Examples</a></li>
+                    <li><a href="authentication.html">Authentication</a></li>
+                    <li><a href="migration.html">Migration</a></li>
+                </ul>
+                <div class="search-box">
+                    <input type="text" placeholder="Search documentation..." id="searchInput">
+                    <button onclick="performSearch()">🔍</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+    
+    <main class="main">
+        <div class="container">
+            
+        <div class="examples-page">
+            <h1>Code Examples</h1>
+            <p>Practical examples for integrating with the Tenxyte API in various programming languages.</p>
+            
+            <div class="example-sections">
+                <div class="example-section">
+                    <h2>Authentication</h2>
+                    <div class="example-tabs">
+                        <div class="tab-buttons">
+                            <button class="tab-btn active" onclick="switchTab(this, 'auth-python')">Python</button>
+                            <button class="tab-btn" onclick="switchTab(this, 'auth-javascript')">JavaScript</button>
+                            <button class="tab-btn" onclick="switchTab(this, 'auth-curl')">cURL</button>
+                        </div>
+                        
+                        <div class="tab-content active" id="auth-python">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span>Python (requests)</span>
+                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                                </div>
+                                <pre><code>import requests
+
+# Login
+response = requests.post('https://api.tenxyte.com/api/auth/login/email/', json={
+    'email': 'user@example.com',
+    'password': 'your-password'
+})
+
+if response.ok:
+    data = response.json()
+    access_token = data['access']
+    
+    # Use token for authenticated requests
+    headers = {'Authorization': f'Bearer {access_token}'}
+    profile = requests.get('https://api.tenxyte.com/api/auth/me/', headers=headers)
+    print(profile.json())</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="auth-javascript">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span>JavaScript (fetch)</span>
+                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                                </div>
+                                <pre><code>// Login
+const response = await fetch('https://api.tenxyte.com/api/auth/login/email/', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        email: 'user@example.com',
+        password: 'your-password'
+    })
+});
+
+const data = await response.json();
+const accessToken = data.access;
+
+// Use token for authenticated requests
+const profile = await fetch('https://api.tenxyte.com/api/auth/me/', {
+    headers: {
+        'Authorization': `Bearer ${accessToken}`
+    }
+});
+
+console.log(await profile.json());</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="auth-curl">
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span>cURL</span>
+                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                                </div>
+                                <pre><code># Login
+curl -X POST https://api.tenxyte.com/api/auth/login/email/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "your-password"
+  }'
+
+# Use token for authenticated requests
+curl -X GET https://api.tenxyte.com/api/auth/me/ \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="example-section">
+                    <h2>Multi-tenant Requests</h2>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Python - Organization Context</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code>import requests
+
+# Headers with organization context
+headers = {
+    'Authorization': 'Bearer YOUR_ACCESS_TOKEN',
+    'X-Org-Slug': 'acme-corp'
+}
+
+# List organization members
+response = requests.get(
+    'https://api.tenxyte.com/api/auth/organizations/acme-corp/members/',
+    headers=headers
+)
+
+members = response.json()
+print(f"Found {len(members)} members")</code></pre>
+                    </div>
+                </div>
+                
+                <div class="example-section">
+                    <h2>Error Handling</h2>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Python - Error Handling</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code>import requests
+from requests.exceptions import HTTPError
+
+def make_api_request(url, headers=None, json_data=None):
+    try:
+        response = requests.post(url, headers=headers, json=json_data)
+        response.raise_for_status()
+        return response.json()
+    
+    except HTTPError as e:
+        error_data = e.response.json()
+        error_code = error_data.get('code')
+        error_message = error_data.get('error')
+        
+        if error_code == 'RATE_LIMITED':
+            retry_after = e.response.headers.get('Retry-After', 60)
+            print(f"Rate limited. Retry after {retry_after} seconds")
+        elif error_code == 'INVALID_CREDENTIALS':
+            print("Invalid email or password")
+        elif error_code == 'ACCOUNT_LOCKED':
+            print("Account is temporarily locked")
+        else:
+            print(f"Error: {error_message}")
+        
+        return None
+
+# Usage
+login_data = {
+    'email': 'user@example.com',
+    'password': 'your-password'
+}
+
+result = make_api_request(
+    'https://api.tenxyte.com/api/auth/login/email/',
+    json_data=login_data
+)</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        </div>
+    </main>
+    
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Tenxyte. Enhanced DRF Spectacular Documentation.</p>
+            <div class="footer-links">
+                <a href="https://github.com/tenxyte/tenxyte">GitHub</a>
+                <a href="https://api.tenxyte.com/api/docs/">Swagger UI</a>
+                <a href="https://api.tenxyte.com/api/redoc/">ReDoc</a>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="script.js"></script>
+</body>
+</html>

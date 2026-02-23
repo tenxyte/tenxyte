@@ -10,8 +10,9 @@ Endpoints:
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
 from drf_spectacular.types import OpenApiTypes
+from rest_framework import serializers
 
 from ..serializers.gdpr_admin_serializers import (
     DeletionRequestSerializer, ProcessDeletionSerializer,
@@ -30,6 +31,7 @@ class DeletionRequestListView(APIView):
 
     @extend_schema(
         tags=['Admin - GDPR'],
+        operation_id='admin_deletion_requests_list',
         summary="Lister les demandes de suppression",
         description="Retourne les demandes de suppression de compte paginées et filtrées. "
                     "Interface admin pour la gestion RGPD. Inclut les détails utilisateur, "
@@ -224,20 +226,13 @@ class ProcessDeletionView(APIView):
                 description='ID de la demande de suppression'
             )
         ],
-        request={
-            'type': 'object',
-            'properties': {
-                'confirmation': {
-                    'type': 'string',
-                    'description': 'Texte de confirmation "PERMANENTLY DELETE"'
-                },
-                'admin_notes': {
-                    'type': 'string',
-                    'description': 'Notes administratives optionnelles'
-                }
-            },
-            'required': ['confirmation']
-        },
+        request=inline_serializer(
+            name='ProcessDeletionRequest',
+            fields={
+                'confirmation': serializers.CharField(help_text='Texte de confirmation "PERMANENTLY DELETE"'),
+                'admin_notes': serializers.CharField(required=False, allow_blank=True, help_text='Notes administratives optionnelles')
+            }
+        ),
         responses={
             200: {
                 'type': 'object',
@@ -390,7 +385,8 @@ class ProcessExpiredDeletionsView(APIView):
                 summary='Traitement batch réussi',
                 value=None
             )
-        ]
+        ],
+        request=None
     )
     @require_permission('gdpr.process')
     def post(self, request):

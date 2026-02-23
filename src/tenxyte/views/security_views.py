@@ -8,7 +8,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
+from rest_framework import serializers
 from drf_spectacular.types import OpenApiTypes
 
 from ..serializers.security_serializers import (
@@ -203,6 +204,7 @@ class BlacklistedTokenCleanupView(APIView):
         tags=['Admin - Security'],
         summary="Nettoyer les tokens expirés",
         description="Supprime les tokens blacklistés qui ont déjà expiré naturellement.",
+        request=None,
         responses={200: OpenApiTypes.OBJECT}
     )
     @require_permission('security.view')
@@ -295,6 +297,7 @@ class RefreshTokenRevokeView(APIView):
         tags=['Admin - Security'],
         summary="Révoquer un refresh token",
         description="Révoque un refresh token spécifique.",
+        request=None,
         responses={200: RefreshTokenAdminSerializer, 404: OpenApiTypes.OBJECT}
     )
     @require_permission('security.view')
@@ -471,16 +474,12 @@ def revoke_session(request, session_id):
                 "Utile en cas de compromission de compte. "
                 "Tous les autres appareils seront déconnectés. "
                 "Action irréversible nécessitant confirmation.",
-    request={
-        'type': 'object',
-        'properties': {
-            'confirmation': {
-                'type': 'string',
-                'description': 'Texte de confirmation "REVOKE ALL"'
-            }
-        },
-        'required': ['confirmation']
-    },
+    request=inline_serializer(
+        name='RevokeAllSessionsRequest',
+        fields={
+            'confirmation': serializers.CharField(help_text='Texte de confirmation "REVOKE ALL"')
+        }
+    ),
     responses={
         200: {
             'type': 'object',

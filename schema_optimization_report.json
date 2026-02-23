@@ -1,0 +1,22 @@
+{
+  "summary": {
+    "original_size_bytes": 183455,
+    "optimized_size_bytes": 177398,
+    "size_reduction_bytes": 6057,
+    "reduction_percentage": 3.3,
+    "schemas_removed": 0,
+    "references_added": 0,
+    "duplicates_found": 0,
+    "optimizations_count": 5
+  },
+  "optimizations": [
+    "Added StandardErrorResponse schema",
+    "Added PaginatedResponse schema",
+    "Added SuccessResponse schema",
+    "Added caching hints for better performance",
+    "Compressed 1 large descriptions"
+  ],
+  "recommendations": [
+    "Consider using the optimized schema for production"
+  ]
+}

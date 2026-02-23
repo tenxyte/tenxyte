@@ -3,8 +3,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
 from drf_spectacular.types import OpenApiTypes
+from rest_framework import serializers
 
 from ..serializers import UserSerializer
 from ..serializers.user_admin_serializers import (
@@ -33,6 +34,15 @@ class MeView(APIView):
                     "Inclut les champs personnalisés, préférences, et métadonnées. "
                     "Les champs sensibles (mot de passe, tokens) ne sont jamais inclus. "
                     "Le profil peut varier selon les permissions et le contexte organisationnel.",
+        parameters=[
+            OpenApiParameter(
+                name='X-Org-Slug',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.HEADER,
+                required=False,
+                description='Slug de l\'organisation (optionnel)'
+            )
+        ],
         responses={
             200: {
                 'type': 'object',
@@ -120,54 +130,28 @@ class MeView(APIView):
                     "avoir des restrictions de validation (format email, téléphone international). "
                     "La modification de l'email nécessite une nouvelle vérification. "
                     "Les champs personnalisés suivent les règles définies par l'organisation.",
-        request={
-            'type': 'object',
-            'properties': {
-                'first_name': {
-                    'type': 'string',
-                    'description': 'Prénom (max 30 caractères)',
-                    'minLength': 1,
-                    'maxLength': 30
-                },
-                'last_name': {
-                    'type': 'string',
-                    'description': 'Nom (max 30 caractères)',
-                    'minLength': 1,
-                    'maxLength': 30
-                },
-                'username': {
-                    'type': 'string',
-                    'description': 'Nom d\'utilisateur unique (alphanumérique + underscores)',
-                    'pattern': '^[a-zA-Z0-9_]+$',
-                    'minLength': 3,
-                    'maxLength': 20
-                },
-                'phone': {
-                    'type': 'string',
-                    'description': 'Numéro de téléphone au format international (+33612345678)',
-                    'pattern': '^\\+[1-9]\\d{1,14}$'
-                },
-                'bio': {
-                    'type': 'string',
-                    'description': 'Biographie (max 500 caractères)',
-                    'maxLength': 500
-                },
-                'timezone': {
-                    'type': 'string',
-                    'description': 'Fuseau horaire (ex: Europe/Paris, America/New_York)',
-                    'enum': ['Europe/Paris', 'America/New_York', 'Asia/Tokyo', 'UTC']
-                },
-                'language': {
-                    'type': 'string',
-                    'description': 'Langue préférée',
-                    'enum': ['fr', 'en', 'es', 'de']
-                },
-                'custom_fields': {
-                    'type': 'object',
-                    'description': 'Champs personnalisés (selon configuration organisation)'
-                }
+        parameters=[
+            OpenApiParameter(
+                name='X-Org-Slug',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.HEADER,
+                required=False,
+                description='Slug de l\'organisation (optionnel)'
+            )
+        ],
+        request=inline_serializer(
+            name='UpdateProfileRequest',
+            fields={
+                'first_name': serializers.CharField(required=False, max_length=30, help_text='Prénom (max 30 caractères)'),
+                'last_name': serializers.CharField(required=False, max_length=30, help_text='Nom (max 30 caractères)'),
+                'username': serializers.CharField(required=False, max_length=20, help_text='Nom d\'utilisateur unique (alphanumérique + underscores)'),
+                'phone': serializers.CharField(required=False, help_text='Numéro de téléphone au format international (+33612345678)'),
+                'bio': serializers.CharField(required=False, max_length=500, allow_blank=True, help_text='Biographie (max 500 caractères)'),
+                'timezone': serializers.CharField(required=False, help_text='Fuseau horaire (ex: Europe/Paris, America/New_York)'),
+                'language': serializers.CharField(required=False, help_text='Langue préférée'),
+                'custom_fields': serializers.DictField(required=False, help_text='Champs personnalisés (selon configuration organisation)')
             }
-        },
+        ),
         responses={
             200: {
                 'type': 'object',
@@ -365,6 +349,15 @@ class MyRolesView(APIView):
         tags=['User'],
         summary="Récupérer mes rôles et permissions",
         description="Retourne la liste des rôles et permissions de l'utilisateur connecté.",
+        parameters=[
+            OpenApiParameter(
+                name='X-Org-Slug',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.HEADER,
+                required=False,
+                description='Slug de l\'organisation (optionnel)'
+            )
+        ],
         responses={200: OpenApiTypes.OBJECT}
     )
     @require_jwt
@@ -549,6 +542,7 @@ class UserUnbanView(APIView):
         tags=['Admin - Users'],
         summary="Débannir un utilisateur",
         description="Lève le bannissement d'un utilisateur.",
+        request=None,
         responses={200: AdminUserDetailSerializer, 404: OpenApiTypes.OBJECT}
     )
     @require_permission('users.ban')
@@ -622,6 +616,7 @@ class UserUnlockView(APIView):
         tags=['Admin - Users'],
         summary="Déverrouiller un compte",
         description="Déverrouille un compte utilisateur.",
+        request=None,
         responses={200: AdminUserDetailSerializer, 404: OpenApiTypes.OBJECT}
     )
     @require_permission('users.lock')
@@ -662,24 +657,14 @@ class DeleteAccountView(APIView):
                     "Nécessite confirmation explicite. Les organisations dont l'utilisateur "
                     "est le seul propriétaire seront également supprimées. "
                     "Un email de confirmation final sera envoyé.",
-        request={
-            'type': 'object',
-            'properties': {
-                'confirmation': {
-                    'type': 'string',
-                    'description': 'Texte de confirmation "DELETE MY ACCOUNT"'
-                },
-                'password': {
-                    'type': 'string',
-                    'description': 'Mot de passe actuel requis pour confirmation'
-                },
-                'reason': {
-                    'type': 'string',
-                    'description': 'Raison optionnelle de la suppression'
-                }
-            },
-            'required': ['confirmation', 'password']
-        },
+        request=inline_serializer(
+            name='DeleteAccountRequest',
+            fields={
+                'confirmation': serializers.CharField(help_text='Texte de confirmation "DELETE MY ACCOUNT"'),
+                'password': serializers.CharField(help_text='Mot de passe actuel requis pour confirmation'),
+                'reason': serializers.CharField(required=False, allow_blank=True, help_text='Raison optionnelle de la suppression')
+            }
+        ),
         responses={
             200: {
                 'type': 'object',

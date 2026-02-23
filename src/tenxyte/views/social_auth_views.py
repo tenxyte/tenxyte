@@ -8,8 +8,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from rest_framework import serializers
 
 from ..services.social_auth_service import SocialAuthService, get_provider
 from ..decorators import get_client_ip
@@ -43,25 +44,25 @@ class SocialAuthView(APIView):
             "Rate limiting appliqué par provider (10 requêtes/heure)."
         ),
         parameters=[
-            {
-                'name': 'provider',
-                'in': 'path',
-                'required': True,
-                'type': 'string',
-                'enum': ['google', 'github', 'microsoft', 'facebook'],
-                'description': 'Provider OAuth2 à utiliser'
-            }
+            OpenApiParameter(
+                name='provider',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                required=True,
+                enum=['google', 'github', 'microsoft', 'facebook'],
+                description='Provider OAuth2 à utiliser'
+            )
         ],
-        request={
-            'type': 'object',
-            'properties': {
-                'access_token': {'type': 'string', 'description': 'OAuth2 access token du provider'},
-                'code': {'type': 'string', 'description': 'Authorization code flow'},
-                'redirect_uri': {'type': 'string', 'description': 'URI de redirection (requis avec code)'},
-                'id_token': {'type': 'string', 'description': 'Google ID token uniquement'},
-                'device_info': {'type': 'string', 'description': 'Informations device (optionnel)'}
+        request=inline_serializer(
+            name='SocialAuthRequest',
+            fields={
+                'access_token': serializers.CharField(required=False, help_text='OAuth2 access token du provider'),
+                'code': serializers.CharField(required=False, help_text='Authorization code flow'),
+                'redirect_uri': serializers.CharField(required=False, allow_blank=True, help_text='URI de redirection (requis avec code)'),
+                'id_token': serializers.CharField(required=False, allow_blank=True, help_text='Google ID token uniquement'),
+                'device_info': serializers.CharField(required=False, allow_blank=True, help_text='Informations device (optionnel)')
             }
-        },
+        ),
         responses={
             200: {
                 'type': 'object',

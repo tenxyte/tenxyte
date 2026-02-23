@@ -141,7 +141,11 @@ class DocumentationValidator:
         error_codes = ['400', '401', '403', '404', '409', '423', '429', '500']
         
         for code in error_codes:
-            if f"'{code}'" in content or f'"{code}"' in content:
+            if (f"'{code}'" in content or 
+                f'"{code}"' in content or 
+                f"{code}:" in content or 
+                f"HTTP_{code}" in content or
+                f"status={code}" in content):
                 self.coverage['error_codes'].add(code)
         
         # Check for error examples

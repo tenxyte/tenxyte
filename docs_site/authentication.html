@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Guide - Tenxyte API</title>
+    <meta name="description" content="Complete guide to authentication methods and security features">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <h1>Tenxyte API</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="api-reference.html">API Reference</a></li>
+                    <li><a href="examples.html">Examples</a></li>
+                    <li><a href="authentication.html">Authentication</a></li>
+                    <li><a href="migration.html">Migration</a></li>
+                </ul>
+                <div class="search-box">
+                    <input type="text" placeholder="Search documentation..." id="searchInput">
+                    <button onclick="performSearch()">🔍</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+    
+    <main class="main">
+        <div class="container">
+            
+        <div class="auth-guide">
+            <h1>Authentication Guide</h1>
+            <p>Complete guide to authentication methods and security features in the Tenxyte API.</p>
+            
+            <div class="guide-sections">
+                <div class="guide-section">
+                    <h2>JWT Token Authentication</h2>
+                    <p>The Tenxyte API uses JWT (JSON Web Tokens) for authentication. Here's how it works:</p>
+                    
+                    <ol class="guide-steps">
+                        <li>Send your credentials to the login endpoint</li>
+                        <li>Receive access and refresh tokens</li>
+                        <li>Include the access token in the Authorization header</li>
+                        <li>Refresh the token when it expires</li>
+                    </ol>
+                    
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Token Usage</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code># Include token in requests
+curl -X GET https://api.tenxyte.com/api/auth/me/ \
+  -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."</code></pre>
+                    </div>
+                </div>
+                
+                <div class="guide-section">
+                    <h2>Two-Factor Authentication (2FA)</h2>
+                    <p>Enable 2FA for enhanced security:</p>
+                    
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Setup 2FA</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code># 1. Setup 2FA
+curl -X POST https://api.tenxyte.com/api/auth/2fa/setup/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"password": "your-password"}'
+
+# 2. Verify with TOTP app
+curl -X POST https://api.tenxyte.com/api/auth/2fa/confirm/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"code": "123456"}'</code></pre>
+                    </div>
+                </div>
+                
+                <div class="guide-section">
+                    <h2>Multi-tenant Authentication</h2>
+                    <p>For organization-specific requests, include the X-Org-Slug header:</p>
+                    
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Multi-tenant Request</span>
+                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                        </div>
+                        <pre><code>curl -X GET https://api.tenxyte.com/api/auth/organizations/members/ \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "X-Org-Slug: acme-corp"</code></pre>
+                    </div>
+                </div>
+                
+                <div class="guide-section">
+                    <h2>Security Best Practices</h2>
+                    <ul class="best-practices">
+                        <li>Always use HTTPS for API requests</li>
+                        <li>Store tokens securely (never in localStorage)</li>
+                        <li>Implement token refresh before expiry</li>
+                        <li>Use 2FA for sensitive operations</li>
+                        <li>Validate organization context in multi-tenant apps</li>
+                        <li>Handle rate limiting gracefully</li>
+                        <li>Log out properly to invalidate tokens</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        </div>
+    </main>
+    
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Tenxyte. Enhanced DRF Spectacular Documentation.</p>
+            <div class="footer-links">
+                <a href="https://github.com/tenxyte/tenxyte">GitHub</a>
+                <a href="https://api.tenxyte.com/api/docs/">Swagger UI</a>
+                <a href="https://api.tenxyte.com/api/redoc/">ReDoc</a>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="script.js"></script>
+</body>
+</html>

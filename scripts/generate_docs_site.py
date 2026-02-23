@@ -187,7 +187,7 @@ curl -X GET https://api.tenxyte.com/api/auth/me/ \\
                 content += f"<div class='api-endpoint'>"
                 content += f"<h3 id='endpoint-{path.replace('/', '-').strip('-')}'>{path}</h3>"
                 
-                for method, operation in methods.items():
+                for method, operation in methods:
                     if method.upper() in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']:
                         content += self.generate_method_section(method.upper(), operation, path)
                 

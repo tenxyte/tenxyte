@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tenxyte API Documentation</title>
+    <meta name="description" content="Comprehensive API documentation for the Tenxyte authentication and authorization system">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <h1>Tenxyte API</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="api-reference.html">API Reference</a></li>
+                    <li><a href="examples.html">Examples</a></li>
+                    <li><a href="authentication.html">Authentication</a></li>
+                    <li><a href="migration.html">Migration</a></li>
+                </ul>
+                <div class="search-box">
+                    <input type="text" placeholder="Search documentation..." id="searchInput">
+                    <button onclick="performSearch()">🔍</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+    
+    <main class="main">
+        <div class="container">
+            
+        <div class="hero-section">
+            <h1 class="hero-title">Tenxyte API Documentation</h1>
+            <p class="hero-subtitle">
+                Enhanced DRF Spectacular Documentation for Authentication, Authorization, and Multi-tenant Management
+            </p>
+            <div class="hero-actions">
+                <a href="api-reference.html" class="btn btn-primary">API Reference</a>
+                <a href="examples.html" class="btn btn-secondary">Code Examples</a>
+                <a href="authentication.html" class="btn btn-outline">Authentication Guide</a>
+            </div>
+        </div>
+        
+        <div class="features-section">
+            <h2>Key Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔐</div>
+                    <h3>Advanced Authentication</h3>
+                    <p>JWT tokens, 2FA, magic links, WebAuthn, and social authentication</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏢</div>
+                    <h3>Multi-tenant Support</h3>
+                    <p>Organization management, role-based access control, and hierarchical permissions</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Security & Privacy</h3>
+                    <p>GDPR compliance, device management, audit logging, and account deletion flows</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Admin Dashboard</h3>
+                    <p>Comprehensive admin tools, analytics, and organization management</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="quick-start-section">
+            <h2>Quick Start</h2>
+            <div class="code-block">
+                <div class="code-header">
+                    <span>bash</span>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre><code># Login to get access token
+curl -X POST https://api.tenxyte.com/api/auth/login/email/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "your-password"
+  }'
+
+# Use token for authenticated requests
+curl -X GET https://api.tenxyte.com/api/auth/me/ \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"</code></pre>
+            </div>
+        </div>
+        
+        <div class="stats-section">
+            <h2>API Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">80</div>
+                    <div class="stat-label">Endpoints</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">64</div>
+                    <div class="stat-label">Schemas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">8</div>
+                    <div class="stat-label">Authentication Methods</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Documentation Coverage</div>
+                </div>
+            </div>
+        </div>
+        
+        </div>
+    </main>
+    
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Tenxyte. Enhanced DRF Spectacular Documentation.</p>
+            <div class="footer-links">
+                <a href="https://github.com/tenxyte/tenxyte">GitHub</a>
+                <a href="https://api.tenxyte.com/api/docs/">Swagger UI</a>
+                <a href="https://api.tenxyte.com/api/redoc/">ReDoc</a>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="script.js"></script>
+</body>
+</html>
