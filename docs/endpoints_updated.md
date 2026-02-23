@@ -13,7 +13,10 @@ Authenticated endpoints additionally require:
 Authorization: Bearer <access_token>
 ```
 
+
 ---
+
+
 
 ## Authentication
 
@@ -41,6 +44,8 @@ Register a new user.
 ```
 
 ---
+
+
 
 ### `POST /login/email/`
 Login with email + password.
@@ -76,6 +81,8 @@ Login with email + password.
 
 ---
 
+
+
 ### `POST /login/phone/`
 Login with phone number + password.
 
@@ -92,14 +99,15 @@ Login with phone number + password.
 **Response `200`:**
 ```json
 {
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ...",
-  "token_type": "Bearer",
-  "expires_in": 3600
+  "phone_country_code": "+33",
+  "phone_number": "612345678",
+  "password": "SecureP@ss123!"
 }
 ```
 
 ---
+
+
 
 ### `POST /google/`
 Authenticate via Google OAuth.
@@ -117,20 +125,9 @@ Authenticate via Google OAuth.
 }
 ```
 
-**Response `200`:**
-```json
-{
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ...",
-  "token_type": "Bearer",
-  "user": {
-    "id": 1,
-    "email": "user@example.com"
-  }
-}
-```
-
 ---
+
+
 
 ## Magic Link (Passwordless)
 
@@ -151,6 +148,7 @@ Request a magic link sent by email.
 
 ---
 
+
 ### `POST /magic-link/verify/`
 Verify a magic link token and receive JWT tokens.
 
@@ -169,7 +167,10 @@ Verify a magic link token and receive JWT tokens.
 }
 ```
 
+
 ---
+
+
 
 ### `POST /refresh/`
 Refresh the access token.
@@ -189,6 +190,8 @@ Refresh the access token.
 
 ---
 
+
+
 ### `POST /logout/`
 Logout (revokes refresh token + blacklists access token).
 
@@ -197,7 +200,16 @@ Logout (revokes refresh token + blacklists access token).
 { "refresh_token": "eyJ..." }
 ```
 
+**Response `200`:**
+```json
+{
+  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+}
+```
+
 ---
+
+
 
 ### `POST /logout/all/` 🔒
 Logout from all devices.
@@ -208,6 +220,8 @@ Logout from all devices.
 ```
 
 ---
+
+
 
 ## OTP Verification
 
@@ -223,11 +237,13 @@ Request an OTP code (email or phone verification).
 **Response `200`:**
 ```json
 {
-  "message": "OTP verification code sent"
+  "otp_type": "email_verification"
 }
 ```
 
 ---
+
+
 
 ### `POST /otp/verify/email/` 🔒
 Verify email with OTP code.
@@ -240,11 +256,13 @@ Verify email with OTP code.
 **Response `200`:**
 ```json
 {
-  "message": "Email verified successfully"
+  "code": "123456"
 }
 ```
 
 ---
+
+
 
 ### `POST /otp/verify/phone/` 🔒
 Verify phone with OTP code.
@@ -257,11 +275,13 @@ Verify phone with OTP code.
 **Response `200`:**
 ```json
 {
-  "message": "Phone verified successfully"
+  "code": "123456"
 }
 ```
 
 ---
+
+
 
 ## Password Management
 
@@ -276,11 +296,13 @@ Request a password reset email.
 **Response `200`:**
 ```json
 {
-  "message": "Password reset email sent"
+  "email": "user@example.com"
 }
 ```
 
 ---
+
+
 
 ### `POST /password/reset/confirm/`
 Confirm password reset with OTP code.
@@ -297,11 +319,16 @@ Confirm password reset with OTP code.
 **Response `200`:**
 ```json
 {
-  "message": "Password reset successful"
+  "email": "user@example.com",
+  "otp_code": "123456",
+  "new_password": "NewSecureP@ss123!",
+  "confirm_password": "NewSecureP@ss123!"
 }
 ```
 
 ---
+
+
 
 ### `POST /password/change/` 🔒
 Change password (requires current password).
@@ -317,11 +344,15 @@ Change password (requires current password).
 **Response `200`:**
 ```json
 {
-  "message": "Password changed successfully"
+  "current_password": "OldP@ss123!",
+  "new_password": "NewSecureP@ss456!",
+  "confirm_password": "NewSecureP@ss456!"
 }
 ```
 
 ---
+
+
 
 ### `POST /password/strength/`
 Check password strength without saving.
@@ -342,52 +373,19 @@ Check password strength without saving.
 
 ---
 
+
 ### `GET /password/requirements/`
 Get the current password policy requirements.
 
-**Response `200`:**
-```json
-{
-  "min_length": 8,
-  "require_uppercase": true,
-  "require_lowercase": true,
-  "require_number": true,
-  "require_special": true
-}
-```
 
 ---
+
+
 
 ## User Profile
 
 ### `GET /me/` 🔒
 Get the current user's profile.
-
-**Response `200`:**
-```json
-{
-  "id": 1,
-  "email": "user@example.com",
-  "first_name": "Jane",
-  "last_name": "Doe",
-  "phone_country_code": "+1",
-  "phone_number": "5551234567",
-  "avatar": "https://example.com/avatar.jpg",
-  "last_login": "2023-10-01T12:00:00Z",
-  "date_joined": "2023-01-01T12:00:00Z",
-  "is_active": true,
-  "is_2fa_enabled": true,
-  "roles": ["admin"],
-  "permissions": ["users.view"],
-  "organizations": [
-    {
-      "id": "org_abc123",
-      "name": "Acme Corp",
-      "slug": "acme-corp"
-    }
-  ]
-}
-```
 
 ### `PATCH /me/` 🔒
 Update the current user's profile.
@@ -403,38 +401,43 @@ Update the current user's profile.
 **Response `200`:**
 ```json
 {
-  "id": 1,
-  "email": "user@example.com",
-  "first_name": "Jane",
+  "id": 12345,
+  "email": "john.doe@example.com",
+  "first_name": "John",
   "last_name": "Doe",
-  "is_active": true
+  "username": "johndoe",
+  "phone": "+33612345678",
+  "avatar": "https://cdn.example.com/avatars/john.jpg",
+  "bio": "Software developer passionate about security",
+  "timezone": "Europe/Paris",
+  "language": "fr",
+  "is_active": true,
+  "is_verified": true,
+  "date_joined": "2024-01-15T10:30:00Z",
+  "last_login": "2024-01-20T14:22:00Z",
+  "custom_fields": {
+    "department": "Engineering",
+    "employee_id": "EMP001",
+    "manager": "jane.smith@example.com"
+  },
+  "preferences": {
+    "email_notifications": true,
+    "sms_notifications": false,
+    "marketing_emails": false,
+    "two_factor_enabled": true
+  }
 }
 ```
 
 ---
+
 
 ### `GET /me/roles/` 🔒
 Get the current user's roles and permissions.
 
-**Response `200`:**
-```json
-{
-  "roles": [
-    {
-      "id": "123",
-      "code": "admin",
-      "name": "Administrator"
-    }
-  ],
-  "permissions": [
-    "users.view",
-    "users.manage",
-    "roles.view"
-  ]
-}
-```
 
 ---
+
 
 ## Two-Factor Authentication (2FA)
 
@@ -449,7 +452,9 @@ Get 2FA status for the current user.
 }
 ```
 
+
 ---
+
 
 ### `POST /2fa/setup/` 🔒
 Initiate 2FA setup. Returns QR code and backup codes.
@@ -465,7 +470,10 @@ Initiate 2FA setup. Returns QR code and backup codes.
 }
 ```
 
+
 ---
+
+
 
 ### `POST /2fa/confirm/` 🔒
 Confirm 2FA activation with a TOTP code.
@@ -478,11 +486,13 @@ Confirm 2FA activation with a TOTP code.
 **Response `200`:**
 ```json
 {
-  "message": "2FA authentication successful"
+  "code": "123456"
 }
 ```
 
 ---
+
+
 
 ### `POST /2fa/disable/` 🔒
 Disable 2FA (requires TOTP code or backup code).
@@ -495,11 +505,14 @@ Disable 2FA (requires TOTP code or backup code).
 **Response `200`:**
 ```json
 {
-  "message": "2FA disabled successfully"
+  "code": "123456",
+  "password": "UserP@ss123!"
 }
 ```
 
 ---
+
+
 
 ### `POST /2fa/backup-codes/` 🔒
 Regenerate backup codes (invalidates old ones).
@@ -512,33 +525,18 @@ Regenerate backup codes (invalidates old ones).
 **Response `200`:**
 ```json
 {
-  "backup_codes": ["new123", "new456"]
+  "code": "123456"
 }
 ```
 
 ---
 
+
+
 ## RBAC — Permissions
 
 ### `GET /permissions/` 🔒 `permissions.view`
 List all permissions.
-
-**Response `200`:**
-```json
-{
-  "count": 1,
-  "next": null,
-  "previous": null,
-  "results": [
-    {
-      "id": "1",
-      "code": "users.view",
-      "name": "View users",
-      "description": "Can view user list"
-    }
-  ]
-}
-```
 
 ### `POST /permissions/` 🔒 `permissions.manage`
 Create a permission.
@@ -548,78 +546,49 @@ Create a permission.
 { "code": "posts.publish", "name": "Publish Posts" }
 ```
 
-**Response `201`:**
-```json
-{
-  "id": "2",
-  "code": "posts.publish",
-  "name": "Publish Posts",
-  "description": ""
-}
-```
-
 ### `GET /permissions/<id>/` 🔒 `permissions.view`
 Get a permission.
-
-**Response `200`:**
-```json
-{
-  "id": "1",
-  "code": "users.view",
-  "name": "View users"
-}
-```
 
 ### `PUT /permissions/<id>/` 🔒 `permissions.manage`
 Update a permission.
 
-**Request:**
-```json
-{
-  "code": "users.view",
-  "name": "View all users"
-}
-```
+### `DELETE /permissions/<id>/` 🔒 `permissions.manage`
+Delete a permission.
 
 **Response `200`:**
 ```json
 {
-  "id": "1",
-  "code": "users.view",
-  "name": "View all users"
+  "count": 123,
+  "page": 123,
+  "page_size": 123,
+  "total_pages": 123,
+  "next": "string",
+  "previous": "string",
+  "results": [
+    {
+      "id": "string",
+      "code": "string",
+      "name": "string",
+      "description": "string",
+      "parent": {},
+      "parent_code": "string",
+      "children": [
+        {}
+      ],
+      "created_at": "string"
+    }
+  ]
 }
 ```
 
-### `DELETE /permissions/<id>/` 🔒 `permissions.manage`
-Delete a permission.
-
-**Response `204`:**
-```json
-{}
-```
-
 ---
+
+
 
 ## RBAC — Roles
 
 ### `GET /roles/` 🔒 `roles.view`
 List all roles.
-
-**Response `200`:**
-```json
-{
-  "count": 1,
-  "next": null,
-  "previous": null,
-  "results": [
-    {
-      "id": "1",
-      "name": "Editor",
-      "description": "Can edit content"
-    }
-  ]
-}
-```
 
 ### `POST /roles/` 🔒 `roles.manage`
 Create a role.
@@ -633,268 +602,112 @@ Create a role.
 }
 ```
 
-**Response `201`:**
-```json
-{
-  "id": "1",
-  "name": "Editor",
-  "description": "Can edit content",
-  "parent": null
-}
-```
-
 ### `GET /roles/<id>/` 🔒 `roles.view`
 Get a role.
-
-**Response `200`:**
-```json
-{
-  "id": "1",
-  "name": "Editor",
-  "description": "Can edit content"
-}
-```
 
 ### `PUT /roles/<id>/` 🔒 `roles.manage`
 Update a role.
 
-**Request:**
-```json
-{
-  "name": "Senior Editor",
-  "description": "Can edit and publish"
-}
-```
-
-**Response `200`:**
-```json
-{
-  "id": "1",
-  "name": "Senior Editor",
-  "description": "Can edit and publish"
-}
-```
-
 ### `DELETE /roles/<id>/` 🔒 `roles.manage`
 Delete a role.
-
-**Response `204`:**
-```json
-{}
-```
 
 ### `GET /roles/<id>/permissions/` 🔒 `roles.view`
 List permissions assigned to a role.
 
-**Response `200`:**
-```json
-[
-  {
-    "id": "1",
-    "code": "posts.publish",
-    "name": "Publish Posts"
-  }
-]
-```
-
 ### `POST /roles/<id>/permissions/` 🔒 `roles.manage`
 Assign permissions to a role.
 
-**Request:**
-```json
-{
-  "permission_ids": ["1", "2"]
-}
-```
-
 **Response `200`:**
 ```json
 {
-  "message": "Permissions assigned successfully"
+  "count": 123,
+  "page": 123,
+  "page_size": 123,
+  "total_pages": 123,
+  "next": "string",
+  "previous": "string",
+  "results": [
+    {
+      "id": "string",
+      "code": "string",
+      "name": "string",
+      "is_default": true
+    }
+  ]
 }
 ```
 
 ---
+
 
 ## RBAC — User Roles & Permissions
 
 ### `GET /users/<id>/roles/` 🔒 `users.manage`
 List roles assigned to a user.
 
-**Response `200`:**
-```json
-[
-  {
-    "id": "1",
-    "name": "Editor"
-  }
-]
-```
-
 ### `POST /users/<id>/roles/` 🔒 `users.manage`
 Assign a role to a user.
-
-**Request:**
-```json
-{
-  "role_ids": ["1"]
-}
-```
-
-**Response `200`:**
-```json
-{
-  "message": "Roles assigned successfully"
-}
-```
 
 ### `DELETE /users/<id>/roles/` 🔒 `users.manage`
 Remove a role from a user.
 
-**Request:**
-```json
-{
-  "role_ids": ["1"]
-}
-```
-
-**Response `200`:**
-```json
-{
-  "message": "Roles removed successfully"
-}
-```
-
 ### `GET /users/<id>/permissions/` 🔒 `users.manage`
 List direct permissions for a user.
-
-**Response `200`:**
-```json
-[
-  {
-    "id": "1",
-    "code": "posts.view"
-  }
-]
-```
 
 ### `POST /users/<id>/permissions/` 🔒 `users.manage`
 Assign a direct permission to a user.
 
-**Request:**
-```json
-{
-  "permission_ids": ["1"]
-}
-```
-
-**Response `200`:**
-```json
-{
-  "message": "Permissions assigned successfully"
-}
-```
 
 ---
+
+
 
 ## Applications
 
 ### `GET /applications/` 🔒 `applications.view`
 List all applications.
 
+### `POST /applications/` 🔒 `applications.manage`
+Create an application.
+
+### `GET /applications/<id>/` 🔒 `applications.view`
+Get an application.
+
+### `PUT /applications/<id>/` 🔒 `applications.manage`
+Update an application.
+
+### `DELETE /applications/<id>/` 🔒 `applications.manage`
+Delete an application.
+
+### `POST /applications/<id>/regenerate/` 🔒 `applications.manage`
+Regenerate the application's access secret.
+
 **Response `200`:**
 ```json
 {
-  "count": 1,
-  "next": null,
-  "previous": null,
+  "count": 123,
+  "page": 123,
+  "page_size": 123,
+  "total_pages": 123,
+  "next": "string",
+  "previous": "string",
   "results": [
     {
-      "id": "app_123",
-      "name": "My Client App",
-      "is_active": true
+      "id": "string",
+      "name": "string",
+      "description": "string",
+      "access_key": "string",
+      "is_active": true,
+      "created_at": "string",
+      "updated_at": "string"
     }
   ]
 }
 ```
 
-### `POST /applications/` 🔒 `applications.manage`
-Create an application.
-
-**Request:**
-```json
-{
-  "name": "My Next.js App",
-  "description": "Frontend client"
-}
-```
-
-**Response `201`:**
-```json
-{
-  "id": "app_124",
-  "name": "My Next.js App",
-  "access_key": "ak_abc123",
-  "access_secret": "as_def456"
-}
-```
-
-### `GET /applications/<id>/` 🔒 `applications.view`
-Get an application.
-
-**Response `200`:**
-```json
-{
-  "id": "app_124",
-  "name": "My Next.js App",
-  "access_key": "ak_abc123"
-}
-```
-
-### `PUT /applications/<id>/` 🔒 `applications.manage`
-Update an application.
-
-**Request:**
-```json
-{
-  "name": "Updated App Name"
-}
-```
-
-**Response `200`:**
-```json
-{
-  "id": "app_124",
-  "name": "Updated App Name"
-}
-```
-
-### `DELETE /applications/<id>/` 🔒 `applications.manage`
-Delete an application.
-
-**Response `204`:**
-```json
-{}
-```
-
-### `POST /applications/<id>/regenerate/` 🔒 `applications.manage`
-Regenerate the application's access secret.
-
-**Request:**
-```json
-{}
-```
-
-**Response `200`:**
-```json
-{
-  "id": "app_124",
-  "access_key": "ak_abc123",
-  "access_secret": "as_new789"
-}
-```
-
 ---
+
+
 
 ## Admin — User Management
 
@@ -903,41 +716,8 @@ List all users with filtering and pagination.
 
 Query params: `?search=john&is_active=true&page=1`
 
-**Response `200`:**
-```json
-{
-  "count": 1,
-  "next": null,
-  "previous": null,
-  "results": [
-    {
-      "id": 1,
-      "email": "user@example.com",
-      "first_name": "John",
-      "last_name": "Doe",
-      "is_active": true,
-      "is_banned": false,
-      "roles": ["admin"]
-    }
-  ]
-}
-```
-
 ### `GET /admin/users/<id>/` 🔒 `users.view`
 Get a user's full profile.
-
-**Response `200`:**
-```json
-{
-  "id": 1,
-  "email": "user@example.com",
-  "first_name": "John",
-  "last_name": "Doe",
-  "is_active": true,
-  "is_banned": false,
-  "roles": ["admin"]
-}
-```
 
 ### `POST /admin/users/<id>/ban/` 🔒 `users.ban`
 Ban a user.
@@ -947,22 +727,8 @@ Ban a user.
 { "reason": "Terms of service violation" }
 ```
 
-**Response `200`:**
-```json
-{
-  "message": "User banned successfully"
-}
-```
-
 ### `POST /admin/users/<id>/unban/` 🔒 `users.ban`
 Unban a user.
-
-**Response `200`:**
-```json
-{
-  "message": "User unbanned successfully"
-}
-```
 
 ### `POST /admin/users/<id>/lock/` 🔒 `users.lock`
 Lock a user account.
@@ -972,24 +738,44 @@ Lock a user account.
 { "duration_minutes": 60 }
 ```
 
-**Response `200`:**
-```json
-{
-  "message": "User locked for 60 minutes"
-}
-```
-
 ### `POST /admin/users/<id>/unlock/` 🔒 `users.lock`
 Unlock a user account.
 
 **Response `200`:**
 ```json
 {
-  "message": "User unlocked successfully"
+  "count": 123,
+  "page": 123,
+  "page_size": 123,
+  "total_pages": 123,
+  "next": "string",
+  "previous": "string",
+  "results": [
+    {
+      "id": "string",
+      "email": "string",
+      "first_name": "string",
+      "last_name": "string",
+      "is_active": true,
+      "is_locked": true,
+      "is_banned": true,
+      "is_deleted": true,
+      "is_email_verified": true,
+      "is_phone_verified": true,
+      "is_2fa_enabled": true,
+      "roles": [
+        "string"
+      ],
+      "created_at": "string",
+      "last_login": "string"
+    }
+  ]
 }
 ```
 
 ---
+
+
 
 ## Admin — Security
 
@@ -998,110 +784,20 @@ List audit log entries.
 
 Query params: `?action=login&user_id=1&from=2026-01-01`
 
-**Response `200`:**
-```json
-{
-  "count": 1,
-  "next": null,
-  "previous": null,
-  "results": [
-    {
-      "id": 1,
-      "action": "login",
-      "user_id": 1,
-      "timestamp": "2023-10-01T12:00:00Z",
-      "ip_address": "127.0.0.1",
-      "user_agent": "Mozilla/5.0..."
-    }
-  ]
-}
-```
-
 ### `GET /admin/audit-logs/<id>/` 🔒 `audit.view`
 Get a single audit log entry.
-
-**Response `200`:**
-```json
-{
-  "id": 1,
-  "action": "login",
-  "user_id": 1,
-  "timestamp": "2023-10-01T12:00:00Z"
-}
-```
 
 ### `GET /admin/login-attempts/` 🔒 `audit.view`
 List login attempts.
 
-**Response `200`:**
-```json
-{
-  "count": 1,
-  "next": null,
-  "previous": null,
-  "results": [
-    {
-      "id": 1,
-      "user_id": 1,
-      "email": "user@example.com",
-      "successful": false,
-      "ip_address": "127.0.0.1",
-      "timestamp": "2023-10-01T12:00:00Z"
-    }
-  ]
-}
-```
-
 ### `GET /admin/blacklisted-tokens/` 🔒 `audit.view`
 List active blacklisted tokens.
-
-**Response `200`:**
-```json
-{
-  "count": 1,
-  "next": null,
-  "previous": null,
-  "results": [
-    {
-      "id": 1,
-      "jti": "jti12345",
-      "blacklisted_on": "2023-10-01T12:00:00Z"
-    }
-  ]
-}
-```
 
 ### `POST /admin/blacklisted-tokens/cleanup/` 🔒 `audit.manage`
 Remove expired blacklisted tokens.
 
-**Response `200`:**
-```json
-{
-  "message": "10 expired tokens cleaned up",
-  "deleted_count": 10
-}
-```
-
 ### `GET /admin/refresh-tokens/` 🔒 `audit.view`
 List active refresh tokens.
-
-**Response `200`:**
-```json
-{
-  "count": 1,
-  "next": null,
-  "previous": null,
-  "results": [
-    {
-      "id": 1,
-      "jti": "rt123",
-      "user_id": 1,
-      "expires_at": "2023-11-01T12:00:00Z",
-      "is_revoked": false
-    }
-  ]
-}
-```
 
 ### `POST /admin/refresh-tokens/<id>/revoke/` 🔒 `audit.manage`
 Revoke a specific refresh token.
@@ -1109,63 +805,43 @@ Revoke a specific refresh token.
 **Response `200`:**
 ```json
 {
-  "message": "Token revoked successfully"
+  "count": 123,
+  "page": 123,
+  "page_size": 123,
+  "total_pages": 123,
+  "next": "string",
+  "previous": "string",
+  "results": [
+    {
+      "id": "string",
+      "user": 123,
+      "user_email": "string",
+      "action": "string",
+      "ip_address": "string",
+      "user_agent": "string",
+      "application": 123,
+      "application_name": "string",
+      "details": {},
+      "created_at": "string"
+    }
+  ]
 }
 ```
 
 ---
+
+
 
 ## Admin — GDPR
 
 ### `GET /admin/deletion-requests/` 🔒 `gdpr.view`
 List account deletion requests.
 
-**Response `200`:**
-```json
-{
-  "count": 1,
-  "next": null,
-  "previous": null,
-  "results": [
-    {
-      "id": 1,
-      "user_id": 1,
-      "status": "pending",
-      "requested_at": "2023-10-01T12:00:00Z",
-      "deletion_date": "2023-10-31T12:00:00Z"
-    }
-  ]
-}
-```
-
 ### `GET /admin/deletion-requests/<id>/` 🔒 `gdpr.view`
 Get a deletion request.
 
-**Response `200`:**
-```json
-{
-  "id": 1,
-  "user_id": 1,
-  "status": "pending",
-  "requested_at": "2023-10-01T12:00:00Z",
-  "deletion_date": "2023-10-31T12:00:00Z"
-}
-```
-
 ### `POST /admin/deletion-requests/<id>/process/` 🔒 `gdpr.manage`
 Process (execute) a deletion request.
-
-**Request:**
-```json
-{}
-```
-
-**Response `200`:**
-```json
-{
-  "message": "Account successfully deleted"
-}
-```
 
 ### `POST /admin/deletion-requests/process-expired/` 🔒 `gdpr.manage`
 Process all expired grace period deletions.
@@ -1173,95 +849,53 @@ Process all expired grace period deletions.
 **Response `200`:**
 ```json
 {
-  "message": "Processed 5 expired deletion requests",
-  "processed_count": 5
+  "status": "pending",
+  "grace_period_expiring": true
 }
 ```
 
 ---
+
+
 
 ## User — GDPR
 
 ### `POST /request-account-deletion/` 🔒
 Request account deletion (starts grace period).
 
+### `POST /confirm-account-deletion/` 🔒
+Confirm account deletion request.
+
+### `POST /cancel-account-deletion/` 🔒
+Cancel a pending deletion request.
+
+### `GET /account-deletion-status/` 🔒
+Get the status of the current deletion request.
+
+### `GET /export-user-data/` 🔒
+Export all personal data (GDPR Article 20).
+
 **Request:**
 ```json
 {
-  "reason": "No longer using the service"
+  "password": "CurrentPassword123!",
+  "otp_code": "123456",
+  "reason": "No longer need the account"
 }
 ```
 
 **Response `201`:**
 ```json
 {
-  "message": "Account deletion requested",
-  "deletion_date": "2023-10-31T12:00:00Z"
-}
-```
-
-### `POST /confirm-account-deletion/` 🔒
-Confirm account deletion request.
-
-**Request:**
-```json
-{
-  "confirmation_code": "123456"
-}
-```
-
-**Response `200`:**
-```json
-{
-  "message": "Account deletion confirmed"
-}
-```
-
-### `POST /cancel-account-deletion/` 🔒
-Cancel a pending deletion request.
-
-**Request:**
-```json
-{}
-```
-
-**Response `200`:**
-```json
-{
-  "message": "Account deletion cancelled"
-}
-```
-
-### `GET /account-deletion-status/` 🔒
-Get the status of the current deletion request.
-
-**Response `200`:**
-```json
-{
-  "has_pending_request": true,
-  "status": "pending",
-  "deletion_date": "2023-10-31T12:00:00Z"
-}
-```
-
-### `POST /export-user-data/` 🔒
-Export all personal data (GDPR Article 20).
-
-**Request:**
-```json
-{}
-```
-
-**Response `200`:**
-```json
-{
-  "profile": {},
-  "activity": [],
-  "security": {}
+  "password": "CurrentPassword123!",
+  "otp_code": "123456",
+  "reason": "No longer need the account"
 }
 ```
 
 ---
+
+
 
 ## Dashboard
 
@@ -1270,50 +904,14 @@ All dashboard endpoints require `dashboard.view` permission.
 ### `GET /dashboard/stats/` 🔒 `dashboard.view`
 Global cross-module statistics.
 
-**Response `200`:**
-```json
-{
-  "total_users": 1500,
-  "active_users": 1200,
-  "new_users_today": 15
-}
-```
-
 ### `GET /dashboard/auth/` 🔒 `dashboard.view`
 Detailed authentication statistics (login rates, token stats, charts).
-
-**Response `200`:**
-```json
-{
-  "logins_today": 350,
-  "failed_logins_today": 12,
-  "active_sessions": 240
-}
-```
 
 ### `GET /dashboard/security/` 🔒 `dashboard.view`
 Security statistics (audit summary, blacklisted tokens, suspicious activity).
 
-**Response `200`:**
-```json
-{
-  "total_banned_users": 5,
-  "total_locked_users": 2,
-  "suspicious_activities_7d": 18
-}
-```
-
 ### `GET /dashboard/gdpr/` 🔒 `dashboard.view`
 GDPR compliance statistics.
-
-**Response `200`:**
-```json
-{
-  "pending_deletions": 3,
-  "processed_deletions": 15,
-  "data_exports_30d": 8
-}
-```
 
 ### `GET /dashboard/organizations/` 🔒 `dashboard.view`
 Organization statistics (only if `TENXYTE_ORGANIZATIONS_ENABLED=True`).
@@ -1321,13 +919,14 @@ Organization statistics (only if `TENXYTE_ORGANIZATIONS_ENABLED=True`).
 **Response `200`:**
 ```json
 {
-  "total_organizations": 45,
-  "active_organizations": 40,
-  "average_members_per_org": 8.5
+  "period": "7d",
+  "compare": true
 }
 ```
 
 ---
+
+
 
 ## Organizations (opt-in)
 
@@ -1341,186 +940,61 @@ X-Org-Slug: acme-corp
 ### `POST /organizations/` 🔒
 Create an organization.
 
-**Request:**
-```json
-{
-  "name": "Acme Corp",
-  "slug": "acme-corp"
-}
-```
-
-**Response `201`:**
-```json
-{
-  "id": "1",
-  "name": "Acme Corp",
-  "slug": "acme-corp",
-  "created_at": "2023-10-01T12:00:00Z"
-}
-```
-
 ### `GET /organizations/list/` 🔒
 List organizations the current user belongs to.
-
-**Response `200`:**
-```json
-[
-  {
-    "id": "1",
-    "name": "Acme Corp",
-    "slug": "acme-corp",
-    "role": "owner"
-  }
-]
-```
 
 ### `GET /organizations/detail/` 🔒
 Get organization details.
 
-**Response `200`:**
-```json
-{
-  "id": "1",
-  "name": "Acme Corp",
-  "slug": "acme-corp",
-  "created_at": "2023-10-01T12:00:00Z"
-}
-```
-
 ### `PATCH /organizations/update/` 🔒
 Update an organization.
-
-**Request:**
-```json
-{
-  "name": "Acme Corporation"
-}
-```
-
-**Response `200`:**
-```json
-{
-  "id": "1",
-  "name": "Acme Corporation",
-  "slug": "acme-corp"
-}
-```
 
 ### `DELETE /organizations/delete/` 🔒
 Delete an organization.
 
-**Response `200`:**
-```json
-{
-  "message": "Organization deleted successfully"
-}
-```
-
 ### `GET /organizations/tree/` 🔒
 Get the full organization hierarchy tree.
-
-**Response `200`:**
-```json
-{
-  "id": "1",
-  "name": "Acme Corp",
-  "children": []
-}
-```
 
 ### `GET /organizations/members/` 🔒
 List organization members.
 
-**Response `200`:**
-```json
-[
-  {
-    "user_id": 1,
-    "email": "user@example.com",
-    "role": "member",
-    "joined_at": "2023-10-01T12:00:00Z"
-  }
-]
-```
-
 ### `POST /organizations/members/add/` 🔒
 Add a member to an organization.
-
-**Request:**
-```json
-{
-  "user_id": 2,
-  "role": "member"
-}
-```
-
-**Response `201`:**
-```json
-{
-  "message": "Member added successfully"
-}
-```
 
 ### `PATCH /organizations/members/<user_id>/` 🔒
 Update a member's role.
 
-**Request:**
-```json
-{
-  "role": "admin"
-}
-```
-
-**Response `200`:**
-```json
-{
-  "message": "Member role updated"
-}
-```
-
 ### `DELETE /organizations/members/<user_id>/remove/` 🔒
 Remove a member from an organization.
-
-**Response `200`:**
-```json
-{
-  "message": "Member removed successfully"
-}
-```
 
 ### `POST /organizations/invitations/` 🔒
 Invite a user to an organization by email.
 
+### `GET /org-roles/` 🔒
+List organization-scoped roles.
+
 **Request:**
 ```json
 {
-  "email": "newuser@example.com",
-  "role": "member"
+  "name": "Acme Corp",
+  "slug": "acme-corp",
+  "description": "Technologie et innovation",
+  "max_members": 100
 }
 ```
 
 **Response `201`:**
 ```json
 {
-  "message": "Invitation sent"
+  "name": "Acme Corp",
+  "slug": "acme-corp",
+  "description": "Technologie et innovation",
+  "max_members": 100
 }
 ```
 
-### `GET /org-roles/` 🔒
-List organization-scoped roles.
-
-**Response `200`:**
-```json
-[
-  {
-    "id": "1",
-    "name": "Admin",
-    "permissions": ["org.manage", "org.invite"]
-  }
-]
-```
-
 ---
+
 
 ## WebAuthn / Passkeys (FIDO2)
 
@@ -1531,23 +1005,37 @@ Begin passkey registration. Returns a challenge.
 
 **Response `200`:**
 ```json
-{ "challenge": "...", "rp": { "id": "yourapp.com", "name": "Your App" }, "user": { "id": "...", "name": "user@example.com", "displayName": "user@example.com" } }
+{ "challenge": "...", "rp": { "id": "yourapp.com", "name": "Your App" }, ... }
 ```
+
+
+---
+
+
 
 ### `POST /webauthn/register/complete/` 🔒
 Complete passkey registration with the authenticator response.
 
 **Request:**
 ```json
-{ "id": "...", "rawId": "...", "response": { "clientDataJSON": "...", "attestationObject": "..." }, "type": "public-key" }
+{ "id": "...", "rawId": "...", "response": { ... }, "type": "public-key" }
 ```
 
 **Response `201`:**
 ```json
 {
-  "message": "Passkey registered successfully"
+  "challenge_id": 123,
+  "credential": {
+    "id": "credentialId",
+    "rawId": "rawId",
+    "response": {}
+  },
+  "device_name": "iPhone 14"
 }
 ```
+
+---
+
 
 ### `POST /webauthn/authenticate/begin/`
 Begin passkey authentication. Returns a challenge.
@@ -1557,17 +1045,17 @@ Begin passkey authentication. Returns a challenge.
 { "email": "user@example.com" }
 ```
 
-**Response `200`:**
-```json
-{ "challenge": "...", "timeout": 60000, "rpId": "yourapp.com" }
-```
+
+---
+
+
 
 ### `POST /webauthn/authenticate/complete/`
 Complete passkey authentication. Returns JWT tokens.
 
 **Request:**
 ```json
-{ "id": "...", "rawId": "...", "response": { "clientDataJSON": "...", "authenticatorData": "...", "signature": "...", "userHandle": "..." }, "type": "public-key" }
+{ "id": "...", "rawId": "...", "response": { ... }, "type": "public-key" }
 ```
 
 **Response `200`:**
@@ -1580,29 +1068,39 @@ Complete passkey authentication. Returns JWT tokens.
 }
 ```
 
+---
+
+
+
 ### `GET /webauthn/credentials/` 🔒
 List registered passkeys for the current user.
 
 **Response `200`:**
 ```json
-[
-  {
-    "id": "cred_123",
-    "name": "YubiKey 5",
-    "created_at": "2023-10-01T12:00:00Z"
-  }
-]
+{
+  "credentials": [
+    {
+      "id": 123,
+      "device_name": "string",
+      "created_at": "string",
+      "last_used_at": "string",
+      "authenticator_type": "string",
+      "is_resident_key": true
+    }
+  ],
+  "count": 123
+}
 ```
+
+---
+
 
 ### `DELETE /webauthn/credentials/<id>/` 🔒
 Delete a registered passkey.
 
-**Response `200`:**
-```json
-{
-  "message": "Passkey deleted"
-}
-```
+
+---
+
 
 ## Legend
 
