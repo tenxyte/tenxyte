@@ -192,6 +192,29 @@ packages/
 
 ---
 
+## Phase 1.5 — Tenxyte AIRS (AI Responsibility & Security)
+
+> **Objectif :** Garde-fous agentiques, circuit breaker, et sécurité de l'IA.
+
+- [x] Model `AgentToken` + `AgentPendingAction`
+- [x] `AgentTokenService` — create, validate, revoke, suspend, RBAC double-passe
+- [x] `AgentTokenMiddleware` — couche 4 du middleware stack
+- [x] `@require_agent_clearance` decorator
+- [x] REST Endpoints AIRS
+- [x] Circuit Breaker (Rate limiting auto-suspension)
+- [x] Dead Man's Switch (Celery task heartbeat)
+- [x] TENXYTE_AIRS_CONFIRMATION_REQUIRED (liste globale HITL)
+- [x] Extension AuditLog (agent_token + on_behalf_of)
+- [x] PIIRedactionMiddleware
+- [x] Budget Tracking (Cost Ledger)
+- [x] Forensic Audit (X-Prompt-Trace-ID)
+- [x] Settings AIRS dans conf.py
+- [x] Tests unitaires & intégration
+- [ ] React SDK: useAgentControl, useAgentApprovals, AIClearanceCenter
+- [x] Documentation `docs/airs.md`
+
+---
+
 ## Phase 2 — Construction du Cloud SaaS
 
 > **Objectif :** Créer la couche SaaS au-dessus du moteur.  

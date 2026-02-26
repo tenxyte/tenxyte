@@ -663,6 +663,18 @@ def require_agent_clearance(
 
                 # Human-in-the-loop obligatoire
                 if is_hitl_required:
+                    # Check if action is already confirmed
+                    confirmation_header = request.META.get('HTTP_X_ACTION_CONFIRMATION')
+                    if confirmation_header:
+                        from tenxyte.models.agent import AgentPendingAction
+                        action = AgentPendingAction.objects.filter(
+                            confirmation_token=confirmation_header,
+                            agent_token=request.agent_token,
+                            confirmed_at__isnull=False
+                        ).first()
+                        if action:
+                            return _call_view(view_func, view_instance, request, view_args, kwargs)
+
                     # extract payload safely
                     payload = {}
                     if request.method in ['POST', 'PUT', 'PATCH']:
