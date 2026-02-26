@@ -830,6 +830,34 @@ class TenxyteSettings:
         """Empêche un agent de recevoir 'toutes les permissions'."""
         return self._get('AIRS_REQUIRE_EXPLICIT_PERMISSIONS', True)
 
+    # =============================================
+    # Agent / AIRS Settings (Phase 2)
+    # =============================================
+
+    @property
+    def AIRS_CIRCUIT_BREAKER_ENABLED(self):
+        """Activer/désactiver le coupe-circuit de l'agent."""
+        return self._get('AIRS_CIRCUIT_BREAKER_ENABLED', True)
+
+    @property
+    def AIRS_DEFAULT_MAX_RPM(self):
+        """Limite par minute du coupe-circuit."""
+        return self._get('AIRS_DEFAULT_MAX_RPM', 60)
+
+    @property
+    def AIRS_DEFAULT_MAX_TOTAL(self):
+        """Limite totale du coupe-circuit."""
+        return self._get('AIRS_DEFAULT_MAX_TOTAL', 1000)
+
+    @property
+    def AIRS_DEFAULT_MAX_FAILURES(self):
+        """Nombre max d'échecs avant suspension par coupe-circuit."""
+        return self._get('AIRS_DEFAULT_MAX_FAILURES', 10)
+
+    @property
+    def AIRS_CONFIRMATION_REQUIRED(self):
+        """Liste globale des permissions nécessitant toujours une confirmation HITL."""
+        return self._get('AIRS_CONFIRMATION_REQUIRED', [])
 
 # Instance singleton accessible partout
 auth_settings = TenxyteSettings()

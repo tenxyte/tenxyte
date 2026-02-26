@@ -285,4 +285,28 @@ class AgentTokenMiddleware:
         request.agent_token = agent_token
         request.user = agent_token.triggered_by  # L'agent agit "en tant que" l'humain
         request.user_id = agent_token.triggered_by_id
-        return self.get_response(request)
+        
+        response = self.get_response(request)
+        
+        # Log successful mutations by agents
+        if request.method in ['POST', 'PUT', 'PATCH', 'DELETE'] and 200 <= response.status_code < 300:
+            from tenxyte.models.security import AuditLog
+            from tenxyte.conf import auth_settings
+            if auth_settings.AUDIT_LOGGING_ENABLED:
+                AuditLog.log(
+                    action='suspicious_activity' if request.method == 'DELETE' else 'agent_action',
+                    user=request.user,
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                    user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+                    application=getattr(request, 'application', None),
+                    details={
+                        'endpoint': request.path,
+                        'method': request.method,
+                        'actor': agent_token.agent_id,
+                        'status_code': response.status_code
+                    },
+                    agent_token=agent_token,
+                    on_behalf_of=request.user
+                )
+                
+        return response

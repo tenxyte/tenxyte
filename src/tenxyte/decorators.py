@@ -656,8 +656,13 @@ def require_agent_clearance(
                             'code': 'AGENT_PERMISSION_DENIED'
                         }, status=403)
 
+                from tenxyte.conf import auth_settings
+                is_hitl_required = human_in_the_loop_required
+                if permission_code and permission_code in auth_settings.AIRS_CONFIRMATION_REQUIRED:
+                    is_hitl_required = True
+
                 # Human-in-the-loop obligatoire
-                if human_in_the_loop_required:
+                if is_hitl_required:
                     # extract payload safely
                     payload = {}
                     if request.method in ['POST', 'PUT', 'PATCH']:

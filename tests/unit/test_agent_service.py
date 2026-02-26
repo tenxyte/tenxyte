@@ -282,3 +282,52 @@ class TestAgentTokenService:
         )
         assert service.confirm_pending_action(action.confirmation_token, test_user) is None
         assert service.deny_pending_action(action.confirmation_token, test_user) is None
+
+    def test_circuit_breaker_cache_rate_limit(self, test_user, test_app):
+        # Missing lines: 259-260, 265-268
+        from django.core.cache import cache
+        service = AgentTokenService()
+        token = AgentToken.objects.create(
+            token="token-cache-cb", agent_id="c1", triggered_by=test_user, application=test_app,
+            expires_at=timezone.now() + timedelta(days=1),
+            max_requests_per_minute=2
+        )
+        cache_key = f"airs_rpm_{token.token}"
+        
+        # Test 1st request -> ok, sets cache to 1 (falls inside `current_minute_requests == 0`)
+        cache.delete(cache_key)
+        ok, res = service.check_circuit_breaker(token)
+        assert ok is True
+        assert cache.get(cache_key) == 1
+        
+        # Test 2nd request -> ok, incr cache
+        ok, res = service.check_circuit_breaker(token)
+        assert ok is True
+        assert cache.get(cache_key) == 2
+        
+        # Test 3rd request -> fails
+        ok, res = service.check_circuit_breaker(token)
+        assert ok is False
+        assert res == "RATE_LIMIT_EXCEEDED"
+        
+        # Test ValueError fallback for `incr`
+        from unittest import mock
+        with mock.patch('django.core.cache.cache.incr', side_effect=ValueError):
+            cache.set(cache_key, 1) # reset
+            token.status = AgentToken.Status.ACTIVE
+            token.save()
+            ok, res = service.check_circuit_breaker(token)
+            assert ok is True # increments safely to 2 via fallback
+            assert cache.get(cache_key) == 2
+
+    def test_circuit_breaker_disabled(self, test_user, test_app, settings):
+        settings.TENXYTE_AIRS_CIRCUIT_BREAKER_ENABLED = False
+        service = AgentTokenService()
+        token = AgentToken.objects.create(
+            token="token-cb-disabled", agent_id="c2", triggered_by=test_user, application=test_app,
+            expires_at=timezone.now() + timedelta(days=1),
+            max_requests_total=1,
+            current_request_count=10 # exceed
+        )
+        ok, res = service.check_circuit_breaker(token)
+        assert ok is True # Disabled!

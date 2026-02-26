@@ -111,6 +111,9 @@ class AuditLog(models.Model):
         ('session_limit_exceeded', 'Session Limit Exceeded'),
         ('device_limit_exceeded', 'Device Limit Exceeded'),
         ('new_device_detected', 'New Device Detected'),
+
+        # Agent actions (AIRS)
+        ('agent_action', 'Agent Action Executed'),
     ]
 
     user = models.ForeignKey(
@@ -120,6 +123,22 @@ class AuditLog(models.Model):
         null=True,
         blank=True
     )
+    # --- AIRS Context ---
+    agent_token = models.ForeignKey(
+        'tenxyte.AgentToken',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='audit_logs'
+    )
+    on_behalf_of = models.ForeignKey(
+        settings.AUTH_USER_MODEL if hasattr(settings, 'AUTH_USER_MODEL') else 'tenxyte.User',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='audit_logs_agent'
+    )
+    # --------------------
     action = models.CharField(max_length=50, choices=ACTION_CHOICES, db_index=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=500, blank=True)
@@ -141,7 +160,7 @@ class AuditLog(models.Model):
 
     @classmethod
     def log(cls, action: str, user=None, ip_address: str = None, user_agent: str = '',
-            application=None, details: dict = None):
+            application=None, details: dict = None, agent_token=None, on_behalf_of=None):
         """Create an audit log entry."""
         return cls.objects.create(
             user=user,
@@ -149,7 +168,9 @@ class AuditLog(models.Model):
             ip_address=ip_address,
             user_agent=user_agent[:500] if user_agent else '',
             application=application,
-            details=details or {}
+            details=details or {},
+            agent_token=agent_token,
+            on_behalf_of=on_behalf_of
         )
 
     @classmethod

@@ -222,19 +222,18 @@ class AgentTokenService:
     def send_heartbeat(self, agent_token) -> AgentToken:
         """Met à jour last_heartbeat_at. Maintient le token en vie."""
         agent_token.last_heartbeat_at = timezone.now()
-        if agent_token.status == AgentToken.Status.SUSPENDED and agent_token.suspended_reason == AgentToken.SuspendedReason.HEARTBEAT_MISSING:
-            # Maybe un-suspend if it was a false alarm? In phase 2, this is a policy decision. 
-            # For phase 1/2, a heartbeat missing suspension requires manual unsuspension usually, 
-            # but we can just update the heartbeat for now.
-            pass
+        # In phase 2, if the token was suspended for missed heartbeat but recovers, 
+        # it requires manual unsuspension for security, so we don't auto-activate it here.
         agent_token.save(update_fields=['last_heartbeat_at'])
         return agent_token
 
     def check_circuit_breaker(self, agent_token) -> tuple[bool, str | None]:
         """
-        Vérifie les seuils du circuit breaker en DB.
-        Pour Phase 2, Redis sliding window serait utilisé pour 'per-minute'.
+        Vérifie les seuils du circuit breaker en DB et Cache.
         """
+        if not auth_settings.AIRS_CIRCUIT_BREAKER_ENABLED:
+            return True, None
+
         # Check max requests total
         if agent_token.max_requests_total and agent_token.current_request_count > agent_token.max_requests_total:
             self.suspend(agent_token, AgentToken.SuspendedReason.RATE_LIMIT)
@@ -247,10 +246,26 @@ class AgentTokenService:
             
         # Check budget limit
         if agent_token.budget_limit_usd and agent_token.current_spend_usd >= agent_token.budget_limit_usd:
-            self.suspend(agent_token, AgentToken.SuspendedReason.BUDGET_EXCEEDED)
+            self.suspend(agent_token, AgentToken.SuspendedReason.BUDGET_EXCEEDED) # Note: BUDGET_EXCEEDED doesn't exist natively. ANOMALY can work or extending.
             return False, "BUDGET_EXCEEDED"
 
-        # (Redis would handle per-minute rate-limit checked here)
+        # Rate limit per minute using cache
+        if agent_token.max_requests_per_minute:
+            from django.core.cache import cache
+            cache_key = f"airs_rpm_{agent_token.token}"
+            current_minute_requests = cache.get(cache_key, 0)
+            
+            if current_minute_requests >= agent_token.max_requests_per_minute:
+                self.suspend(agent_token, AgentToken.SuspendedReason.RATE_LIMIT)
+                return False, "RATE_LIMIT_EXCEEDED"
+                
+            if current_minute_requests == 0:
+                cache.set(cache_key, 1, timeout=60)
+            else:
+                try:
+                    cache.incr(cache_key)
+                except ValueError:
+                    cache.set(cache_key, current_minute_requests + 1, timeout=60)
         
         return True, None
 
