@@ -1,5 +1,5 @@
 from .auth_views import (
-    RegisterView, LoginEmailView, LoginPhoneView, GoogleAuthView,
+    RegisterView, LoginEmailView, LoginPhoneView,
     RefreshTokenView, LogoutView, LogoutAllView
 )
 from .otp_views import RequestOTPView, VerifyEmailOTPView, VerifyPhoneOTPView
@@ -32,7 +32,7 @@ from .security_views import (
 )
 
 __all__ = [
-    'RegisterView', 'LoginEmailView', 'LoginPhoneView', 'GoogleAuthView',
+    'RegisterView', 'LoginEmailView', 'LoginPhoneView',
     'RefreshTokenView', 'LogoutView', 'LogoutAllView',
     'RequestOTPView', 'VerifyEmailOTPView', 'VerifyPhoneOTPView',
     'PasswordResetRequestView', 'PasswordResetConfirmView', 'ChangePasswordView',

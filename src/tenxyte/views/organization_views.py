@@ -552,7 +552,7 @@ def get_organization_tree(request: Request) -> Response:
     """
     Get the organization hierarchy tree.
     
-    GET /api/auth/organizations/{slug}/tree/
+    GET {API_PREFIX}/auth/organizations/{slug}/tree/
     Headers: X-Org-Slug: acme-corp
     """
     service = OrganizationService()

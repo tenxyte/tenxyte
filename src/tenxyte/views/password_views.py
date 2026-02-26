@@ -21,7 +21,7 @@ User = get_user_model()
 
 class PasswordResetRequestView(APIView):
     """
-    POST /api/auth/password/reset/request/
+    POST {API_PREFIX}/auth/password/reset/request/
     Demander une réinitialisation de mot de passe
     """
     permission_classes = [AllowAny]
@@ -121,7 +121,7 @@ class PasswordResetRequestView(APIView):
 
 class PasswordResetConfirmView(APIView):
     """
-    POST /api/auth/password/reset/confirm/
+    POST {API_PREFIX}/auth/password/reset/confirm/
     Confirmer la réinitialisation de mot de passe
     """
     permission_classes = [AllowAny]
@@ -255,7 +255,7 @@ class PasswordResetConfirmView(APIView):
 
 class ChangePasswordView(APIView):
     """
-    POST /api/auth/password/change/
+    POST {API_PREFIX}/auth/password/change/
     Changer le mot de passe (utilisateur connecté)
     """
 
@@ -364,7 +364,7 @@ class ChangePasswordView(APIView):
 
 class PasswordStrengthView(APIView):
     """
-    POST /api/auth/password/strength/
+    POST {API_PREFIX}/auth/password/strength/
     Verifier la force d'un mot de passe (pour validation frontend)
     """
     permission_classes = [AllowAny]
@@ -401,7 +401,7 @@ class PasswordStrengthView(APIView):
 
 class PasswordRequirementsView(APIView):
     """
-    GET /api/auth/password/requirements/
+    GET {API_PREFIX}/auth/password/requirements/
     Recuperer les exigences de mot de passe
     """
     permission_classes = [AllowAny]

@@ -11,62 +11,62 @@
     "total_paths": 80,
     "total_operations": 99,
     "total_examples": 255,
-    "schema_size_bytes": 183455,
+    "schema_size_bytes": 183711,
     "security_coverage": 100.0,
     "org_header_operations": 13
   },
   "issues": [
     {
       "severity": "info",
-      "message": "Missing examples for PATCH /api/auth/admin/users/{user_id}/"
+      "message": "Missing examples for PATCH /api/v1/auth/admin/users/{user_id}/"
     },
     {
       "severity": "info",
-      "message": "Missing examples for POST /api/auth/admin/users/{user_id}/ban/"
+      "message": "Missing examples for POST /api/v1/auth/admin/users/{user_id}/ban/"
     },
     {
       "severity": "info",
-      "message": "Missing examples for POST /api/auth/admin/users/{user_id}/lock/"
+      "message": "Missing examples for POST /api/v1/auth/admin/users/{user_id}/lock/"
     },
     {
       "severity": "info",
-      "message": "Missing examples for PUT /api/auth/applications/{app_id}/"
+      "message": "Missing examples for PUT /api/v1/auth/applications/{app_id}/"
     },
     {
       "severity": "info",
-      "message": "Missing examples for POST /api/auth/google/"
+      "message": "Missing examples for POST /api/v1/auth/google/"
     },
     {
       "severity": "info",
-      "message": "Missing examples for POST /api/auth/password/strength/"
+      "message": "Missing examples for POST /api/v1/auth/password/strength/"
     },
     {
       "severity": "info",
-      "message": "Missing examples for POST /api/auth/permissions/"
+      "message": "Missing examples for POST /api/v1/auth/permissions/"
     },
     {
       "severity": "info",
-      "message": "Missing examples for PUT /api/auth/permissions/{permission_id}/"
+      "message": "Missing examples for PUT /api/v1/auth/permissions/{permission_id}/"
     },
     {
       "severity": "info",
-      "message": "Missing examples for POST /api/auth/roles/"
+      "message": "Missing examples for POST /api/v1/auth/roles/"
     },
     {
       "severity": "info",
-      "message": "Missing examples for PUT /api/auth/roles/{role_id}/"
+      "message": "Missing examples for PUT /api/v1/auth/roles/{role_id}/"
     },
     {
       "severity": "info",
-      "message": "Missing examples for POST /api/auth/roles/{role_id}/permissions/"
+      "message": "Missing examples for POST /api/v1/auth/roles/{role_id}/permissions/"
     },
     {
       "severity": "info",
-      "message": "Missing examples for POST /api/auth/users/{user_id}/permissions/"
+      "message": "Missing examples for POST /api/v1/auth/users/{user_id}/permissions/"
     },
     {
       "severity": "info",
-      "message": "Missing examples for POST /api/auth/users/{user_id}/roles/"
+      "message": "Missing examples for POST /api/v1/auth/users/{user_id}/roles/"
     },
     {
       "severity": "info",

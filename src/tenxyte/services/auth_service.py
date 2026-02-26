@@ -2,10 +2,13 @@ from typing import Optional, Dict, Any, Tuple
 from django.utils import timezone
 from django.db.models import Q
 
-from ..models import Application, User, RefreshToken, LoginAttempt, AuditLog, PasswordHistory
+from ..models import get_application_model, RefreshToken, LoginAttempt, AuditLog, PasswordHistory, get_user_model
 from .jwt_service import JWTService
 from ..conf import auth_settings
 from ..device_info import devices_match, get_device_summary, parse_device_info
+
+User = get_user_model()
+Application = get_application_model()
 
 
 class AuthService:

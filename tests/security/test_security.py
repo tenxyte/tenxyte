@@ -13,6 +13,9 @@ Couvre:
 - Blacklisting de tokens JWT
 - Banissement de compte (permanent, admin actions, auth blocking)
 """
+from tenxyte.conf import auth_settings
+api_prefix = auth_settings.API_PREFIX
+
 import pytest
 import jwt
 import json
@@ -60,7 +63,7 @@ class TestJWTSecurity:
             HTTP_X_ACCESS_KEY=application.access_key,
             HTTP_X_ACCESS_SECRET=application._plain_secret
         )
-        response = app_api_client.get('/api/auth/me/')
+        response = app_api_client.get(f'{api_prefix}/auth/me/')
 
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
 
@@ -82,7 +85,7 @@ class TestJWTSecurity:
             HTTP_X_ACCESS_KEY=application.access_key,
             HTTP_X_ACCESS_SECRET=application._plain_secret
         )
-        response = app_api_client.get('/api/auth/me/')
+        response = app_api_client.get(f'{api_prefix}/auth/me/')
 
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
 
@@ -105,7 +108,7 @@ class TestJWTSecurity:
             HTTP_X_ACCESS_KEY=application.access_key,
             HTTP_X_ACCESS_SECRET=application._plain_secret
         )
-        response = app_api_client.get('/api/auth/me/')
+        response = app_api_client.get(f'{api_prefix}/auth/me/')
 
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
 
@@ -129,7 +132,7 @@ class TestJWTSecurity:
             HTTP_X_ACCESS_KEY=application.access_key,
             HTTP_X_ACCESS_SECRET=application._plain_secret
         )
-        response = app_api_client.get('/api/auth/me/')
+        response = app_api_client.get(f'{api_prefix}/auth/me/')
 
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
 
@@ -155,7 +158,7 @@ class TestJWTSecurity:
             HTTP_X_ACCESS_KEY=application.access_key,
             HTTP_X_ACCESS_SECRET=application._plain_secret
         )
-        response = app_api_client.get('/api/auth/me/')
+        response = app_api_client.get(f'{api_prefix}/auth/me/')
 
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
 
@@ -166,7 +169,7 @@ class TestJWTSecurity:
             HTTP_X_ACCESS_KEY=application.access_key,
             HTTP_X_ACCESS_SECRET=application._plain_secret
         )
-        response = app_api_client.get('/api/auth/me/')
+        response = app_api_client.get(f'{api_prefix}/auth/me/')
 
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
 
@@ -177,7 +180,7 @@ class TestJWTSecurity:
             HTTP_X_ACCESS_KEY=application.access_key,
             HTTP_X_ACCESS_SECRET=application._plain_secret
         )
-        response = app_api_client.get('/api/auth/me/')
+        response = app_api_client.get(f'{api_prefix}/auth/me/')
 
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
 
@@ -189,7 +192,7 @@ class TestApplicationAuthSecurity:
     def test_missing_app_credentials(self, user):
         """Les requêtes sans credentials application doivent être rejetées."""
         client = APIClient()
-        response = client.post('/api/auth/login/email/', {
+        response = client.post(f'{api_prefix}/auth/login/email/', {
             'email': user.email,
             'password': 'TestPassword123!'
         })
@@ -205,7 +208,7 @@ class TestApplicationAuthSecurity:
             HTTP_X_ACCESS_KEY='invalid-key-12345',
             HTTP_X_ACCESS_SECRET='invalid-secret-12345'
         )
-        response = client.post('/api/auth/login/email/', {
+        response = client.post(f'{api_prefix}/auth/login/email/', {
             'email': user.email,
             'password': 'TestPassword123!'
         })
@@ -221,7 +224,7 @@ class TestApplicationAuthSecurity:
             HTTP_X_ACCESS_KEY=application.access_key,
             HTTP_X_ACCESS_SECRET='wrong-secret-value'
         )
-        response = client.post('/api/auth/login/email/', {
+        response = client.post(f'{api_prefix}/auth/login/email/', {
             'email': user.email,
             'password': 'TestPassword123!'
         })
@@ -241,7 +244,7 @@ class TestApplicationAuthSecurity:
             HTTP_X_ACCESS_KEY=app.access_key,
             HTTP_X_ACCESS_SECRET=raw_secret
         )
-        response = client.post('/api/auth/login/email/', {
+        response = client.post(f'{api_prefix}/auth/login/email/', {
             'email': user.email,
             'password': 'TestPassword123!'
         })
@@ -258,7 +261,7 @@ class TestBruteForceProtection:
         from tenxyte.models import LoginAttempt
 
         for i in range(3):
-            response = app_api_client.post('/api/auth/login/email/', {
+            response = app_api_client.post(f'{api_prefix}/auth/login/email/', {
                 'email': user.email,
                 'password': f'WrongPassword{i}!',
             })
@@ -282,7 +285,7 @@ class TestBruteForceProtection:
         user.locked_until = tz.now() + timedelta(hours=1)
         user.save()
 
-        response = app_api_client.post('/api/auth/login/email/', {
+        response = app_api_client.post(f'{api_prefix}/auth/login/email/', {
             'email': user.email,
             'password': 'TestPassword123!',
         })
@@ -302,7 +305,7 @@ class TestBruteForceProtection:
         user.locked_until = tz.now() - timedelta(hours=1)  # Expiré
         user.save()
 
-        response = app_api_client.post('/api/auth/login/email/', {
+        response = app_api_client.post(f'{api_prefix}/auth/login/email/', {
             'email': user.email,
             'password': 'TestPassword123!',
         })
@@ -323,7 +326,7 @@ class TestInjectionProtection:
             "admin@test.com' UNION SELECT * FROM users--",
         ]
         for payload in payloads:
-            response = app_api_client.post('/api/auth/login/email/', {
+            response = app_api_client.post(f'{api_prefix}/auth/login/email/', {
                 'email': payload,
                 'password': 'TestPassword123!',
             })
@@ -338,7 +341,7 @@ class TestInjectionProtection:
             "'; DROP TABLE users;--",
         ]
         for payload in payloads:
-            response = app_api_client.post('/api/auth/login/email/', {
+            response = app_api_client.post(f'{api_prefix}/auth/login/email/', {
                 'email': user.email,
                 'password': payload,
             })
@@ -358,7 +361,7 @@ class TestInjectionProtection:
             "javascript:alert('XSS')",
         ]
         for payload in xss_payloads:
-            response = app_api_client.post('/api/auth/register/', {
+            response = app_api_client.post(f'{api_prefix}/auth/register/', {
                 'email': f'{payload}@test.com',
                 'password': 'SecureP@ssw0rd!',
                 'password_confirm': 'SecureP@ssw0rd!',
@@ -369,7 +372,7 @@ class TestInjectionProtection:
     def test_xss_in_user_profile(self, authenticated_client, user):
         """Les payloads XSS dans la mise à jour du profil doivent être stockés en texte brut."""
         xss = '<script>alert("XSS")</script>'
-        response = authenticated_client.patch('/api/auth/me/', {
+        response = authenticated_client.patch(f'{api_prefix}/auth/me/', {
             'first_name': xss,
         })
 
@@ -385,13 +388,13 @@ class TestUnauthenticatedAccess:
 
     def test_me_without_auth(self, app_api_client):
         """L'endpoint /me/ sans JWT doit retourner 401/403."""
-        response = app_api_client.get('/api/auth/me/')
+        response = app_api_client.get(f'{api_prefix}/auth/me/')
 
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
 
     def test_change_password_without_auth(self, app_api_client):
         """Le changement de mot de passe sans JWT doit être rejeté."""
-        response = app_api_client.post('/api/auth/password/change/', {
+        response = app_api_client.post(f'{api_prefix}/auth/password/change/', {
             'current_password': 'TestPassword123!',
             'new_password': 'NewP@ssw0rd!123',
             'new_password_confirm': 'NewP@ssw0rd!123',
@@ -401,7 +404,7 @@ class TestUnauthenticatedAccess:
 
     def test_otp_request_without_auth(self, app_api_client):
         """La demande d'OTP sans JWT doit être rejetée."""
-        response = app_api_client.post('/api/auth/otp/request/', {
+        response = app_api_client.post(f'{api_prefix}/auth/otp/request/', {
             'otp_type': 'email',
         })
 
@@ -409,13 +412,13 @@ class TestUnauthenticatedAccess:
 
     def test_2fa_status_without_auth(self, app_api_client):
         """Le statut 2FA sans JWT doit être rejeté."""
-        response = app_api_client.get('/api/auth/2fa/status/')
+        response = app_api_client.get(f'{api_prefix}/auth/2fa/status/')
 
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
 
     def test_roles_without_auth(self, app_api_client):
         """Les rôles sans JWT doivent être rejetés."""
-        response = app_api_client.get('/api/auth/me/roles/')
+        response = app_api_client.get(f'{api_prefix}/auth/me/roles/')
 
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
 
@@ -443,7 +446,7 @@ class TestRefreshTokenSecurity:
         ).update(is_revoked=True)
 
         # Tenter de rafraîchir
-        response = app_api_client.post('/api/auth/refresh/', {
+        response = app_api_client.post(f'{api_prefix}/auth/refresh/', {
             'refresh_token': refresh_token_str,
         })
 
@@ -451,7 +454,7 @@ class TestRefreshTokenSecurity:
 
     def test_fake_refresh_token_rejected(self, app_api_client, user, application):
         """Un faux refresh token doit être rejeté."""
-        response = app_api_client.post('/api/auth/refresh/', {
+        response = app_api_client.post(f'{api_prefix}/auth/refresh/', {
             'refresh_token': 'fake-refresh-token-12345',
         })
 
@@ -471,12 +474,12 @@ class TestRefreshTokenSecurity:
         refresh_token_str = data['refresh_token']
 
         # Se déconnecter
-        app_api_client.post('/api/auth/logout/', {
+        app_api_client.post(f'{api_prefix}/auth/logout/', {
             'refresh_token': refresh_token_str,
         })
 
         # Tenter de rafraîchir avec le même token
-        response = app_api_client.post('/api/auth/refresh/', {
+        response = app_api_client.post(f'{api_prefix}/auth/refresh/', {
             'refresh_token': refresh_token_str,
         })
 
@@ -511,7 +514,7 @@ class TestCrossApplicationSecurity:
             HTTP_X_ACCESS_KEY=app_b.access_key,
             HTTP_X_ACCESS_SECRET=secret_b
         )
-        response = client_b.get('/api/auth/me/')
+        response = client_b.get(f'{api_prefix}/auth/me/')
 
         # Doit être rejeté car le token contient app_id de app A mais les headers sont de app B
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]
@@ -523,7 +526,7 @@ class TestPasswordResetSecurity:
 
     def test_password_reset_nonexistent_email(self, app_api_client):
         """La réinitialisation pour un email inexistant doit retourner 200 (pas de fuite d'info)."""
-        response = app_api_client.post('/api/auth/password/reset/request/', {
+        response = app_api_client.post(f'{api_prefix}/auth/password/reset/request/', {
             'email': 'nonexistent@example.com',
         })
 
@@ -532,7 +535,7 @@ class TestPasswordResetSecurity:
 
     def test_password_reset_invalid_email_format(self, app_api_client):
         """Un format d'email invalide dans la réinitialisation doit être géré proprement."""
-        response = app_api_client.post('/api/auth/password/reset/request/', {
+        response = app_api_client.post(f'{api_prefix}/auth/password/reset/request/', {
             'email': 'not-an-email',
         })
 
@@ -550,7 +553,7 @@ class TestInactiveUserSecurity:
         user.set_password("TestPassword123!")
         user.save()
 
-        response = app_api_client.post('/api/auth/login/email/', {
+        response = app_api_client.post(f'{api_prefix}/auth/login/email/', {
             'email': 'inactive@test.com',
             'password': 'TestPassword123!',
         })
@@ -589,7 +592,7 @@ class TestAccountBanningSecurity:
             HTTP_X_ACCESS_KEY=application.access_key,
             HTTP_X_ACCESS_SECRET=application._plain_secret
         )
-        response = app_api_client.get('/api/auth/me/')
+        response = app_api_client.get(f'{api_prefix}/auth/me/')
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert 'banni' in response.json().get('detail', '').lower()
@@ -600,7 +603,7 @@ class TestAccountBanningSecurity:
         user.is_banned = True
         user.save()
 
-        response = app_api_client.post('/api/auth/login/email/', {
+        response = app_api_client.post(f'{api_prefix}/auth/login/email/', {
             'email': user.email,
             'password': 'TestPassword123!',
         })
@@ -618,7 +621,7 @@ class TestAccountBanningSecurity:
         user.save()
 
         # Tenter de se connecter pour obtenir des tokens
-        response = app_api_client.post('/api/auth/login/email/', {
+        response = app_api_client.post(f'{api_prefix}/auth/login/email/', {
             'email': user.email,
             'password': 'TestPassword123!',
         })
@@ -632,7 +635,7 @@ class TestAccountBanningSecurity:
                     HTTP_X_ACCESS_KEY=application.access_key,
                     HTTP_X_ACCESS_SECRET=application._plain_secret
                 )
-                response = app_api_client.get('/api/auth/me/')
+                response = app_api_client.get(f'{api_prefix}/auth/me/')
                 assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_ban_status_persists_after_unlock(self, app_api_client, user, application):
@@ -730,8 +733,8 @@ class TestAccountBanningSecurity:
 
         # Tenter d'accéder à plusieurs endpoints protégés
         endpoints = [
-            '/api/auth/me/',
-            '/api/auth/refresh/',
+            f'{api_prefix}/auth/me/',
+            f'{api_prefix}/auth/refresh/',
         ]
         
         app_api_client.credentials(

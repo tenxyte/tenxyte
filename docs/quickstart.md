@@ -62,7 +62,7 @@ All API requests require the application credentials in headers:
 
 ```bash
 # Register a user
-curl -X POST http://localhost:8000/api/auth/register/ \
+curl -X POST http://localhost:8000/api/v1/auth/register/ \
   -H "Content-Type: application/json" \
   -H "X-Access-Key: <your-access-key>" \
   -H "X-Access-Secret: <your-access-secret>" \
@@ -74,7 +74,7 @@ curl -X POST http://localhost:8000/api/auth/register/ \
   }'
 
 # Login
-curl -X POST http://localhost:8000/api/auth/login/email/ \
+curl -X POST http://localhost:8000/api/v1/auth/login/email/ \
   -H "Content-Type: application/json" \
   -H "X-Access-Key: <your-access-key>" \
   -H "X-Access-Secret: <your-access-secret>" \
@@ -97,7 +97,7 @@ Response:
 ## 8. Authenticate Subsequent Requests
 
 ```bash
-curl -X GET http://localhost:8000/api/auth/me/ \
+curl -X GET http://localhost:8000/api/v1/auth/me/ \
   -H "Authorization: Bearer <access_token>" \
   -H "X-Access-Key: <your-access-key>" \
   -H "X-Access-Secret: <your-access-secret>"

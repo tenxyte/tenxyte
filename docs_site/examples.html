@@ -1,221 +1,621 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Examples - Tenxyte API</title>
-    <meta name="description" content="Practical code examples for integrating with the Tenxyte API">
-    <link rel="stylesheet" href="styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <header class="header">
-        <nav class="nav">
-            <div class="nav-container">
-                <div class="nav-brand">
-                    <h1>Tenxyte API</h1>
-                </div>
-                <ul class="nav-menu">
-                    <li><a href="index.html">Home</a></li>
-                    <li><a href="api-reference.html">API Reference</a></li>
-                    <li><a href="examples.html">Examples</a></li>
-                    <li><a href="authentication.html">Authentication</a></li>
-                    <li><a href="migration.html">Migration</a></li>
-                </ul>
-                <div class="search-box">
-                    <input type="text" placeholder="Search documentation..." id="searchInput">
-                    <button onclick="performSearch()">🔍</button>
-                </div>
-            </div>
-        </nav>
-    </header>
-    
-    <main class="main">
-        <div class="container">
-            
-        <div class="examples-page">
-            <h1>Code Examples</h1>
-            <p>Practical examples for integrating with the Tenxyte API in various programming languages.</p>
-            
-            <div class="example-sections">
-                <div class="example-section">
-                    <h2>Authentication</h2>
-                    <div class="example-tabs">
-                        <div class="tab-buttons">
-                            <button class="tab-btn active" onclick="switchTab(this, 'auth-python')">Python</button>
-                            <button class="tab-btn" onclick="switchTab(this, 'auth-javascript')">JavaScript</button>
-                            <button class="tab-btn" onclick="switchTab(this, 'auth-curl')">cURL</button>
-                        </div>
-                        
-                        <div class="tab-content active" id="auth-python">
-                            <div class="code-block">
-                                <div class="code-header">
-                                    <span>Python (requests)</span>
-                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                                </div>
-                                <pre><code>import requests
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exemples — Tenxyte API</title>
+  <meta name="description" content="Exemples pratiques d'intégration de l'API Tenxyte">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head><body>
+  <a href="#main" class="skip-link">Aller au contenu</a>
+  <header class="nav" role="banner"><div class="nav__inner">
+    <a href="index.html" class="nav__brand" aria-label="Tenxyte API">
+      <span class="nav__logo" aria-hidden="true">⚡</span>
+      <span class="nav__name">Tenxyte API</span></a>
+    <nav role="navigation" aria-label="Navigation principale"><a href="index.html" class="nav__link" >Accueil</a><a href="api-reference.html" class="nav__link" >Référence API</a><a href="examples.html" class="nav__link nav__link--active" aria-current="page">Exemples</a><a href="authentication.html" class="nav__link" >Authentification</a></nav>
+    <div role="search"><div class="search">
+      <input class="search__input" type="search" id="searchInput"
+             placeholder="Rechercher…" aria-label="Rechercher" autocomplete="off">
+      <div class="search__results" id="searchResults" role="listbox" hidden></div>
+    </div></div>
+    <button class="btn-icon" id="themeToggle" aria-label="Basculer le thème">
+      <span aria-hidden="true">🌙</span></button>
+  </div></header>
+  <main id="main" role="main"><div class="container"><h1 class="page-title">Exemples de code</h1><section class="section"><h2 class="section__title">Authentification</h2><div class="tabs" role="tablist"><button class="tabs__btn tabs__btn--active" role="tab" aria-selected="true" aria-controls="tab-auth-py" id="btn-auth-py">Python</button><button class="tabs__btn" role="tab" aria-selected="false" aria-controls="tab-auth-js" id="btn-auth-js">JavaScript</button><button class="tabs__btn" role="tab" aria-selected="false" aria-controls="tab-auth-curl" id="btn-auth-curl">cURL</button></div><div class="tabs__panel tabs__panel--active" role="tabpanel" id="tab-auth-py" aria-labelledby="btn-auth-py"><div class="code-block" role="region" aria-label="Code Python"><div class="code-block__header"><span class="code-block__lang">Python</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-python">import requests
 
-# Login
-response = requests.post('https://api.tenxyte.com/api/auth/login/email/', json={
-    'email': 'user@example.com',
-    'password': 'your-password'
-})
-
-if response.ok:
-    data = response.json()
-    access_token = data['access']
-    
-    # Use token for authenticated requests
-    headers = {'Authorization': f'Bearer {access_token}'}
-    profile = requests.get('https://api.tenxyte.com/api/auth/me/', headers=headers)
-    print(profile.json())</code></pre>
-                            </div>
-                        </div>
-                        
-                        <div class="tab-content" id="auth-javascript">
-                            <div class="code-block">
-                                <div class="code-header">
-                                    <span>JavaScript (fetch)</span>
-                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                                </div>
-                                <pre><code>// Login
-const response = await fetch('https://api.tenxyte.com/api/auth/login/email/', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-        email: 'user@example.com',
-        password: 'your-password'
-    })
-});
-
-const data = await response.json();
-const accessToken = data.access;
-
-// Use token for authenticated requests
-const profile = await fetch('https://api.tenxyte.com/api/auth/me/', {
-    headers: {
-        'Authorization': `Bearer ${accessToken}`
-    }
-});
-
-console.log(await profile.json());</code></pre>
-                            </div>
-                        </div>
-                        
-                        <div class="tab-content" id="auth-curl">
-                            <div class="code-block">
-                                <div class="code-header">
-                                    <span>cURL</span>
-                                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                                </div>
-                                <pre><code># Login
-curl -X POST https://api.tenxyte.com/api/auth/login/email/ \
+resp = requests.post(".../login/email/", json={
+    "email": "user@example.com", "password": "motdepasse"})
+access = resp.json()["access"]
+profile = requests.get(".../me/",
+    headers={"Authorization": f"Bearer {access}"}).json()
+print(profile)</code></pre></div></div><div class="tabs__panel" role="tabpanel" id="tab-auth-js" aria-labelledby="btn-auth-js" hidden><div class="code-block" role="region" aria-label="Code JavaScript"><div class="code-block__header"><span class="code-block__lang">JavaScript</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-javascript">const { access } = await fetch("/api/v1/auth/login/email/", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email: "user@example.com", password: "motdepasse" }),
+}).then(r =&gt; r.json());
+const profile = await fetch("/api/v1/auth/me/", {
+  headers: { Authorization: `Bearer ${access}` },
+}).then(r =&gt; r.json());
+console.log(profile);</code></pre></div></div><div class="tabs__panel" role="tabpanel" id="tab-auth-curl" aria-labelledby="btn-auth-curl" hidden><div class="code-block" role="region" aria-label="Code cURL"><div class="code-block__header"><span class="code-block__lang">cURL</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-bash">curl -X POST .../login/email/ \
   -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "your-password"
-  }'
+  -d '{"email":"user@example.com","password":"motdepasse"}'
 
-# Use token for authenticated requests
-curl -X GET https://api.tenxyte.com/api/auth/me/ \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"</code></pre>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="example-section">
-                    <h2>Multi-tenant Requests</h2>
-                    <div class="code-block">
-                        <div class="code-header">
-                            <span>Python - Organization Context</span>
-                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                        </div>
-                        <pre><code>import requests
+curl .../me/ -H "Authorization: Bearer &lt;access_token&gt;"</code></pre></div></div></section><section class="section"><h2 class="section__title">Multi-tenant</h2><div class="tabs" role="tablist"><button class="tabs__btn tabs__btn--active" role="tab" aria-selected="true" aria-controls="tab-multi-py" id="btn-multi-py">Python</button><button class="tabs__btn" role="tab" aria-selected="false" aria-controls="tab-multi-js" id="btn-multi-js">JavaScript</button><button class="tabs__btn" role="tab" aria-selected="false" aria-controls="tab-multi-curl" id="btn-multi-curl">cURL</button></div><div class="tabs__panel tabs__panel--active" role="tabpanel" id="tab-multi-py" aria-labelledby="btn-multi-py"><div class="code-block" role="region" aria-label="Code Python"><div class="code-block__header"><span class="code-block__lang">Python</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-python">import requests
 
-# Headers with organization context
-headers = {
-    'Authorization': 'Bearer YOUR_ACCESS_TOKEN',
-    'X-Org-Slug': 'acme-corp'
-}
+headers = {"Authorization": "Bearer &lt;token&gt;", "X-Org-Slug": "acme-corp"}
+members = requests.get(".../organizations/members/", headers=headers).json()
+print(f"{len(members)} membres")</code></pre></div></div><div class="tabs__panel" role="tabpanel" id="tab-multi-js" aria-labelledby="btn-multi-js" hidden><div class="code-block" role="region" aria-label="Code JavaScript"><div class="code-block__header"><span class="code-block__lang">JavaScript</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-javascript">const members = await fetch("/api/v1/auth/organizations/members/", {
+  headers: { Authorization: "Bearer &lt;token&gt;", "X-Org-Slug": "acme-corp" },
+}).then(r =&gt; r.json());
+console.log(members.length, "membres");</code></pre></div></div><div class="tabs__panel" role="tabpanel" id="tab-multi-curl" aria-labelledby="btn-multi-curl" hidden><div class="code-block" role="region" aria-label="Code cURL"><div class="code-block__header"><span class="code-block__lang">cURL</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-bash">curl .../organizations/members/ \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -H "X-Org-Slug: acme-corp"</code></pre></div></div></section><section class="section"><h2 class="section__title">Gestion des erreurs</h2><div class="tabs" role="tablist"><button class="tabs__btn tabs__btn--active" role="tab" aria-selected="true" aria-controls="tab-errors-py" id="btn-errors-py">Python</button><button class="tabs__btn" role="tab" aria-selected="false" aria-controls="tab-errors-js" id="btn-errors-js">JavaScript</button><button class="tabs__btn" role="tab" aria-selected="false" aria-controls="tab-errors-curl" id="btn-errors-curl">cURL</button></div><div class="tabs__panel tabs__panel--active" role="tabpanel" id="tab-errors-py" aria-labelledby="btn-errors-py"><div class="code-block" role="region" aria-label="Code Python"><div class="code-block__header"><span class="code-block__lang">Python</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-python">import requests, time
 
-# List organization members
-response = requests.get(
-    'https://api.tenxyte.com/api/auth/organizations/acme-corp/members/',
-    headers=headers
-)
+def api_call(url, **kw):
+    for _ in range(3):
+        r = requests.post(url, **kw)
+        if r.status_code == 429:
+            time.sleep(int(r.headers.get("Retry-After", 5)))
+            continue
+        r.raise_for_status()
+        return r.json()
+    raise RuntimeError("Rate limit dépassé")</code></pre></div></div><div class="tabs__panel" role="tabpanel" id="tab-errors-js" aria-labelledby="btn-errors-js" hidden><div class="code-block" role="region" aria-label="Code JavaScript"><div class="code-block__header"><span class="code-block__lang">JavaScript</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-javascript">async function apiCall(url, opts={}, retries=3) {
+  const r = await fetch(url, opts);
+  if (r.status === 429 &amp;&amp; retries &gt; 0) {
+    await new Promise(res =&gt; setTimeout(res,
+      Number(r.headers.get("Retry-After") ?? 5) * 1000));
+    return apiCall(url, opts, retries - 1);
+  }
+  if (!r.ok) { const e = await r.json(); throw Object.assign(new Error(e.error), e); }
+  return r.json();
+}</code></pre></div></div><div class="tabs__panel" role="tabpanel" id="tab-errors-curl" aria-labelledby="btn-errors-curl" hidden><div class="code-block" role="region" aria-label="Code cURL"><div class="code-block__header"><span class="code-block__lang">cURL</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-bash"># Format d'erreur : { "error": "...", "code": "MACHINE_CODE" }
+curl -i -X POST .../login/email/ \
+  -H "Content-Type: application/json" \
+  -d '{"email":"bad@example.com","password":"wrong"}'</code></pre></div></div></section><section class="section"><h2 class="section__title">2FA</h2><div class="tabs" role="tablist"><button class="tabs__btn tabs__btn--active" role="tab" aria-selected="true" aria-controls="tab-twofa-py" id="btn-twofa-py">Python</button><button class="tabs__btn" role="tab" aria-selected="false" aria-controls="tab-twofa-js" id="btn-twofa-js">JavaScript</button><button class="tabs__btn" role="tab" aria-selected="false" aria-controls="tab-twofa-curl" id="btn-twofa-curl">cURL</button></div><div class="tabs__panel tabs__panel--active" role="tabpanel" id="tab-twofa-py" aria-labelledby="btn-twofa-py"><div class="code-block" role="region" aria-label="Code Python"><div class="code-block__header"><span class="code-block__lang">Python</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-python">import requests
 
-members = response.json()
-print(f"Found {len(members)} members")</code></pre>
-                    </div>
-                </div>
-                
-                <div class="example-section">
-                    <h2>Error Handling</h2>
-                    <div class="code-block">
-                        <div class="code-header">
-                            <span>Python - Error Handling</span>
-                            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                        </div>
-                        <pre><code>import requests
-from requests.exceptions import HTTPError
+headers = {"Authorization": "Bearer &lt;token&gt;"}
+setup = requests.post(".../2fa/setup/", headers=headers).json()
+requests.post(".../2fa/confirm/", headers=headers, json={"code": "123456"})</code></pre></div></div><div class="tabs__panel" role="tabpanel" id="tab-twofa-js" aria-labelledby="btn-twofa-js" hidden><div class="code-block" role="region" aria-label="Code JavaScript"><div class="code-block__header"><span class="code-block__lang">JavaScript</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-javascript">const { qr_code } = await fetch(".../2fa/setup/", {
+  method: "POST", headers: { Authorization: "Bearer &lt;token&gt;" }
+}).then(r =&gt; r.json());
+await fetch(".../2fa/confirm/", {
+  method: "POST",
+  headers: { Authorization: "Bearer &lt;token&gt;", "Content-Type": "application/json" },
+  body: JSON.stringify({ code: "123456" }),
+});</code></pre></div></div><div class="tabs__panel" role="tabpanel" id="tab-twofa-curl" aria-labelledby="btn-twofa-curl" hidden><div class="code-block" role="region" aria-label="Code cURL"><div class="code-block__header"><span class="code-block__lang">cURL</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-bash">curl -X POST .../2fa/setup/ -H "Authorization: Bearer &lt;token&gt;"
 
-def make_api_request(url, headers=None, json_data=None):
-    try:
-        response = requests.post(url, headers=headers, json=json_data)
-        response.raise_for_status()
-        return response.json()
-    
-    except HTTPError as e:
-        error_data = e.response.json()
-        error_code = error_data.get('code')
-        error_message = error_data.get('error')
-        
-        if error_code == 'RATE_LIMITED':
-            retry_after = e.response.headers.get('Retry-After', 60)
-            print(f"Rate limited. Retry after {retry_after} seconds")
-        elif error_code == 'INVALID_CREDENTIALS':
-            print("Invalid email or password")
-        elif error_code == 'ACCOUNT_LOCKED':
-            print("Account is temporarily locked")
-        else:
-            print(f"Error: {error_message}")
-        
-        return None
-
-# Usage
-login_data = {
-    'email': 'user@example.com',
-    'password': 'your-password'
-}
-
-result = make_api_request(
-    'https://api.tenxyte.com/api/auth/login/email/',
-    json_data=login_data
-)</code></pre>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        </div>
-    </main>
-    
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024 Tenxyte. Enhanced DRF Spectacular Documentation.</p>
-            <div class="footer-links">
-                <a href="https://github.com/tenxyte/tenxyte">GitHub</a>
-                <a href="https://api.tenxyte.com/api/docs/">Swagger UI</a>
-                <a href="https://api.tenxyte.com/api/redoc/">ReDoc</a>
-            </div>
-        </div>
-    </footer>
-    
-    <script src="script.js"></script>
-</body>
-</html>
+curl -X POST .../2fa/confirm/ \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -d '{"code":"123456"}'</code></pre></div></div></section></div></main>
+  <footer class="footer" role="contentinfo"><div class="footer__inner">
+    <p>© 2025 Tenxyte API · v0.0.0</p>
+    <nav aria-label="Liens utiles">
+      <a href="http://localhost:8000/api/docs/" target="_blank" rel="noopener">Swagger UI</a>
+      <a href="http://localhost:8000/api/redoc/" target="_blank" rel="noopener">ReDoc</a>
+      <a href="https://github.com/tenxyte/tenxyte" target="_blank" rel="noopener">GitHub</a>
+    </nav></div></footer>
+  <script>window.__SEARCH_DATA__ = {
+  "pages": [
+    {
+      "title": "Accueil",
+      "url": "index.html",
+      "content": "Accueil"
+    },
+    {
+      "title": "Référence API",
+      "url": "api-reference.html",
+      "content": "Référence API"
+    },
+    {
+      "title": "Exemples",
+      "url": "examples.html",
+      "content": "Exemples"
+    },
+    {
+      "title": "Authentification",
+      "url": "authentication.html",
+      "content": "Authentification"
+    },
+    {
+      "title": "Régénérer codes de secours",
+      "url": "api-reference.html#op-2fa-backup-codes-create",
+      "content": "Génère de nouveaux codes de secours (les anciens sont invalidés). Requiert un code TOTP valide pour sécurité. Génère 10 codes alphanumériques à usage unique de 8 caractères. Les codes ne seront affichés qu'une seule fois. Stockez-les en sécurité."
+    },
+    {
+      "title": "Confirmer activation 2FA",
+      "url": "api-reference.html#op-2fa-confirm-create",
+      "content": "Vérifie le premier code TOTP pour activer le 2FA. Le code TOTP utilise une fenêtre de 30 secondes avec une tolérance de 1 fenêtre avant/après. Une seule confirmation est requise après l'initialisation. Après activation, tous les codes de secours générés sont valides."
+    },
+    {
+      "title": "Désactiver 2FA",
+      "url": "api-reference.html#op-2fa-disable-create",
+      "content": "Désactive le 2FA après vérification du code TOTP ou d'un code de secours. Pour des raisons de sécurité, le mot de passe de l'utilisateur est également requis. Une fois désactivé, tous les codes de secours restants sont invalidés. Cette action est irréversible et nécessitera une nouvelle configuration complète."
+    },
+    {
+      "title": "Initialiser 2FA",
+      "url": "api-reference.html#op-2fa-setup-create",
+      "content": "Génère un nouveau secret TOTP et retourne le QR code et les codes de secours. Le QR code peut être scanné avec Google Authenticator, Authy, etc. L'utilisateur doit ensuite confirmer avec un code TOTP valide pour activer le 2FA. Les codes de secours (10 codes à usage unique) permettent l'accès si l'appareil est perdu."
+    },
+    {
+      "title": "Statut 2FA",
+      "url": "api-reference.html#op-2fa-status-retrieve",
+      "content": "Retourne si le 2FA est activé et le nombre de codes de secours restants."
+    },
+    {
+      "title": "Statut de suppression de compte",
+      "url": "api-reference.html#op-account-deletion-status-retrieve",
+      "content": "Obtenir le statut des demandes de suppression de compte de l'utilisateur actuel, y compris les demandes en attente, confirmées ou annulées."
+    },
+    {
+      "title": "Lister les audit logs",
+      "url": "api-reference.html#op-admin-audit-logs-list",
+      "content": "Retourne les événements d'audit paginés et filtrés."
+    },
+    {
+      "title": "Détails d'un audit log",
+      "url": "api-reference.html#op-admin-audit-logs-retrieve",
+      "content": "GET {API_PREFIX}/auth/admin/audit-logs/<log_id>/"
+    },
+    {
+      "title": "Lister les tokens blacklistés",
+      "url": "api-reference.html#op-admin-blacklisted-tokens-list",
+      "content": "Retourne les tokens JWT révoqués."
+    },
+    {
+      "title": "Nettoyer les tokens expirés",
+      "url": "api-reference.html#op-admin-blacklisted-tokens-cleanup-create",
+      "content": "Supprime les tokens blacklistés qui ont déjà expiré naturellement."
+    },
+    {
+      "title": "Lister les demandes de suppression",
+      "url": "api-reference.html#op-admin-deletion-requests-list",
+      "content": "Retourne les demandes de suppression de compte paginées et filtrées. Interface admin pour la gestion RGPD. Inclut les détails utilisateur, statut de traitement, et dates importantes. Permet de surveiller les demandes en attente et celles nécessitant un traitement manuel."
+    },
+    {
+      "title": "Détails d'une demande de suppression",
+      "url": "api-reference.html#op-admin-deletion-requests-retrieve",
+      "content": "GET {API_PREFIX}/auth/admin/deletion-requests/<request_id>/"
+    },
+    {
+      "title": "Traiter une demande de suppression",
+      "url": "api-reference.html#op-admin-deletion-requests-process-create",
+      "content": "Exécute manuellement une demande de suppression confirmée. **ATTENTION:** Cette action est irréversible et détruira définitivement toutes les données utilisateur conformément au RGPD. Nécessite une confirmation explicite. Un audit trail sera conservé. Un email de notification sera envoyé à l'utilisateur."
+    },
+    {
+      "title": "Traiter les demandes expirées",
+      "url": "api-reference.html#op-admin-deletion-requests-process-expired-create",
+      "content": "Exécute automatiquement la suppression pour toutes les demandes confirmées dont la période de grâce de 30 jours est expirée. Action batch pour la maintenance RGPD. Un rapport détaillé des traitements est retourné. Cette action est généralement exécutée par une tâche cron quotidienne."
+    },
+    {
+      "title": "Lister les tentatives de connexion",
+      "url": "api-reference.html#op-admin-login-attempts-list",
+      "content": "Retourne les tentatives de connexion paginées et filtrées."
+    },
+    {
+      "title": "Lister les refresh tokens",
+      "url": "api-reference.html#op-admin-refresh-tokens-list",
+      "content": "Retourne les refresh tokens (valeur du token masquée)."
+    },
+    {
+      "title": "Révoquer un refresh token",
+      "url": "api-reference.html#op-admin-refresh-tokens-revoke-create",
+      "content": "Révoque un refresh token spécifique."
+    },
+    {
+      "title": "Lister les utilisateurs",
+      "url": "api-reference.html#op-admin-users-list",
+      "content": "Retourne la liste paginée de tous les utilisateurs. Réservé aux admins."
+    },
+    {
+      "title": "Détails d'un utilisateur",
+      "url": "api-reference.html#op-admin-users-retrieve",
+      "content": "Récupère les informations complètes d'un utilisateur."
+    },
+    {
+      "title": "Modifier un utilisateur (admin)",
+      "url": "api-reference.html#op-admin-users-partial-update",
+      "content": "Met à jour les informations d'un utilisateur. Réservé aux admins."
+    },
+    {
+      "title": "Supprimer un utilisateur (soft delete)",
+      "url": "api-reference.html#op-admin-users-destroy",
+      "content": "Suppression logique d'un utilisateur (anonymisation RGPD)."
+    },
+    {
+      "title": "Bannir un utilisateur",
+      "url": "api-reference.html#op-admin-users-ban-create",
+      "content": "Bannit un utilisateur de manière permanente. Nécessite la permission users.ban."
+    },
+    {
+      "title": "Verrouiller un compte",
+      "url": "api-reference.html#op-admin-users-lock-create",
+      "content": "Verrouille temporairement un compte utilisateur."
+    },
+    {
+      "title": "Débannir un utilisateur",
+      "url": "api-reference.html#op-admin-users-unban-create",
+      "content": "Lève le bannissement d'un utilisateur."
+    },
+    {
+      "title": "Déverrouiller un compte",
+      "url": "api-reference.html#op-admin-users-unlock-create",
+      "content": "Déverrouille un compte utilisateur."
+    },
+    {
+      "title": "Lister les applications",
+      "url": "api-reference.html#op-applications-list",
+      "content": "Retourne la liste paginée de toutes les applications enregistrées."
+    },
+    {
+      "title": "Créer une application",
+      "url": "api-reference.html#op-applications-create",
+      "content": "Crée une nouvelle application et retourne les credentials. **Attention:** le secret n'est affiché qu'une seule fois à la création. Stockez-le sécuritairement. Les secrets peuvent être régénérés via l'endpoint dédié. L'application est inactive par défaut."
+    },
+    {
+      "title": "Détails d'une application",
+      "url": "api-reference.html#op-applications-retrieve",
+      "content": "Récupère les informations d'une application par son ID. Inclut les statistiques d'utilisation et le statut actif. Le secret n'est jamais affiché pour des raisons de sécurité."
+    },
+    {
+      "title": "Modifier une application",
+      "url": "api-reference.html#op-applications-update",
+      "content": "Met à jour les informations d'une application. Le secret ne peut pas être modifié (utilisez l'endpoint de régénération)."
+    },
+    {
+      "title": "Basculer le statut actif",
+      "url": "api-reference.html#op-applications-partial-update",
+      "content": "Active ou désactive une application. Une application désactivée ne peut plus faire d'appels API. Utile pour la maintenance ou en cas de compromission."
+    },
+    {
+      "title": "Supprimer une application",
+      "url": "api-reference.html#op-applications-destroy",
+      "content": "Supprime définitivement une application."
+    },
+    {
+      "title": "Régénérer les credentials",
+      "url": "api-reference.html#op-applications-regenerate-create",
+      "content": "Régénère l'access_key et l'access_secret d'une application. **Attention:** les anciens credentials seront immédiatement invalidés. Le nouveau secret n'est affiché qu'une seule fois. Action irréversible nécessitant confirmation."
+    },
+    {
+      "title": "Annuler la suppression de compte",
+      "url": "api-reference.html#op-cancel-account-deletion-create",
+      "content": "Annule une demande de suppression de compte pendant la période de grâce. Nécessite le mot de passe actuel pour sécurité. Le compte sera réactivé immédiatement. Un email de confirmation sera envoyé. L'annulation est possible jusqu'à la fin de la période de grâce."
+    },
+    {
+      "title": "Confirmer la suppression de compte",
+      "url": "api-reference.html#op-confirm-account-deletion-create",
+      "content": "Confirme la demande de suppression via token reçu par email. Le token est valide 24 heures. Cette étape est requise pour vérifier que l'utilisateur a bien accès à son email. Après confirmation, le compte entre en période de grâce de 30 jours."
+    },
+    {
+      "title": "Stats d'authentification",
+      "url": "api-reference.html#op-dashboard-auth-retrieve",
+      "content": "Login stats, méthodes, registrations, tokens, top failure reasons, graphiques 7j."
+    },
+    {
+      "title": "Stats RGPD",
+      "url": "api-reference.html#op-dashboard-gdpr-retrieve",
+      "content": "Demandes de suppression par statut, exports de données."
+    },
+    {
+      "title": "Stats organisations",
+      "url": "api-reference.html#op-dashboard-organizations-retrieve",
+      "content": "Organisations, membres, rôles, top organisations."
+    },
+    {
+      "title": "Stats de sécurité",
+      "url": "api-reference.html#op-dashboard-security-retrieve",
+      "content": "Audit summary, blacklisted tokens, activité suspecte, adoption 2FA."
+    },
+    {
+      "title": "Tableau de bord global",
+      "url": "api-reference.html#op-dashboard-stats-retrieve",
+      "content": "Retourne les statistiques agrégées cross-modules pour le tableau de bord admin. Les données varient selon le contexte organisationnel (X-Org-Slug) et les permissions. Inclut les métriques utilisateurs, authentification, applications, sécurité, et RGPD. Les graphiques couvrent les 7 derniers jours avec comparaisons période précédente."
+    },
+    {
+      "title": "Exporter mes données",
+      "url": "api-reference.html#op-export-user-data-create",
+      "content": "Exporte toutes les données personnelles de l'utilisateur conformément au droit à la portabilité du RGPD. Nécessite le mot de passe actuel pour des raisons de sécurité."
+    },
+    {
+      "title": "Authentification Google OAuth",
+      "url": "api-reference.html#op-google-create",
+      "content": "Authentifie un utilisateur via Google OAuth. Accepte id_token, access_token ou code."
+    },
+    {
+      "title": "Connexion par email",
+      "url": "api-reference.html#op-login-email-create",
+      "content": "Authentifie un utilisateur avec son email et mot de passe. Si 2FA est activé, le champ totp_code est requis. Le device fingerprinting est automatiquement effectué via User-Agent. Les limites de session et de device sont respectées."
+    },
+    {
+      "title": "Connexion par téléphone",
+      "url": "api-reference.html#op-login-phone-create",
+      "content": "Authentifie un utilisateur avec son numéro de téléphone et mot de passe. Le numéro doit être au format international (ex: +33 pour la France). Si 2FA est activé, le champ totp_code est requis. Le device fingerprinting est automatiquement effectué."
+    },
+    {
+      "title": "Déconnexion",
+      "url": "api-reference.html#op-logout-create",
+      "content": "Révoque le refresh token fourni pour déconnecter l'utilisateur. Si un access token est fourni dans l'en-tête Authorization, il est également blacklisté pour une déconnexion immédiate."
+    },
+    {
+      "title": "Déconnexion de tous les appareils",
+      "url": "api-reference.html#op-logout-all-create",
+      "content": "Révoque tous les refresh tokens de l'utilisateur connecté. L'access token actuel est également blacklisté. Utile pour une déconnexion de sécurité sur tous les appareils."
+    },
+    {
+      "title": "Demander un magic link",
+      "url": "api-reference.html#op-magic-link-request-create",
+      "content": "Envoie un lien de connexion à usage unique par email. Valide pendant 15 minutes par défaut (configurable via TENXYTE_MAGIC_LINK_EXPIRY_MINUTES). Le lien contient un token unique et peut être utilisé une seule fois. Pour des raisons de sécurité, ne révèle pas si l'email existe. Limité à 3 requêtes par heure par email. Nécessite TENXYTE_MAGIC_LINK_ENABLED = True."
+    },
+    {
+      "title": "Valider un magic link",
+      "url": "api-reference.html#op-magic-link-verify-retrieve",
+      "content": "Valide le token du magic link et retourne des tokens JWT si valide. Le token est à usage unique — il est invalidé après la première utilisation. Le token expire après 15 minutes par défaut. Le device fingerprinting est automatiquement effectué via User-Agent. Une fois utilisé, le token ne peut plus être utilisé même si non expiré."
+    },
+    {
+      "title": "Récupérer mon profil",
+      "url": "api-reference.html#op-me-retrieve",
+      "content": "Retourne les informations complètes de l'utilisateur connecté. Inclut les champs personnalisés, préférences, et métadonnées. Les champs sensibles (mot de passe, tokens) ne sont jamais inclus. Le profil peut varier selon les permissions et le contexte organisationnel."
+    },
+    {
+      "title": "Modifier mon profil",
+      "url": "api-reference.html#op-me-partial-update",
+      "content": "Met à jour partiellement les informations de l'utilisateur connecté. Les champs non fournis ne sont pas modifiés. Certains champs peuvent avoir des restrictions de validation (format email, téléphone international). La modification de l'email nécessite une nouvelle vérification. Les champs personnalisés suivent les règles définies par l'organisation."
+    },
+    {
+      "title": "Récupérer mes rôles et permissions",
+      "url": "api-reference.html#op-me-roles-retrieve",
+      "content": "Retourne la liste des rôles et permissions de l'utilisateur connecté."
+    },
+    {
+      "title": "Lister les rôles d'organisation",
+      "url": "api-reference.html#op-org-roles-retrieve",
+      "content": "Retourne la liste des rôles disponibles pour les organisations. Inclut les permissions associées à chaque rôle. Affiche la hiérarchie des rôles et poids de permission. Utile pour comprendre les capacités de chaque rôle."
+    },
+    {
+      "title": "Créer une organisation",
+      "url": "api-reference.html#op-organizations-create",
+      "content": "Crée une nouvelle organisation. L'utilisateur devient automatiquement owner. Supporte les hiérarchies (parent/child) avec profondeur maximale de 5 niveaux. Le slug doit être unique globalement. Limite de membres configurable (0 = illimité)."
+    },
+    {
+      "title": "Supprimer une organisation",
+      "url": "api-reference.html#op-organizations-delete-destroy",
+      "content": "Supprime une organisation (soft delete). Nécessite droits de propriétaire et header X-Org-Slug. Impossible si l'organisation a des organisations enfants. Action irréversible mais récupérable via admin. Tous les membres perdent l'accès."
+    },
+    {
+      "title": "Détails d'une organisation",
+      "url": "api-reference.html#op-organizations-detail-retrieve",
+      "content": "Retourne les détails complets d'une organisation. Nécessite le header X-Org-Slug pour identifier l'organisation. Inclut les métadonnées, statistiques membres, et hiérarchie. Uniquement accessible aux membres de l'organisation."
+    },
+    {
+      "title": "Inviter un membre par email",
+      "url": "api-reference.html#op-organizations-invitations-create",
+      "content": "Invite un utilisateur à rejoindre l'organisation par email. Nécessite la permission org.members.invite. Un email avec un lien d'acceptation est envoyé. L'invitation expire après le nombre de jours spécifié. L'utilisateur doit créer un compte ou se connecter pour accepter."
+    },
+    {
+      "title": "Lister les organisations",
+      "url": "api-reference.html#op-organizations-list-retrieve",
+      "content": "Retourne la liste des organisations où l'utilisateur est membre. Supporte la recherche, le filtrage et la pagination. Inclut les statistiques (nombre de membres, hiérarchie)."
+    },
+    {
+      "title": "Lister les membres",
+      "url": "api-reference.html#op-organizations-members-retrieve",
+      "content": "Retourne la liste des membres de l'organisation. Inclut les rôles, permissions héritées, et statut. Supporte la recherche, filtrage par rôle et pagination. Affiche les permissions effectives (directes + héritées)."
+    },
+    {
+      "title": "Mettre à jour le rôle d'un membre",
+      "url": "api-reference.html#op-organizations-members-partial-update",
+      "content": "Met à jour le rôle d'un membre existant. Nécessite la permission org.members.manage. Un propriétaire ne peut pas être rétrogradé par un autre membre. Le dernier propriétaire ne peut pas être rétrogradé. L'utilisateur reçoit une notification de changement de rôle."
+    },
+    {
+      "title": "Retirer un membre",
+      "url": "api-reference.html#op-organizations-members-remove-destroy",
+      "content": "Retire un membre de l'organisation. Nécessite la permission org.members.remove. Un propriétaire ne peut pas être retiré par un autre membre. Le dernier propriétaire ne peut pas être retiré. Un membre peut se retirer lui-même (auto-suppression). L'utilisateur perd immédiatement l'accès à l'organisation."
+    },
+    {
+      "title": "Ajouter un membre",
+      "url": "api-reference.html#op-organizations-members-add-create",
+      "content": "Ajoute un utilisateur comme membre de l'organisation. Nécessite la permission org.members.invite. Respecte les limites de membres configurées. L'utilisateur reçoit une notification d'invitation. Le propriétaire ne peut pas être ajouté comme membre simple."
+    },
+    {
+      "title": "Hiérarchie de l'organisation",
+      "url": "api-reference.html#op-organizations-tree-retrieve",
+      "content": "Retourne l'arbre hiérarchique de l'organisation."
+    },
+    {
+      "title": "Mettre à jour une organisation",
+      "url": "api-reference.html#op-organizations-update-partial-update",
+      "content": "Met à jour les informations d'une organisation. Nécessite le header X-Org-Slug et droits d'admin. Le changement de parent respecte les contraintes de hiérarchie. Impossible de créer des boucles ou dépasser 5 niveaux. La limite de membres ne peut pas être inférieure au nombre actuel."
+    },
+    {
+      "title": "Demander un code OTP",
+      "url": "api-reference.html#op-otp-request-create",
+      "content": "Génère et envoie un code OTP par email ou SMS selon le type demandé. Le code expire après 10 minutes. Limité à 5 requêtes par heure par utilisateur. Supporte les types : email_verification, phone_verification, password_reset."
+    },
+    {
+      "title": "Vérifier le code OTP email",
+      "url": "api-reference.html#op-otp-verify-email-create",
+      "content": "Vérifie le code OTP envoyé par email pour valider l'adresse email. Le code doit être utilisé dans les 10 minutes après réception. Après 3 tentatives échouées, le code est invalidé. Une fois vérifiée, l'adresse email ne peut plus être modifiée."
+    },
+    {
+      "title": "Vérifier le code OTP téléphone",
+      "url": "api-reference.html#op-otp-verify-phone-create",
+      "content": "Vérifie le code OTP envoyé par SMS pour valider le numéro de téléphone. Le code doit être utilisé dans les 10 minutes après réception. Après 3 tentatives échouées, le code est invalidé. Le numéro de téléphone doit être au format international enregistré."
+    },
+    {
+      "title": "Changer le mot de passe",
+      "url": "api-reference.html#op-password-change-create",
+      "content": "Change le mot de passe de l'utilisateur connecté. Requiert le mot de passe actuel pour validation. Vérifie si le nouveau mot de passe a été exposé dans des fuites de données. Le nouveau mot de passe ne doit pas être identique aux 5 derniers mots de passe utilisés. Après changement, déconnecte toutes les sessions sauf la session actuelle."
+    },
+    {
+      "title": "Exigences de mot de passe",
+      "url": "api-reference.html#op-password-requirements-retrieve",
+      "content": "Retourne la liste des exigences pour un mot de passe valide."
+    },
+    {
+      "title": "Confirmer la réinitialisation de mot de passe",
+      "url": "api-reference.html#op-password-reset-confirm-create",
+      "content": "Vérifie le code OTP et définit un nouveau mot de passe. Révoque automatiquement tous les refresh tokens de l'utilisateur. Vérifie si le nouveau mot de passe a été exposé dans des fuites de données. Le code OTP doit être utilisé dans les 15 minutes après réception."
+    },
+    {
+      "title": "Demander une réinitialisation de mot de passe",
+      "url": "api-reference.html#op-password-reset-request-create",
+      "content": "Envoie un code OTP par email ou SMS pour réinitialiser le mot de passe. Pour des raisons de sécurité, ne révèle pas si le compte existe. Le code OTP expire après 15 minutes. Limité à 3 requêtes par heure."
+    },
+    {
+      "title": "Verifier la force d'un mot de passe",
+      "url": "api-reference.html#op-password-strength-create",
+      "content": "Retourne le score et la force d'un mot de passe sans l'enregistrer."
+    },
+    {
+      "title": "Lister les permissions",
+      "url": "api-reference.html#op-permissions-list",
+      "content": "Retourne la liste paginée de toutes les permissions disponibles."
+    },
+    {
+      "title": "Créer une permission",
+      "url": "api-reference.html#op-permissions-create",
+      "content": "Crée une nouvelle permission."
+    },
+    {
+      "title": "Détails d'une permission",
+      "url": "api-reference.html#op-permissions-retrieve",
+      "content": "Récupère les informations d'une permission par son ID."
+    },
+    {
+      "title": "Modifier une permission",
+      "url": "api-reference.html#op-permissions-update",
+      "content": "Met à jour les informations d'une permission."
+    },
+    {
+      "title": "Supprimer une permission",
+      "url": "api-reference.html#op-permissions-destroy",
+      "content": "Supprime définitivement une permission."
+    },
+    {
+      "title": "Rafraîchir le token d'accès",
+      "url": "api-reference.html#op-refresh-create",
+      "content": "Génère un nouveau access token à partir d'un refresh token valide. Le refresh token est automatiquement roté pour améliorer la sécurité. Les refresh tokens expirés ou blacklistés sont rejetés."
+    },
+    {
+      "title": "Inscription d'un nouvel utilisateur",
+      "url": "api-reference.html#op-register-create",
+      "content": "Crée un nouveau compte utilisateur. Envoie automatiquement un code OTP de vérification si configuré. Vérifie si le mot de passe a été exposé dans des fuites de données."
+    },
+    {
+      "title": "Demander la suppression de compte",
+      "url": "api-reference.html#op-request-account-deletion-create",
+      "content": "Initie le processus de suppression de compte conforme au RGPD. Le compte sera marqué pour suppression après une période de grâce de 30 jours pendant laquelle l'utilisateur peut annuler. Nécessite le mot de passe actuel et code OTP si 2FA activé. Toutes les données seront anonymisées après la période de grâce."
+    },
+    {
+      "title": "Lister les rôles",
+      "url": "api-reference.html#op-roles-list",
+      "content": "Retourne la liste paginée de tous les rôles disponibles."
+    },
+    {
+      "title": "Créer un rôle",
+      "url": "api-reference.html#op-roles-create",
+      "content": "Crée un nouveau rôle avec les permissions spécifiées."
+    },
+    {
+      "title": "Détails d'un rôle",
+      "url": "api-reference.html#op-roles-retrieve",
+      "content": "Récupère les informations d'un rôle par son ID."
+    },
+    {
+      "title": "Modifier un rôle",
+      "url": "api-reference.html#op-roles-update",
+      "content": "Met à jour les informations d'un rôle."
+    },
+    {
+      "title": "Supprimer un rôle",
+      "url": "api-reference.html#op-roles-destroy",
+      "content": "Supprime définitivement un rôle."
+    },
+    {
+      "title": "Lister les permissions d'un rôle",
+      "url": "api-reference.html#op-roles-permissions-retrieve",
+      "content": "Récupère toutes les permissions assignées à un rôle."
+    },
+    {
+      "title": "Ajouter des permissions à un rôle",
+      "url": "api-reference.html#op-roles-permissions-create",
+      "content": "Ajoute une ou plusieurs permissions à un rôle existant."
+    },
+    {
+      "title": "Retirer des permissions d'un rôle",
+      "url": "api-reference.html#op-roles-permissions-destroy",
+      "content": "Retire une ou plusieurs permissions d'un rôle existant."
+    },
+    {
+      "title": "Authentification sociale OAuth2",
+      "url": "api-reference.html#op-social-create",
+      "content": "Authentifie un utilisateur via un provider OAuth2 (google, github, microsoft, facebook). Accepte un access_token, un authorization code, ou un id_token (Google uniquement). Crée automatiquement un compte si l'utilisateur n'existe pas encore. Device fingerprinting automatique via User-Agent. Rate limiting appliqué par provider (10 requêtes/heure)."
+    },
+    {
+      "title": "Lister les permissions directes d'un utilisateur",
+      "url": "api-reference.html#op-users-permissions-retrieve",
+      "content": "Récupère toutes les permissions assignées directement à un utilisateur (hors rôles)."
+    },
+    {
+      "title": "Ajouter des permissions directes à un utilisateur",
+      "url": "api-reference.html#op-users-permissions-create",
+      "content": "Ajoute une ou plusieurs permissions directement à un utilisateur."
+    },
+    {
+      "title": "Retirer des permissions directes d'un utilisateur",
+      "url": "api-reference.html#op-users-permissions-destroy",
+      "content": "Retire une ou plusieurs permissions directes d'un utilisateur."
+    },
+    {
+      "title": "Lister les rôles d'un utilisateur",
+      "url": "api-reference.html#op-users-roles-retrieve",
+      "content": "Récupère tous les rôles assignés à un utilisateur."
+    },
+    {
+      "title": "Assigner un rôle",
+      "url": "api-reference.html#op-users-roles-create",
+      "content": "Ajoute un rôle à un utilisateur."
+    },
+    {
+      "title": "Retirer un rôle",
+      "url": "api-reference.html#op-users-roles-destroy",
+      "content": "Retire un rôle d'un utilisateur. Le role_code doit être passé en query parameter."
+    },
+    {
+      "title": "Commencer l'authentification par passkey",
+      "url": "api-reference.html#op-webauthn-authenticate-begin-create",
+      "content": "Génère un challenge WebAuthn pour l'authentification. Supporte les passkeys resident keys (username-less). Le challenge expire après 5 minutes. User verification configurable (required/preferred/discouraged). AllowCredentials peut être vide pour resident keys ou spécifique."
+    },
+    {
+      "title": "Finaliser l'authentification par passkey",
+      "url": "api-reference.html#op-webauthn-authenticate-complete-create",
+      "content": "Vérifie l'assertion WebAuthn et retourne des tokens JWT. Valide le signature, le challenge et le counter de la credential. Le counter prévient les attaques replay. Device fingerprinting automatique via User-Agent. Supporte les resident keys (username-less authentication)."
+    },
+    {
+      "title": "Lister les passkeys",
+      "url": "api-reference.html#op-webauthn-credentials-retrieve",
+      "content": "Retourne la liste des passkeys enregistrées pour l'utilisateur. Inclut les métadonnées (nom, date de création, dernière utilisation). Le credential ID est masqué pour sécurité. Affiche le type d'authentificateur (platform, cross-platform)."
+    },
+    {
+      "title": "Supprimer une passkey",
+      "url": "api-reference.html#op-webauthn-credentials-destroy",
+      "content": "Supprime définitivement une passkey de l'utilisateur. Action irréversible. Prévient l'accès depuis ce device à l'avenir. Vérifie que la credential appartient bien à l'utilisateur."
+    },
+    {
+      "title": "Commencer l'enregistrement d'une passkey",
+      "url": "api-reference.html#op-webauthn-register-begin-create",
+      "content": "Génère un challenge WebAuthn pour l'enregistrement d'une nouvelle passkey. Le challenge expire après 5 minutes. Supporte l'authentification biométrique (Face ID, Touch ID, Windows Hello). Les options incluent user verification (required/preferred/discouraged) et les algorithmes cryptographiques supportés (ES256, RS256, EdDSA)."
+    },
+    {
+      "title": "Finaliser l'enregistrement d'une passkey",
+      "url": "api-reference.html#op-webauthn-register-complete-create",
+      "content": "Vérifie la réponse WebAuthn du navigateur et enregistre la credential. Prévient les doublons via credential exclusion. Valide l'attestation et le format de la clé publique. Enregistre les métadonnées du device (nom, type, date)."
+    }
+  ]
+};</script>
+  <script src="script.js"></script>
+</body></html>

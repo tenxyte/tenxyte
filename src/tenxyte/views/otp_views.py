@@ -12,7 +12,7 @@ from ..throttles import OTPRequestThrottle, OTPVerifyThrottle
 
 class RequestOTPView(APIView):
     """
-    POST /api/auth/otp/request/
+    POST {API_PREFIX}/auth/otp/request/
     Demander un code OTP
     """
     throttle_classes = [OTPRequestThrottle]
@@ -121,7 +121,7 @@ class RequestOTPView(APIView):
 
 class VerifyEmailOTPView(APIView):
     """
-    POST /api/auth/otp/verify/email/
+    POST {API_PREFIX}/auth/otp/verify/email/
     Vérifier le code OTP email
     """
     throttle_classes = [OTPVerifyThrottle]
@@ -222,7 +222,7 @@ class VerifyEmailOTPView(APIView):
 
 class VerifyPhoneOTPView(APIView):
     """
-    POST /api/auth/otp/verify/phone/
+    POST {API_PREFIX}/auth/otp/verify/phone/
     Vérifier le code OTP téléphone
     """
     throttle_classes = [OTPVerifyThrottle]

@@ -1,6 +1,6 @@
 # API Endpoints Reference
 
-All endpoints are prefixed with your configured base path (e.g. `/api/auth/`).
+All endpoints are prefixed with your configured base path (e.g. `/api/v1/auth/`).
 
 Every request **must** include application credentials:
 ```

@@ -8,6 +8,15 @@ This test validates that all examples in the documentation are:
 4. Cover all error codes and success scenarios
 """
 
+import sys
+import os
+
+# Ensure src is in path to import tenxyte correctly before Django machinery starts
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+src_dir = os.path.join(project_root, 'src')
+if src_dir not in sys.path:
+    sys.path.insert(0, src_dir)
+
 import json
 import pytest
 from rest_framework.test import APITestCase
@@ -15,7 +24,7 @@ from rest_framework import status
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 
-from ..docs.schemas import (
+from tenxyte.docs.schemas import (
     LOGIN_SUCCESS_EXAMPLE,
     LOGIN_RATE_LIMITED_EXAMPLE,
     VALIDATION_ERROR_EXAMPLE,
@@ -244,7 +253,7 @@ class DocumentationIntegrationTestCase(APITestCase):
 
     def test_login_endpoint_matches_documentation(self):
         """Test that /login/email/ endpoint matches documented response format."""
-        url = reverse('login-email')
+        url = reverse('authentication:login_email')
         data = {
             'email': 'test@example.com',
             'password': 'testpass123'
@@ -270,7 +279,7 @@ class DocumentationIntegrationTestCase(APITestCase):
 
     def test_validation_errors_match_documentation(self):
         """Test that validation errors match documented error format."""
-        url = reverse('login-email')
+        url = reverse('authentication:login_email')
         data = {
             'email': 'invalid-email',
             'password': '123'  # Too short
@@ -300,10 +309,10 @@ class DocumentationCoverageTestCase(APITestCase):
         # This would be a comprehensive test checking each endpoint
         # For now, we'll check a few key ones
         endpoints_with_examples = [
-            'login-email',
-            'register',
-            'me',
-            'me-roles'
+            'authentication:login_email',
+            'authentication:register',
+            'authentication:me',
+            'authentication:my_roles'
         ]
         
         for endpoint in endpoints_with_examples:

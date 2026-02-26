@@ -4,11 +4,14 @@ Service Magic Link pour l'authentification sans mot de passe.
 import logging
 from typing import Optional, Tuple, Dict, Any
 
-from ..models import User, Application
+from ..models import get_user_model, get_application_model
 from ..models.magic_link import MagicLinkToken
 from ..conf import auth_settings
 from .auth_service import AuthService
 from .email_service import EmailService
+
+User = get_user_model()
+Application = get_application_model()
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +31,8 @@ class MagicLinkService:
         application: Optional[Application] = None,
         ip_address: str = None,
         device_info: str = '',
-        app_name: str = 'Tenxyte'
+        app_name: str = 'Tenxyte',
+        validation_url: str = None
     ) -> Tuple[bool, str]:
         """
         Génère un magic link et l'envoie par email.
@@ -68,7 +72,8 @@ class MagicLinkService:
             token=raw_token,
             first_name=getattr(user, 'first_name', ''),
             expiry_minutes=expiry_minutes,
-            app_name=app_name
+            app_name=app_name,
+            validation_url=validation_url
         )
 
         if not sent:
@@ -116,4 +121,15 @@ class MagicLinkService:
             device_info=device_info
         )
 
-        return True, jwt_data, ''
+        # Sérialiser les données de l'utilisateur
+        from ..serializers.auth_serializers import UserSerializer
+        user_serializer = UserSerializer(user)
+        user_data = user_serializer.data
+
+        # Combiner les tokens JWT et les données utilisateur
+        response_data = {
+            **jwt_data,  # access, refresh, etc.
+            'user': user_data
+        }
+
+        return True, response_data, ''

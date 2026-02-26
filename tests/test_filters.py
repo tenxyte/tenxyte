@@ -1,6 +1,9 @@
 """
 Tests pour les filtres et la pagination.
 """
+from tenxyte.conf import auth_settings
+api_prefix = auth_settings.API_PREFIX
+
 import pytest
 from unittest.mock import Mock
 from django.contrib.auth import get_user_model
@@ -216,7 +219,7 @@ class TestPaginatedEndpoints:
                 defaults={'name': f'Test Perm {i}'}
             )
 
-        response = authenticated_admin_client.get('/api/auth/permissions/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/permissions/')
 
         if response.status_code == status.HTTP_200_OK:
             assert 'results' in response.data or isinstance(response.data, list)
@@ -230,7 +233,7 @@ class TestPaginatedEndpoints:
                 defaults={'name': f'Test Sized {i}'}
             )
 
-        response = authenticated_admin_client.get('/api/auth/permissions/?page_size=5')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/permissions/?page_size=5')
 
         if response.status_code == status.HTTP_200_OK and 'results' in response.data:
             assert len(response.data['results']) <= 5
@@ -244,5 +247,5 @@ class TestPaginatedEndpoints:
                 defaults={'name': f'Role {i}'}
             )
 
-        response = authenticated_admin_client.get('/api/auth/roles/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/roles/')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN, status.HTTP_401_UNAUTHORIZED]

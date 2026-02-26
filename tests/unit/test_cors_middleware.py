@@ -5,6 +5,9 @@ Vérifie que les headers CORS et de sécurité sont correctement ajoutés
 selon la configuration dans settings.py.
 """
 
+from tenxyte.conf import auth_settings
+api_prefix = auth_settings.API_PREFIX
+
 import pytest
 from django.http import HttpResponse
 from django.test import RequestFactory, override_settings
@@ -35,7 +38,7 @@ class TestCORSMiddlewareDisabled:
     def test_cors_disabled_by_default(self, get_response, request_factory):
         """Par défaut, CORS est désactivé et aucun header n'est ajouté."""
         mw = CORSMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/', HTTP_ORIGIN='https://example.com')
+        request = request_factory.get(f'{api_prefix}/test/', HTTP_ORIGIN='https://example.com')
         response = mw(request)
 
         assert response.status_code == 200
@@ -45,7 +48,7 @@ class TestCORSMiddlewareDisabled:
     def test_cors_explicitly_disabled(self, get_response, request_factory):
         """CORS explicitement désactivé n'ajoute aucun header."""
         mw = CORSMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/', HTTP_ORIGIN='https://example.com')
+        request = request_factory.get(f'{api_prefix}/test/', HTTP_ORIGIN='https://example.com')
         response = mw(request)
 
         assert 'Access-Control-Allow-Origin' not in response
@@ -61,7 +64,7 @@ class TestCORSMiddlewareEnabled:
     def test_allowed_origin_gets_cors_headers(self, get_response, request_factory):
         """Une origine autorisée reçoit les headers CORS."""
         mw = CORSMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/', HTTP_ORIGIN='https://example.com')
+        request = request_factory.get(f'{api_prefix}/test/', HTTP_ORIGIN='https://example.com')
         response = mw(request)
 
         assert response['Access-Control-Allow-Origin'] == 'https://example.com'
@@ -74,7 +77,7 @@ class TestCORSMiddlewareEnabled:
     def test_disallowed_origin_no_cors_headers(self, get_response, request_factory):
         """Une origine non autorisée ne reçoit pas de headers CORS."""
         mw = CORSMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/', HTTP_ORIGIN='https://evil.com')
+        request = request_factory.get(f'{api_prefix}/test/', HTTP_ORIGIN='https://evil.com')
         response = mw(request)
 
         assert 'Access-Control-Allow-Origin' not in response
@@ -86,7 +89,7 @@ class TestCORSMiddlewareEnabled:
     def test_no_origin_header_no_cors(self, get_response, request_factory):
         """Sans header Origin, aucun header CORS n'est ajouté."""
         mw = CORSMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/')
+        request = request_factory.get(f'{api_prefix}/test/')
         response = mw(request)
 
         assert 'Access-Control-Allow-Origin' not in response
@@ -98,7 +101,7 @@ class TestCORSMiddlewareEnabled:
     def test_allow_all_origins(self, get_response, request_factory):
         """CORS_ALLOW_ALL_ORIGINS=True accepte toute origine."""
         mw = CORSMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/', HTTP_ORIGIN='https://anything.com')
+        request = request_factory.get(f'{api_prefix}/test/', HTTP_ORIGIN='https://anything.com')
         response = mw(request)
 
         assert response['Access-Control-Allow-Origin'] == 'https://anything.com'
@@ -111,7 +114,7 @@ class TestCORSMiddlewareEnabled:
     def test_credentials_header(self, get_response, request_factory):
         """Access-Control-Allow-Credentials est ajouté quand activé."""
         mw = CORSMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/', HTTP_ORIGIN='https://app.com')
+        request = request_factory.get(f'{api_prefix}/test/', HTTP_ORIGIN='https://app.com')
         response = mw(request)
 
         assert response['Access-Control-Allow-Credentials'] == 'true'
@@ -124,7 +127,7 @@ class TestCORSMiddlewareEnabled:
     def test_no_credentials_header_when_disabled(self, get_response, request_factory):
         """Access-Control-Allow-Credentials absent quand désactivé."""
         mw = CORSMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/', HTTP_ORIGIN='https://app.com')
+        request = request_factory.get(f'{api_prefix}/test/', HTTP_ORIGIN='https://app.com')
         response = mw(request)
 
         assert 'Access-Control-Allow-Credentials' not in response
@@ -143,7 +146,7 @@ class TestCORSPreflight:
     def test_preflight_returns_200_with_cors_headers(self, get_response, request_factory):
         """Une requête OPTIONS preflight retourne 200 avec les headers CORS."""
         mw = CORSMiddleware(get_response)
-        request = request_factory.options('/api/v1/test/', HTTP_ORIGIN='https://frontend.com')
+        request = request_factory.options(f'{api_prefix}/test/', HTTP_ORIGIN='https://frontend.com')
         response = mw(request)
 
         assert response.status_code == 200
@@ -162,7 +165,7 @@ class TestCORSPreflight:
     def test_preflight_disallowed_origin(self, get_response, request_factory):
         """Un preflight d'une origine non autorisée retourne 200 sans headers CORS."""
         mw = CORSMiddleware(get_response)
-        request = request_factory.options('/api/v1/test/', HTTP_ORIGIN='https://evil.com')
+        request = request_factory.options(f'{api_prefix}/test/', HTTP_ORIGIN='https://evil.com')
         response = mw(request)
 
         assert response.status_code == 200
@@ -176,7 +179,7 @@ class TestCORSPreflight:
     def test_expose_headers(self, get_response, request_factory):
         """Access-Control-Expose-Headers est ajouté quand configuré."""
         mw = CORSMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/', HTTP_ORIGIN='https://app.com')
+        request = request_factory.get(f'{api_prefix}/test/', HTTP_ORIGIN='https://app.com')
         response = mw(request)
 
         assert 'X-Custom-Header' in response['Access-Control-Expose-Headers']
@@ -192,7 +195,7 @@ class TestCORSMultipleOrigins:
     )
     def test_first_origin_allowed(self, get_response, request_factory):
         mw = CORSMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/', HTTP_ORIGIN='https://app1.com')
+        request = request_factory.get(f'{api_prefix}/test/', HTTP_ORIGIN='https://app1.com')
         response = mw(request)
         assert response['Access-Control-Allow-Origin'] == 'https://app1.com'
 
@@ -202,7 +205,7 @@ class TestCORSMultipleOrigins:
     )
     def test_second_origin_allowed(self, get_response, request_factory):
         mw = CORSMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/', HTTP_ORIGIN='https://app2.com')
+        request = request_factory.get(f'{api_prefix}/test/', HTTP_ORIGIN='https://app2.com')
         response = mw(request)
         assert response['Access-Control-Allow-Origin'] == 'https://app2.com'
 
@@ -212,7 +215,7 @@ class TestCORSMultipleOrigins:
     )
     def test_unlisted_origin_rejected(self, get_response, request_factory):
         mw = CORSMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/', HTTP_ORIGIN='https://app3.com')
+        request = request_factory.get(f'{api_prefix}/test/', HTTP_ORIGIN='https://app3.com')
         response = mw(request)
         assert 'Access-Control-Allow-Origin' not in response
 
@@ -227,7 +230,7 @@ class TestSecurityHeadersDisabled:
     def test_security_headers_disabled_by_default(self, get_response, request_factory):
         """Par défaut, aucun header de sécurité n'est ajouté."""
         mw = SecurityHeadersMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/')
+        request = request_factory.get(f'{api_prefix}/test/')
         response = mw(request)
 
         assert 'X-Content-Type-Options' not in response
@@ -241,7 +244,7 @@ class TestSecurityHeadersEnabled:
     def test_default_security_headers(self, get_response, request_factory):
         """Les headers de sécurité par défaut sont ajoutés."""
         mw = SecurityHeadersMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/')
+        request = request_factory.get(f'{api_prefix}/test/')
         response = mw(request)
 
         assert response['X-Content-Type-Options'] == 'nosniff'
@@ -259,7 +262,7 @@ class TestSecurityHeadersEnabled:
     def test_custom_security_headers(self, get_response, request_factory):
         """Les headers personnalisés remplacent les défauts."""
         mw = SecurityHeadersMiddleware(get_response)
-        request = request_factory.get('/api/v1/test/')
+        request = request_factory.get(f'{api_prefix}/test/')
         response = mw(request)
 
         assert response['X-Frame-Options'] == 'SAMEORIGIN'
@@ -274,7 +277,7 @@ class TestSecurityHeadersEnabled:
             return HttpResponse("Not Found", status=404)
 
         mw = SecurityHeadersMiddleware(error_response)
-        request = request_factory.get('/api/v1/missing/')
+        request = request_factory.get(f'{api_prefix}/missing/')
         response = mw(request)
 
         assert response.status_code == 404

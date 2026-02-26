@@ -168,6 +168,34 @@ class TenxyteSettings:
         return default
 
     # =============================================
+    # API Routing & Base Settings
+    # =============================================
+
+    @property
+    def BASE_URL(self):
+        """URL de base de l'API."""
+        return self._get('BASE_URL', 'http://127.0.0.1:8000')
+
+    @property
+    def BASE_URL(self):
+        """URL de base de l'API."""
+        return self._get('BASE_URL', 'http://127.0.0.1:8000')
+
+    @property
+    def API_VERSION(self):
+        """Version de l'API (ex: 1)."""
+        return self._get('API_VERSION', 1)
+
+    @property
+    def API_PREFIX(self):
+        """Prefixe de l'API (ex: /api/v1)."""
+        prefix = self._get('API_PREFIX', f'/api/v{self.API_VERSION}')
+        # S'assurer que ça commence par / mais ne finit pas par /
+        if not prefix.startswith('/'):
+            prefix = '/' + prefix
+        return prefix.rstrip('/')
+
+    # =============================================
     # JWT Settings
     # =============================================
 
@@ -388,12 +416,12 @@ class TenxyteSettings:
     @property
     def EXEMPT_PATHS(self):
         """Chemins exemptés de l'authentification par application (match par préfixe)."""
-        return self._get('EXEMPT_PATHS', ['/admin/', '/api/v1/health/', '/api/v1/docs/'])
+        return self._get('EXEMPT_PATHS', ['/admin/', f'{self.API_PREFIX}/health/', f'{self.API_PREFIX}/docs/'])
 
     @property
     def EXACT_EXEMPT_PATHS(self):
         """Chemins exemptés de l'authentification par application (match exact)."""
-        return self._get('EXACT_EXEMPT_PATHS', ['/api/v1/'])
+        return self._get('EXACT_EXEMPT_PATHS', [f'{self.API_PREFIX}/'])
 
     # =============================================
     # Session & Device Limits
@@ -549,15 +577,15 @@ class TenxyteSettings:
         Permet de throttle n'importe quelle route sans créer de classe custom.
 
         Format: { 'url_prefix': 'rate' }
-        - Prefix match par défaut: '/api/v1/products/' matche '/api/v1/products/123/'
-        - Match exact avec '$': '/api/v1/health/$'
+        - Prefix match par défaut: '{API_PREFIX}/products/' matche '{API_PREFIX}/products/123/'
+        - Match exact avec '$': '{API_PREFIX}/health/$'
         - Rates: 'X/sec', 'X/min', 'X/hour', 'X/day'
 
         Exemple:
             TENXYTE_SIMPLE_THROTTLE_RULES = {
-                '/api/v1/products/': '100/hour',
-                '/api/v1/search/': '30/min',
-                '/api/v1/upload/': '5/hour',
+                '{API_PREFIX}/products/': '100/hour',
+                '{API_PREFIX}/search/': '30/min',
+                '{API_PREFIX}/upload/': '5/hour',
             }
 
         Nécessite d'ajouter 'tenxyte.throttles.SimpleThrottleRule' dans

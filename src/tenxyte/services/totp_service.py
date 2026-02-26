@@ -15,8 +15,10 @@ from typing import Tuple, List, Optional
 import pyotp
 import qrcode
 
-from ..models import User
+from ..models import get_user_model
 from ..conf import auth_settings
+
+User = get_user_model()
 
 logger = logging.getLogger(__name__)
 

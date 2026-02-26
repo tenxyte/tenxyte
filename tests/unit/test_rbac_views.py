@@ -11,6 +11,9 @@ Couvre :
 - UserDirectPermissionsView GET / POST / DELETE
 """
 
+from tenxyte.conf import auth_settings
+api_prefix = auth_settings.API_PREFIX
+
 import json
 NONEXISTENT_ID = 999999999  # ID entier qui n'existera jamais en DB (BigAutoField)
 import pytest
@@ -78,7 +81,7 @@ class TestPermissionListView:
         """GET permissions.view → 200."""
         app = _app("PListApp")
         user = _create_user_with_perms("plist_ok@t.com", app, "permissions.view")
-        req = _authed_request("get", "/api/auth/permissions/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/permissions/", user, app)
         response = PermissionListView.as_view()(req)
         assert response.status_code == 200
 
@@ -87,7 +90,7 @@ class TestPermissionListView:
         """GET sans permissions.view → 403."""
         app = _app("PListNoPerm")
         user = _create_user_with_perms("plist_noperm@t.com", app)
-        req = _authed_request("get", "/api/auth/permissions/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/permissions/", user, app)
         response = PermissionListView.as_view()(req)
         assert response.status_code == 403
 
@@ -97,7 +100,7 @@ class TestPermissionListView:
         app = _app("PCreateApp")
         user = _create_user_with_perms("pcreate_ok@t.com", app, "permissions.create")
         req = _authed_request(
-            "post", "/api/auth/permissions/", user, app,
+            "post", f"{api_prefix}/auth/permissions/", user, app,
             data={"code": "test.new_perm_v2", "name": "New Test Perm V2"}
         )
         response = PermissionListView.as_view()(req)
@@ -110,7 +113,7 @@ class TestPermissionListView:
         app = _app("PCreateBad")
         user = _create_user_with_perms("pcreate_bad@t.com", app, "permissions.create")
         req = _authed_request(
-            "post", "/api/auth/permissions/", user, app,
+            "post", f"{api_prefix}/auth/permissions/", user, app,
             data={"name": "Missing Code"}
         )
         response = PermissionListView.as_view()(req)
@@ -122,11 +125,23 @@ class TestPermissionListView:
         app = _app("PCreateNoPerm")
         user = _create_user_with_perms("pcreate_noperm@t.com", app)
         req = _authed_request(
-            "post", "/api/auth/permissions/", user, app,
+            "post", f"{api_prefix}/auth/permissions/", user, app,
             data={"code": "x.y", "name": "XY"}
         )
         response = PermissionListView.as_view()(req)
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_list_permissions_unpaginated(self):
+        """GET unpaginated permissions."""
+        from unittest.mock import patch
+        app = _app("PListUnpagApp")
+        user = _create_user_with_perms("plist_unpag@t.com", app, "permissions.view")
+        req = _authed_request("get", f"{api_prefix}/auth/permissions/", user, app)
+        with patch('tenxyte.views.rbac_views.TenxytePagination.paginate_queryset', return_value=None):
+            response = PermissionListView.as_view()(req)
+        assert response.status_code == 200
+        assert isinstance(response.data, list)
 
 
 # ===========================================================================
@@ -143,7 +158,7 @@ class TestPermissionDetailView:
         user = _create_user_with_perms("pdetail_ok@t.com", app, "permissions.view")
         perm = Permission.objects.create(code="detail.test.perm", name="Detail Test Perm")
 
-        req = _authed_request("get", f"/api/auth/permissions/{perm.id}/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/permissions/{perm.id}/", user, app)
         response = PermissionDetailView.as_view()(req, permission_id=str(perm.id))
         assert response.status_code == 200
         assert response.data["code"] == "detail.test.perm"
@@ -153,7 +168,7 @@ class TestPermissionDetailView:
         """GET sur ID inexistant → 404."""
         app = _app("PDetailApp404")
         user = _create_user_with_perms("pdetail_404@t.com", app, "permissions.view")
-        req = _authed_request("get", "/api/auth/permissions/bad/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/permissions/bad/", user, app)
         response = PermissionDetailView.as_view()(req, permission_id=NONEXISTENT_ID)
         assert response.status_code == 404
 
@@ -166,7 +181,7 @@ class TestPermissionDetailView:
         perm = Permission.objects.create(code="update.this.perm", name="Original Name")
 
         req = _authed_request(
-            "put", f"/api/auth/permissions/{perm.id}/", user, app,
+            "put", f"{api_prefix}/auth/permissions/{perm.id}/", user, app,
             data={"name": "Updated Name"}
         )
         response = PermissionDetailView.as_view()(req, permission_id=str(perm.id))
@@ -179,7 +194,7 @@ class TestPermissionDetailView:
         app = _app("PUpdateApp404")
         user = _create_user_with_perms("pupdate_404@t.com", app, "permissions.update")
         req = _authed_request(
-            "put", "/api/auth/permissions/bad/", user, app,
+            "put", f"{api_prefix}/auth/permissions/bad/", user, app,
             data={"name": "X"}
         )
         response = PermissionDetailView.as_view()(req, permission_id=NONEXISTENT_ID)
@@ -193,7 +208,7 @@ class TestPermissionDetailView:
         user = _create_user_with_perms("pdelete_ok@t.com", app, "permissions.delete")
         perm = Permission.objects.create(code="delete.me.perm", name="Delete Me")
 
-        req = _authed_request("delete", f"/api/auth/permissions/{perm.id}/", user, app)
+        req = _authed_request("delete", f"{api_prefix}/auth/permissions/{perm.id}/", user, app)
         response = PermissionDetailView.as_view()(req, permission_id=str(perm.id))
         assert response.status_code == 200
         assert not Permission.objects.filter(id=perm.id).exists()
@@ -203,7 +218,7 @@ class TestPermissionDetailView:
         """DELETE sur ID inexistant → 404."""
         app = _app("PDeleteApp404")
         user = _create_user_with_perms("pdelete_404@t.com", app, "permissions.delete")
-        req = _authed_request("delete", "/api/auth/permissions/bad/", user, app)
+        req = _authed_request("delete", f"{api_prefix}/auth/permissions/bad/", user, app)
         response = PermissionDetailView.as_view()(req, permission_id=NONEXISTENT_ID)
         assert response.status_code == 404
 
@@ -215,9 +230,24 @@ class TestPermissionDetailView:
         user = _create_user_with_perms("pdelete_noperm@t.com", app)
         perm = Permission.objects.create(code="delete.me.noperm", name="Del NoPerm")
 
-        req = _authed_request("delete", f"/api/auth/permissions/{perm.id}/", user, app)
+        req = _authed_request("delete", f"{api_prefix}/auth/permissions/{perm.id}/", user, app)
         response = PermissionDetailView.as_view()(req, permission_id=str(perm.id))
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_update_permission_validation_error(self):
+        """PUT avec erreurs de validation → 400."""
+        from tenxyte.models import Permission
+        app = _app("PUpdateVal")
+        user = _create_user_with_perms("pupdate_val@t.com", app, "permissions.update")
+        perm = Permission.objects.create(code="update.val", name="Original Name")
+
+        req = _authed_request(
+            "put", f"{api_prefix}/auth/permissions/{perm.id}/", user, app,
+            data={"name": ""}
+        )
+        response = PermissionDetailView.as_view()(req, permission_id=str(perm.id))
+        assert response.status_code == 400
 
 
 # ===========================================================================
@@ -231,7 +261,7 @@ class TestRoleListView:
         """GET roles.view → 200."""
         app = _app("RListApp")
         user = _create_user_with_perms("rlist_ok@t.com", app, "roles.view")
-        req = _authed_request("get", "/api/auth/roles/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/roles/", user, app)
         response = RoleListView.as_view()(req)
         assert response.status_code == 200
 
@@ -240,7 +270,7 @@ class TestRoleListView:
         """GET sans roles.view → 403."""
         app = _app("RListNoPerm")
         user = _create_user_with_perms("rlist_noperm@t.com", app)
-        req = _authed_request("get", "/api/auth/roles/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/roles/", user, app)
         response = RoleListView.as_view()(req)
         assert response.status_code == 403
 
@@ -250,7 +280,7 @@ class TestRoleListView:
         app = _app("RCreateApp")
         user = _create_user_with_perms("rcreate_ok@t.com", app, "roles.create")
         req = _authed_request(
-            "post", "/api/auth/roles/", user, app,
+            "post", f"{api_prefix}/auth/roles/", user, app,
             data={"code": "new_test_role_v2", "name": "New Test Role V2"}
         )
         response = RoleListView.as_view()(req)
@@ -263,7 +293,7 @@ class TestRoleListView:
         app = _app("RCreateBad")
         user = _create_user_with_perms("rcreate_bad@t.com", app, "roles.create")
         req = _authed_request(
-            "post", "/api/auth/roles/", user, app,
+            "post", f"{api_prefix}/auth/roles/", user, app,
             data={"name": "Missing Code"}
         )
         response = RoleListView.as_view()(req)
@@ -275,11 +305,23 @@ class TestRoleListView:
         app = _app("RCreateNoPerm")
         user = _create_user_with_perms("rcreate_noperm@t.com", app)
         req = _authed_request(
-            "post", "/api/auth/roles/", user, app,
+            "post", f"{api_prefix}/auth/roles/", user, app,
             data={"code": "x", "name": "X"}
         )
         response = RoleListView.as_view()(req)
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_list_roles_unpaginated(self):
+        """GET unpaginated roles."""
+        from unittest.mock import patch
+        app = _app("RListUnpagApp")
+        user = _create_user_with_perms("rlist_unpag@t.com", app, "roles.view")
+        req = _authed_request("get", f"{api_prefix}/auth/roles/", user, app)
+        with patch('tenxyte.views.rbac_views.TenxytePagination.paginate_queryset', return_value=None):
+            response = RoleListView.as_view()(req)
+        assert response.status_code == 200
+        assert isinstance(response.data, list)
 
 
 # ===========================================================================
@@ -296,7 +338,7 @@ class TestRoleDetailView:
         user = _create_user_with_perms("rdetail_ok@t.com", app, "roles.view")
         role = Role.objects.create(code="detail_role_v2", name="Detail Role V2")
 
-        req = _authed_request("get", f"/api/auth/roles/{role.id}/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/roles/{role.id}/", user, app)
         response = RoleDetailView.as_view()(req, role_id=str(role.id))
         assert response.status_code == 200
         assert response.data["code"] == "detail_role_v2"
@@ -306,7 +348,7 @@ class TestRoleDetailView:
         """GET sur ID inexistant → 404."""
         app = _app("RDetailApp404")
         user = _create_user_with_perms("rdetail_404@t.com", app, "roles.view")
-        req = _authed_request("get", "/api/auth/roles/bad/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/roles/bad/", user, app)
         response = RoleDetailView.as_view()(req, role_id=NONEXISTENT_ID)
         assert response.status_code == 404
 
@@ -319,7 +361,7 @@ class TestRoleDetailView:
         role = Role.objects.create(code="update_role_v2", name="Update Role V2")
 
         req = _authed_request(
-            "put", f"/api/auth/roles/{role.id}/", user, app,
+            "put", f"{api_prefix}/auth/roles/{role.id}/", user, app,
             data={"name": "Updated Role Name"}
         )
         response = RoleDetailView.as_view()(req, role_id=str(role.id))
@@ -334,7 +376,7 @@ class TestRoleDetailView:
         user = _create_user_with_perms("rdelete_ok@t.com", app, "roles.delete")
         role = Role.objects.create(code="delete_this_role_v2", name="Delete This V2")
 
-        req = _authed_request("delete", f"/api/auth/roles/{role.id}/", user, app)
+        req = _authed_request("delete", f"{api_prefix}/auth/roles/{role.id}/", user, app)
         response = RoleDetailView.as_view()(req, role_id=str(role.id))
         assert response.status_code == 200
         assert not Role.objects.filter(id=role.id).exists()
@@ -344,9 +386,36 @@ class TestRoleDetailView:
         """DELETE sur ID inexistant → 404."""
         app = _app("RDeleteApp404")
         user = _create_user_with_perms("rdelete_404@t.com", app, "roles.delete")
-        req = _authed_request("delete", "/api/auth/roles/bad/", user, app)
+        req = _authed_request("delete", f"{api_prefix}/auth/roles/bad/", user, app)
         response = RoleDetailView.as_view()(req, role_id=NONEXISTENT_ID)
         assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_update_role_not_found(self):
+        """PUT sur ID inexistant → 404."""
+        app = _app("RUpdateApp404")
+        user = _create_user_with_perms("rupdate_404@t.com", app, "roles.update")
+        req = _authed_request(
+            "put", f"{api_prefix}/auth/roles/bad/", user, app,
+            data={"name": "X"}
+        )
+        response = RoleDetailView.as_view()(req, role_id=NONEXISTENT_ID)
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_update_role_validation_error(self):
+        """PUT avec format invalide → 400."""
+        from tenxyte.models import Role
+        app = _app("RUpdateVal")
+        user = _create_user_with_perms("rupdate_val@t.com", app, "roles.update")
+        role = Role.objects.create(code="update_val", name="Original Name")
+
+        req = _authed_request(
+            "put", f"{api_prefix}/auth/roles/{role.id}/", user, app,
+            data={"name": ""}
+        )
+        response = RoleDetailView.as_view()(req, role_id=str(role.id))
+        assert response.status_code == 400
 
 
 # ===========================================================================
@@ -365,7 +434,7 @@ class TestRolePermissionsView:
         perm = Permission.objects.create(code="rp.get.perm.v2", name="RP Get Perm V2")
         role.permissions.add(perm)
 
-        req = _authed_request("get", f"/api/auth/roles/{role.id}/permissions/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/roles/{role.id}/permissions/", user, app)
         response = RolePermissionsView.as_view()(req, role_id=str(role.id))
         assert response.status_code == 200
         assert "permissions" in response.data
@@ -377,7 +446,7 @@ class TestRolePermissionsView:
         """GET sur rôle inexistant → 404."""
         app = _app("RPGetApp404")
         user = _create_user_with_perms("rpget_404@t.com", app, "roles.manage_permissions")
-        req = _authed_request("get", "/api/auth/roles/bad/permissions/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/roles/bad/permissions/", user, app)
         response = RolePermissionsView.as_view()(req, role_id=NONEXISTENT_ID)
         assert response.status_code == 404
 
@@ -391,7 +460,7 @@ class TestRolePermissionsView:
         Permission.objects.create(code="rp.add.perm.v2", name="RP Add Perm V2")
 
         req = _authed_request(
-            "post", f"/api/auth/roles/{role.id}/permissions/", user, app,
+            "post", f"{api_prefix}/auth/roles/{role.id}/permissions/", user, app,
             data={"permission_codes": ["rp.add.perm.v2"]}
         )
         response = RolePermissionsView.as_view()(req, role_id=str(role.id))
@@ -407,7 +476,7 @@ class TestRolePermissionsView:
         role = Role.objects.create(code="rp_add_bad_role_v2", name="RP Add Bad V2")
 
         req = _authed_request(
-            "post", f"/api/auth/roles/{role.id}/permissions/", user, app,
+            "post", f"{api_prefix}/auth/roles/{role.id}/permissions/", user, app,
             data={"permission_codes": ["nonexistent.perm.v2"]}
         )
         response = RolePermissionsView.as_view()(req, role_id=str(role.id))
@@ -425,7 +494,7 @@ class TestRolePermissionsView:
         role.permissions.add(perm)
 
         req = _authed_request(
-            "delete", f"/api/auth/roles/{role.id}/permissions/", user, app,
+            "delete", f"{api_prefix}/auth/roles/{role.id}/permissions/", user, app,
             data={"permission_codes": ["rp.remove.perm.v2"]}
         )
         response = RolePermissionsView.as_view()(req, role_id=str(role.id))
@@ -441,7 +510,7 @@ class TestRolePermissionsView:
         role = Role.objects.create(code="rp_rm_bad_role_v2", name="RP Rm Bad V2")
 
         req = _authed_request(
-            "delete", f"/api/auth/roles/{role.id}/permissions/", user, app,
+            "delete", f"{api_prefix}/auth/roles/{role.id}/permissions/", user, app,
             data={"permission_codes": ["does.not.exist.v2"]}
         )
         response = RolePermissionsView.as_view()(req, role_id=str(role.id))
@@ -458,12 +527,119 @@ class TestRolePermissionsView:
         role.permissions.add(perm)  # déjà assignée
 
         req = _authed_request(
-            "post", f"/api/auth/roles/{role.id}/permissions/", user, app,
+            "post", f"{api_prefix}/auth/roles/{role.id}/permissions/", user, app,
             data={"permission_codes": ["rp.idemp.perm.v2"]}
         )
         response = RolePermissionsView.as_view()(req, role_id=str(role.id))
         assert response.status_code == 200
         assert "already_assigned" in response.data
+
+    @pytest.mark.django_db
+    def test_add_permissions_role_not_found(self):
+        app = _app("RPAddApp404")
+        user = _create_user_with_perms("rpadd_404@t.com", app, "roles.manage_permissions")
+        req = _authed_request("post", f"{api_prefix}/auth/roles/bad/permissions/", user, app, data={})
+        response = RolePermissionsView.as_view()(req, role_id=NONEXISTENT_ID)
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_add_permissions_validation_error(self):
+        from tenxyte.models import Role
+        app = _app("RPAddVal")
+        user = _create_user_with_perms("rpadd_val@t.com", app, "roles.manage_permissions")
+        role = Role.objects.create(code="rp_add_val", name="RP Add Val")
+
+        req = _authed_request(
+            "post", f"{api_prefix}/auth/roles/{role.id}/permissions/", user, app,
+            data={"permission_codes": ""}
+        )
+        response = RolePermissionsView.as_view()(req, role_id=str(role.id))
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_remove_permissions_role_not_found(self):
+        app = _app("RPRmApp404")
+        user = _create_user_with_perms("rprm_404@t.com", app, "roles.manage_permissions")
+        req = _authed_request("delete", f"{api_prefix}/auth/roles/bad/permissions/", user, app, data={})
+        response = RolePermissionsView.as_view()(req, role_id=NONEXISTENT_ID)
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_remove_permissions_validation_error(self):
+        from tenxyte.models import Role
+        app = _app("RPRmVal")
+        user = _create_user_with_perms("rprm_val@t.com", app, "roles.manage_permissions")
+        role = Role.objects.create(code="rp_rm_val", name="RP Rm Val")
+
+        req = _authed_request(
+            "delete", f"{api_prefix}/auth/roles/{role.id}/permissions/", user, app,
+            data={"permission_codes": ""}
+        )
+        response = RolePermissionsView.as_view()(req, role_id=str(role.id))
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_remove_permissions_not_removed(self):
+        from tenxyte.models import Role, Permission
+        app = _app("RPRmNot")
+        user = _create_user_with_perms("rprm_not@t.com", app, "roles.manage_permissions")
+        role = Role.objects.create(code="rp_rm_not", name="RP Rm Not")
+        Permission.objects.create(code="not_assigned.perm.v2", name="Not Assigned")
+
+        req = _authed_request(
+            "delete", f"{api_prefix}/auth/roles/{role.id}/permissions/", user, app,
+            data={"permission_codes": ["not_assigned.perm.v2"]}
+        )
+        response = RolePermissionsView.as_view()(req, role_id=str(role.id))
+        assert response.status_code == 200
+        assert "not_assigned.perm.v2" in response.data["not_removed"]
+
+    @pytest.mark.django_db
+    def test_safe_add_permissions_type_error(self):
+        from unittest.mock import patch, MagicMock
+        from tenxyte.models import Role, Permission
+        app = _app("RPSafeAdd")
+        user = _create_user_with_perms("rpsafeadd@t.com", app, "roles.manage_permissions")
+        role = Role.objects.create(code="rp_safe_add", name="RP Safe Add")
+        Permission.objects.create(code="safe.add.perm1", name="Safe Add Perm 1")
+        Permission.objects.create(code="safe.add.perm2", name="Safe Add Perm 2")
+
+        req = _authed_request(
+            "post", f"{api_prefix}/auth/roles/{role.id}/permissions/", user, app,
+            data={"permission_codes": ["safe.add.perm1", "safe.add.perm2"]}
+        )
+        
+        ManagerClass = type(role.permissions)
+        def fake_add(self, *args, **kwargs):
+            raise TypeError("Direct addition of multiple items not supported")
+            
+        with patch.object(ManagerClass, 'add', autospec=True, side_effect=fake_add):
+            response = RolePermissionsView.as_view()(req, role_id=str(role.id))
+        assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_safe_remove_permissions_type_error(self):
+        from unittest.mock import patch
+        from tenxyte.models import Role, Permission
+        app = _app("RPSafeRm")
+        user = _create_user_with_perms("rpsaferm@t.com", app, "roles.manage_permissions")
+        role = Role.objects.create(code="rp_safe_rm", name="RP Safe Rm")
+        perm = Permission.objects.create(code="safe.rm.perm", name="Safe Rm Perm")
+        role.permissions.add(perm)
+
+        req = _authed_request(
+            "delete", f"{api_prefix}/auth/roles/{role.id}/permissions/", user, app,
+            data={"permission_codes": ["safe.rm.perm"]}
+        )
+        
+        ManagerClass = type(role.permissions)
+        def fake_remove(self, *args, **kwargs):
+            raise TypeError("Direct removal of multiple items not supported")
+            
+        with patch.object(ManagerClass, 'remove', autospec=True, side_effect=fake_remove):
+            response = RolePermissionsView.as_view()(req, role_id=str(role.id))
+        assert response.status_code == 200
+        assert not role.permissions.filter(code="safe.rm.perm").exists()
 
 
 # ===========================================================================
@@ -483,7 +659,7 @@ class TestUserRolesView:
         role = Role.objects.create(code="ur_get_role_v2", name="UR Get Role V2")
         target.roles.add(role)
 
-        req = _authed_request("get", f"/api/auth/users/{target.id}/roles/", admin, app)
+        req = _authed_request("get", f"{api_prefix}/auth/users/{target.id}/roles/", admin, app)
         response = UserRolesView.as_view()(req, user_id=str(target.id))
         assert response.status_code == 200
         role_codes = [r["code"] for r in response.data["roles"]]
@@ -495,7 +671,7 @@ class TestUserRolesView:
         app = _app("URGetApp404")
         admin = _create_user_with_perms("urget_404@t.com", app, "users.roles.view")
 
-        req = _authed_request("get", "/api/auth/users/bad/roles/", admin, app)
+        req = _authed_request("get", f"{api_prefix}/auth/users/bad/roles/", admin, app)
         response = UserRolesView.as_view()(req, user_id=NONEXISTENT_ID)
         assert response.status_code == 404
 
@@ -510,7 +686,7 @@ class TestUserRolesView:
         Role.objects.create(code="ur_assign_role_v2", name="UR Assign Role V2")
 
         req = _authed_request(
-            "post", f"/api/auth/users/{target.id}/roles/", admin, app,
+            "post", f"{api_prefix}/auth/users/{target.id}/roles/", admin, app,
             data={"role_code": "ur_assign_role_v2"}
         )
         response = UserRolesView.as_view()(req, user_id=str(target.id))
@@ -528,7 +704,7 @@ class TestUserRolesView:
         target.set_password("pass"); target.save()
 
         req = _authed_request(
-            "post", f"/api/auth/users/{target.id}/roles/", admin, app,
+            "post", f"{api_prefix}/auth/users/{target.id}/roles/", admin, app,
             data={"role_code": "does_not_exist_v2"}
         )
         response = UserRolesView.as_view()(req, user_id=str(target.id))
@@ -547,7 +723,7 @@ class TestUserRolesView:
 
         req = _authed_request(
             "delete",
-            f"/api/auth/users/{target.id}/roles/?role_code=ur_remove_role_v2",
+            f"{api_prefix}/auth/users/{target.id}/roles/?role_code=ur_remove_role_v2",
             admin, app
         )
         response = UserRolesView.as_view()(req, user_id=str(target.id))
@@ -565,7 +741,7 @@ class TestUserRolesView:
         target.set_password("pass"); target.save()
 
         # Pas de query param role_code
-        req = _authed_request("delete", f"/api/auth/users/{target.id}/roles/", admin, app)
+        req = _authed_request("delete", f"{api_prefix}/auth/users/{target.id}/roles/", admin, app)
         response = UserRolesView.as_view()(req, user_id=str(target.id))
         assert response.status_code == 400
         assert response.data["code"] == "MISSING_PARAM"
@@ -579,7 +755,7 @@ class TestUserRolesView:
         target = User.objects.create(email="urget_noperm_target@t.com", is_active=True)
         target.set_password("pass"); target.save()
 
-        req = _authed_request("get", f"/api/auth/users/{target.id}/roles/", admin, app)
+        req = _authed_request("get", f"{api_prefix}/auth/users/{target.id}/roles/", admin, app)
         response = UserRolesView.as_view()(req, user_id=str(target.id))
         assert response.status_code == 403
 
@@ -601,7 +777,7 @@ class TestUserDirectPermissionsView:
         perm = Permission.objects.create(code="udp.test.perm.v2", name="UDP Test Perm V2")
         target.direct_permissions.add(perm)
 
-        req = _authed_request("get", f"/api/auth/users/{target.id}/permissions/", admin, app)
+        req = _authed_request("get", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app)
         response = UserDirectPermissionsView.as_view()(req, user_id=str(target.id))
         assert response.status_code == 200
         dp_codes = [p["code"] for p in response.data["direct_permissions"]]
@@ -612,7 +788,7 @@ class TestUserDirectPermissionsView:
         """GET sur user inexistant → 404."""
         app = _app("UDPGetApp404")
         admin = _create_user_with_perms("udpget_404@t.com", app, "users.permissions.view")
-        req = _authed_request("get", "/api/auth/users/bad/permissions/", admin, app)
+        req = _authed_request("get", f"{api_prefix}/auth/users/bad/permissions/", admin, app)
         response = UserDirectPermissionsView.as_view()(req, user_id=NONEXISTENT_ID)
         assert response.status_code == 404
 
@@ -627,7 +803,7 @@ class TestUserDirectPermissionsView:
         Permission.objects.create(code="udp.add.perm.v2", name="UDP Add Perm V2")
 
         req = _authed_request(
-            "post", f"/api/auth/users/{target.id}/permissions/", admin, app,
+            "post", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
             data={"permission_codes": ["udp.add.perm.v2"]}
         )
         response = UserDirectPermissionsView.as_view()(req, user_id=str(target.id))
@@ -644,7 +820,7 @@ class TestUserDirectPermissionsView:
         target.set_password("pass"); target.save()
 
         req = _authed_request(
-            "post", f"/api/auth/users/{target.id}/permissions/", admin, app,
+            "post", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
             data={"permission_codes": ["udp.nonexistent.v2"]}
         )
         response = UserDirectPermissionsView.as_view()(req, user_id=str(target.id))
@@ -662,7 +838,7 @@ class TestUserDirectPermissionsView:
         target.direct_permissions.add(perm)
 
         req = _authed_request(
-            "delete", f"/api/auth/users/{target.id}/permissions/", admin, app,
+            "delete", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
             data={"permission_codes": ["udp.remove.perm.v2"]}
         )
         response = UserDirectPermissionsView.as_view()(req, user_id=str(target.id))
@@ -679,7 +855,7 @@ class TestUserDirectPermissionsView:
         target.set_password("pass"); target.save()
 
         req = _authed_request(
-            "delete", f"/api/auth/users/{target.id}/permissions/", admin, app,
+            "delete", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
             data={"permission_codes": ["udp.nonexistent.v2"]}
         )
         response = UserDirectPermissionsView.as_view()(req, user_id=str(target.id))
@@ -697,7 +873,7 @@ class TestUserDirectPermissionsView:
         target.direct_permissions.add(perm)  # déjà assignée
 
         req = _authed_request(
-            "post", f"/api/auth/users/{target.id}/permissions/", admin, app,
+            "post", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
             data={"permission_codes": ["udp.idemp.perm.v2"]}
         )
         response = UserDirectPermissionsView.as_view()(req, user_id=str(target.id))
@@ -713,6 +889,118 @@ class TestUserDirectPermissionsView:
         target = User.objects.create(email="udpget_noperm_target@t.com", is_active=True)
         target.set_password("pass"); target.save()
 
-        req = _authed_request("get", f"/api/auth/users/{target.id}/permissions/", admin, app)
+        req = _authed_request("get", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app)
         response = UserDirectPermissionsView.as_view()(req, user_id=str(target.id))
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_add_direct_permissions_user_not_found(self):
+        app = _app("UDPAddApp404")
+        admin = _create_user_with_perms("udpadd_404@t.com", app, "users.permissions.assign")
+        req = _authed_request("post", f"{api_prefix}/auth/users/bad/permissions/", admin, app, data={})
+        response = UserDirectPermissionsView.as_view()(req, user_id=NONEXISTENT_ID)
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_add_direct_permissions_validation_error(self):
+        from tenxyte.models import User
+        app = _app("UDPAddVal")
+        admin = _create_user_with_perms("udpadd_val_ad@t.com", app, "users.permissions.assign")
+        target = User.objects.create(email="udpadd_val_target@t.com", is_active=True)
+        target.set_password("pass"); target.save()
+
+        req = _authed_request(
+            "post", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
+            data={"permission_codes": ""}
+        )
+        response = UserDirectPermissionsView.as_view()(req, user_id=str(target.id))
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_remove_direct_permissions_user_not_found(self):
+        app = _app("UDPRmApp404")
+        admin = _create_user_with_perms("udprm_404@t.com", app, "users.permissions.remove")
+        req = _authed_request("delete", f"{api_prefix}/auth/users/bad/permissions/", admin, app, data={})
+        response = UserDirectPermissionsView.as_view()(req, user_id=NONEXISTENT_ID)
+        assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_remove_direct_permissions_validation_error(self):
+        from tenxyte.models import User
+        app = _app("UDPRmVal")
+        admin = _create_user_with_perms("udprm_val_ad@t.com", app, "users.permissions.remove")
+        target = User.objects.create(email="udprm_val_target@t.com", is_active=True)
+        target.set_password("pass"); target.save()
+
+        req = _authed_request(
+            "delete", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
+            data={"permission_codes": ""}
+        )
+        response = UserDirectPermissionsView.as_view()(req, user_id=str(target.id))
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_remove_direct_permissions_not_removed(self):
+        from tenxyte.models import User, Permission
+        app = _app("UDPRmNot")
+        admin = _create_user_with_perms("udprm_not_ad@t.com", app, "users.permissions.remove")
+        target = User.objects.create(email="udprm_not_target@t.com", is_active=True)
+        target.set_password("pass"); target.save()
+        Permission.objects.create(code="udp.not_assigned.perm.v2", name="Not Assigned UDP")
+
+        req = _authed_request(
+            "delete", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
+            data={"permission_codes": ["udp.not_assigned.perm.v2"]}
+        )
+        response = UserDirectPermissionsView.as_view()(req, user_id=str(target.id))
+        assert response.status_code == 200
+        assert "udp.not_assigned.perm.v2" in response.data["not_removed"]
+
+    @pytest.mark.django_db
+    def test_safe_add_direct_permissions_type_error(self):
+        from unittest.mock import patch, MagicMock
+        from tenxyte.models import User, Permission
+        app = _app("UDPSafeAdd")
+        admin = _create_user_with_perms("udpsafeadd_ad@t.com", app, "users.permissions.assign")
+        target = User.objects.create(email="udpsafeadd_target@t.com", is_active=True)
+        target.set_password("pass"); target.save()
+        Permission.objects.create(code="udp.safe.add.perm1", name="UDP Safe Add Perm 1")
+        Permission.objects.create(code="udp.safe.add.perm2", name="UDP Safe Add Perm 2")
+
+        req = _authed_request(
+            "post", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
+            data={"permission_codes": ["udp.safe.add.perm1", "udp.safe.add.perm2"]}
+        )
+        
+        ManagerClass = type(target.direct_permissions)
+        def fake_add(self, *args, **kwargs):
+            raise TypeError("Direct addition of multiple items not supported")
+            
+        with patch.object(ManagerClass, 'add', autospec=True, side_effect=fake_add):
+            response = UserDirectPermissionsView.as_view()(req, user_id=str(target.id))
+        assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_safe_remove_direct_permissions_type_error(self):
+        from unittest.mock import patch
+        from tenxyte.models import User, Permission
+        app = _app("UDPSafeRm")
+        admin = _create_user_with_perms("udpsaferm_ad@t.com", app, "users.permissions.remove")
+        target = User.objects.create(email="udpsaferm_target@t.com", is_active=True)
+        target.set_password("pass"); target.save()
+        perm = Permission.objects.create(code="udp.safe.rm.perm", name="UDP Safe Rm Perm")
+        target.direct_permissions.add(perm)
+
+        req = _authed_request(
+            "delete", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
+            data={"permission_codes": ["udp.safe.rm.perm"]}
+        )
+        
+        ManagerClass = type(target.direct_permissions)
+        def fake_remove(self, *args, **kwargs):
+            raise TypeError("Direct removal of multiple items not supported")
+            
+        with patch.object(ManagerClass, 'remove', autospec=True, side_effect=fake_remove):
+            response = UserDirectPermissionsView.as_view()(req, user_id=str(target.id))
+        assert response.status_code == 200
+        assert not target.direct_permissions.filter(code="udp.safe.rm.perm").exists()

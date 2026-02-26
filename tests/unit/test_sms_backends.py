@@ -85,6 +85,23 @@ class TestTwilioBackend:
         result = backend.send_sms("+33612345678", "Mon OTP")
         assert result is False
 
+    @override_settings(
+        TWILIO_ACCOUNT_SID="dummy_sid",
+        TWILIO_AUTH_TOKEN="dummy_token",
+        TWILIO_PHONE_NUMBER="+123456789"
+    )
+    @patch("twilio.rest.Client")
+    def test_twilio_rest_exception_returns_false(self, MockClient):
+        mock_client_instance = MockClient.return_value
+        from twilio.base.exceptions import TwilioRestException
+        mock_client_instance.messages.create.side_effect = TwilioRestException(
+            status=400, uri="/api/v1/whatever", msg="Invalid number"
+        )
+        
+        backend = TwilioBackend()
+        result = backend.send_sms("+33612345678", "Mon OTP")
+        assert result is False
+
 
 class TestNGHBackend:
     @override_settings(
@@ -128,6 +145,20 @@ class TestNGHBackend:
             "status_desc": "Unauthorized"
         }).encode("utf-8")
         mock_conn_instance.getresponse.return_value = mock_response
+
+        backend = NGHBackend()
+        result = backend.send_sms("+33612345678", "Mon OTP")
+        assert result is False
+
+    @override_settings(
+        NGH_API_KEY="dummy_key",
+        NGH_API_SECRET="dummy_secret",
+        NGH_SENDER_ID="TEST"
+    )
+    @patch("http.client.HTTPSConnection")
+    def test_unexpected_exception_returns_false(self, MockConnection):
+        mock_conn_instance = MockConnection.return_value
+        mock_conn_instance.request.side_effect = Exception("Network Error")
 
         backend = NGHBackend()
         result = backend.send_sms("+33612345678", "Mon OTP")

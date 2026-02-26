@@ -159,7 +159,7 @@ packages/
 ```
 
 **Fonctionnalités `@tenxyte/core` :**
-- [ ] `TenxyteClient` — init avec `baseUrl` + `appKey`
+- [ ] `TenxyteClient` — init avec `` + `appKey`
 - [ ] `auth.loginWithEmail(email, password)` → tokens
 - [ ] `auth.loginWithPhone(phone, password)` → tokens
 - [ ] `auth.loginWithGoogle(idToken)` → tokens

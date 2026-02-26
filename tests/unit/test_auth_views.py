@@ -1,6 +1,6 @@
 """
 Tests auth_views.py — RegisterView, LoginEmailView, LoginPhoneView,
-GoogleAuthView, RefreshTokenView, LogoutView, LogoutAllView.
+RefreshTokenView, LogoutView, LogoutAllView.
 
 Coverage cible : views/auth_views.py (37% → 80%)
 """
@@ -13,7 +13,7 @@ from django.test import override_settings
 from tenxyte.models import User, Application, Permission, RefreshToken
 from tenxyte.views.auth_views import (
     RegisterView, LoginEmailView, LoginPhoneView,
-    GoogleAuthView, RefreshTokenView, LogoutView, LogoutAllView,
+    RefreshTokenView, LogoutView, LogoutAllView,
 )
 
 
@@ -281,100 +281,6 @@ class TestLoginPhoneView:
         }, app)
         assert resp.status_code == 401
 
-
-# ===========================================================================
-# GoogleAuthView
-# ===========================================================================
-
-class TestGoogleAuthView:
-
-    @pytest.mark.django_db
-    def test_google_auth_with_id_token_success(self):
-        app = _app("GoogleApp1")
-        user = _user("google1@test.com")
-        google_data = {"email": "google1@test.com", "sub": "google_uid_1", "name": "Google User"}
-
-        with patch("tenxyte.views.auth_views.GoogleAuthService") as MockGS:
-            mock_gs = MagicMock()
-            MockGS.return_value = mock_gs
-            mock_gs.verify_id_token.return_value = google_data
-            mock_gs.authenticate_with_google.return_value = (True, {
-                "access_token": "acc", "refresh_token": "ref",
-                "token_type": "Bearer", "expires_in": 3600
-            }, "")
-            resp = _post(GoogleAuthView, "/auth/google/", {"id_token": "fake.id.token"}, app)
-
-        assert resp.status_code == 200
-
-    @pytest.mark.django_db
-    def test_google_auth_invalid_token_returns_401(self):
-        app = _app("GoogleApp2")
-
-        with patch("tenxyte.views.auth_views.GoogleAuthService") as MockGS:
-            mock_gs = MagicMock()
-            MockGS.return_value = mock_gs
-            mock_gs.verify_id_token.return_value = None
-            resp = _post(GoogleAuthView, "/auth/google/", {"id_token": "bad.token"}, app)
-
-        assert resp.status_code == 401
-        assert resp.data["code"] == "GOOGLE_AUTH_FAILED"
-
-    @pytest.mark.django_db
-    def test_google_auth_with_access_token(self):
-        app = _app("GoogleApp3")
-        google_data = {"email": "google3@test.com", "sub": "uid3"}
-
-        with patch("tenxyte.views.auth_views.GoogleAuthService") as MockGS:
-            mock_gs = MagicMock()
-            MockGS.return_value = mock_gs
-            mock_gs.get_user_info.return_value = google_data
-            mock_gs.authenticate_with_google.return_value = (True, {
-                "access_token": "acc", "refresh_token": "ref",
-                "token_type": "Bearer", "expires_in": 3600
-            }, "")
-            resp = _post(GoogleAuthView, "/auth/google/", {"access_token": "fake.access.token"}, app)
-
-        assert resp.status_code == 200
-
-    @pytest.mark.django_db
-    def test_google_auth_with_code(self):
-        app = _app("GoogleApp4")
-        google_data = {"email": "google4@test.com", "sub": "uid4"}
-
-        with patch("tenxyte.views.auth_views.GoogleAuthService") as MockGS:
-            mock_gs = MagicMock()
-            MockGS.return_value = mock_gs
-            mock_gs.exchange_code_for_tokens.return_value = {"access_token": "acc_from_code"}
-            mock_gs.get_user_info.return_value = google_data
-            mock_gs.authenticate_with_google.return_value = (True, {
-                "access_token": "acc", "refresh_token": "ref",
-                "token_type": "Bearer", "expires_in": 3600
-            }, "")
-            resp = _post(GoogleAuthView, "/auth/google/", {
-                "code": "auth_code", "redirect_uri": "https://app.com/callback"
-            }, app)
-
-        assert resp.status_code == 200
-
-    @pytest.mark.django_db
-    def test_google_auth_invalid_data_returns_400(self):
-        app = _app("GoogleApp5")
-        resp = _post(GoogleAuthView, "/auth/google/", {}, app)
-        assert resp.status_code == 400
-
-    @pytest.mark.django_db
-    def test_google_auth_service_failure_returns_401(self):
-        app = _app("GoogleApp6")
-        google_data = {"email": "google6@test.com", "sub": "uid6"}
-
-        with patch("tenxyte.views.auth_views.GoogleAuthService") as MockGS:
-            mock_gs = MagicMock()
-            MockGS.return_value = mock_gs
-            mock_gs.verify_id_token.return_value = google_data
-            mock_gs.authenticate_with_google.return_value = (False, None, "Account inactive")
-            resp = _post(GoogleAuthView, "/auth/google/", {"id_token": "fake.id.token"}, app)
-
-        assert resp.status_code == 401
 
 
 # ===========================================================================

@@ -38,7 +38,7 @@ class PostmanCollectionGenerator:
             "variable": [
                 {
                     "key": "baseUrl",
-                    "value": "https://api.tenxyte.com",
+                    "value": "http://localhost:8000",
                     "type": "string"
                 },
                 {
@@ -975,7 +975,7 @@ class PostmanCollectionGenerator:
             "values": [
                 {
                     "key": "baseUrl",
-                    "value": "https://api.tenxyte.com",
+                    "value": "http://localhost:8000",
                     "type": "default",
                     "enabled": True,
                     "description": "Base URL for the Tenxyte API"

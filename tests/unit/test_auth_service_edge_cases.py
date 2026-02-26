@@ -274,3 +274,120 @@ class TestAuditLog:
         with override_settings(TENXYTE_AUDIT_LOGGING_ENABLED=False):
             svc._audit_log("test_action", user, "1.2.3.4", app)
         assert AuditLog.objects.count() == before
+
+class TestAuthServiceAdditionalEdgeCases:
+    def test_lockout_duration_minutes_property(self):
+        from tenxyte.services.auth_service import AuthService
+        from tenxyte.conf import auth_settings
+        svc = AuthService()
+        assert svc.lockout_duration_minutes == auth_settings.LOCKOUT_DURATION_MINUTES
+
+    @pytest.mark.django_db
+    def test_validate_application_invalid_secret(self):
+        from tenxyte.services.auth_service import AuthService
+        app = _make_app()
+        svc = AuthService()
+        ok, res, msg = svc.validate_application(app.access_key, "wrongsecret")
+        assert ok is False
+        assert "Invalid access_secret" in msg
+
+    @pytest.mark.django_db
+    def test_validate_application_invalid_key(self):
+        from tenxyte.services.auth_service import AuthService
+        svc = AuthService()
+        ok, res, msg = svc.validate_application("wrongkey", "wrongsecret")
+        assert ok is False
+        assert "Invalid access_key" in msg
+
+    @pytest.mark.django_db
+    def test_enforce_session_limit_zero_is_unlimited(self):
+        app = _make_app()
+        user = _make_user("sess_unlimited@test.com")
+        user.max_sessions = 0
+        user.save()
+        from django.test import override_settings
+        from tenxyte.services.auth_service import AuthService
+        svc = AuthService()
+        with override_settings(TENXYTE_DEFAULT_SESSION_LIMIT_ACTION='deny'):
+            result = svc._enforce_session_limit(user, app, "1.2.3.4")
+            assert result is None
+
+    @pytest.mark.django_db
+    def test_enforce_device_limit_zero_is_unlimited(self):
+        app = _make_app()
+        user = _make_user("dev_unlimited@test.com")
+        user.max_devices = 0
+        user.save()
+        from django.test import override_settings
+        from tenxyte.services.auth_service import AuthService
+        svc = AuthService()
+        with override_settings(TENXYTE_DEVICE_LIMIT_ACTION='deny'):
+            result = svc._enforce_device_limit(user, app, "1.2.3.4", device_info="foo")
+            assert result is None
+
+    @pytest.mark.django_db
+    def test_enforce_device_limit_unknown_device_zombie_check(self):
+        app = _make_app()
+        user = _make_user("dev_unknown_zom@test.com")
+        user.max_devices = 1
+        user.save()
+        _make_refresh_token(user, app, device_info="", expired=True) # Unknown device zombie
+        from django.test import override_settings
+        from tenxyte.services.auth_service import AuthService
+        svc = AuthService()
+        with override_settings(TENXYTE_DEVICE_LIMIT_ACTION='deny'):
+            result = svc._enforce_device_limit(user, app, "1.2.3.4", device_info="newdev")
+            assert result is None
+
+    @pytest.mark.django_db
+    def test_enforce_device_limit_revoke_oldest(self):
+        from textwrap import dedent
+        from django.utils import timezone
+        import datetime
+        app = _make_app()
+        user = _make_user("dev_revoke_oldest@test.com")
+        user.max_devices = 1
+        user.save()
+        
+        dev_str = "v=1|os=android|device=mobile"
+        
+        rt1 = _make_refresh_token(user, app, device_info=dev_str) # First old
+        rt1.created_at = timezone.now() - datetime.timedelta(days=2)
+        rt1.save()
+        
+        rt2 = _make_refresh_token(user, app, device_info=dev_str) # Second old, same device
+        rt2.created_at = timezone.now() - datetime.timedelta(days=1)
+        rt2.save()
+        
+        rt3 = _make_refresh_token(user, app, device_info="") # Unknown device
+        # Created now, so it's the newest.
+        
+        from django.test import override_settings
+        from tenxyte.services.auth_service import AuthService
+        svc = AuthService()
+        
+        with override_settings(TENXYTE_DEVICE_LIMIT_ACTION='revoke_oldest'):
+            # The oldest is rt1.
+            # The method should revoke all tokens for dev_str.
+            result = svc._enforce_device_limit(user, app, "1.2.3.4", device_info="v=1|os=ios|device=mobile")
+            assert result is None
+            
+            from tenxyte.models import RefreshToken
+            assert RefreshToken.objects.filter(user=user, device_info=dev_str, is_revoked=False).count() == 0
+            
+            # Now unknown device token is the oldest because old tokens are revoked.
+            result2 = svc._enforce_device_limit(user, app, "1.2.3.4", device_info="v=1|os=windows|device=desktop")
+            assert result2 is None
+            
+            assert RefreshToken.objects.filter(user=user, device_info="", is_revoked=False).count() == 0
+
+    @pytest.mark.django_db
+    def test_check_new_device_alert_email_fail(self):
+        app = _make_app()
+        user = _make_user("new_dev_email_fail@test.com")
+        from tenxyte.services.auth_service import AuthService
+        svc = AuthService()
+        with patch("tenxyte.services.email_service.EmailService") as MockService:
+            MockService.return_value.send_security_alert_email.side_effect = Exception("Email Failed")
+            # Should catch exception and not crash
+            svc._check_new_device_alert(user, "device1", "1.2.3.4", app)

@@ -197,7 +197,7 @@ python manage.py migrate
 ```python
 # Test authentication
 def test_login_endpoint():
-    response = client.post('/api/auth/login/email/', {
+    response = client.post('/api/v1/auth/login/email/', {
         'email': 'user@example.com',
         'password': 'password'
     })
@@ -209,7 +209,7 @@ def test_login_endpoint():
 def test_organization_endpoint():
     client.credentials(HTTP_AUTHORIZATION='Bearer token')
     client.credentials(HTTP_X_ORG_SLUG='acme-corp')
-    response = client.get('/api/auth/organizations/members/')
+    response = client.get('/api/v1/auth/organizations/members/')
     assert response.status_code == 200
 ```
 

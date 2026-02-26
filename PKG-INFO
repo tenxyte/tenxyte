@@ -460,7 +460,7 @@ Authorization: Bearer <jwt_access_token>
 ### Register a User
 
 ```bash
-curl -X POST http://localhost:8000/api/auth/register/ \
+curl -X POST http://localhost:8000/api/v1/auth/register/ \
   -H "X-Access-Key: your_access_key" \
   -H "X-Access-Secret: your_access_secret" \
   -H "Content-Type: application/json" \
@@ -475,7 +475,7 @@ curl -X POST http://localhost:8000/api/auth/register/ \
 ### Login
 
 ```bash
-curl -X POST http://localhost:8000/api/auth/login/email/ \
+curl -X POST http://localhost:8000/api/v1/auth/login/email/ \
   -H "X-Access-Key: your_access_key" \
   -H "X-Access-Secret: your_access_secret" \
   -H "Content-Type: application/json" \
@@ -506,7 +506,7 @@ curl -X POST http://localhost:8000/api/auth/login/email/ \
 
 **1. Setup 2FA (get QR code)**
 ```bash
-curl -X POST http://localhost:8000/api/auth/2fa/setup/ \
+curl -X POST http://localhost:8000/api/v1/auth/2fa/setup/ \
   -H "X-Access-Key: your_access_key" \
   -H "X-Access-Secret: your_access_secret" \
   -H "Authorization: Bearer your_access_token"
@@ -531,7 +531,7 @@ curl -X POST http://localhost:8000/api/auth/2fa/setup/ \
 
 **3. Confirm with the first TOTP code**
 ```bash
-curl -X POST http://localhost:8000/api/auth/2fa/confirm/ \
+curl -X POST http://localhost:8000/api/v1/auth/2fa/confirm/ \
   -H "X-Access-Key: your_access_key" \
   -H "X-Access-Secret: your_access_secret" \
   -H "Authorization: Bearer your_access_token" \
@@ -541,7 +541,7 @@ curl -X POST http://localhost:8000/api/auth/2fa/confirm/ \
 
 **4. Login with 2FA**
 ```bash
-curl -X POST http://localhost:8000/api/auth/login/email/ \
+curl -X POST http://localhost:8000/api/v1/auth/login/email/ \
   -H "X-Access-Key: your_access_key" \
   -H "X-Access-Secret: your_access_secret" \
   -H "Content-Type: application/json" \
@@ -555,57 +555,57 @@ curl -X POST http://localhost:8000/api/auth/login/email/ \
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/register/` - Register new user
-- `POST /api/auth/login/email/` - Login with email
-- `POST /api/auth/login/phone/` - Login with phone
-- `POST /api/auth/google/` - Google OAuth login
-- `POST /api/auth/refresh/` - Refresh access token
-- `POST /api/auth/logout/` - Logout (revoke refresh token)
-- `POST /api/auth/logout/all/` - Logout from all devices
+- `POST /api/v1/auth/register/` - Register new user
+- `POST /api/v1/auth/login/email/` - Login with email
+- `POST /api/v1/auth/login/phone/` - Login with phone
+- `POST /api/v1/auth/google/` - Google OAuth login
+- `POST /api/v1/auth/refresh/` - Refresh access token
+- `POST /api/v1/auth/logout/` - Logout (revoke refresh token)
+- `POST /api/v1/auth/logout/all/` - Logout from all devices
 
 ### OTP Verification
-- `POST /api/auth/otp/request/` - Request OTP code
-- `POST /api/auth/otp/verify/email/` - Verify email OTP
-- `POST /api/auth/otp/verify/phone/` - Verify phone OTP
+- `POST /api/v1/auth/otp/request/` - Request OTP code
+- `POST /api/v1/auth/otp/verify/email/` - Verify email OTP
+- `POST /api/v1/auth/otp/verify/phone/` - Verify phone OTP
 
 ### Password Management
-- `POST /api/auth/password/reset/request/` - Request password reset
-- `POST /api/auth/password/reset/confirm/` - Confirm password reset with OTP
-- `POST /api/auth/password/change/` - Change password (authenticated)
-- `POST /api/auth/password/strength/` - Check password strength
-- `GET /api/auth/password/requirements/` - Get password requirements
+- `POST /api/v1/auth/password/reset/request/` - Request password reset
+- `POST /api/v1/auth/password/reset/confirm/` - Confirm password reset with OTP
+- `POST /api/v1/auth/password/change/` - Change password (authenticated)
+- `POST /api/v1/auth/password/strength/` - Check password strength
+- `GET /api/v1/auth/password/requirements/` - Get password requirements
 
 ### Two-Factor Authentication (2FA)
-- `GET /api/auth/2fa/status/` - Get 2FA status
-- `POST /api/auth/2fa/setup/` - Setup 2FA (get QR code)
-- `POST /api/auth/2fa/confirm/` - Confirm and enable 2FA
-- `POST /api/auth/2fa/disable/` - Disable 2FA
-- `POST /api/auth/2fa/backup-codes/` - Regenerate backup codes
+- `GET /api/v1/auth/2fa/status/` - Get 2FA status
+- `POST /api/v1/auth/2fa/setup/` - Setup 2FA (get QR code)
+- `POST /api/v1/auth/2fa/confirm/` - Confirm and enable 2FA
+- `POST /api/v1/auth/2fa/disable/` - Disable 2FA
+- `POST /api/v1/auth/2fa/backup-codes/` - Regenerate backup codes
 
 ### User Profile
-- `GET /api/auth/me/` - Get current user profile
-- `PATCH /api/auth/me/` - Update current user profile
-- `GET /api/auth/me/roles/` - Get user roles and permissions
+- `GET /api/v1/auth/me/` - Get current user profile
+- `PATCH /api/v1/auth/me/` - Update current user profile
+- `GET /api/v1/auth/me/roles/` - Get user roles and permissions
 
 ### RBAC (Role-Based Access Control)
-- `GET /api/auth/permissions/` - List all permissions
-- `GET /api/auth/permissions/{id}/` - Get permission details
-- `GET /api/auth/roles/` - List all roles
-- `POST /api/auth/roles/` - Create role (admin only)
-- `GET /api/auth/roles/{id}/` - Get role details
-- `PUT /api/auth/roles/{id}/` - Update role (admin only)
-- `DELETE /api/auth/roles/{id}/` - Delete role (admin only)
-- `GET /api/auth/users/{id}/roles/` - Get user roles
-- `POST /api/auth/users/{id}/roles/` - Assign role to user (admin only)
-- `DELETE /api/auth/users/{id}/roles/` - Remove role from user (admin only)
+- `GET /api/v1/auth/permissions/` - List all permissions
+- `GET /api/v1/auth/permissions/{id}/` - Get permission details
+- `GET /api/v1/auth/roles/` - List all roles
+- `POST /api/v1/auth/roles/` - Create role (admin only)
+- `GET /api/v1/auth/roles/{id}/` - Get role details
+- `PUT /api/v1/auth/roles/{id}/` - Update role (admin only)
+- `DELETE /api/v1/auth/roles/{id}/` - Delete role (admin only)
+- `GET /api/v1/auth/users/{id}/roles/` - Get user roles
+- `POST /api/v1/auth/users/{id}/roles/` - Assign role to user (admin only)
+- `DELETE /api/v1/auth/users/{id}/roles/` - Remove role from user (admin only)
 
 ### Applications
-- `GET /api/auth/applications/` - List applications (admin only)
-- `POST /api/auth/applications/` - Create application (admin only)
-- `GET /api/auth/applications/{id}/` - Get application details
-- `PUT /api/auth/applications/{id}/` - Update application
-- `DELETE /api/auth/applications/{id}/` - Delete application
-- `POST /api/auth/applications/{id}/regenerate/` - Regenerate credentials
+- `GET /api/v1/auth/applications/` - List applications (admin only)
+- `POST /api/v1/auth/applications/` - Create application (admin only)
+- `GET /api/v1/auth/applications/{id}/` - Get application details
+- `PUT /api/v1/auth/applications/{id}/` - Update application
+- `DELETE /api/v1/auth/applications/{id}/` - Delete application
+- `POST /api/v1/auth/applications/{id}/regenerate/` - Regenerate credentials
 
 ## Extending Models
 

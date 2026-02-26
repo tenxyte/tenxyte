@@ -416,6 +416,92 @@ class TestWebAuthnService:
         success, error = service.delete_credential(user2, cred.id)
         assert success is False
 
+    def test_get_webauthn_import_error(self):
+        from tenxyte.services.webauthn_service import _get_webauthn
+        with patch.dict('sys.modules', {'webauthn': None}):
+            with pytest.raises(ImportError):
+                _get_webauthn()
+
+    @override_settings(TENXYTE_WEBAUTHN_RP_ID='example.com')
+    def test_get_origin_not_localhost(self):
+        service = WebAuthnService()
+        assert service._get_origin() == 'https://example.com'
+
+    @override_settings(TENXYTE_WEBAUTHN_ENABLED=False)
+    def test_complete_registration_disabled(self):
+        user = _user("svc_comp_reg_dis@example.com")
+        service = WebAuthnService()
+        success, cred, error = service.complete_registration(user, {}, 1)
+        assert success is False
+        assert 'not enabled' in error
+
+    @override_settings(TENXYTE_WEBAUTHN_ENABLED=True)
+    def test_begin_authentication_error(self):
+        user = _user("svc_begin_auth_err@example.com")
+        service = WebAuthnService()
+        mock_webauthn = MagicMock()
+        mock_webauthn.generate_authentication_options.side_effect = Exception("auth err")
+        mock_webauthn.PublicKeyCredentialDescriptor = MagicMock()
+        with patch('tenxyte.services.webauthn_service._get_webauthn', return_value=mock_webauthn):
+            success, data, error = service.begin_authentication(user)
+        assert success is False
+        assert 'auth err' in error
+
+    @override_settings(TENXYTE_WEBAUTHN_ENABLED=False)
+    def test_complete_authentication_disabled(self):
+        service = WebAuthnService()
+        success, data, error = service.complete_authentication({}, 1)
+        assert success is False
+        assert 'not enabled' in error
+
+    @override_settings(TENXYTE_WEBAUTHN_ENABLED=True)
+    def test_complete_authentication_expired_challenge(self):
+        user = _user("svc_comp_auth_exp@example.com")
+        instance, _ = _challenge(user, operation='authenticate', expired=True)
+        service = WebAuthnService()
+        success, data, error = service.complete_authentication({'id': 'test'}, instance.id)
+        assert success is False
+        assert 'expired' in error.lower()
+
+    @override_settings(TENXYTE_WEBAUTHN_ENABLED=True)
+    def test_complete_authentication_inactive_user(self):
+        user = _user("svc_comp_auth_inactive@example.com")
+        user.is_active = False
+        user.save()
+        cred = _credential(user, cred_id="auth_cred_inactive")
+        instance, _ = _challenge(user, operation='authenticate')
+        service = WebAuthnService()
+        success, data, error = service.complete_authentication({'id': 'auth_cred_inactive'}, instance.id)
+        assert success is False
+        assert 'disabled' in error.lower()
+
+    @override_settings(TENXYTE_WEBAUTHN_ENABLED=True)
+    def test_complete_authentication_locked_user(self):
+        import datetime
+        user = _user("svc_comp_auth_locked@example.com")
+        user.is_locked = True
+        user.locked_until = timezone.now() + datetime.timedelta(hours=1)
+        user.save()
+        cred = _credential(user, cred_id="auth_cred_locked")
+        instance, _ = _challenge(user, operation='authenticate')
+        service = WebAuthnService()
+        success, data, error = service.complete_authentication({'id': 'auth_cred_locked'}, instance.id)
+        assert success is False
+        assert 'locked' in error.lower()
+
+    @override_settings(TENXYTE_WEBAUTHN_ENABLED=True)
+    def test_complete_authentication_verification_failure(self):
+        user = _user("svc_comp_auth_ver_fail@example.com")
+        cred = _credential(user, cred_id="auth_cred_fail")
+        instance, _ = _challenge(user, operation='authenticate')
+        service = WebAuthnService()
+        mock_webauthn = MagicMock()
+        mock_webauthn.verify_authentication_response.side_effect = Exception("failed verif")
+        with patch('tenxyte.services.webauthn_service._get_webauthn', return_value=mock_webauthn):
+            success, data, error = service.complete_authentication({'id': 'auth_cred_fail'}, instance.id)
+        assert success is False
+        assert 'failed' in error.lower()
+
 
 # ===========================================================================
 # WebAuthn Views Tests

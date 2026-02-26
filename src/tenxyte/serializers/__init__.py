@@ -11,7 +11,6 @@ from .auth_serializers import (
     LoginEmailSerializer,
     LoginPhoneSerializer,
     RefreshTokenSerializer,
-    GoogleAuthSerializer,
     UserSerializer,
 )
 
@@ -99,7 +98,6 @@ __all__ = [
     'LoginEmailSerializer',
     'LoginPhoneSerializer',
     'RefreshTokenSerializer',
-    'GoogleAuthSerializer',
     'UserSerializer',
     # OTP
     'VerifyOTPSerializer',

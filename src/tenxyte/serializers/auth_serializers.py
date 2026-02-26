@@ -107,33 +107,6 @@ class RefreshTokenSerializer(serializers.Serializer):
     refresh_token = serializers.CharField()
 
 
-class GoogleAuthSerializer(serializers.Serializer):
-    id_token = serializers.CharField(required=False)
-    access_token = serializers.CharField(required=False)
-    code = serializers.CharField(required=False)
-    redirect_uri = serializers.CharField(required=False)
-    device_info = serializers.CharField(
-        max_length=255,
-        required=False,
-        allow_blank=True,
-        default='',
-        help_text="Device info au format v1 (ex: v=1|os=windows;osv=11|device=desktop)"
-    )
-
-    def validate_device_info(self, value):
-        if value:
-            is_valid, errors = _validate_device_info(value)
-            if not is_valid:
-                raise serializers.ValidationError(errors)
-        return value
-
-    def validate(self, data):
-        if not data.get('id_token') and not data.get('access_token') and not data.get('code'):
-            raise serializers.ValidationError('id_token, access_token or code is required')
-        if data.get('code') and not data.get('redirect_uri'):
-            raise serializers.ValidationError('redirect_uri is required when using code')
-        return data
-
 
 class UserSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)

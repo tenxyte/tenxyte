@@ -1,7 +1,7 @@
 """
 Views for Social Login Multi-Provider authentication.
 
-Endpoint générique: POST /api/auth/social/<provider>/
+Endpoint générique: POST {API_PREFIX}/auth/social/<provider>/
 Providers supportés: google, github, microsoft, facebook
 """
 from rest_framework.views import APIView
@@ -15,12 +15,12 @@ from rest_framework import serializers
 from ..services.social_auth_service import SocialAuthService, get_provider
 from ..decorators import get_client_ip
 from ..device_info import build_device_info_from_user_agent
-from ..throttles import GoogleAuthThrottle
+from ..throttles import LoginThrottle, LoginHourlyThrottle
 
 
 class SocialAuthView(APIView):
     """
-    POST /api/auth/social/<provider>/
+    POST {API_PREFIX}/auth/social/<provider>/
     Authentification via un provider social OAuth2.
 
     Providers supportés: google, github, microsoft, facebook
@@ -31,7 +31,7 @@ class SocialAuthView(APIView):
     - id_token: pour Google uniquement
     """
     permission_classes = [AllowAny]
-    throttle_classes = [GoogleAuthThrottle]
+    throttle_classes = [LoginThrottle, LoginHourlyThrottle]
 
     @extend_schema(
         tags=['Social Auth'],
@@ -213,7 +213,7 @@ class SocialAuthView(APIView):
 
 class SocialAuthCallbackView(APIView):
     """
-    GET /api/auth/social/<provider>/callback/
+    GET {API_PREFIX}/auth/social/<provider>/callback/
     Callback OAuth2 pour le authorization code flow.
     
     Généralement utilisé par les applications web traditionnelles

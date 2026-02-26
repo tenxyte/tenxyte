@@ -109,7 +109,7 @@ class TestMeView:
                              data={"first_name": "Updated"})
 
         assert resp.status_code == 200
-        assert resp.data["first_name"] == "Updated"
+        assert resp.data["user"]["first_name"] == "Updated"
 
     @pytest.mark.django_db
     def test_patch_profile_invalid_data_returns_400(self):

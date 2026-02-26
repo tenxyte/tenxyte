@@ -16,7 +16,7 @@ class TenxytePagination(PageNumberPagination):
     Standard pagination for all Tenxyte list endpoints.
 
     Usage:
-        GET /api/auth/users/?page=1&page_size=20
+        GET {API_PREFIX}/auth/users/?page=1&page_size=20
 
     Query params:
         - page: Page number (default: 1)

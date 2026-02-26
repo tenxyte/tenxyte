@@ -353,7 +353,8 @@ L'équipe {app_name}
         token: str,
         first_name: str = '',
         expiry_minutes: int = 15,
-        app_name: str = 'Tenxyte'
+        app_name: str = 'Tenxyte',
+        validation_url: str = None
     ) -> bool:
         """
         Envoie un magic link par email.
@@ -370,9 +371,11 @@ L'équipe {app_name}
         """
         from django.conf import settings as django_settings
 
+        from ..conf import auth_settings
+        
         greeting = f"Bonjour {first_name}" if first_name else "Bonjour"
-        base_url = getattr(django_settings, 'TENXYTE_MAGIC_LINK_BASE_URL', 'https://yourapp.com')
-        verify_url = f"{base_url}/api/auth/magic-link/verify/?token={token}"
+
+        verify_url = f"{validation_url}?token={token}"
 
         subject = f"{app_name} - Votre lien de connexion"
 
@@ -450,11 +453,15 @@ L'équipe {app_name}
         from django.urls import reverse
         from django.contrib.sites.shortcuts import get_current_site
         
+        from ..conf import auth_settings
+        
         try:
             site = get_current_site(None)
-            base_url = f"https://{site.domain}" if site.domain else "https://yourapp.com"
+            domain = f"https://{site.domain}" if site.domain else "https://yourapp.com"
+            base_url = auth_settings.BASE_URL
+            api_prefix = auth_settings.API_PREFIX
             
-            confirmation_url = f"{base_url}/api/auth/confirm-account-deletion/"
+            confirmation_url = f"{base_url}{api_prefix}/auth/confirm-account-deletion/"
             confirmation_url_with_token = f"{confirmation_url}?token={deletion_request.confirmation_token}"
             
             context = {
@@ -496,10 +503,14 @@ L'équipe {app_name}
         
         try:
             site = get_current_site(None)
-            base_url = f"https://{site.domain}" if site.domain else "https://yourapp.com"
+            domain = f"https://{site.domain}" if site.domain else "https://yourapp.com"
+            
+            from ..conf import auth_settings
+            base_url = auth_settings.BASE_URL
+            api_prefix = auth_settings.API_PREFIX
             
             # URL d'annulation (à implémenter dans les vues)
-            cancel_url = f"{base_url}/api/auth/cancel-account-deletion/"
+            cancel_url = f"{base_url}{api_prefix}/auth/cancel-account-deletion/"
             
             days_remaining = 0
             if deletion_request.grace_period_ends_at:

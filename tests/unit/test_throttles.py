@@ -6,6 +6,9 @@ Tests Phase 4 - Throttles:
 - SimpleThrottleRule._match_path (prefix, exact, no match)
 - SimpleThrottleRule.allow_request (throttled, not throttled)
 """
+from tenxyte.conf import auth_settings
+api_prefix = auth_settings.API_PREFIX
+
 import pytest
 from unittest.mock import MagicMock, patch
 from django.test import override_settings
@@ -23,7 +26,7 @@ from tenxyte.throttles import (
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
-def _make_request(ip="1.2.3.4", forwarded_for=None, path="/api/test/"):
+def _make_request(ip="1.2.3.4", forwarded_for=None, path=f"{api_prefix}/test/"):
     req = MagicMock()
     req.META = {"REMOTE_ADDR": ip}
     req.path = path
@@ -108,6 +111,28 @@ class TestProgressiveLoginThrottle:
         val = cache.get("login_failures_22.22.22.22")
         assert val == 1
 
+    def test_get_cache_key_remote_addr(self):
+        throttle = ProgressiveLoginThrottle()
+        req = _make_request(ip="1.2.3.4")
+        key = throttle.get_cache_key(req, None)
+        assert key == "progressive_login_1.2.3.4"
+
+    def test_get_cache_key_forwarded_for(self):
+        throttle = ProgressiveLoginThrottle()
+        req = _make_request(forwarded_for="8.8.8.8, 4.4.4.4")
+        key = throttle.get_cache_key(req, None)
+        assert key == "progressive_login_8.8.8.8"
+
+    def test_get_rate(self):
+        throttle = ProgressiveLoginThrottle()
+        assert throttle.get_rate() == "5/min"
+
+    def test_reset_failures_with_forwarded_for(self):
+        req = _make_request(forwarded_for="7.7.7.7, 1.1.1.1")
+        ProgressiveLoginThrottle.record_failure(req)
+        ProgressiveLoginThrottle.reset_failures(req)
+        assert cache.get("login_failures_7.7.7.7") is None
+
 
 # ─── SimpleThrottleRule ───────────────────────────────────────────────────────
 
@@ -115,44 +140,44 @@ class TestSimpleThrottleRule:
 
     def test_match_prefix_path(self):
         rule = SimpleThrottleRule()
-        with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES={"/api/products/": "10/min"}):
-            pattern, rate = rule._match_path("/api/products/123/")
-        assert pattern == "/api/products/"
+        with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES={f"{api_prefix}/products/": "10/min"}):
+            pattern, rate = rule._match_path(f"{api_prefix}/products/123/")
+        assert pattern == f"{api_prefix}/products/"
         assert rate == "10/min"
 
     def test_no_match_returns_none(self):
         rule = SimpleThrottleRule()
-        with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES={"/api/products/": "10/min"}):
-            pattern, rate = rule._match_path("/api/other/")
+        with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES={f"{api_prefix}/products/": "10/min"}):
+            pattern, rate = rule._match_path(f"{api_prefix}/other/")
         assert pattern is None
         assert rate is None
 
     def test_exact_match_with_dollar(self):
         rule = SimpleThrottleRule()
-        with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES={"/api/health/$": "5/hour"}):
-            pattern, rate = rule._match_path("/api/health/")
+        with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES={f"{api_prefix}/health/$": "5/hour"}):
+            pattern, rate = rule._match_path(f"{api_prefix}/health/")
         assert rate == "5/hour"
 
     def test_exact_match_no_match_subpath(self):
         rule = SimpleThrottleRule()
-        with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES={"/api/health/$": "5/hour"}):
-            pattern, rate = rule._match_path("/api/health/extra/")
+        with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES={f"{api_prefix}/health/$": "5/hour"}):
+            pattern, rate = rule._match_path(f"{api_prefix}/health/extra/")
         assert pattern is None
 
     def test_most_specific_rule_wins(self):
         """La règle la plus longue (plus spécifique) prend la priorité."""
         rule = SimpleThrottleRule()
         rules = {
-            "/api/": "100/hour",
-            "/api/v1/search/": "5/min",
+            f"{api_prefix}/": "100/hour",
+            f"{api_prefix}/search/": "5/min",
         }
         with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES=rules):
-            pattern, rate = rule._match_path("/api/v1/search/results/")
+            pattern, rate = rule._match_path(f"{api_prefix}/search/results/")
         assert rate == "5/min"
 
     def test_allow_request_returns_true_without_matching_rule(self):
         rule = SimpleThrottleRule()
-        req = _make_request(path="/api/no-rule/")
+        req = _make_request(path=f"{api_prefix}/no-rule/")
         with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES={}):
             result = rule.allow_request(req, None)
         assert result is True
@@ -163,3 +188,31 @@ class TestSimpleThrottleRule:
         with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES={}):
             key = rule.get_cache_key(req, None)
         assert key is None
+
+    def test_get_cache_key_with_matching_rule_remote_addr(self):
+        rule = SimpleThrottleRule()
+        req = _make_request(ip="10.10.10.10", path=f"{api_prefix}/test/")
+        with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES={f"{api_prefix}/test/": "10/min"}):
+            key = rule.get_cache_key(req, None)
+            
+        pattern = f"{api_prefix}/test/"
+        safe_pattern = pattern.replace('/', '_').strip('_$')
+        assert key == f"throttle_simple_{safe_pattern}_10.10.10.10" 
+
+    def test_get_cache_key_with_matching_rule_forwarded_for(self):
+        rule = SimpleThrottleRule()
+        req = _make_request(forwarded_for="20.20.20.20", path=f"{api_prefix}/test/")
+        with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES={f"{api_prefix}/test/": "10/min"}):
+            key = rule.get_cache_key(req, None)
+            
+        pattern = f"{api_prefix}/test/"
+        safe_pattern = pattern.replace('/', '_').strip('_$')
+        assert key == f"throttle_simple_{safe_pattern}_20.20.20.20"
+
+    def test_allow_request_with_matching_rule(self):
+        rule = SimpleThrottleRule()
+        req = _make_request(ip="30.30.30.30", path=f"{api_prefix}/test/")
+        with override_settings(TENXYTE_SIMPLE_THROTTLE_RULES={f"{api_prefix}/test/": "10/min"}):
+            result = rule.allow_request(req, None)
+        assert result is True
+

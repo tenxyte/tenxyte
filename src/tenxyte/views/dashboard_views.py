@@ -14,7 +14,7 @@ from ..decorators import require_permission
 
 class DashboardGlobalView(APIView):
     """
-    GET /api/auth/dashboard/stats/
+    GET {API_PREFIX}/auth/dashboard/stats/
     Cross-module aggregate stats for admin panel.
     """
 
@@ -131,7 +131,7 @@ class DashboardGlobalView(APIView):
 
 class DashboardAuthView(APIView):
     """
-    GET /api/auth/dashboard/auth/
+    GET {API_PREFIX}/auth/dashboard/auth/
     Detailed authentication statistics.
     """
 
@@ -149,7 +149,7 @@ class DashboardAuthView(APIView):
 
 class DashboardSecurityView(APIView):
     """
-    GET /api/auth/dashboard/security/
+    GET {API_PREFIX}/auth/dashboard/security/
     Security-focused statistics.
     """
 
@@ -167,7 +167,7 @@ class DashboardSecurityView(APIView):
 
 class DashboardGDPRView(APIView):
     """
-    GET /api/auth/dashboard/gdpr/
+    GET {API_PREFIX}/auth/dashboard/gdpr/
     GDPR compliance statistics.
     """
 
@@ -185,7 +185,7 @@ class DashboardGDPRView(APIView):
 
 class DashboardOrganizationsView(APIView):
     """
-    GET /api/auth/dashboard/organizations/
+    GET {API_PREFIX}/auth/dashboard/organizations/
     Organization statistics (only if organizations are enabled).
     """
 

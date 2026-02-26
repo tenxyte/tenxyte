@@ -24,7 +24,7 @@ from ..pagination import TenxytePagination
 
 class DeletionRequestListView(APIView):
     """
-    GET /api/auth/admin/deletion-requests/
+    GET {API_PREFIX}/auth/admin/deletion-requests/
     List all account deletion requests (paginated + filtered).
     """
     pagination_class = TenxytePagination
@@ -181,7 +181,7 @@ class DeletionRequestListView(APIView):
 
 class DeletionRequestDetailView(APIView):
     """
-    GET /api/auth/admin/deletion-requests/<request_id>/
+    GET {API_PREFIX}/auth/admin/deletion-requests/<request_id>/
     """
 
     @extend_schema(
@@ -205,7 +205,7 @@ class DeletionRequestDetailView(APIView):
 
 class ProcessDeletionView(APIView):
     """
-    POST /api/auth/admin/deletion-requests/<request_id>/process/
+    POST {API_PREFIX}/auth/admin/deletion-requests/<request_id>/process/
     Execute a confirmed deletion request (admin action).
     """
 
@@ -329,7 +329,7 @@ class ProcessDeletionView(APIView):
             return Response({
                 'message': 'Account deletion processed successfully',
                 'deletion_completed': True,
-                'processed_at': deletion_request.processed_at,
+                'processed_at': deletion_request.completed_at,
                 'data_anonymized': True,
                 'audit_log_id': deletion_request.id,
                 'user_notified': True,
@@ -344,7 +344,7 @@ class ProcessDeletionView(APIView):
 
 class ProcessExpiredDeletionsView(APIView):
     """
-    POST /api/auth/admin/deletion-requests/process-expired/
+    POST {API_PREFIX}/auth/admin/deletion-requests/process-expired/
     Process all confirmed requests whose grace period has expired.
     """
 

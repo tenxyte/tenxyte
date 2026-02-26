@@ -5,6 +5,7 @@ import pytest
 from datetime import timedelta
 from unittest.mock import Mock, patch
 from django.utils import timezone
+from django.test import override_settings
 
 from tenxyte.services.otp_service import OTPService
 from tenxyte.models import User, OTPCode
@@ -131,6 +132,7 @@ class TestOTPService:
         mock_backend.send_email.assert_called_once()
 
     @pytest.mark.django_db
+    @override_settings(TENXYTE_SMS_ENABLED=True)
     @patch('tenxyte.backends.sms.get_sms_backend')
     def test_send_phone_otp(self, mock_get_backend, user_with_phone):
         """Test d'envoi d'OTP par SMS."""
@@ -187,3 +189,91 @@ class TestOTPService:
 
         assert is_valid is False
         assert 'many attempts' in error.lower()
+
+    @pytest.mark.django_db
+    def test_verify_email_otp_does_not_exist(self, user):
+        """Test vérification d'un email OTP quand il n'existe pas."""
+        otp_service = OTPService()
+        is_valid, error = otp_service.verify_email_otp(user, "123456")
+        assert is_valid is False
+        assert 'No verification code found' in error
+
+    @pytest.mark.django_db
+    def test_verify_phone_otp_does_not_exist(self, user_with_phone):
+        """Test vérification d'un phone OTP quand il n'existe pas."""
+        otp_service = OTPService()
+        is_valid, error = otp_service.verify_phone_otp(user_with_phone, "123456")
+        assert is_valid is False
+        assert 'No verification code found' in error
+
+    @pytest.mark.django_db
+    def test_verify_phone_otp_invalid_code(self, user_with_phone):
+        """Test vérification d'un phone OTP avec code invalide."""
+        otp_service = OTPService()
+        otp, _ = otp_service.generate_phone_verification_otp(user_with_phone)
+        is_valid, error = otp_service.verify_phone_otp(user_with_phone, "999999")
+        assert is_valid is False
+        assert 'Invalid code' in error
+
+    @pytest.mark.django_db
+    def test_verify_phone_otp_expired(self, user_with_phone):
+        """Test vérification d'un phone OTP expiré."""
+        otp_service = OTPService()
+        otp, raw_code = otp_service.generate_phone_verification_otp(user_with_phone)
+        otp.expires_at = timezone.now() - timedelta(minutes=1)
+        otp.save()
+        is_valid, error = otp_service.verify_phone_otp(user_with_phone, raw_code)
+        assert is_valid is False
+        assert 'Code expired' in error
+
+    @pytest.mark.django_db
+    def test_verify_phone_otp_too_many_attempts(self, user_with_phone):
+        """Test vérification d'un phone OTP avec trop de tentatives max par invalidation."""
+        otp_service = OTPService()
+        otp, raw_code = otp_service.generate_phone_verification_otp(user_with_phone)
+        for _ in range(otp.max_attempts):
+            otp_service.verify_phone_otp(user_with_phone, "999999")
+        
+        is_valid, error = otp_service.verify_phone_otp(user_with_phone, "999999")
+        assert is_valid is False
+        assert 'too many attempts' in error.lower()
+
+    @pytest.mark.django_db
+    def test_send_email_otp_no_email(self, user):
+        """Test d'envoi d'OTP email sans adresse email."""
+        user.email = ''
+        user.save()
+        otp_service = OTPService()
+        assert otp_service.send_email_otp(user, "123456") is False
+
+    @pytest.mark.django_db
+    def test_send_email_otp_exception(self, user):
+        """Test d'envoi d'OTP email avec exception."""
+        otp_service = OTPService()
+        with patch('tenxyte.services.email_service.EmailService.send_otp_email', side_effect=Exception('Email Error')):
+            assert otp_service.send_email_otp(user, "123456") is False
+
+    @pytest.mark.django_db
+    def test_send_phone_otp_debug_mode(self, user_with_phone):
+        """Test d'envoi d'OTP phone avec SMS désactivé mais debug activé."""
+        otp_service = OTPService()
+        with override_settings(TENXYTE_SMS_ENABLED=False, TENXYTE_SMS_DEBUG=True):
+            assert otp_service.send_phone_otp(user_with_phone, "123456") is True
+
+    @pytest.mark.django_db
+    def test_send_phone_otp_disabled_no_debug(self, user_with_phone):
+        """Test d'envoi d'OTP phone avec SMS désactivé et debug désactivé."""
+        otp_service = OTPService()
+        with override_settings(TENXYTE_SMS_ENABLED=False, TENXYTE_SMS_DEBUG=False):
+            assert otp_service.send_phone_otp(user_with_phone, "123456") is False
+
+    @pytest.mark.django_db
+    def test_send_phone_otp_exception(self, user_with_phone):
+        """Test d'envoi d'OTP phone avec exception du backend SMS."""
+        otp_service = OTPService()
+        with override_settings(TENXYTE_SMS_ENABLED=True):
+            with patch('tenxyte.backends.sms.get_sms_backend') as mock_get:
+                mock_backend = Mock()
+                mock_backend.send_sms.side_effect = Exception('SMS Error')
+                mock_get.return_value = mock_backend
+                assert otp_service.send_phone_otp(user_with_phone, "123456") is False

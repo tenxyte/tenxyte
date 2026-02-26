@@ -17,7 +17,7 @@ from ..throttles import MagicLinkRequestThrottle, MagicLinkVerifyThrottle
 
 class MagicLinkRequestView(APIView):
     """
-    POST /api/auth/magic-link/request/
+    POST {API_PREFIX}/auth/magic-link/request/
     Demande un magic link par email (authentification sans mot de passe).
     """
     permission_classes = [AllowAny]
@@ -37,7 +37,8 @@ class MagicLinkRequestView(APIView):
         request=inline_serializer(
             name='MagicLinkRequest',
             fields={
-                'email': serializers.EmailField(help_text='Adresse email pour recevoir le magic link')
+                'email': serializers.EmailField(help_text='Adresse email pour recevoir le magic link'),
+                'validation_url': serializers.URLField(help_text='URL pour construire le lien de vérification (obligatoire)')
             }
         ),
         responses={
@@ -76,7 +77,8 @@ class MagicLinkRequestView(APIView):
                 name='request_magic_link',
                 summary='Demander magic link',
                 value={
-                    'email': 'user@example.com'
+                    'email': 'user@example.com',
+                    'validation_url': 'https://app.example.com/auth-magic/link/verify'
                 }
             ),
             OpenApiExample(
@@ -85,6 +87,14 @@ class MagicLinkRequestView(APIView):
                 value={
                     'error': 'Magic links are disabled',
                     'details': 'Contact administrator to enable magic link authentication'
+                }
+            ),
+            OpenApiExample(
+                name='validation_url_missing',
+                summary='Validation URL manquant',
+                value={
+                    'error': 'Validation URL is required',
+                    'code': 'VALIDATION_URL_REQUIRED'
                 }
             ),
             OpenApiExample(
@@ -99,9 +109,17 @@ class MagicLinkRequestView(APIView):
     )
     def post(self, request):
         email = request.data.get('email', '').strip().lower()
+        validation_url = request.data.get('validation_url', '').strip()
+        
         if not email:
             return Response(
                 {'error': 'Email is required', 'code': 'EMAIL_REQUIRED'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not validation_url:
+            return Response(
+                {'error': 'VALIDATION URL is required', 'code': 'VALIDATION_URL_REQUIRED'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -118,7 +136,8 @@ class MagicLinkRequestView(APIView):
             application=getattr(request, 'application', None),
             ip_address=ip_address,
             device_info=device_info,
-            app_name=app_name_str
+            app_name=app_name_str,
+            validation_url=validation_url
         )
 
         if not success:
@@ -135,7 +154,7 @@ class MagicLinkRequestView(APIView):
 
 class MagicLinkVerifyView(APIView):
     """
-    GET /api/auth/magic-link/verify/?token=xxx
+    GET {API_PREFIX}/auth/magic-link/verify/?token=xxx
     Valide un magic link et retourne des tokens JWT.
     """
     permission_classes = [AllowAny]

@@ -228,7 +228,7 @@ TENXYTE_ORGANIZATIONS_ENABLED = True
 
 ```typescript
 // frontend/lib/tenxyte.ts
-const TENXYTE_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/auth'
+const TENXYTE_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1/auth/'
 
 const headers = {
   'X-Access-Key': process.env.NEXT_PUBLIC_ACCESS_KEY!,

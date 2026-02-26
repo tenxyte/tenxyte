@@ -141,5 +141,143 @@ class TestTOTPService:
 
         uri = totp_service.get_provisioning_uri(secret, "test@example.com")
 
-        # Vérifier que l'issuer est présent
         assert 'issuer=' in uri.lower()
+
+    def test_verify_code_exception(self):
+        totp_service = TOTPService()
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(totp_service, "get_totp", Exception("mocked exception"))
+            assert totp_service.verify_code("secret", "123456") is False
+
+    def test_verify_backup_code_no_codes(self):
+        totp_service = TOTPService()
+        user = type('MockUser', (object,), {'backup_codes': None})()
+        assert totp_service.verify_backup_code(user, "123") is False
+
+    def test_confirm_2fa_errors(self):
+        totp_service = TOTPService()
+        class MockUser:
+            totp_secret = None
+            is_2fa_enabled = False
+        
+        user = MockUser()
+        # No totp_secret
+        success, msg = totp_service.confirm_2fa(user, "123456")
+        assert not success
+        
+        # Already enabled
+        user.totp_secret = "secret"
+        user.is_2fa_enabled = True
+        success, msg = totp_service.confirm_2fa(user, "123456")
+        assert not success
+        
+        # Invalid code
+        user.is_2fa_enabled = False
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(totp_service, "verify_code", lambda s, c: False)
+            success, msg = totp_service.confirm_2fa(user, "123456")
+            assert not success
+
+    def test_disable_2fa_errors(self):
+        totp_service = TOTPService()
+        class MockUser:
+            is_2fa_enabled = False
+            totp_secret = "secret"
+            backup_codes = []
+        user = MockUser()
+        
+        success, msg = totp_service.disable_2fa(user, "123")
+        assert not success
+        
+        user.is_2fa_enabled = True
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(totp_service, "verify_code", lambda s, c: False)
+            m.setattr(totp_service, "verify_backup_code", lambda u, c: False)
+            success, msg = totp_service.disable_2fa(user, "123")
+            assert not success
+
+    def test_disable_2fa_success_via_backup(self):
+        totp_service = TOTPService()
+        import hashlib
+        code = "a1b2-c3d4"
+        hashed = hashlib.sha256(code.encode()).hexdigest()
+        
+        class MockUser:
+            id = 1
+            is_2fa_enabled = True
+            totp_secret = "secret"
+            backup_codes = [hashed]
+            def save(self, update_fields=None):
+                pass
+        
+        user = MockUser()
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(totp_service, "verify_code", lambda s, c: False)
+            success, msg = totp_service.disable_2fa(user, code)
+            assert success
+
+    def test_verify_2fa(self):
+        totp_service = TOTPService()
+        class MockUser:
+            is_2fa_enabled = False
+            totp_secret = "secret"
+        user = MockUser()
+        
+        # Not enabled
+        success, msg = totp_service.verify_2fa(user, "123")
+        assert success
+        
+        user.is_2fa_enabled = True
+        # No code
+        success, msg = totp_service.verify_2fa(user, "")
+        assert not success
+        
+        # Valid TOTP
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(totp_service, "verify_code", lambda s, c: True)
+            success, msg = totp_service.verify_2fa(user, "123")
+            assert success
+            
+        # Valid Backup
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(totp_service, "verify_code", lambda s, c: False)
+            m.setattr(totp_service, "verify_backup_code", lambda u, c: True)
+            success, msg = totp_service.verify_2fa(user, "123")
+            assert success
+            
+        # Invalid overall
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(totp_service, "verify_code", lambda s, c: False)
+            m.setattr(totp_service, "verify_backup_code", lambda u, c: False)
+            success, msg = totp_service.verify_2fa(user, "123")
+            assert not success
+
+    def test_regenerate_backup_codes(self):
+        totp_service = TOTPService()
+        import hashlib
+        class MockUser:
+            id = 1
+            is_2fa_enabled = False
+            totp_secret = "secret"
+            backup_codes = []
+            def save(self, update_fields=None):
+                pass
+        user = MockUser()
+        
+        # Not enabled
+        success, codes, msg = totp_service.regenerate_backup_codes(user, "123")
+        assert not success
+        
+        user.is_2fa_enabled = True
+        # Invalid code
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(totp_service, "verify_code", lambda s, c: False)
+            success, codes, msg = totp_service.regenerate_backup_codes(user, "123")
+            assert not success
+            
+        # Success
+        with pytest.MonkeyPatch().context() as m:
+            m.setattr(totp_service, "verify_code", lambda s, c: True)
+            success, codes, msg = totp_service.regenerate_backup_codes(user, "123")
+            assert success
+            assert len(codes) > 0

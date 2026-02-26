@@ -30,7 +30,7 @@ from ..filters import apply_audit_log_filters, apply_login_attempt_filters
 
 class AuditLogListView(APIView):
     """
-    GET /api/auth/admin/audit-logs/
+    GET {API_PREFIX}/auth/admin/audit-logs/
     List all audit log entries (paginated + filtered).
     """
     pagination_class = TenxytePagination
@@ -69,7 +69,7 @@ class AuditLogListView(APIView):
 
 class AuditLogDetailView(APIView):
     """
-    GET /api/auth/admin/audit-logs/<log_id>/
+    GET {API_PREFIX}/auth/admin/audit-logs/<log_id>/
     """
 
     @extend_schema(
@@ -95,7 +95,7 @@ class AuditLogDetailView(APIView):
 
 class LoginAttemptListView(APIView):
     """
-    GET /api/auth/admin/login-attempts/
+    GET {API_PREFIX}/auth/admin/login-attempts/
     List login attempt records (paginated + filtered).
     """
     pagination_class = TenxytePagination
@@ -138,7 +138,7 @@ class LoginAttemptListView(APIView):
 
 class BlacklistedTokenListView(APIView):
     """
-    GET /api/auth/admin/blacklisted-tokens/
+    GET {API_PREFIX}/auth/admin/blacklisted-tokens/
     List blacklisted JWT tokens (paginated + filtered).
     """
     pagination_class = TenxytePagination
@@ -196,7 +196,7 @@ class BlacklistedTokenListView(APIView):
 
 class BlacklistedTokenCleanupView(APIView):
     """
-    POST /api/auth/admin/blacklisted-tokens/cleanup/
+    POST {API_PREFIX}/auth/admin/blacklisted-tokens/cleanup/
     Remove expired tokens from the blacklist.
     """
 
@@ -223,7 +223,7 @@ class BlacklistedTokenCleanupView(APIView):
 
 class RefreshTokenListView(APIView):
     """
-    GET /api/auth/admin/refresh-tokens/
+    GET {API_PREFIX}/auth/admin/refresh-tokens/
     List refresh tokens (paginated + filtered).
     """
     pagination_class = TenxytePagination
@@ -289,7 +289,7 @@ class RefreshTokenListView(APIView):
 
 class RefreshTokenRevokeView(APIView):
     """
-    POST /api/auth/admin/refresh-tokens/<token_id>/revoke/
+    POST {API_PREFIX}/auth/admin/refresh-tokens/<token_id>/revoke/
     Revoke a refresh token.
     """
 

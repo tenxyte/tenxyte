@@ -1,6 +1,9 @@
 """
 Tests pour les vues admin Security.
 """
+from tenxyte.conf import auth_settings
+api_prefix = auth_settings.API_PREFIX
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -74,7 +77,7 @@ class TestAuditLogViews:
     @pytest.mark.django_db
     def test_list_audit_logs(self, authenticated_admin_client, admin_user, sample_audit_logs):
         """Admin peut lister les audit logs."""
-        response = authenticated_admin_client.get('/api/auth/admin/audit-logs/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/admin/audit-logs/')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
         if response.status_code == status.HTTP_200_OK:
@@ -83,20 +86,20 @@ class TestAuditLogViews:
     @pytest.mark.django_db
     def test_filter_by_action(self, authenticated_admin_client, admin_user, sample_audit_logs):
         """Filtre par action."""
-        response = authenticated_admin_client.get('/api/auth/admin/audit-logs/?action=login')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/admin/audit-logs/?action=login')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
     @pytest.mark.django_db
     def test_filter_by_user(self, authenticated_admin_client, admin_user, user, sample_audit_logs):
         """Filtre par user_id."""
-        response = authenticated_admin_client.get(f'/api/auth/admin/audit-logs/?user_id={user.id}')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/admin/audit-logs/?user_id={user.id}')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
     @pytest.mark.django_db
     def test_get_audit_log_detail(self, authenticated_admin_client, admin_user, sample_audit_logs):
         """Détail d'un audit log."""
         log = sample_audit_logs[0]
-        response = authenticated_admin_client.get(f'/api/auth/admin/audit-logs/{log.id}/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/admin/audit-logs/{log.id}/')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
         if response.status_code == status.HTTP_200_OK:
@@ -105,7 +108,7 @@ class TestAuditLogViews:
     @pytest.mark.django_db
     def test_audit_log_not_found(self, authenticated_admin_client, admin_user):
         """Audit log inexistant."""
-        response = authenticated_admin_client.get('/api/auth/admin/audit-logs/99999/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/admin/audit-logs/99999/')
         assert response.status_code in [status.HTTP_404_NOT_FOUND, status.HTTP_403_FORBIDDEN]
 
 
@@ -115,19 +118,19 @@ class TestLoginAttemptViews:
     @pytest.mark.django_db
     def test_list_login_attempts(self, authenticated_admin_client, admin_user, sample_login_attempts):
         """Admin peut lister les tentatives de connexion."""
-        response = authenticated_admin_client.get('/api/auth/admin/login-attempts/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/admin/login-attempts/')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
     @pytest.mark.django_db
     def test_filter_by_success(self, authenticated_admin_client, admin_user, sample_login_attempts):
         """Filtre par succès/échec."""
-        response = authenticated_admin_client.get('/api/auth/admin/login-attempts/?success=true')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/admin/login-attempts/?success=true')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
     @pytest.mark.django_db
     def test_filter_by_ip(self, authenticated_admin_client, admin_user, sample_login_attempts):
         """Filtre par adresse IP."""
-        response = authenticated_admin_client.get('/api/auth/admin/login-attempts/?ip_address=192.168.1.0')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/admin/login-attempts/?ip_address=192.168.1.0')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
 
@@ -137,13 +140,13 @@ class TestBlacklistedTokenViews:
     @pytest.mark.django_db
     def test_list_blacklisted_tokens(self, authenticated_admin_client, admin_user, sample_blacklisted_tokens):
         """Admin peut lister les tokens blacklistés."""
-        response = authenticated_admin_client.get('/api/auth/admin/blacklisted-tokens/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/admin/blacklisted-tokens/')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
     @pytest.mark.django_db
     def test_cleanup_expired(self, authenticated_admin_client, admin_user, sample_blacklisted_tokens):
         """Nettoyage des tokens expirés."""
-        response = authenticated_admin_client.post('/api/auth/admin/blacklisted-tokens/cleanup/')
+        response = authenticated_admin_client.post(f'{api_prefix}/auth/admin/blacklisted-tokens/cleanup/')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
         if response.status_code == status.HTTP_200_OK:
@@ -156,7 +159,7 @@ class TestRefreshTokenViews:
     @pytest.mark.django_db
     def test_list_refresh_tokens(self, authenticated_admin_client, admin_user):
         """Admin peut lister les refresh tokens."""
-        response = authenticated_admin_client.get('/api/auth/admin/refresh-tokens/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/admin/refresh-tokens/')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
     @pytest.mark.django_db
@@ -172,7 +175,7 @@ class TestRefreshTokenViews:
             expires_at=timezone.now() + timedelta(days=7),
         )
 
-        response = authenticated_admin_client.get('/api/auth/admin/refresh-tokens/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/admin/refresh-tokens/')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
         if response.status_code == status.HTTP_200_OK:
@@ -194,7 +197,7 @@ class TestRefreshTokenViews:
         )
 
         response = authenticated_admin_client.post(
-            f'/api/auth/admin/refresh-tokens/{refresh_token.id}/revoke/'
+            f'{api_prefix}/auth/admin/refresh-tokens/{refresh_token.id}/revoke/'
         )
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 

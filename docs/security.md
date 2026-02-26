@@ -52,7 +52,7 @@ REST_FRAMEWORK = {
 from unittest.mock import patch
 
 with patch('rest_framework.throttling.SimpleRateThrottle.allow_request', return_value=True):
-    response = client.post('/api/auth/login/email/', data)
+    response = client.post('/api/v1/auth/login/email/', data)
 ```
 
 ---
@@ -73,7 +73,7 @@ Locked accounts return `401` with `code: 'ACCOUNT_LOCKED'`.
 
 Admin unlock via API:
 ```bash
-POST /api/auth/admin/users/<id>/unlock/
+POST /api/v1/auth/admin/users/<id>/unlock/
 ```
 
 ---
@@ -89,7 +89,7 @@ POST /api/auth/admin/users/<id>/unlock/
 ### Login with 2FA
 
 ```bash
-POST /api/auth/login/email/
+POST /api/v1/auth/login/email/
 {
   "email": "user@example.com",
   "password": "SecurePass123!",
@@ -218,7 +218,7 @@ TENXYTE_PASSWORD_HISTORY_COUNT = 5  # Check against last 5 passwords
 ### Check Password Strength
 
 ```bash
-POST /api/auth/password/strength/
+POST /api/v1/auth/password/strength/
 { "password": "MyPassword123!" }
 ```
 
@@ -295,7 +295,7 @@ All security-relevant events are automatically logged to the `AuditLog` model:
 
 Query audit logs:
 ```bash
-GET /api/auth/admin/audit-logs/?action=login_failed&from=2026-01-01
+GET /api/v1/auth/admin/audit-logs/?action=login_failed&from=2026-01-01
 ```
 
 ---

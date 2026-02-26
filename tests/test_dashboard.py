@@ -1,6 +1,9 @@
 """
 Tests pour les vues Dashboard.
 """
+from tenxyte.conf import auth_settings
+api_prefix = auth_settings.API_PREFIX
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -176,7 +179,7 @@ class TestDashboardEndpoints:
     @pytest.mark.django_db
     def test_dashboard_global(self, authenticated_admin_client, admin_user, dashboard_data):
         """GET /dashboard/stats/ retourne les stats globales."""
-        response = authenticated_admin_client.get('/api/auth/dashboard/stats/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/dashboard/stats/')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
         if response.status_code == status.HTTP_200_OK:
@@ -185,25 +188,25 @@ class TestDashboardEndpoints:
     @pytest.mark.django_db
     def test_dashboard_auth(self, authenticated_admin_client, admin_user, dashboard_data):
         """GET /dashboard/auth/ retourne les stats auth."""
-        response = authenticated_admin_client.get('/api/auth/dashboard/auth/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/dashboard/auth/')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
     @pytest.mark.django_db
     def test_dashboard_security(self, authenticated_admin_client, admin_user, dashboard_data):
         """GET /dashboard/security/ retourne les stats sécurité."""
-        response = authenticated_admin_client.get('/api/auth/dashboard/security/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/dashboard/security/')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
     @pytest.mark.django_db
     def test_dashboard_gdpr(self, authenticated_admin_client, admin_user, dashboard_data):
         """GET /dashboard/gdpr/ retourne les stats GDPR."""
-        response = authenticated_admin_client.get('/api/auth/dashboard/gdpr/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/dashboard/gdpr/')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
     @pytest.mark.django_db
     def test_dashboard_organizations(self, authenticated_admin_client, admin_user, dashboard_data):
         """GET /dashboard/organizations/ retourne les stats orgs."""
-        response = authenticated_admin_client.get('/api/auth/dashboard/organizations/')
+        response = authenticated_admin_client.get(f'{api_prefix}/auth/dashboard/organizations/')
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_403_FORBIDDEN]
 
     @pytest.mark.django_db
@@ -213,5 +216,5 @@ class TestDashboardEndpoints:
             HTTP_X_ACCESS_KEY=application.access_key,
             HTTP_X_ACCESS_SECRET=application._plain_secret
         )
-        response = api_client.get('/api/auth/dashboard/stats/')
+        response = api_client.get(f'{api_prefix}/auth/dashboard/stats/')
         assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]

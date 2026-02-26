@@ -1,6 +1,9 @@
 """
 Tests unitaires pour les backends SMS et Email.
 """
+from tenxyte.conf import auth_settings
+api_prefix = auth_settings.API_PREFIX
+
 import pytest
 from unittest.mock import Mock, patch
 

@@ -111,15 +111,6 @@ class RefreshTokenThrottle(IPBasedThrottle):
     rate = '30/min'
 
 
-class GoogleAuthThrottle(IPBasedThrottle):
-    """
-    Rate limit pour l'auth Google.
-
-    10 par minute
-    """
-    scope = 'google_auth'
-    rate = '10/min'
-
 
 class MagicLinkRequestThrottle(IPBasedThrottle):
     """
@@ -206,14 +197,14 @@ class SimpleThrottleRule(SimpleRateThrottle):
 
     Usage dans settings.py:
         TENXYTE_SIMPLE_THROTTLE_RULES = {
-            '/api/v1/products/': '100/hour',
-            '/api/v1/search/': '30/min',
-            '/api/v1/upload/': '5/hour',
+            '{API_PREFIX}/products/': '100/hour',
+            '{API_PREFIX}/search/': '30/min',
+            '{API_PREFIX}/upload/': '5/hour',
         }
 
-    Les URLs sont matchees par prefix: '/api/v1/products/' matchera
-    '/api/v1/products/', '/api/v1/products/123/', etc.
-    Pour un match exact, terminer par '$': '/api/v1/health/$'
+    Les URLs sont matchees par prefix: '{API_PREFIX}/products/' matchera
+    '{API_PREFIX}/products/', '{API_PREFIX}/products/123/', etc.
+    Pour un match exact, terminer par '$': '{API_PREFIX}/health/$'
     """
     scope = 'simple_rule'
 

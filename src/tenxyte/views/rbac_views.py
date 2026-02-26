@@ -42,7 +42,7 @@ Permission = get_permission_model()
 )
 class PermissionListView(APIView):
     """
-    GET /api/auth/permissions/
+    GET {API_PREFIX}/auth/permissions/
     Liste toutes les permissions (paginé + filtres)
     """
     pagination_class = TenxytePagination
@@ -97,7 +97,7 @@ class PermissionListView(APIView):
 )
 class PermissionDetailView(APIView):
     """
-    GET/PUT/DELETE /api/auth/permissions/<permission_id>/
+    GET/PUT/DELETE {API_PREFIX}/auth/permissions/<permission_id>/
     """
 
     @require_permission('permissions.view')
@@ -168,7 +168,7 @@ class PermissionDetailView(APIView):
 )
 class RoleListView(APIView):
     """
-    GET /api/auth/roles/
+    GET {API_PREFIX}/auth/roles/
     Liste tous les rôles (paginé + filtres)
     """
     pagination_class = TenxytePagination
@@ -223,7 +223,7 @@ class RoleListView(APIView):
 )
 class RoleDetailView(APIView):
     """
-    GET/PUT/DELETE /api/auth/roles/<role_id>/
+    GET/PUT/DELETE {API_PREFIX}/auth/roles/<role_id>/
     """
 
     @require_permission('roles.view')
@@ -294,7 +294,7 @@ class RoleDetailView(APIView):
 )
 class RolePermissionsView(APIView):
     """
-    GET/POST/DELETE /api/auth/roles/<role_id>/permissions/
+    GET/POST/DELETE {API_PREFIX}/auth/roles/<role_id>/permissions/
     Gère les permissions d'un rôle
     """
 
@@ -477,7 +477,7 @@ class RolePermissionsView(APIView):
 )
 class UserRolesView(APIView):
     """
-    GET /api/auth/users/<user_id>/roles/
+    GET {API_PREFIX}/auth/users/<user_id>/roles/
     Gère les rôles d'un utilisateur
     """
 
@@ -579,7 +579,7 @@ class UserRolesView(APIView):
 )
 class UserDirectPermissionsView(APIView):
     """
-    GET/POST/DELETE /api/auth/users/<user_id>/permissions/
+    GET/POST/DELETE {API_PREFIX}/auth/users/<user_id>/permissions/
     Gère les permissions directes d'un utilisateur
     """
 

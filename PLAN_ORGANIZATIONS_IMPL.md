@@ -462,31 +462,31 @@ def is_org_member(self, organization):
 
 ```
 # Organizations CRUD
-POST   /api/auth/organizations/                           ← Créer une org
-GET    /api/auth/organizations/                           ← Lister mes orgs
-GET    /api/auth/organizations/{slug}/                    ← Détails d'une org
-PATCH  /api/auth/organizations/{slug}/                    ← Modifier une org
-DELETE /api/auth/organizations/{slug}/                    ← Supprimer une org
+POST   /api/v1/auth/organizations/                           ← Créer une org
+GET    /api/v1/auth/organizations/                           ← Lister mes orgs
+GET    /api/v1/auth/organizations/{slug}/                    ← Détails d'une org
+PATCH  /api/v1/auth/organizations/{slug}/                    ← Modifier une org
+DELETE /api/v1/auth/organizations/{slug}/                    ← Supprimer une org
 
 # Sub-organizations (hiérarchie)
-POST   /api/auth/organizations/{slug}/children/           ← Créer une sous-org
-GET    /api/auth/organizations/{slug}/children/           ← Lister les sous-orgs
-GET    /api/auth/organizations/{slug}/tree/               ← Arbre complet
+POST   /api/v1/auth/organizations/{slug}/children/           ← Créer une sous-org
+GET    /api/v1/auth/organizations/{slug}/children/           ← Lister les sous-orgs
+GET    /api/v1/auth/organizations/{slug}/tree/               ← Arbre complet
 
 # Members
-GET    /api/auth/organizations/{slug}/members/            ← Lister les membres
-POST   /api/auth/organizations/{slug}/members/            ← Ajouter un membre
-PATCH  /api/auth/organizations/{slug}/members/{user_id}/  ← Modifier le rôle
-DELETE /api/auth/organizations/{slug}/members/{user_id}/  ← Retirer un membre
+GET    /api/v1/auth/organizations/{slug}/members/            ← Lister les membres
+POST   /api/v1/auth/organizations/{slug}/members/            ← Ajouter un membre
+PATCH  /api/v1/auth/organizations/{slug}/members/{user_id}/  ← Modifier le rôle
+DELETE /api/v1/auth/organizations/{slug}/members/{user_id}/  ← Retirer un membre
 
 # Invitations
-POST   /api/auth/organizations/{slug}/invitations/        ← Inviter par email
-GET    /api/auth/organizations/{slug}/invitations/        ← Lister les invitations
-POST   /api/auth/invitations/{token}/accept/              ← Accepter une invitation
-POST   /api/auth/invitations/{token}/decline/             ← Décliner une invitation
+POST   /api/v1/auth/organizations/{slug}/invitations/        ← Inviter par email
+GET    /api/v1/auth/organizations/{slug}/invitations/        ← Lister les invitations
+POST   /api/v1/auth/invitations/{token}/accept/              ← Accepter une invitation
+POST   /api/v1/auth/invitations/{token}/decline/             ← Décliner une invitation
 
 # Organization Roles
-GET    /api/auth/org-roles/                               ← Lister les rôles org disponibles
+GET    /api/v1/auth/org-roles/                               ← Lister les rôles org disponibles
 ```
 
 ---

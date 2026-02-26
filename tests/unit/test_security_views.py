@@ -288,6 +288,19 @@ class TestLoginAttemptListView:
 
         assert response.status_code == 200
 
+    @pytest.mark.django_db
+    def test_list_login_attempts_no_pagination(self):
+        from tenxyte.views.security_views import LoginAttemptListView
+        app = _app("LoginAttemptNoPage")
+        admin = _user("login_attempt_nopg@test.com", "security.view")
+
+        req = _authed_request("get", "/admin/login-attempts/", admin, app)
+        view = LoginAttemptListView.as_view()
+        with patch('tenxyte.views.security_views.TenxytePagination.paginate_queryset', return_value=None):
+            response = view(req)
+        assert response.status_code == 200
+        assert isinstance(response.data, list)
+
 
 # ===========================================================================
 # BlacklistedTokenListView
@@ -490,6 +503,26 @@ class TestRefreshTokenListView:
 
         assert response.status_code == 200
 
+    @pytest.mark.django_db
+    def test_list_filter_app_and_expired_true_and_no_pagination(self):
+        from tenxyte.views.security_views import RefreshTokenListView
+        app = _app("RefreshExpiredApp2")
+        admin = _user("refresh_expired2@test.com", "security.view")
+
+        req = _authed_request(
+            "get", "/admin/refresh-tokens/", admin, app,
+            params={"application_id": str(app.id), "expired": "true"}
+        )
+        view = RefreshTokenListView.as_view()
+        response = view(req)
+        assert response.status_code == 200
+
+        req2 = _authed_request("get", "/admin/refresh-tokens/", admin, app)
+        with patch('tenxyte.pagination.TenxytePagination.paginate_queryset', return_value=None):
+            response2 = view(req2)
+        assert response2.status_code == 200
+        assert isinstance(response2.data, list)
+
 
 # ===========================================================================
 # RefreshTokenRevokeView
@@ -561,3 +594,103 @@ class TestRefreshTokenRevokeView:
         response = view(req, token_id=rt.id)
 
         assert response.status_code == 403
+
+# ===========================================================================
+# User Security Views (list_sessions, revoke_session, etc)
+# ===========================================================================
+
+class TestUserSecurityViews:
+    def setup_method(self, method):
+        import sys
+        from unittest.mock import MagicMock
+        self.mock_security_service_module = MagicMock()
+        self.mock_security_service_class = MagicMock()
+        self.mock_security_service_module.SecurityService = self.mock_security_service_class
+        sys.modules['tenxyte.services.security_service'] = self.mock_security_service_module
+
+    def teardown_method(self, method):
+        import sys
+        sys.modules.pop('tenxyte.services.security_service', None)
+
+    @pytest.mark.django_db
+    def test_list_sessions(self):
+        from tenxyte.views.security_views import list_sessions
+        app = _app("SessListApp")
+        user = _user("sess_list@test.com")
+        req = _authed_request("get", "/me/sessions/", user, app)
+        self.mock_security_service_class.return_value.get_user_sessions.return_value = []
+        response = list_sessions(req)
+        assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_revoke_session(self):
+        from tenxyte.views.security_views import revoke_session
+        app = _app("SessRevokeApp")
+        user = _user("sess_revoke@test.com")
+
+        req1 = _authed_request("delete", "/me/sessions/123/", user, app)
+        self.mock_security_service_class.return_value.revoke_session.return_value = (True, "")
+        response = revoke_session(req1, session_id="123")
+        assert response.status_code == 200
+
+        req2 = _authed_request("delete", "/me/sessions/123/", user, app)
+        self.mock_security_service_class.return_value.revoke_session.return_value = (False, "SESSION_NOT_FOUND")
+        response = revoke_session(req2, session_id="123")
+        assert response.status_code == 404
+
+        req3 = _authed_request("delete", "/me/sessions/123/", user, app)
+        self.mock_security_service_class.return_value.revoke_session.return_value = (False, "CANNOT_REVOKE_CURRENT")
+        response = revoke_session(req3, session_id="123")
+        assert response.status_code == 400
+
+        req4 = _authed_request("delete", "/me/sessions/123/", user, app)
+        self.mock_security_service_class.return_value.revoke_session.return_value = (False, "OTHER")
+        response = revoke_session(req4, session_id="123")
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_revoke_all_sessions(self):
+        from tenxyte.views.security_views import revoke_all_sessions
+        app = _app("SessRevokeAllApp")
+        user = _user("sess_revoke_all@test.com")
+
+        req1 = _authed_request("delete", "/me/sessions/", user, app, data={})
+        response = revoke_all_sessions(req1)
+        assert response.status_code == 400
+
+        req2 = _authed_request("delete", "/me/sessions/", user, app, data={"confirmation": "REVOKE ALL"})
+        self.mock_security_service_class.return_value.revoke_all_sessions.return_value = 5
+        response = revoke_all_sessions(req2)
+        assert response.status_code == 200
+        assert response.data["revoked_count"] == 5
+
+    @pytest.mark.django_db
+    def test_list_devices(self):
+        from tenxyte.views.security_views import list_devices
+        app = _app("DevListApp")
+        user = _user("dev_list@test.com")
+        req = _authed_request("get", "/me/devices/", user, app)
+        self.mock_security_service_class.return_value.get_user_devices.return_value = []
+        response = list_devices(req)
+        assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_revoke_device(self):
+        from tenxyte.views.security_views import revoke_device
+        app = _app("DevRevokeApp")
+        user = _user("dev_revoke@test.com")
+
+        req1 = _authed_request("delete", "/me/devices/1/", user, app)
+        self.mock_security_service_class.return_value.revoke_device.return_value = (True, {"sessions_revoked": 2}, "")
+        response = revoke_device(req1, device_id=1)
+        assert response.status_code == 200
+
+        req2 = _authed_request("delete", "/me/devices/1/", user, app)
+        self.mock_security_service_class.return_value.revoke_device.return_value = (False, {}, "DEVICE_NOT_FOUND")
+        response = revoke_device(req2, device_id=1)
+        assert response.status_code == 404
+
+        req3 = _authed_request("delete", "/me/devices/1/", user, app)
+        self.mock_security_service_class.return_value.revoke_device.return_value = (False, {}, "OTHER")
+        response = revoke_device(req3, device_id=1)
+        assert response.status_code == 400

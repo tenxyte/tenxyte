@@ -7,22 +7,22 @@ from drf_spectacular.types import OpenApiTypes
 
 from ..serializers import (
     RegisterSerializer, LoginEmailSerializer, LoginPhoneSerializer,
-    RefreshTokenSerializer, GoogleAuthSerializer, UserSerializer
+    RefreshTokenSerializer, UserSerializer
 )
-from ..services import AuthService, OTPService, GoogleAuthService
+from ..services import AuthService, OTPService
 from ..services.breach_check_service import breach_check_service
 from ..decorators import require_jwt, get_client_ip
 from ..device_info import build_device_info_from_user_agent
 from ..throttles import (
     LoginThrottle, LoginHourlyThrottle,
     RegisterThrottle, RegisterDailyThrottle,
-    RefreshTokenThrottle, GoogleAuthThrottle,
+    RefreshTokenThrottle,
 )
 
 
 class RegisterView(APIView):
     """
-    POST /api/auth/register/
+    POST {API_PREFIX}/auth/register/
     Inscription d'un nouvel utilisateur
     """
     permission_classes = [AllowAny]
@@ -152,7 +152,7 @@ class RegisterView(APIView):
 
 class LoginEmailView(APIView):
     """
-    POST /api/auth/login/email/
+    POST {API_PREFIX}/auth/login/email/
     Connexion par email + password (+ 2FA si activé)
     """
     permission_classes = [AllowAny]
@@ -306,7 +306,7 @@ class LoginEmailView(APIView):
 
 class LoginPhoneView(APIView):
     """
-    POST /api/auth/login/phone/
+    POST {API_PREFIX}/auth/login/phone/
     Connexion par téléphone + password (+ 2FA si activé)
     """
     permission_classes = [AllowAny]
@@ -436,77 +436,9 @@ class LoginPhoneView(APIView):
         return Response(data)
 
 
-class GoogleAuthView(APIView):
-    """
-    POST /api/auth/google/
-    Authentification via Google OAuth
-    """
-    permission_classes = [AllowAny]
-    throttle_classes = [GoogleAuthThrottle]
-
-    @extend_schema(
-        tags=['Auth'],
-        summary="Authentification Google OAuth",
-        description="Authentifie un utilisateur via Google OAuth. Accepte id_token, access_token ou code.",
-        request=GoogleAuthSerializer,
-        responses={200: OpenApiTypes.OBJECT, 401: OpenApiTypes.OBJECT}
-    )
-    def post(self, request):
-        serializer = GoogleAuthSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response({
-                'error': 'Validation error',
-                'details': serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        google_service = GoogleAuthService()
-        ip_address = get_client_ip(request)
-        google_data = None
-
-        # Essayer de récupérer les données Google
-        if serializer.validated_data.get('id_token'):
-            google_data = google_service.verify_id_token(
-                serializer.validated_data['id_token']
-            )
-        elif serializer.validated_data.get('access_token'):
-            google_data = google_service.get_user_info(
-                serializer.validated_data['access_token']
-            )
-        elif serializer.validated_data.get('code'):
-            tokens = google_service.exchange_code_for_tokens(
-                serializer.validated_data['code'],
-                serializer.validated_data['redirect_uri']
-            )
-            if tokens and 'access_token' in tokens:
-                google_data = google_service.get_user_info(tokens['access_token'])
-
-        if not google_data:
-            return Response({
-                'error': 'Invalid Google credentials',
-                'code': 'GOOGLE_AUTH_FAILED'
-            }, status=status.HTTP_401_UNAUTHORIZED)
-
-        success, data, error = google_service.authenticate_with_google(
-            google_data=google_data,
-            application=request.application,
-            ip_address=ip_address,
-            device_info=serializer.validated_data.get('device_info', '') or build_device_info_from_user_agent(
-                request.META.get('HTTP_USER_AGENT', '')
-            )
-        )
-
-        if not success:
-            return Response({
-                'error': error,
-                'code': 'GOOGLE_AUTH_FAILED'
-            }, status=status.HTTP_401_UNAUTHORIZED)
-
-        return Response(data)
-
-
 class RefreshTokenView(APIView):
     """
-    POST /api/auth/refresh/
+    POST {API_PREFIX}/auth/refresh/
     Rafraîchir le access token
     """
     permission_classes = [AllowAny]
@@ -597,7 +529,7 @@ class RefreshTokenView(APIView):
 
 class LogoutView(APIView):
     """
-    POST /api/auth/logout/
+    POST {API_PREFIX}/auth/logout/
     Déconnexion (révoque le refresh token)
     """
     permission_classes = [AllowAny]
@@ -678,7 +610,7 @@ class LogoutView(APIView):
 
 class LogoutAllView(APIView):
     """
-    POST /api/auth/logout/all/
+    POST {API_PREFIX}/auth/logout/all/
     Déconnexion de tous les appareils
     """
 

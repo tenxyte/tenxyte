@@ -62,7 +62,7 @@ Links a user to an organization with a specific role.
 ### Create an Organization
 
 ```bash
-POST /api/auth/organizations/
+POST /api/v1/auth/organizations/
 Authorization: Bearer <token>
 
 {
@@ -86,7 +86,7 @@ Authorization: Bearer <token>
 ### Create a Sub-Organization
 
 ```bash
-POST /api/auth/organizations/
+POST /api/v1/auth/organizations/
 {
   "name": "Engineering",
   "slug": "acme-engineering",
@@ -97,20 +97,20 @@ POST /api/auth/organizations/
 ### List My Organizations
 
 ```bash
-GET /api/auth/organizations/list/
+GET /api/v1/auth/organizations/list/
 ```
 
 ### Get Organization Details
 
 ```bash
-GET /api/auth/organizations/detail/
+GET /api/v1/auth/organizations/detail/
 X-Org-Slug: acme-corp
 ```
 
 ### Get Organization Tree
 
 ```bash
-GET /api/auth/organizations/tree/
+GET /api/v1/auth/organizations/tree/
 X-Org-Slug: acme-corp
 ```
 
@@ -135,7 +135,7 @@ X-Org-Slug: acme-corp
 ### Update an Organization
 
 ```bash
-PATCH /api/auth/organizations/update/
+PATCH /api/v1/auth/organizations/update/
 X-Org-Slug: acme-corp
 
 {
@@ -147,7 +147,7 @@ X-Org-Slug: acme-corp
 ### Delete an Organization
 
 ```bash
-DELETE /api/auth/organizations/delete/
+DELETE /api/v1/auth/organizations/delete/
 X-Org-Slug: acme-corp
 ```
 
@@ -158,7 +158,7 @@ X-Org-Slug: acme-corp
 ### List Members
 
 ```bash
-GET /api/auth/organizations/members/
+GET /api/v1/auth/organizations/members/
 X-Org-Slug: acme-corp
 ```
 
@@ -177,7 +177,7 @@ X-Org-Slug: acme-corp
 ### Add a Member
 
 ```bash
-POST /api/auth/organizations/members/add/
+POST /api/v1/auth/organizations/members/add/
 X-Org-Slug: acme-corp
 
 {
@@ -189,7 +189,7 @@ X-Org-Slug: acme-corp
 ### Update a Member's Role
 
 ```bash
-PATCH /api/auth/organizations/members/42/
+PATCH /api/v1/auth/organizations/members/42/
 X-Org-Slug: acme-corp
 
 {
@@ -200,14 +200,14 @@ X-Org-Slug: acme-corp
 ### Remove a Member
 
 ```bash
-DELETE /api/auth/organizations/members/42/remove/
+DELETE /api/v1/auth/organizations/members/42/remove/
 X-Org-Slug: acme-corp
 ```
 
 ### Invite a Member by Email
 
 ```bash
-POST /api/auth/organizations/invitations/
+POST /api/v1/auth/organizations/invitations/
 X-Org-Slug: acme-corp
 
 {
@@ -226,7 +226,7 @@ An invitation email is sent. The user can accept by registering or logging in.
 List available org-scoped roles:
 
 ```bash
-GET /api/auth/org-roles/
+GET /api/v1/auth/org-roles/
 ```
 
 Create org roles programmatically:

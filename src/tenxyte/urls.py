@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    RegisterView, LoginEmailView, LoginPhoneView, GoogleAuthView,
+    RegisterView, LoginEmailView, LoginPhoneView,
     RefreshTokenView, LogoutView, LogoutAllView,
     RequestOTPView, VerifyEmailOTPView, VerifyPhoneOTPView,
     PasswordResetRequestView, PasswordResetConfirmView, ChangePasswordView,
@@ -48,7 +48,9 @@ urlpatterns = [
     # Login
     path('login/email/', LoginEmailView.as_view(), name='login_email'),
     path('login/phone/', LoginPhoneView.as_view(), name='login_phone'),
-    path('google/', GoogleAuthView.as_view(), name='google_auth'),
+
+    # Social Login Multi-Provider
+    path('social/<str:provider>/', SocialAuthView.as_view(), name='social_auth'),
 
     # Token management
     path('refresh/', RefreshTokenView.as_view(), name='refresh_token'),
@@ -129,9 +131,6 @@ urlpatterns = [
     # Magic Link (Passwordless)
     path('magic-link/request/', MagicLinkRequestView.as_view(), name='magic_link_request'),
     path('magic-link/verify/', MagicLinkVerifyView.as_view(), name='magic_link_verify'),
-
-    # Social Login Multi-Provider
-    path('social/<str:provider>/', SocialAuthView.as_view(), name='social_auth'),
 
     # WebAuthn / Passkeys (FIDO2)
     path('webauthn/register/begin/', WebAuthnRegisterBeginView.as_view(), name='webauthn_register_begin'),

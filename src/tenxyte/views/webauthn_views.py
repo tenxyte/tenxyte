@@ -2,12 +2,12 @@
 Views for WebAuthn / Passkeys (FIDO2) authentication.
 
 Endpoints:
-- POST /api/auth/webauthn/register/begin/      — generate registration challenge
-- POST /api/auth/webauthn/register/complete/   — verify + store credential
-- POST /api/auth/webauthn/authenticate/begin/  — generate authentication challenge
-- POST /api/auth/webauthn/authenticate/complete/ — verify + return JWT
-- GET  /api/auth/webauthn/credentials/         — list user's passkeys
-- DELETE /api/auth/webauthn/credentials/<id>/  — delete a passkey
+- POST {API_PREFIX}/auth/webauthn/register/begin/      — generate registration challenge
+- POST {API_PREFIX}/auth/webauthn/register/complete/   — verify + store credential
+- POST {API_PREFIX}/auth/webauthn/authenticate/begin/  — generate authentication challenge
+- POST {API_PREFIX}/auth/webauthn/authenticate/complete/ — verify + return JWT
+- GET  {API_PREFIX}/auth/webauthn/credentials/         — list user's passkeys
+- DELETE {API_PREFIX}/auth/webauthn/credentials/<id>/  — delete a passkey
 """
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -27,7 +27,7 @@ User = get_user_model()
 
 class WebAuthnRegisterBeginView(APIView):
     """
-    POST /api/auth/webauthn/register/begin/
+    POST {API_PREFIX}/auth/webauthn/register/begin/
     Génère les options de registration WebAuthn (challenge).
     Requiert un utilisateur authentifié.
     """
@@ -117,7 +117,7 @@ class WebAuthnRegisterBeginView(APIView):
 
 class WebAuthnRegisterCompleteView(APIView):
     """
-    POST /api/auth/webauthn/register/complete/
+    POST {API_PREFIX}/auth/webauthn/register/complete/
     Vérifie la réponse du navigateur et enregistre la credential.
     """
 
@@ -214,7 +214,7 @@ class WebAuthnRegisterCompleteView(APIView):
 
 class WebAuthnAuthenticateBeginView(APIView):
     """
-    POST /api/auth/webauthn/authenticate/begin/
+    POST {API_PREFIX}/auth/webauthn/authenticate/begin/
     Génère les options d'authentification WebAuthn.
     """
     permission_classes = [AllowAny]
@@ -291,7 +291,7 @@ class WebAuthnAuthenticateBeginView(APIView):
 
 class WebAuthnAuthenticateCompleteView(APIView):
     """
-    POST /api/auth/webauthn/authenticate/complete/
+    POST {API_PREFIX}/auth/webauthn/authenticate/complete/
     Vérifie l'assertion WebAuthn et retourne des tokens JWT.
     """
     permission_classes = [AllowAny]
@@ -389,7 +389,7 @@ class WebAuthnAuthenticateCompleteView(APIView):
 
 class WebAuthnCredentialListView(APIView):
     """
-    GET /api/auth/webauthn/credentials/
+    GET {API_PREFIX}/auth/webauthn/credentials/
     Liste les passkeys de l'utilisateur connecté.
     """
 
@@ -432,7 +432,7 @@ class WebAuthnCredentialListView(APIView):
 
 class WebAuthnCredentialDeleteView(APIView):
     """
-    DELETE /api/auth/webauthn/credentials/<credential_id>/
+    DELETE {API_PREFIX}/auth/webauthn/credentials/<credential_id>/
     Supprime une passkey de l'utilisateur connecté.
     """
 

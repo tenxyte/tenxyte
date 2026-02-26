@@ -46,8 +46,8 @@ class PermissionSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        parent_code = validated_data.pop('parent_code', None)
-        if parent_code is not None:
+        if 'parent_code' in validated_data:
+            parent_code = validated_data.pop('parent_code')
             if parent_code:
                 try:
                     validated_data['parent'] = Permission.objects.get(code=parent_code)

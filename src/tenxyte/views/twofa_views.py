@@ -10,7 +10,7 @@ from ..decorators import require_jwt
 
 class TwoFactorStatusView(APIView):
     """
-    GET /api/auth/2fa/status/
+    GET {API_PREFIX}/auth/2fa/status/
     Récupère le statut 2FA de l'utilisateur
     """
 
@@ -30,7 +30,7 @@ class TwoFactorStatusView(APIView):
 
 class TwoFactorSetupView(APIView):
     """
-    POST /api/auth/2fa/setup/
+    POST {API_PREFIX}/auth/2fa/setup/
     Initialise la configuration 2FA
     """
 
@@ -105,7 +105,7 @@ class TwoFactorSetupView(APIView):
 
 class TwoFactorConfirmView(APIView):
     """
-    POST /api/auth/2fa/confirm/
+    POST {API_PREFIX}/auth/2fa/confirm/
     Confirme l'activation du 2FA avec un code TOTP
     """
 
@@ -195,7 +195,7 @@ class TwoFactorConfirmView(APIView):
 
 class TwoFactorDisableView(APIView):
     """
-    POST /api/auth/2fa/disable/
+    POST {API_PREFIX}/auth/2fa/disable/
     Désactive le 2FA
     """
 
@@ -287,7 +287,7 @@ class TwoFactorDisableView(APIView):
 
 class TwoFactorBackupCodesView(APIView):
     """
-    POST /api/auth/2fa/backup-codes/
+    POST {API_PREFIX}/auth/2fa/backup-codes/
     Régénère les codes de secours
     """
 

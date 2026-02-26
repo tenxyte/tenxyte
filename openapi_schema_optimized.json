@@ -5,7 +5,7 @@
     "version": "0.0.0"
   },
   "paths": {
-    "/api/auth/2fa/backup-codes/": {
+    "/api/v1/auth/2fa/backup-codes/": {
       "post": {
         "operationId": "2fa_backup_codes_create",
         "description": "G\u00e9n\u00e8re de nouveaux codes de secours (les anciens sont invalid\u00e9s). Requiert un code TOTP valide pour s\u00e9curit\u00e9. G\u00e9n\u00e8re 10 codes alphanum\u00e9riques \u00e0 usage unique de 8 caract\u00e8res. Les codes ne seront affich\u00e9s qu'une seule fois. Stockez-les en s\u00e9curit\u00e9.",
@@ -169,7 +169,7 @@
         }
       }
     },
-    "/api/auth/2fa/confirm/": {
+    "/api/v1/auth/2fa/confirm/": {
       "post": {
         "operationId": "2fa_confirm_create",
         "description": "V\u00e9rifie le premier code TOTP pour activer le 2FA. Le code TOTP utilise une fen\u00eatre de 30 secondes avec une tol\u00e9rance de 1 fen\u00eatre avant/apr\u00e8s. Une seule confirmation est requise apr\u00e8s l'initialisation. Apr\u00e8s activation, tous les codes de secours g\u00e9n\u00e9r\u00e9s sont valides.",
@@ -298,7 +298,7 @@
         }
       }
     },
-    "/api/auth/2fa/disable/": {
+    "/api/v1/auth/2fa/disable/": {
       "post": {
         "operationId": "2fa_disable_create",
         "description": "D\u00e9sactive le 2FA apr\u00e8s v\u00e9rification du code TOTP ou d'un code de secours. Pour des raisons de s\u00e9curit\u00e9, le mot de passe de l'utilisateur est \u00e9galement requis. Une fois d\u00e9sactiv\u00e9, tous les codes de secours restants sont invalid\u00e9s. Cette action est irr\u00e9versible et n\u00e9cessitera une nouvelle configuration compl\u00e8te.",
@@ -430,7 +430,7 @@
         }
       }
     },
-    "/api/auth/2fa/setup/": {
+    "/api/v1/auth/2fa/setup/": {
       "post": {
         "operationId": "2fa_setup_create",
         "description": "G\u00e9n\u00e8re un nouveau secret TOTP et retourne le QR code et les codes de secours. Le QR code peut \u00eatre scann\u00e9 avec Google Authenticator, Authy, etc. L'utilisateur doit ensuite confirmer avec un code TOTP valide pour activer le 2FA. Les codes de secours (10 codes \u00e0 usage unique) permettent l'acc\u00e8s si l'appareil est perdu.",
@@ -514,7 +514,7 @@
         }
       }
     },
-    "/api/auth/2fa/status/": {
+    "/api/v1/auth/2fa/status/": {
       "get": {
         "operationId": "2fa_status_retrieve",
         "description": "Retourne si le 2FA est activ\u00e9 et le nombre de codes de secours restants.",
@@ -543,7 +543,7 @@
         }
       }
     },
-    "/api/auth/account-deletion-status/": {
+    "/api/v1/auth/account-deletion-status/": {
       "get": {
         "operationId": "account_deletion_status_retrieve",
         "description": "Obtenir le statut des demandes de suppression de compte de l'utilisateur actuel, y compris les demandes en attente, confirm\u00e9es ou annul\u00e9es.",
@@ -571,7 +571,7 @@
         }
       }
     },
-    "/api/auth/admin/audit-logs/": {
+    "/api/v1/auth/admin/audit-logs/": {
       "get": {
         "operationId": "admin_audit_logs_list",
         "description": "Retourne les \u00e9v\u00e9nements d'audit pagin\u00e9s et filtr\u00e9s.",
@@ -673,10 +673,10 @@
         }
       }
     },
-    "/api/auth/admin/audit-logs/{log_id}/": {
+    "/api/v1/auth/admin/audit-logs/{log_id}/": {
       "get": {
         "operationId": "admin_audit_logs_retrieve",
-        "description": "GET /api/auth/admin/audit-logs/<log_id>/",
+        "description": "GET {API_PREFIX}/auth/admin/audit-logs/<log_id>/",
         "summary": "D\u00e9tails d'un audit log",
         "parameters": [
           {
@@ -722,7 +722,7 @@
         }
       }
     },
-    "/api/auth/admin/blacklisted-tokens/": {
+    "/api/v1/auth/admin/blacklisted-tokens/": {
       "get": {
         "operationId": "admin_blacklisted_tokens_list",
         "description": "Retourne les tokens JWT r\u00e9voqu\u00e9s.",
@@ -800,7 +800,7 @@
         }
       }
     },
-    "/api/auth/admin/blacklisted-tokens/cleanup/": {
+    "/api/v1/auth/admin/blacklisted-tokens/cleanup/": {
       "post": {
         "operationId": "admin_blacklisted_tokens_cleanup_create",
         "description": "Supprime les tokens blacklist\u00e9s qui ont d\u00e9j\u00e0 expir\u00e9 naturellement.",
@@ -829,7 +829,7 @@
         }
       }
     },
-    "/api/auth/admin/deletion-requests/": {
+    "/api/v1/auth/admin/deletion-requests/": {
       "get": {
         "operationId": "admin_deletion_requests_list",
         "description": "Retourne les demandes de suppression de compte pagin\u00e9es et filtr\u00e9es. Interface admin pour la gestion RGPD. Inclut les d\u00e9tails utilisateur, statut de traitement, et dates importantes. Permet de surveiller les demandes en attente et celles n\u00e9cessitant un traitement manuel.",
@@ -1011,10 +1011,10 @@
         }
       }
     },
-    "/api/auth/admin/deletion-requests/{request_id}/": {
+    "/api/v1/auth/admin/deletion-requests/{request_id}/": {
       "get": {
         "operationId": "admin_deletion_requests_retrieve",
-        "description": "GET /api/auth/admin/deletion-requests/<request_id>/",
+        "description": "GET {API_PREFIX}/auth/admin/deletion-requests/<request_id>/",
         "summary": "D\u00e9tails d'une demande de suppression",
         "parameters": [
           {
@@ -1060,7 +1060,7 @@
         }
       }
     },
-    "/api/auth/admin/deletion-requests/{request_id}/process/": {
+    "/api/v1/auth/admin/deletion-requests/{request_id}/process/": {
       "post": {
         "operationId": "admin_deletion_requests_process_create",
         "description": "Ex\u00e9cute manuellement une demande de suppression confirm\u00e9e. **ATTENTION:** Cette action est irr\u00e9versible et d\u00e9truira d\u00e9finitivement toutes les donn\u00e9es utilisateur conform\u00e9ment au RGPD. N\u00e9cessite une confirmation explicite. Un audit trail sera conserv\u00e9. Un email de notification sera envoy\u00e9 \u00e0 l'utilisateur.",
@@ -1240,7 +1240,7 @@
         }
       }
     },
-    "/api/auth/admin/deletion-requests/process-expired/": {
+    "/api/v1/auth/admin/deletion-requests/process-expired/": {
       "post": {
         "operationId": "admin_deletion_requests_process_expired_create",
         "description": "Ex\u00e9cute automatiquement la suppression pour toutes les demandes confirm\u00e9es dont la p\u00e9riode de gr\u00e2ce de 30 jours est expir\u00e9e. Action batch pour la maintenance RGPD. Un rapport d\u00e9taill\u00e9 des traitements est retourn\u00e9. Cette action est g\u00e9n\u00e9ralement ex\u00e9cut\u00e9e par une t\u00e2che cron quotidienne.",
@@ -1312,7 +1312,7 @@
         }
       }
     },
-    "/api/auth/admin/login-attempts/": {
+    "/api/v1/auth/admin/login-attempts/": {
       "get": {
         "operationId": "admin_login_attempts_list",
         "description": "Retourne les tentatives de connexion pagin\u00e9es et filtr\u00e9es.",
@@ -1406,7 +1406,7 @@
         }
       }
     },
-    "/api/auth/admin/refresh-tokens/": {
+    "/api/v1/auth/admin/refresh-tokens/": {
       "get": {
         "operationId": "admin_refresh_tokens_list",
         "description": "Retourne les refresh tokens (valeur du token masqu\u00e9e).",
@@ -1492,7 +1492,7 @@
         }
       }
     },
-    "/api/auth/admin/refresh-tokens/{token_id}/revoke/": {
+    "/api/v1/auth/admin/refresh-tokens/{token_id}/revoke/": {
       "post": {
         "operationId": "admin_refresh_tokens_revoke_create",
         "description": "R\u00e9voque un refresh token sp\u00e9cifique.",
@@ -1541,7 +1541,7 @@
         }
       }
     },
-    "/api/auth/admin/users/": {
+    "/api/v1/auth/admin/users/": {
       "get": {
         "operationId": "admin_users_list",
         "description": "Retourne la liste pagin\u00e9e de tous les utilisateurs. R\u00e9serv\u00e9 aux admins.",
@@ -1675,7 +1675,7 @@
         }
       }
     },
-    "/api/auth/admin/users/{user_id}/": {
+    "/api/v1/auth/admin/users/{user_id}/": {
       "get": {
         "operationId": "admin_users_retrieve",
         "description": "R\u00e9cup\u00e8re les informations compl\u00e8tes d'un utilisateur.",
@@ -1849,7 +1849,7 @@
         }
       }
     },
-    "/api/auth/admin/users/{user_id}/ban/": {
+    "/api/v1/auth/admin/users/{user_id}/ban/": {
       "post": {
         "operationId": "admin_users_ban_create",
         "description": "Bannit un utilisateur de mani\u00e8re permanente. N\u00e9cessite la permission users.ban.",
@@ -1917,7 +1917,7 @@
         }
       }
     },
-    "/api/auth/admin/users/{user_id}/lock/": {
+    "/api/v1/auth/admin/users/{user_id}/lock/": {
       "post": {
         "operationId": "admin_users_lock_create",
         "description": "Verrouille temporairement un compte utilisateur.",
@@ -1985,7 +1985,7 @@
         }
       }
     },
-    "/api/auth/admin/users/{user_id}/unban/": {
+    "/api/v1/auth/admin/users/{user_id}/unban/": {
       "post": {
         "operationId": "admin_users_unban_create",
         "description": "L\u00e8ve le bannissement d'un utilisateur.",
@@ -2034,7 +2034,7 @@
         }
       }
     },
-    "/api/auth/admin/users/{user_id}/unlock/": {
+    "/api/v1/auth/admin/users/{user_id}/unlock/": {
       "post": {
         "operationId": "admin_users_unlock_create",
         "description": "D\u00e9verrouille un compte utilisateur.",
@@ -2083,7 +2083,7 @@
         }
       }
     },
-    "/api/auth/applications/": {
+    "/api/v1/auth/applications/": {
       "get": {
         "operationId": "applications_list",
         "description": "Retourne la liste pagin\u00e9e de toutes les applications enregistr\u00e9es.",
@@ -2267,7 +2267,7 @@
         }
       }
     },
-    "/api/auth/applications/{app_id}/": {
+    "/api/v1/auth/applications/{app_id}/": {
       "get": {
         "operationId": "applications_retrieve",
         "description": "R\u00e9cup\u00e8re les informations d'une application par son ID. Inclut les statistiques d'utilisation et le statut actif. Le secret n'est jamais affich\u00e9 pour des raisons de s\u00e9curit\u00e9.",
@@ -2584,7 +2584,7 @@
         }
       }
     },
-    "/api/auth/applications/{app_id}/regenerate/": {
+    "/api/v1/auth/applications/{app_id}/regenerate/": {
       "post": {
         "operationId": "applications_regenerate_create",
         "description": "R\u00e9g\u00e9n\u00e8re l'access_key et l'access_secret d'une application. **Attention:** les anciens credentials seront imm\u00e9diatement invalid\u00e9s. Le nouveau secret n'est affich\u00e9 qu'une seule fois. Action irr\u00e9versible n\u00e9cessitant confirmation.",
@@ -2733,7 +2733,7 @@
         }
       }
     },
-    "/api/auth/cancel-account-deletion/": {
+    "/api/v1/auth/cancel-account-deletion/": {
       "post": {
         "operationId": "cancel_account_deletion_create",
         "description": "Annule une demande de suppression de compte pendant la p\u00e9riode de gr\u00e2ce. N\u00e9cessite le mot de passe actuel pour s\u00e9curit\u00e9. Le compte sera r\u00e9activ\u00e9 imm\u00e9diatement. Un email de confirmation sera envoy\u00e9. L'annulation est possible jusqu'\u00e0 la fin de la p\u00e9riode de gr\u00e2ce.",
@@ -2878,7 +2878,7 @@
         }
       }
     },
-    "/api/auth/confirm-account-deletion/": {
+    "/api/v1/auth/confirm-account-deletion/": {
       "post": {
         "operationId": "confirm_account_deletion_create",
         "description": "Confirme la demande de suppression via token re\u00e7u par email. Le token est valide 24 heures. Cette \u00e9tape est requise pour v\u00e9rifier que l'utilisateur a bien acc\u00e8s \u00e0 son email. Apr\u00e8s confirmation, le compte entre en p\u00e9riode de gr\u00e2ce de 30 jours.",
@@ -3045,7 +3045,7 @@
         }
       }
     },
-    "/api/auth/dashboard/auth/": {
+    "/api/v1/auth/dashboard/auth/": {
       "get": {
         "operationId": "dashboard_auth_retrieve",
         "description": "Login stats, m\u00e9thodes, registrations, tokens, top failure reasons, graphiques 7j.",
@@ -3074,7 +3074,7 @@
         }
       }
     },
-    "/api/auth/dashboard/gdpr/": {
+    "/api/v1/auth/dashboard/gdpr/": {
       "get": {
         "operationId": "dashboard_gdpr_retrieve",
         "description": "Demandes de suppression par statut, exports de donn\u00e9es.",
@@ -3103,7 +3103,7 @@
         }
       }
     },
-    "/api/auth/dashboard/organizations/": {
+    "/api/v1/auth/dashboard/organizations/": {
       "get": {
         "operationId": "dashboard_organizations_retrieve",
         "description": "Organisations, membres, r\u00f4les, top organisations.",
@@ -3132,7 +3132,7 @@
         }
       }
     },
-    "/api/auth/dashboard/security/": {
+    "/api/v1/auth/dashboard/security/": {
       "get": {
         "operationId": "dashboard_security_retrieve",
         "description": "Audit summary, blacklisted tokens, activit\u00e9 suspecte, adoption 2FA.",
@@ -3161,7 +3161,7 @@
         }
       }
     },
-    "/api/auth/dashboard/stats/": {
+    "/api/v1/auth/dashboard/stats/": {
       "get": {
         "operationId": "dashboard_stats_retrieve",
         "description": "Retourne les statistiques agr\u00e9g\u00e9es cross-modules pour le tableau de bord admin. Les donn\u00e9es varient selon le contexte organisationnel (X-Org-Slug) et les permissions. Inclut les m\u00e9triques utilisateurs, authentification, applications, s\u00e9curit\u00e9, et RGPD. Les graphiques couvrent les 7 derniers jours avec comparaisons p\u00e9riode pr\u00e9c\u00e9dente.",
@@ -3327,7 +3327,7 @@
         }
       }
     },
-    "/api/auth/export-user-data/": {
+    "/api/v1/auth/export-user-data/": {
       "post": {
         "operationId": "export_user_data_create",
         "description": "Exporte toutes les donn\u00e9es personnelles de l'utilisateur conform\u00e9ment au droit \u00e0 la portabilit\u00e9 du RGPD. N\u00e9cessite le mot de passe actuel pour des raisons de s\u00e9curit\u00e9.",
@@ -3493,7 +3493,7 @@
         }
       }
     },
-    "/api/auth/google/": {
+    "/api/v1/auth/google/": {
       "post": {
         "operationId": "google_create",
         "description": "Authentifie un utilisateur via Google OAuth. Accepte id_token, access_token ou code.",
@@ -3552,7 +3552,7 @@
         }
       }
     },
-    "/api/auth/login/email/": {
+    "/api/v1/auth/login/email/": {
       "post": {
         "operationId": "login_email_create",
         "description": "Authentifie un utilisateur avec son email et mot de passe. Si 2FA est activ\u00e9, le champ totp_code est requis. Le device fingerprinting est automatiquement effectu\u00e9 via User-Agent. Les limites de session et de device sont respect\u00e9es.",
@@ -3773,7 +3773,7 @@
         }
       }
     },
-    "/api/auth/login/phone/": {
+    "/api/v1/auth/login/phone/": {
       "post": {
         "operationId": "login_phone_create",
         "description": "Authentifie un utilisateur avec son num\u00e9ro de t\u00e9l\u00e9phone et mot de passe. Le num\u00e9ro doit \u00eatre au format international (ex: +33 pour la France). Si 2FA est activ\u00e9, le champ totp_code est requis. Le device fingerprinting est automatiquement effectu\u00e9.",
@@ -3946,7 +3946,7 @@
         }
       }
     },
-    "/api/auth/logout/": {
+    "/api/v1/auth/logout/": {
       "post": {
         "operationId": "logout_create",
         "description": "R\u00e9voque le refresh token fourni pour d\u00e9connecter l'utilisateur. Si un access token est fourni dans l'en-t\u00eate Authorization, il est \u00e9galement blacklist\u00e9 pour une d\u00e9connexion imm\u00e9diate.",
@@ -4062,7 +4062,7 @@
         }
       }
     },
-    "/api/auth/logout/all/": {
+    "/api/v1/auth/logout/all/": {
       "post": {
         "operationId": "logout_all_create",
         "description": "R\u00e9voque tous les refresh tokens de l'utilisateur connect\u00e9. L'access token actuel est \u00e9galement blacklist\u00e9. Utile pour une d\u00e9connexion de s\u00e9curit\u00e9 sur tous les appareils.",
@@ -4129,7 +4129,7 @@
         }
       }
     },
-    "/api/auth/magic-link/request/": {
+    "/api/v1/auth/magic-link/request/": {
       "post": {
         "operationId": "magic_link_request_create",
         "description": "Envoie un lien de connexion \u00e0 usage unique par email. Valide pendant 15 minutes par d\u00e9faut (configurable via TENXYTE_MAGIC_LINK_EXPIRY_MINUTES). Le lien contient un token unique et peut \u00eatre utilis\u00e9 une seule fois. Pour des raisons de s\u00e9curit\u00e9, ne r\u00e9v\u00e8le pas si l'email existe. Limit\u00e9 \u00e0 3 requ\u00eates par heure par email. N\u00e9cessite TENXYTE_MAGIC_LINK_ENABLED = True.",
@@ -4287,7 +4287,7 @@
         }
       }
     },
-    "/api/auth/magic-link/verify/": {
+    "/api/v1/auth/magic-link/verify/": {
       "get": {
         "operationId": "magic_link_verify_retrieve",
         "description": "Valide le token du magic link et retourne des tokens JWT si valide. Le token est \u00e0 usage unique \u2014 il est invalid\u00e9 apr\u00e8s la premi\u00e8re utilisation. Le token expire apr\u00e8s 15 minutes par d\u00e9faut. Le device fingerprinting est automatiquement effectu\u00e9 via User-Agent. Une fois utilis\u00e9, le token ne peut plus \u00eatre utilis\u00e9 m\u00eame si non expir\u00e9.",
@@ -4428,7 +4428,7 @@
         }
       }
     },
-    "/api/auth/me/": {
+    "/api/v1/auth/me/": {
       "get": {
         "operationId": "me_retrieve",
         "description": "Retourne les informations compl\u00e8tes de l'utilisateur connect\u00e9. Inclut les champs personnalis\u00e9s, pr\u00e9f\u00e9rences, et m\u00e9tadonn\u00e9es. Les champs sensibles (mot de passe, tokens) ne sont jamais inclus. Le profil peut varier selon les permissions et le contexte organisationnel.",
@@ -4733,7 +4733,7 @@
         }
       }
     },
-    "/api/auth/me/roles/": {
+    "/api/v1/auth/me/roles/": {
       "get": {
         "operationId": "me_roles_retrieve",
         "description": "Retourne la liste des r\u00f4les et permissions de l'utilisateur connect\u00e9.",
@@ -4772,7 +4772,7 @@
         }
       }
     },
-    "/api/auth/org-roles/": {
+    "/api/v1/auth/org-roles/": {
       "get": {
         "operationId": "org_roles_retrieve",
         "description": "Retourne la liste des r\u00f4les disponibles pour les organisations. Inclut les permissions associ\u00e9es \u00e0 chaque r\u00f4le. Affiche la hi\u00e9rarchie des r\u00f4les et poids de permission. Utile pour comprendre les capacit\u00e9s de chaque r\u00f4le.",
@@ -4891,7 +4891,7 @@
         }
       }
     },
-    "/api/auth/organizations/": {
+    "/api/v1/auth/organizations/": {
       "post": {
         "operationId": "organizations_create",
         "description": "Cr\u00e9e une nouvelle organisation. L'utilisateur devient automatiquement owner. Supporte les hi\u00e9rarchies (parent/child) avec profondeur maximale de 5 niveaux. Le slug doit \u00eatre unique globalement. Limite de membres configurable (0 = illimit\u00e9).",
@@ -5038,7 +5038,7 @@
         }
       }
     },
-    "/api/auth/organizations/delete/": {
+    "/api/v1/auth/organizations/delete/": {
       "delete": {
         "operationId": "organizations_delete_destroy",
         "description": "Supprime une organisation (soft delete). N\u00e9cessite droits de propri\u00e9taire et header X-Org-Slug. Impossible si l'organisation a des organisations enfants. Action irr\u00e9versible mais r\u00e9cup\u00e9rable via admin. Tous les membres perdent l'acc\u00e8s.",
@@ -5134,7 +5134,7 @@
         }
       }
     },
-    "/api/auth/organizations/detail/": {
+    "/api/v1/auth/organizations/detail/": {
       "get": {
         "operationId": "organizations_detail_retrieve",
         "description": "Retourne les d\u00e9tails complets d'une organisation. N\u00e9cessite le header X-Org-Slug pour identifier l'organisation. Inclut les m\u00e9tadonn\u00e9es, statistiques membres, et hi\u00e9rarchie. Uniquement accessible aux membres de l'organisation.",
@@ -5284,7 +5284,7 @@
         }
       }
     },
-    "/api/auth/organizations/invitations/": {
+    "/api/v1/auth/organizations/invitations/": {
       "post": {
         "operationId": "organizations_invitations_create",
         "description": "Invite un utilisateur \u00e0 rejoindre l'organisation par email. N\u00e9cessite la permission org.members.invite. Un email avec un lien d'acceptation est envoy\u00e9. L'invitation expire apr\u00e8s le nombre de jours sp\u00e9cifi\u00e9. L'utilisateur doit cr\u00e9er un compte ou se connecter pour accepter.",
@@ -5433,7 +5433,7 @@
         }
       }
     },
-    "/api/auth/organizations/list/": {
+    "/api/v1/auth/organizations/list/": {
       "get": {
         "operationId": "organizations_list_retrieve",
         "description": "Retourne la liste des organisations o\u00f9 l'utilisateur est membre. Supporte la recherche, le filtrage et la pagination. Inclut les statistiques (nombre de membres, hi\u00e9rarchie).",
@@ -5584,7 +5584,7 @@
         }
       }
     },
-    "/api/auth/organizations/members/": {
+    "/api/v1/auth/organizations/members/": {
       "get": {
         "operationId": "organizations_members_retrieve",
         "description": "Retourne la liste des membres de l'organisation. Inclut les r\u00f4les, permissions h\u00e9rit\u00e9es, et statut. Supporte la recherche, filtrage par r\u00f4le et pagination. Affiche les permissions effectives (directes + h\u00e9rit\u00e9es).",
@@ -5785,7 +5785,7 @@
         }
       }
     },
-    "/api/auth/organizations/members/{user_id}/": {
+    "/api/v1/auth/organizations/members/{user_id}/": {
       "patch": {
         "operationId": "organizations_members_partial_update",
         "description": "Met \u00e0 jour le r\u00f4le d'un membre existant. N\u00e9cessite la permission org.members.manage. Un propri\u00e9taire ne peut pas \u00eatre r\u00e9trograd\u00e9 par un autre membre. Le dernier propri\u00e9taire ne peut pas \u00eatre r\u00e9trograd\u00e9. L'utilisateur re\u00e7oit une notification de changement de r\u00f4le.",
@@ -5965,7 +5965,7 @@
         }
       }
     },
-    "/api/auth/organizations/members/{user_id}/remove/": {
+    "/api/v1/auth/organizations/members/{user_id}/remove/": {
       "delete": {
         "operationId": "organizations_members_remove_destroy",
         "description": "Retire un membre de l'organisation. N\u00e9cessite la permission org.members.remove. Un propri\u00e9taire ne peut pas \u00eatre retir\u00e9 par un autre membre. Le dernier propri\u00e9taire ne peut pas \u00eatre retir\u00e9. Un membre peut se retirer lui-m\u00eame (auto-suppression). L'utilisateur perd imm\u00e9diatement l'acc\u00e8s \u00e0 l'organisation.",
@@ -6098,7 +6098,7 @@
         }
       }
     },
-    "/api/auth/organizations/members/add/": {
+    "/api/v1/auth/organizations/members/add/": {
       "post": {
         "operationId": "organizations_members_add_create",
         "description": "Ajoute un utilisateur comme membre de l'organisation. N\u00e9cessite la permission org.members.invite. Respecte les limites de membres configur\u00e9es. L'utilisateur re\u00e7oit une notification d'invitation. Le propri\u00e9taire ne peut pas \u00eatre ajout\u00e9 comme membre simple.",
@@ -6289,7 +6289,7 @@
         }
       }
     },
-    "/api/auth/organizations/tree/": {
+    "/api/v1/auth/organizations/tree/": {
       "get": {
         "operationId": "organizations_tree_retrieve",
         "description": "Retourne l'arbre hi\u00e9rarchique de l'organisation.",
@@ -6328,7 +6328,7 @@
         }
       }
     },
-    "/api/auth/organizations/update/": {
+    "/api/v1/auth/organizations/update/": {
       "patch": {
         "operationId": "organizations_update_partial_update",
         "description": "Met \u00e0 jour les informations d'une organisation. N\u00e9cessite le header X-Org-Slug et droits d'admin. Le changement de parent respecte les contraintes de hi\u00e9rarchie. Impossible de cr\u00e9er des boucles ou d\u00e9passer 5 niveaux. La limite de membres ne peut pas \u00eatre inf\u00e9rieure au nombre actuel.",
@@ -6488,7 +6488,7 @@
         }
       }
     },
-    "/api/auth/otp/request/": {
+    "/api/v1/auth/otp/request/": {
       "post": {
         "operationId": "otp_request_create",
         "description": "G\u00e9n\u00e8re et envoie un code OTP par email ou SMS selon le type demand\u00e9. Le code expire apr\u00e8s 10 minutes. Limit\u00e9 \u00e0 5 requ\u00eates par heure par utilisateur. Supporte les types : email_verification, phone_verification, password_reset.",
@@ -6653,7 +6653,7 @@
         }
       }
     },
-    "/api/auth/otp/verify/email/": {
+    "/api/v1/auth/otp/verify/email/": {
       "post": {
         "operationId": "otp_verify_email_create",
         "description": "V\u00e9rifie le code OTP envoy\u00e9 par email pour valider l'adresse email. Le code doit \u00eatre utilis\u00e9 dans les 10 minutes apr\u00e8s r\u00e9ception. Apr\u00e8s 3 tentatives \u00e9chou\u00e9es, le code est invalid\u00e9. Une fois v\u00e9rifi\u00e9e, l'adresse email ne peut plus \u00eatre modifi\u00e9e.",
@@ -6816,7 +6816,7 @@
         }
       }
     },
-    "/api/auth/otp/verify/phone/": {
+    "/api/v1/auth/otp/verify/phone/": {
       "post": {
         "operationId": "otp_verify_phone_create",
         "description": "V\u00e9rifie le code OTP envoy\u00e9 par SMS pour valider le num\u00e9ro de t\u00e9l\u00e9phone. Le code doit \u00eatre utilis\u00e9 dans les 10 minutes apr\u00e8s r\u00e9ception. Apr\u00e8s 3 tentatives \u00e9chou\u00e9es, le code est invalid\u00e9. Le num\u00e9ro de t\u00e9l\u00e9phone doit \u00eatre au format international enregistr\u00e9.",
@@ -6982,7 +6982,7 @@
         }
       }
     },
-    "/api/auth/password/change/": {
+    "/api/v1/auth/password/change/": {
       "post": {
         "operationId": "password_change_create",
         "description": "Change le mot de passe de l'utilisateur connect\u00e9. Requiert le mot de passe actuel pour validation. V\u00e9rifie si le nouveau mot de passe a \u00e9t\u00e9 expos\u00e9 dans des fuites de donn\u00e9es. Le nouveau mot de passe ne doit pas \u00eatre identique aux 5 derniers mots de passe utilis\u00e9s. Apr\u00e8s changement, d\u00e9connecte toutes les sessions sauf la session actuelle.",
@@ -7146,7 +7146,7 @@
         }
       }
     },
-    "/api/auth/password/requirements/": {
+    "/api/v1/auth/password/requirements/": {
       "get": {
         "operationId": "password_requirements_retrieve",
         "description": "Retourne la liste des exigences pour un mot de passe valide.",
@@ -7175,7 +7175,7 @@
         }
       }
     },
-    "/api/auth/password/reset/confirm/": {
+    "/api/v1/auth/password/reset/confirm/": {
       "post": {
         "operationId": "password_reset_confirm_create",
         "description": "V\u00e9rifie le code OTP et d\u00e9finit un nouveau mot de passe. R\u00e9voque automatiquement tous les refresh tokens de l'utilisateur. V\u00e9rifie si le nouveau mot de passe a \u00e9t\u00e9 expos\u00e9 dans des fuites de donn\u00e9es. Le code OTP doit \u00eatre utilis\u00e9 dans les 15 minutes apr\u00e8s r\u00e9ception.",
@@ -7350,7 +7350,7 @@
         }
       }
     },
-    "/api/auth/password/reset/request/": {
+    "/api/v1/auth/password/reset/request/": {
       "post": {
         "operationId": "password_reset_request_create",
         "description": "Envoie un code OTP par email ou SMS pour r\u00e9initialiser le mot de passe. Pour des raisons de s\u00e9curit\u00e9, ne r\u00e9v\u00e8le pas si le compte existe. Le code OTP expire apr\u00e8s 15 minutes. Limit\u00e9 \u00e0 3 requ\u00eates par heure.",
@@ -7496,7 +7496,7 @@
         }
       }
     },
-    "/api/auth/password/strength/": {
+    "/api/v1/auth/password/strength/": {
       "post": {
         "operationId": "password_strength_create",
         "description": "Retourne le score et la force d'un mot de passe sans l'enregistrer.",
@@ -7545,7 +7545,7 @@
         }
       }
     },
-    "/api/auth/permissions/": {
+    "/api/v1/auth/permissions/": {
       "get": {
         "operationId": "permissions_list",
         "description": "Retourne la liste pagin\u00e9e de toutes les permissions disponibles.",
@@ -7672,7 +7672,7 @@
         }
       }
     },
-    "/api/auth/permissions/{permission_id}/": {
+    "/api/v1/auth/permissions/{permission_id}/": {
       "get": {
         "operationId": "permissions_retrieve",
         "description": "R\u00e9cup\u00e8re les informations d'une permission par son ID.",
@@ -7847,7 +7847,7 @@
         }
       }
     },
-    "/api/auth/refresh/": {
+    "/api/v1/auth/refresh/": {
       "post": {
         "operationId": "refresh_create",
         "description": "G\u00e9n\u00e8re un nouveau access token \u00e0 partir d'un refresh token valide. Le refresh token est automatiquement rot\u00e9 pour am\u00e9liorer la s\u00e9curit\u00e9. Les refresh tokens expir\u00e9s ou blacklist\u00e9s sont rejet\u00e9s.",
@@ -7994,7 +7994,7 @@
         }
       }
     },
-    "/api/auth/register/": {
+    "/api/v1/auth/register/": {
       "post": {
         "operationId": "register_create",
         "description": "Cr\u00e9e un nouveau compte utilisateur. Envoie automatiquement un code OTP de v\u00e9rification si configur\u00e9. V\u00e9rifie si le mot de passe a \u00e9t\u00e9 expos\u00e9 dans des fuites de donn\u00e9es.",
@@ -8134,7 +8134,7 @@
         }
       }
     },
-    "/api/auth/request-account-deletion/": {
+    "/api/v1/auth/request-account-deletion/": {
       "post": {
         "operationId": "request_account_deletion_create",
         "description": "Initie le processus de suppression de compte conforme au RGPD. Le compte sera marqu\u00e9 pour suppression apr\u00e8s une p\u00e9riode de gr\u00e2ce de 30 jours pendant laquelle l'utilisateur peut annuler. N\u00e9cessite le mot de passe actuel et code OTP si 2FA activ\u00e9. Toutes les donn\u00e9es seront anonymis\u00e9es apr\u00e8s la p\u00e9riode de gr\u00e2ce.",
@@ -8305,7 +8305,7 @@
         }
       }
     },
-    "/api/auth/roles/": {
+    "/api/v1/auth/roles/": {
       "get": {
         "operationId": "roles_list",
         "description": "Retourne la liste pagin\u00e9e de tous les r\u00f4les disponibles.",
@@ -8432,7 +8432,7 @@
         }
       }
     },
-    "/api/auth/roles/{role_id}/": {
+    "/api/v1/auth/roles/{role_id}/": {
       "get": {
         "operationId": "roles_retrieve",
         "description": "R\u00e9cup\u00e8re les informations d'un r\u00f4le par son ID.",
@@ -8607,7 +8607,7 @@
         }
       }
     },
-    "/api/auth/roles/{role_id}/permissions/": {
+    "/api/v1/auth/roles/{role_id}/permissions/": {
       "get": {
         "operationId": "roles_permissions_retrieve",
         "description": "R\u00e9cup\u00e8re toutes les permissions assign\u00e9es \u00e0 un r\u00f4le.",
@@ -8795,7 +8795,7 @@
         }
       }
     },
-    "/api/auth/social/{provider}/": {
+    "/api/v1/auth/social/{provider}/": {
       "post": {
         "operationId": "social_create",
         "description": "Authentifie un utilisateur via un provider OAuth2 (google, github, microsoft, facebook). Accepte un access_token, un authorization code, ou un id_token (Google uniquement). Cr\u00e9e automatiquement un compte si l'utilisateur n'existe pas encore. Device fingerprinting automatique via User-Agent. Rate limiting appliqu\u00e9 par provider (10 requ\u00eates/heure).",
@@ -9003,7 +9003,7 @@
         }
       }
     },
-    "/api/auth/users/{user_id}/permissions/": {
+    "/api/v1/auth/users/{user_id}/permissions/": {
       "get": {
         "operationId": "users_permissions_retrieve",
         "description": "R\u00e9cup\u00e8re toutes les permissions assign\u00e9es directement \u00e0 un utilisateur (hors r\u00f4les).",
@@ -9191,7 +9191,7 @@
         }
       }
     },
-    "/api/auth/users/{user_id}/roles/": {
+    "/api/v1/auth/users/{user_id}/roles/": {
       "get": {
         "operationId": "users_roles_retrieve",
         "description": "R\u00e9cup\u00e8re tous les r\u00f4les assign\u00e9s \u00e0 un utilisateur.",
@@ -9377,7 +9377,7 @@
         }
       }
     },
-    "/api/auth/webauthn/authenticate/begin/": {
+    "/api/v1/auth/webauthn/authenticate/begin/": {
       "post": {
         "operationId": "webauthn_authenticate_begin_create",
         "description": "G\u00e9n\u00e8re un challenge WebAuthn pour l'authentification. Supporte les passkeys resident keys (username-less). Le challenge expire apr\u00e8s 5 minutes. User verification configurable (required/preferred/discouraged). AllowCredentials peut \u00eatre vide pour resident keys ou sp\u00e9cifique.",
@@ -9495,7 +9495,7 @@
         }
       }
     },
-    "/api/auth/webauthn/authenticate/complete/": {
+    "/api/v1/auth/webauthn/authenticate/complete/": {
       "post": {
         "operationId": "webauthn_authenticate_complete_create",
         "description": "V\u00e9rifie l'assertion WebAuthn et retourne des tokens JWT. Valide le signature, le challenge et le counter de la credential. Le counter pr\u00e9vient les attaques replay. Device fingerprinting automatique via User-Agent. Supporte les resident keys (username-less authentication).",
@@ -9636,7 +9636,7 @@
         }
       }
     },
-    "/api/auth/webauthn/credentials/": {
+    "/api/v1/auth/webauthn/credentials/": {
       "get": {
         "operationId": "webauthn_credentials_retrieve",
         "description": "Retourne la liste des passkeys enregistr\u00e9es pour l'utilisateur. Inclut les m\u00e9tadonn\u00e9es (nom, date de cr\u00e9ation, derni\u00e8re utilisation). Le credential ID est masqu\u00e9 pour s\u00e9curit\u00e9. Affiche le type d'authentificateur (platform, cross-platform).",
@@ -9698,7 +9698,7 @@
         }
       }
     },
-    "/api/auth/webauthn/credentials/{credential_id}/": {
+    "/api/v1/auth/webauthn/credentials/{credential_id}/": {
       "delete": {
         "operationId": "webauthn_credentials_destroy",
         "description": "Supprime d\u00e9finitivement une passkey de l'utilisateur. Action irr\u00e9versible. Pr\u00e9vient l'acc\u00e8s depuis ce device \u00e0 l'avenir. V\u00e9rifie que la credential appartient bien \u00e0 l'utilisateur.",
@@ -9755,7 +9755,7 @@
         }
       }
     },
-    "/api/auth/webauthn/register/begin/": {
+    "/api/v1/auth/webauthn/register/begin/": {
       "post": {
         "operationId": "webauthn_register_begin_create",
         "description": "G\u00e9n\u00e8re un challenge WebAuthn pour l'enregistrement d'une nouvelle passkey. Le challenge expire apr\u00e8s 5 minutes. Supporte l'authentification biom\u00e9trique (Face ID, Touch ID, Windows Hello). Les options incluent user verification (required/preferred/discouraged) et les algorithmes cryptographiques support\u00e9s (ES256, RS256, EdDSA).",
@@ -9877,7 +9877,7 @@
         }
       }
     },
-    "/api/auth/webauthn/register/complete/": {
+    "/api/v1/auth/webauthn/register/complete/": {
       "post": {
         "operationId": "webauthn_register_complete_create",
         "description": "V\u00e9rifie la r\u00e9ponse WebAuthn du navigateur et enregistre la credential. Pr\u00e9vient les doublons via credential exclusion. Valide l'attestation et le format de la cl\u00e9 publique. Enregistre les m\u00e9tadonn\u00e9es du device (nom, type, date).",

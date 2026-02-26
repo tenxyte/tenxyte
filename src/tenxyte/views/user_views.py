@@ -22,7 +22,7 @@ User = get_user_model()
 
 class MeView(APIView):
     """
-    GET /api/auth/me/
+    GET {API_PREFIX}/auth/me/
     Récupérer le profil de l'utilisateur connecté
     """
     permission_classes = [IsAuthenticated]
@@ -224,7 +224,7 @@ class MeView(APIView):
 
 class AvatarUploadView(APIView):
     """
-    POST /api/auth/me/avatar/
+    POST {API_PREFIX}/auth/me/avatar/
     Upload et met à jour l'avatar de l'utilisateur
     """
     permission_classes = [IsAuthenticated]
@@ -341,7 +341,7 @@ class AvatarUploadView(APIView):
 
 class MyRolesView(APIView):
     """
-    GET /api/auth/me/roles/
+    GET {API_PREFIX}/auth/me/roles/
     Récupère les rôles et permissions de l'utilisateur connecté
     """
 
@@ -375,7 +375,7 @@ class MyRolesView(APIView):
 
 class UserListView(APIView):
     """
-    GET /api/auth/admin/users/
+    GET {API_PREFIX}/auth/admin/users/
     Liste tous les utilisateurs (admin, paginé + filtres)
     """
     pagination_class = TenxytePagination
@@ -418,9 +418,9 @@ class UserListView(APIView):
 
 class UserDetailView(APIView):
     """
-    GET /api/auth/admin/users/<user_id>/
-    PATCH /api/auth/admin/users/<user_id>/
-    DELETE /api/auth/admin/users/<user_id>/
+    GET {API_PREFIX}/auth/admin/users/<user_id>/
+    PATCH {API_PREFIX}/auth/admin/users/<user_id>/
+    DELETE {API_PREFIX}/auth/admin/users/<user_id>/
     """
 
     def _get_user(self, user_id):
@@ -499,7 +499,7 @@ class UserDetailView(APIView):
 
 class UserBanView(APIView):
     """
-    POST /api/auth/admin/users/<user_id>/ban/
+    POST {API_PREFIX}/auth/admin/users/<user_id>/ban/
     """
 
     @extend_schema(
@@ -535,7 +535,7 @@ class UserBanView(APIView):
 
 class UserUnbanView(APIView):
     """
-    POST /api/auth/admin/users/<user_id>/unban/
+    POST {API_PREFIX}/auth/admin/users/<user_id>/unban/
     """
 
     @extend_schema(
@@ -571,7 +571,7 @@ class UserUnbanView(APIView):
 
 class UserLockView(APIView):
     """
-    POST /api/auth/admin/users/<user_id>/lock/
+    POST {API_PREFIX}/auth/admin/users/<user_id>/lock/
     """
 
     @extend_schema(
@@ -609,7 +609,7 @@ class UserLockView(APIView):
 
 class UserUnlockView(APIView):
     """
-    POST /api/auth/admin/users/<user_id>/unlock/
+    POST {API_PREFIX}/auth/admin/users/<user_id>/unlock/
     """
 
     @extend_schema(
@@ -643,7 +643,7 @@ class UserUnlockView(APIView):
 
 class DeleteAccountView(APIView):
     """
-    DELETE /api/auth/me/
+    DELETE {API_PREFIX}/auth/me/
     Supprime le compte de l'utilisateur connecté
     """
     permission_classes = [IsAuthenticated]

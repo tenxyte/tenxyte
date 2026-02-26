@@ -329,7 +329,7 @@ def account_deletion_status(request: Request) -> Response:
     """
     Obtenir le statut des demandes de suppression de compte.
     
-    GET /api/auth/account-deletion-status/
+    GET {API_PREFIX}/auth/account-deletion-status/
     """
     service = AccountDeletionService()
     data = service.get_user_requests(request.user)
@@ -411,7 +411,7 @@ def export_user_data(request: Request) -> Response:
     """
     Exporter les données de l'utilisateur (RGPD).
     
-    POST /api/auth/export-user-data/
+    POST {API_PREFIX}/auth/export-user-data/
     {
         "password": "current_password"
     }

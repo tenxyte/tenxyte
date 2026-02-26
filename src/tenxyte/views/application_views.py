@@ -78,10 +78,10 @@ Application = get_application_model()
 )
 class ApplicationListView(APIView):
     """
-    GET /api/v1/auth/applications/
+    GET {API_PREFIX}/auth/applications/
     Liste toutes les applications (paginé + filtres)
 
-    POST /api/v1/auth/applications/
+    POST {API_PREFIX}/auth/applications/
     Crée une nouvelle application
     """
     pagination_class = TenxytePagination
@@ -221,13 +221,13 @@ class ApplicationListView(APIView):
 )
 class ApplicationDetailView(APIView):
     """
-    GET /api/v1/auth/applications/<app_id>/
+    GET {API_PREFIX}/auth/applications/<app_id>/
     Récupère les détails d'une application
 
-    PUT /api/v1/auth/applications/<app_id>/
+    PUT {API_PREFIX}/auth/applications/<app_id>/
     Met à jour une application
 
-    DELETE /api/v1/auth/applications/<app_id>/
+    DELETE {API_PREFIX}/auth/applications/<app_id>/
     Supprime une application
     """
 
@@ -309,7 +309,7 @@ class ApplicationDetailView(APIView):
 
 class ApplicationRegenerateView(APIView):
     """
-    POST /api/v1/auth/applications/<app_id>/regenerate/
+    POST {API_PREFIX}/auth/applications/<app_id>/regenerate/
     Régénère les credentials d'une application
     """
 

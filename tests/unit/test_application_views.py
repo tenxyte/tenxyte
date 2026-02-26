@@ -11,10 +11,14 @@ Couvre :
 - Contrôle d'accès : 403 sans la permission, 401 sans token
 """
 
+from tenxyte.conf import auth_settings
+api_prefix = auth_settings.API_PREFIX
+
 import json
 
 NONEXISTENT_ID = 999999999  # ID entier qui n'existera jamais en DB (BigAutoField)
 import pytest
+from unittest.mock import patch, MagicMock
 from django.test import RequestFactory
 from rest_framework.test import APIRequestFactory
 
@@ -81,7 +85,7 @@ class TestApplicationListView:
         """Sans token → 401."""
         from django.test import RequestFactory as DRF
         factory = DRF()
-        req = factory.get("/api/auth/applications/")
+        req = factory.get(f"{api_prefix}/auth/applications/")
         req.application = None
         view = ApplicationListView.as_view()
         response = view(req)
@@ -95,7 +99,7 @@ class TestApplicationListView:
         user = _setup_user_with_permissions("applist_noperm@test.com", app)
         # Pas de permission applications.view
 
-        req = _authed_request("get", "/api/auth/applications/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/applications/", user, app)
         response = ApplicationListView.as_view()(req)
         assert response.status_code == 403
 
@@ -106,7 +110,7 @@ class TestApplicationListView:
         app, _ = Application.create_application(name="ListApp_ok")
         user = _setup_user_with_permissions("applist_ok@test.com", app, "applications.view")
 
-        req = _authed_request("get", "/api/auth/applications/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/applications/", user, app)
         response = ApplicationListView.as_view()(req)
         assert response.status_code == 200
         # La réponse doit contenir une liste (paginée ou non)
@@ -121,7 +125,7 @@ class TestApplicationListView:
         user = _setup_user_with_permissions("appcreate_ok@test.com", app, "applications.create")
 
         req = _authed_request(
-            "post", "/api/auth/applications/", user, app,
+            "post", f"{api_prefix}/auth/applications/", user, app,
             data={"name": "NewTestApp", "description": "Created in tests"}
         )
         response = ApplicationListView.as_view()(req)
@@ -138,7 +142,7 @@ class TestApplicationListView:
         user = _setup_user_with_permissions("appcreate_bad@test.com", app, "applications.create")
 
         req = _authed_request(
-            "post", "/api/auth/applications/", user, app,
+            "post", f"{api_prefix}/auth/applications/", user, app,
             data={"name": ""}  # nom vide
         )
         response = ApplicationListView.as_view()(req)
@@ -152,11 +156,24 @@ class TestApplicationListView:
         user = _setup_user_with_permissions("appcreate_noperm@test.com", app)
 
         req = _authed_request(
-            "post", "/api/auth/applications/", user, app,
+            "post", f"{api_prefix}/auth/applications/", user, app,
             data={"name": "ShouldFail"}
         )
         response = ApplicationListView.as_view()(req)
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_list_unpaginated(self):
+        from tenxyte.models import Application
+        app, _ = Application.create_application(name="ListApp_unpag")
+        user = _setup_user_with_permissions("applist_unpag@test.com", app, "applications.view")
+        
+        req = _authed_request("get", f"{api_prefix}/auth/applications/", user, app)
+        with patch('tenxyte.views.application_views.TenxytePagination.paginate_queryset', return_value=None):
+            response = ApplicationListView.as_view()(req)
+        assert response.status_code == 200
+        assert isinstance(response.data, list)
+
 
 
 # ===========================================================================
@@ -172,7 +189,7 @@ class TestApplicationDetailView:
         app, _ = Application.create_application(name="DetailApp")
         user = _setup_user_with_permissions("appdetail_ok@test.com", app, "applications.view")
 
-        req = _authed_request("get", f"/api/auth/applications/{app.id}/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/applications/{app.id}/", user, app)
         response = ApplicationDetailView.as_view()(req, app_id=str(app.id))
         assert response.status_code == 200
         assert response.data["name"] == "DetailApp"
@@ -184,7 +201,7 @@ class TestApplicationDetailView:
         app, _ = Application.create_application(name="DetailApp404")
         user = _setup_user_with_permissions("appdetail_404@test.com", app, "applications.view")
 
-        req = _authed_request("get", "/api/auth/applications/bad-id/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/applications/bad-id/", user, app)
         response = ApplicationDetailView.as_view()(req, app_id=NONEXISTENT_ID)
         assert response.status_code == 404
         assert response.data["code"] == "NOT_FOUND"
@@ -196,7 +213,7 @@ class TestApplicationDetailView:
         app, _ = Application.create_application(name="DetailNoPerm")
         user = _setup_user_with_permissions("appdetail_noperm@test.com", app)
 
-        req = _authed_request("get", f"/api/auth/applications/{app.id}/", user, app)
+        req = _authed_request("get", f"{api_prefix}/auth/applications/{app.id}/", user, app)
         response = ApplicationDetailView.as_view()(req, app_id=str(app.id))
         assert response.status_code == 403
 
@@ -208,7 +225,7 @@ class TestApplicationDetailView:
         user = _setup_user_with_permissions("appupdate_ok@test.com", app, "applications.update")
 
         req = _authed_request(
-            "put", f"/api/auth/applications/{app.id}/", user, app,
+            "put", f"{api_prefix}/auth/applications/{app.id}/", user, app,
             data={"name": "UpdatedName", "description": "updated desc"}
         )
         response = ApplicationDetailView.as_view()(req, app_id=str(app.id))
@@ -223,7 +240,7 @@ class TestApplicationDetailView:
         user = _setup_user_with_permissions("appupdate_404@test.com", app, "applications.update")
 
         req = _authed_request(
-            "put", "/api/auth/applications/bad/", user, app,
+            "put", f"{api_prefix}/auth/applications/bad/", user, app,
             data={"name": "X"}
         )
         response = ApplicationDetailView.as_view()(req, app_id=NONEXISTENT_ID)
@@ -237,7 +254,7 @@ class TestApplicationDetailView:
         user = _setup_user_with_permissions("appupdate_noperm@test.com", app)
 
         req = _authed_request(
-            "put", f"/api/auth/applications/{app.id}/", user, app,
+            "put", f"{api_prefix}/auth/applications/{app.id}/", user, app,
             data={"name": "X"}
         )
         response = ApplicationDetailView.as_view()(req, app_id=str(app.id))
@@ -251,7 +268,7 @@ class TestApplicationDetailView:
         auth_app, _ = Application.create_application(name="AuthApp_del")
         user = _setup_user_with_permissions("appdelete_ok@test.com", auth_app, "applications.delete")
 
-        req = _authed_request("delete", f"/api/auth/applications/{target_app.id}/", user, auth_app)
+        req = _authed_request("delete", f"{api_prefix}/auth/applications/{target_app.id}/", user, auth_app)
         response = ApplicationDetailView.as_view()(req, app_id=str(target_app.id))
         assert response.status_code == 200
         assert not Application.objects.filter(id=target_app.id).exists()
@@ -263,7 +280,7 @@ class TestApplicationDetailView:
         app, _ = Application.create_application(name="DeleteApp404")
         user = _setup_user_with_permissions("appdelete_404@test.com", app, "applications.delete")
 
-        req = _authed_request("delete", "/api/auth/applications/bad/", user, app)
+        req = _authed_request("delete", f"{api_prefix}/auth/applications/bad/", user, app)
         response = ApplicationDetailView.as_view()(req, app_id=NONEXISTENT_ID)
         assert response.status_code == 404
 
@@ -274,9 +291,72 @@ class TestApplicationDetailView:
         app, _ = Application.create_application(name="DeleteNoPerm")
         user = _setup_user_with_permissions("appdelete_noperm@test.com", app)
 
-        req = _authed_request("delete", f"/api/auth/applications/{app.id}/", user, app)
+        req = _authed_request("delete", f"{api_prefix}/auth/applications/{app.id}/", user, app)
         response = ApplicationDetailView.as_view()(req, app_id=str(app.id))
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_update_application_validation_error(self):
+        from tenxyte.models import Application
+        app, _ = Application.create_application(name="UpdateAppVal")
+        user = _setup_user_with_permissions("appupdate_val@test.com", app, "applications.update")
+
+        req = _authed_request(
+            "put", f"{api_prefix}/auth/applications/{app.id}/", user, app,
+            data={"name": ""}
+        )
+        response = ApplicationDetailView.as_view()(req, app_id=str(app.id))
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_patch_application_success(self):
+        from tenxyte.models import Application
+        app, _ = Application.create_application(name="PatchApp")
+        user = _setup_user_with_permissions("apppatch_ok@test.com", app, "applications.update")
+
+        req = _authed_request(
+            "patch", f"{api_prefix}/auth/applications/{app.id}/", user, app,
+            data={"is_active": False}
+        )
+        response = ApplicationDetailView.as_view()(req, app_id=str(app.id))
+        assert response.status_code == 200
+        assert response.data["application"]["is_active"] is False
+        assert "deactivated" in response.data["message"]
+        
+        req2 = _authed_request(
+            "patch", f"{api_prefix}/auth/applications/{app.id}/", user, app,
+            data={"is_active": True}
+        )
+        response2 = ApplicationDetailView.as_view()(req2, app_id=str(app.id))
+        assert response2.status_code == 200
+        assert "activated" in response2.data["message"]
+
+    @pytest.mark.django_db
+    def test_patch_application_invalid_fields(self):
+        from tenxyte.models import Application
+        app, _ = Application.create_application(name="PatchAppInv")
+        user = _setup_user_with_permissions("apppatch_inv@test.com", app, "applications.update")
+
+        req = _authed_request(
+            "patch", f"{api_prefix}/auth/applications/{app.id}/", user, app,
+            data={"name": "NewName"}
+        )
+        response = ApplicationDetailView.as_view()(req, app_id=str(app.id))
+        assert response.status_code == 400
+
+    @pytest.mark.django_db
+    def test_patch_nonexistent_returns_404(self):
+        from tenxyte.models import Application
+        app, _ = Application.create_application(name="PatchApp404")
+        user = _setup_user_with_permissions("apppatch_404@test.com", app, "applications.update")
+
+        req = _authed_request(
+            "patch", f"{api_prefix}/auth/applications/bad/", user, app,
+            data={"is_active": False}
+        )
+        response = ApplicationDetailView.as_view()(req, app_id=NONEXISTENT_ID)
+        assert response.status_code == 404
+
 
 
 # ===========================================================================
@@ -296,8 +376,9 @@ class TestApplicationRegenerateView:
         old_key = target_app.access_key
 
         req = _authed_request(
-            "post", f"/api/auth/applications/{target_app.id}/regenerate/",
-            user, auth_app
+            "post", f"{api_prefix}/auth/applications/{target_app.id}/regenerate/",
+            user, auth_app,
+            data={"confirmation": "REGENERATE"}
         )
         response = ApplicationRegenerateView.as_view()(req, app_id=str(target_app.id))
         assert response.status_code == 200
@@ -313,8 +394,9 @@ class TestApplicationRegenerateView:
         user = _setup_user_with_permissions("regen_404@test.com", app, "applications.regenerate")
 
         req = _authed_request(
-            "post", "/api/auth/applications/bad/regenerate/",
-            user, app
+            "post", f"{api_prefix}/auth/applications/bad/regenerate/",
+            user, app,
+            data={"confirmation": "REGENERATE"}
         )
         response = ApplicationRegenerateView.as_view()(req, app_id=NONEXISTENT_ID)
         assert response.status_code == 404
@@ -327,8 +409,25 @@ class TestApplicationRegenerateView:
         user = _setup_user_with_permissions("regen_noperm@test.com", app)
 
         req = _authed_request(
-            "post", f"/api/auth/applications/{app.id}/regenerate/",
-            user, app
+            "post", f"{api_prefix}/auth/applications/{app.id}/regenerate/",
+            user, app,
+            data={"confirmation": "REGENERATE"}
         )
         response = ApplicationRegenerateView.as_view()(req, app_id=str(app.id))
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_regenerate_wrong_confirmation(self):
+        from tenxyte.models import Application
+        app, _ = Application.create_application(name="RegenConf")
+        user = _setup_user_with_permissions("regen_conf_err@test.com", app, "applications.regenerate")
+
+        req = _authed_request(
+            "post", f"{api_prefix}/auth/applications/{app.id}/regenerate/",
+            user, app,
+            data={"confirmation": "WRONG"}
+        )
+        response = ApplicationRegenerateView.as_view()(req, app_id=str(app.id))
+        assert response.status_code == 400
+        assert response.data["code"] == "CONFIRMATION_REQUIRED"
+

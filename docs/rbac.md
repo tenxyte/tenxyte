@@ -162,36 +162,36 @@ class AdminOnlyView(APIView):
 
 ```bash
 # List all permissions
-GET /api/auth/permissions/
+GET /api/v1/auth/permissions/
 
 # Create a permission
-POST /api/auth/permissions/
+POST /api/v1/auth/permissions/
 { "code": "posts.publish", "name": "Publish Posts" }
 
 # Get / Update / Delete
-GET    /api/auth/permissions/<id>/
-PUT    /api/auth/permissions/<id>/
-DELETE /api/auth/permissions/<id>/
+GET    /api/v1/auth/permissions/<id>/
+PUT    /api/v1/auth/permissions/<id>/
+DELETE /api/v1/auth/permissions/<id>/
 ```
 
 ### Roles
 
 ```bash
 # List all roles
-GET /api/auth/roles/
+GET /api/v1/auth/roles/
 
 # Create a role
-POST /api/auth/roles/
+POST /api/v1/auth/roles/
 { "name": "Editor", "description": "...", "parent": null }
 
 # Get / Update / Delete
-GET    /api/auth/roles/<id>/
-PUT    /api/auth/roles/<id>/
-DELETE /api/auth/roles/<id>/
+GET    /api/v1/auth/roles/<id>/
+PUT    /api/v1/auth/roles/<id>/
+DELETE /api/v1/auth/roles/<id>/
 
 # Manage role permissions
-GET  /api/auth/roles/<id>/permissions/
-POST /api/auth/roles/<id>/permissions/
+GET  /api/v1/auth/roles/<id>/permissions/
+POST /api/v1/auth/roles/<id>/permissions/
 { "permission_id": 5 }
 ```
 
@@ -199,14 +199,14 @@ POST /api/auth/roles/<id>/permissions/
 
 ```bash
 # Assign/remove roles
-GET    /api/auth/users/<id>/roles/
-POST   /api/auth/users/<id>/roles/
-DELETE /api/auth/users/<id>/roles/
+GET    /api/v1/auth/users/<id>/roles/
+POST   /api/v1/auth/users/<id>/roles/
+DELETE /api/v1/auth/users/<id>/roles/
 
 # Assign/remove direct permissions
-GET    /api/auth/users/<id>/permissions/
-POST   /api/auth/users/<id>/permissions/
-DELETE /api/auth/users/<id>/permissions/
+GET    /api/v1/auth/users/<id>/permissions/
+POST   /api/v1/auth/users/<id>/permissions/
+DELETE /api/v1/auth/users/<id>/permissions/
 ```
 
 ---

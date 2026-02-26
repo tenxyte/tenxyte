@@ -165,6 +165,45 @@ class TestConfirmDeletion:
         assert success is False
         assert "invalid" in error.lower()
 
+    @pytest.mark.django_db
+    def test_confirm_deletion_email_failure(self):
+        from tenxyte.services.account_deletion_service import AccountDeletionService
+        user = _user("del_confirm_email_fail@test.com")
+        service = AccountDeletionService()
+
+        with patch.object(AccountDeletionRequest, 'send_confirmation_email', return_value=None):
+            _, data, _ = service.request_deletion(user=user, password="Pass123!")
+
+        deletion_req = AccountDeletionRequest.objects.get(id=data["request_id"])
+        deletion_req.status = "confirmation_sent"
+        deletion_req.save()
+        token = deletion_req.confirmation_token
+
+        with patch.object(service.email_service, 'send_account_deletion_confirmed', side_effect=Exception("Email Error")):
+            success, result, error = service.confirm_deletion(token=token)
+
+        assert success is True
+        assert "grace_period_ends_at" in result
+        
+        from tenxyte.models import AuditLog
+        log = AuditLog.objects.get(action='deletion_confirmation_email_failed', user=user)
+        assert log.details['error'] == "Email Error"
+
+    @pytest.mark.django_db
+    def test_confirm_deletion_general_error(self):
+        from tenxyte.services.account_deletion_service import AccountDeletionService
+        service = AccountDeletionService()
+
+        with patch.object(AccountDeletionRequest.objects, 'get', side_effect=Exception("DB Error")):
+            success, data, error = service.confirm_deletion(token="some-token")
+
+        assert success is False
+        assert error == "Error confirming deletion request: DB Error"
+        from tenxyte.models import AuditLog
+        log = AuditLog.objects.filter(action='deletion_confirmation_error').first()
+        assert log is not None
+        assert log.details['error'] == "DB Error"
+
 
 class TestCancelDeletion:
 
@@ -319,6 +358,118 @@ class TestAdminProcessRequest:
         assert success is False
         assert "not found" in msg.lower()
 
+    @pytest.mark.django_db
+    def test_admin_approve_not_confirmation_sent(self):
+        from tenxyte.services.account_deletion_service import AccountDeletionService
+        user = _user("del_app_not_conf@test.com")
+        admin = _user("del_admin_app2@test.com")
+        service = AccountDeletionService()
+
+        with patch.object(AccountDeletionRequest, 'send_confirmation_email', return_value=None):
+            _, data, _ = service.request_deletion(user=user, password="Pass123!")
+
+        req = AccountDeletionRequest.objects.get(id=data["request_id"])
+        # status is currently 'pending'
+        
+        success, msg = service.admin_process_request(req.id, "approve", admin)
+        assert success is False
+        assert "Can only approve requests with confirmation_sent status" in msg
+
+    @pytest.mark.django_db
+    def test_admin_reject_not_valid_status(self):
+        from tenxyte.services.account_deletion_service import AccountDeletionService
+        user = _user("del_rej_not_val@test.com")
+        admin = _user("del_admin_rej2@test.com")
+        service = AccountDeletionService()
+
+        with patch.object(AccountDeletionRequest, 'send_confirmation_email', return_value=None):
+            _, data, _ = service.request_deletion(user=user, password="Pass123!")
+
+        req = AccountDeletionRequest.objects.get(id=data["request_id"])
+        req.status = 'cancelled'
+        req.save()
+        
+        success, msg = service.admin_process_request(req.id, "reject", admin)
+        assert success is False
+        assert "Can only reject pending or confirmation_sent requests" in msg
+
+    @pytest.mark.django_db
+    def test_admin_cancel_not_active(self):
+        from tenxyte.services.account_deletion_service import AccountDeletionService
+        user = _user("del_can_not_act@test.com")
+        admin = _user("del_admin_can2@test.com")
+        service = AccountDeletionService()
+
+        with patch.object(AccountDeletionRequest, 'send_confirmation_email', return_value=None):
+            _, data, _ = service.request_deletion(user=user, password="Pass123!")
+
+        req = AccountDeletionRequest.objects.get(id=data["request_id"])
+        req.status = 'completed'
+        req.save()
+        
+        success, msg = service.admin_process_request(req.id, "cancel", admin)
+        assert success is False
+        assert "Can only cancel active requests" in msg
+
+    @pytest.mark.django_db
+    def test_admin_execute_not_confirmed(self):
+        from tenxyte.services.account_deletion_service import AccountDeletionService
+        user = _user("del_exec_not_conf@test.com")
+        admin = _user("del_admin_exec1@test.com")
+        service = AccountDeletionService()
+
+        with patch.object(AccountDeletionRequest, 'send_confirmation_email', return_value=None):
+            _, data, _ = service.request_deletion(user=user, password="Pass123!")
+
+        req = AccountDeletionRequest.objects.get(id=data["request_id"])
+        # status is pending
+        
+        success, msg = service.admin_process_request(req.id, "execute", admin)
+        assert success is False
+        assert "Can only execute confirmed requests" in msg
+
+    @pytest.mark.django_db
+    def test_admin_execute_success(self):
+        from tenxyte.services.account_deletion_service import AccountDeletionService
+        user = _user("del_exec_succ@test.com")
+        admin = _user("del_admin_exec2@test.com")
+        service = AccountDeletionService()
+
+        with patch.object(AccountDeletionRequest, 'send_confirmation_email', return_value=None):
+            _, data, _ = service.request_deletion(user=user, password="Pass123!")
+
+        req = AccountDeletionRequest.objects.get(id=data["request_id"])
+        req.status = 'confirmed'
+        req.save()
+        
+        with patch.object(req, 'execute_deletion', return_value=True):
+            with patch('tenxyte.services.account_deletion_service.AccountDeletionRequest.objects.get', return_value=req):
+                success, msg = service.admin_process_request(req.id, "execute", admin)
+                assert success is True
+                assert "executed successfully" in msg
+                from tenxyte.models import AuditLog
+                assert AuditLog.objects.filter(action='deletion_request_executed_admin').exists()
+
+    @pytest.mark.django_db
+    def test_admin_execute_fail(self):
+        from tenxyte.services.account_deletion_service import AccountDeletionService
+        user = _user("del_exec_fail@test.com")
+        admin = _user("del_admin_exec3@test.com")
+        service = AccountDeletionService()
+
+        with patch.object(AccountDeletionRequest, 'send_confirmation_email', return_value=None):
+            _, data, _ = service.request_deletion(user=user, password="Pass123!")
+
+        req = AccountDeletionRequest.objects.get(id=data["request_id"])
+        req.status = 'confirmed'
+        req.save()
+        
+        with patch.object(req, 'execute_deletion', return_value=False):
+            with patch('tenxyte.services.account_deletion_service.AccountDeletionRequest.objects.get', return_value=req):
+                success, msg = service.admin_process_request(req.id, "execute", admin)
+                assert success is False
+                assert "Failed to execute" in msg
+
 
 class TestGetDeletionStatistics:
 
@@ -357,6 +508,43 @@ class TestProcessExpiredRequests:
 
         count = service.process_expired_requests()
         assert count == 0
+
+    @pytest.mark.django_db
+    def test_process_expired_requests_success(self):
+        from tenxyte.services.account_deletion_service import AccountDeletionService
+        user = _user("proc_exp_succ@test.com")
+        service = AccountDeletionService()
+
+        with patch.object(AccountDeletionRequest, 'send_confirmation_email', return_value=None):
+            _, data, _ = service.request_deletion(user=user, password="Pass123!")
+
+        req = AccountDeletionRequest.objects.get(id=data["request_id"])
+        req.status = 'confirmed'
+        from django.utils import timezone
+        import datetime
+        req.grace_period_ends_at = timezone.now() - datetime.timedelta(days=1)
+        req.save()
+
+        with patch.object(AccountDeletionRequest, 'execute_deletion', return_value=True):
+            count = service.process_expired_requests()
+            assert count == 1
+            from tenxyte.models import AuditLog
+            assert AuditLog.objects.filter(action='deletion_request_processed').exists()
+
+class TestGetPendingRequests:
+    @pytest.mark.django_db
+    def test_get_pending_requests(self):
+        from tenxyte.services.account_deletion_service import AccountDeletionService
+        user = _user("get_pend_req@test.com")
+        service = AccountDeletionService()
+
+        with patch.object(AccountDeletionRequest, 'send_confirmation_email', return_value=None):
+            service.request_deletion(user=user, password="Pass123!")
+
+        result = service.get_pending_requests()
+        assert result['pending_count'] == 1
+        assert len(result['requests']) == 1
+        assert result['requests'][0]['status'] == 'pending'
 
 
 # ===========================================================================

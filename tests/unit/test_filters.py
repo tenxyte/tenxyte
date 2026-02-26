@@ -211,6 +211,15 @@ class TestApplyBooleanFilter:
         result = apply_boolean_filter(qs, req, 'is_active')
         assert result.count() == 1
 
+    @pytest.mark.django_db
+    def test_invalid_boolean_returns_all(self):
+        from tenxyte.filters import apply_boolean_filter
+        _user("bool_one2@test.com")
+        qs = User.objects.all()
+        req = _mock_request(is_active="not_a_bool")
+        result = apply_boolean_filter(qs, req, 'is_active')
+        assert result.count() > 0
+
 
 # ===========================================================================
 # apply_organization_filters
@@ -405,6 +414,17 @@ class TestApplyAuditLogFilters:
         result = apply_audit_log_filters(qs, req)
         assert result.count() == 2
 
+    @pytest.mark.django_db
+    def test_filter_by_application_id(self):
+        from tenxyte.filters import apply_audit_log_filters
+        app = _app("AuditFilterApp")
+        user = _user("audit_app_user@test.com")
+        AuditLog.objects.create(user=user, action="login", ip_address="1.2.3.4", application=app, details={})
+        qs = AuditLog.objects.all()
+        req = _mock_request(application_id=str(app.id))
+        result = apply_audit_log_filters(qs, req)
+        assert result.filter(application=app).exists()
+
 
 # ===========================================================================
 # apply_login_attempt_filters
@@ -486,3 +506,198 @@ class TestApplyLoginAttemptFilters:
         req = _mock_request()
         result = apply_login_attempt_filters(qs, req)
         assert result.count() == 2
+
+# ===========================================================================
+# apply_permission_filters
+# ===========================================================================
+
+class TestApplyPermissionFilters:
+    @pytest.mark.django_db
+    def test_apply_permission_filters(self):
+        from tenxyte.filters import apply_permission_filters
+        from tenxyte.models import Permission
+        p1 = Permission.objects.create(code='p_test_1', name='Perm 1')
+        p2 = Permission.objects.create(code='p_test_2', name='Perm 2', parent=p1)
+        qs = Permission.objects.all()
+        
+        req = _mock_request(search='Perm 1')
+        res = apply_permission_filters(qs, req)
+        assert res.filter(code='p_test_1').exists()
+
+        req = _mock_request(parent='null')
+        res = apply_permission_filters(qs, req)
+        assert res.filter(code='p_test_1').exists()
+
+        req = _mock_request(parent=str(p1.id))
+        res = apply_permission_filters(qs, req)
+        assert res.filter(code='p_test_2').exists()
+
+# ===========================================================================
+# apply_role_filters
+# ===========================================================================
+
+class TestApplyRoleFilters:
+    @pytest.mark.django_db
+    def test_apply_role_filters(self):
+        from tenxyte.filters import apply_role_filters
+        from tenxyte.models import Role
+        r1, _ = Role.objects.get_or_create(code='r_test_1', name='Role 1', defaults={'is_default': True})
+        r2, _ = Role.objects.get_or_create(code='r_test_2', name='Role 2', defaults={'is_default': False})
+        qs = Role.objects.all()
+
+        req = _mock_request(search='Role 1')
+        assert apply_role_filters(qs, req).filter(code='r_test_1').exists()
+
+        req = _mock_request(is_default='true')
+        assert apply_role_filters(qs, req).filter(code='r_test_1').exists()
+
+# ===========================================================================
+# apply_application_filters
+# ===========================================================================
+
+class TestApplyApplicationFilters:
+    @pytest.mark.django_db
+    def test_apply_application_filters(self):
+        from tenxyte.filters import apply_application_filters
+        from tenxyte.models import Application
+        app1 = _app("App 1 Filters")
+        qs = Application.objects.all()
+        
+        req = _mock_request(search='App 1 Filters')
+        assert apply_application_filters(qs, req).filter(id=app1.id).exists()
+        
+        req = _mock_request(is_active='true')
+        assert apply_application_filters(qs, req).filter(id=app1.id).exists()
+
+# ===========================================================================
+# apply_user_filters
+# ===========================================================================
+
+class TestApplyUserFilters:
+    @pytest.mark.django_db
+    def test_apply_user_filters(self):
+        from tenxyte.filters import apply_user_filters
+        from tenxyte.models import User, Role
+        u = _user("user_filters@test.com")
+        u.is_active = True
+        u.is_locked = False
+        u.is_banned = False
+        u.is_deleted = False
+        u.is_email_verified = True
+        u.is_2fa_enabled = False
+        u.save()
+        
+        role, _ = Role.objects.get_or_create(code='testrole', name='Test')
+        u.roles.add(role)
+
+        qs = User.objects.all()
+        
+        req = _mock_request(search='user_filters')
+        assert apply_user_filters(qs, req).filter(id=u.id).exists()
+
+        req = _mock_request(is_active='true', is_locked='false', is_banned='false')
+        assert apply_user_filters(qs, req).filter(id=u.id).exists()
+        
+        req = _mock_request(is_deleted='false', is_email_verified='true', is_2fa_enabled='false')
+        assert apply_user_filters(qs, req).filter(id=u.id).exists()
+
+        req = _mock_request(role='testrole')
+        assert apply_user_filters(qs, req).filter(id=u.id).exists()
+
+# ===========================================================================
+# apply_permission_filters
+# ===========================================================================
+
+class TestApplyPermissionFilters:
+    @pytest.mark.django_db
+    def test_apply_permission_filters(self):
+        from tenxyte.filters import apply_permission_filters
+        from tenxyte.models import Permission
+        p1 = Permission.objects.create(code='p_test_1', name='Perm 1')
+        p2 = Permission.objects.create(code='p_test_2', name='Perm 2', parent=p1)
+        qs = Permission.objects.all()
+        
+        req = _mock_request(search='Perm 1')
+        res = apply_permission_filters(qs, req)
+        assert res.filter(code='p_test_1').exists()
+
+        req = _mock_request(parent='null')
+        res = apply_permission_filters(qs, req)
+        assert res.filter(code='p_test_1').exists()
+
+        req = _mock_request(parent=str(p1.id))
+        res = apply_permission_filters(qs, req)
+        assert res.filter(code='p_test_2').exists()
+
+# ===========================================================================
+# apply_role_filters
+# ===========================================================================
+
+class TestApplyRoleFilters:
+    @pytest.mark.django_db
+    def test_apply_role_filters(self):
+        from tenxyte.filters import apply_role_filters
+        from tenxyte.models import Role
+        r1, _ = Role.objects.get_or_create(code='r_test_1', name='Role 1', defaults={'is_default': True})
+        r2, _ = Role.objects.get_or_create(code='r_test_2', name='Role 2', defaults={'is_default': False})
+        qs = Role.objects.all()
+
+        req = _mock_request(search='Role 1')
+        assert apply_role_filters(qs, req).filter(code='r_test_1').exists()
+
+        req = _mock_request(is_default='true')
+        assert apply_role_filters(qs, req).filter(code='r_test_1').exists()
+
+# ===========================================================================
+# apply_application_filters
+# ===========================================================================
+
+class TestApplyApplicationFilters:
+    @pytest.mark.django_db
+    def test_apply_application_filters(self):
+        from tenxyte.filters import apply_application_filters
+        from tenxyte.models import Application
+        app1 = _app("App 1 Filters")
+        qs = Application.objects.all()
+        
+        req = _mock_request(search='App 1 Filters')
+        assert apply_application_filters(qs, req).filter(id=app1.id).exists()
+        
+        req = _mock_request(is_active='true')
+        assert apply_application_filters(qs, req).filter(id=app1.id).exists()
+
+# ===========================================================================
+# apply_user_filters
+# ===========================================================================
+
+class TestApplyUserFilters:
+    @pytest.mark.django_db
+    def test_apply_user_filters(self):
+        from tenxyte.filters import apply_user_filters
+        from tenxyte.models import User, Role
+        u = _user("user_filters@test.com")
+        u.is_active = True
+        u.is_locked = False
+        u.is_banned = False
+        u.is_deleted = False
+        u.is_email_verified = True
+        u.is_2fa_enabled = False
+        u.save()
+        
+        role, _ = Role.objects.get_or_create(code='testrole', name='Test')
+        u.roles.add(role)
+
+        qs = User.objects.all()
+        
+        req = _mock_request(search='user_filters')
+        assert apply_user_filters(qs, req).filter(id=u.id).exists()
+
+        req = _mock_request(is_active='true', is_locked='false', is_banned='false')
+        assert apply_user_filters(qs, req).filter(id=u.id).exists()
+        
+        req = _mock_request(is_deleted='false', is_email_verified='true', is_2fa_enabled='false')
+        assert apply_user_filters(qs, req).filter(id=u.id).exists()
+
+        req = _mock_request(role='testrole')
+        assert apply_user_filters(qs, req).filter(id=u.id).exists()
+

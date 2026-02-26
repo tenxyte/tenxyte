@@ -241,7 +241,7 @@ documentation:
 export DOCS_OUTPUT_DIR="./custom_output"
 
 # Optional: Custom base URL for documentation site
-export DOCS_BASE_URL="https://api.tenxyte.com"
+export DOCS_BASE_URL="http://localhost:8000"
 
 # Optional: Custom organization slug for examples
 export DEFAULT_ORG_SLUG="demo-org"

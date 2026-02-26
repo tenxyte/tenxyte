@@ -11,6 +11,9 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.sessions',
+    'django.contrib.messages',
     'django.contrib.contenttypes',
     'django.contrib.auth',
     'rest_framework',
@@ -22,6 +25,8 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'tenxyte.User'
 
 MIDDLEWARE = [
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.common.CommonMiddleware',
     'tenxyte.middleware.ApplicationAuthMiddleware',
@@ -45,6 +50,8 @@ TENXYTE_ORGANIZATION_MODEL = 'tenxyte.Organization'
 TENXYTE_ORGANIZATION_ROLE_MODEL = 'tenxyte.OrganizationRole'
 TENXYTE_ORGANIZATION_MEMBERSHIP_MODEL = 'tenxyte.OrganizationMembership'
 TENXYTE_ORGANIZATIONS_ENABLED = True
+TENXYTE_API_VERSION = 1
+TENXYTE_BASE_URL = 'http://127.0.0.1:8000'
 
 # Tenxyte Auth settings
 TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 3600

@@ -12,8 +12,8 @@ Complete Django authentication package — JWT, RBAC, 2FA (TOTP), Magic Links, P
 ## Documentation
 
 ### 🚀 **Enhanced DRF Spectacular Documentation**
-- [**Interactive API Docs**](http://localhost:8000/api/docs/) — Swagger UI with live testing
-- [**ReDoc Documentation**](http://localhost:8000/api/redoc/) — Beautiful API reference
+- [**Interactive API Docs**](http://localhost:8000/api/v1/docs/) — Swagger UI with live testing
+- [**ReDoc Documentation**](http://localhost:8000/api/v1/redoc/) — Beautiful API reference
 - [**Static Documentation Site**](docs_site/index.html) — Complete documentation website
 - [**Postman Collection**](tenxyte_api_collection.postman_collection.json) — Ready-to-use API collection
 - [**Migration Guide**](docs/MIGRATION_GUIDE.md) — Upgrade from old documentation
@@ -104,8 +104,8 @@ pip install tenxyte[all]       # Everything
 python manage.py runserver
 
 # Access interactive documentation
-http://localhost:8000/api/docs/     # Swagger UI
-http://localhost:8000/api/redoc/    # ReDoc
+http://localhost:8000/api/v1/docs/     # Swagger UI
+http://localhost:8000/api/v1/redoc/    # ReDoc
 ```
 
 ### **Documentation Quality Metrics**
@@ -290,13 +290,13 @@ Authorization: Bearer <jwt_access_token>   # authenticated endpoints only
 
 ```bash
 # Register
-curl -X POST http://localhost:8000/api/auth/register/ \
+curl -X POST http://localhost:8000/api/v1/auth/register/ \
   -H "X-Access-Key: key" -H "X-Access-Secret: secret" \
   -H "Content-Type: application/json" \
   -d '{"email": "user@example.com", "password": "SecureP@ss1!", "first_name": "John", "last_name": "Doe"}'
 
 # Login
-curl -X POST http://localhost:8000/api/auth/login/email/ \
+curl -X POST http://localhost:8000/api/v1/auth/login/email/ \
   -H "X-Access-Key: key" -H "X-Access-Secret: secret" \
   -H "Content-Type: application/json" \
   -d '{"email": "user@example.com", "password": "SecureP@ss1!"}'

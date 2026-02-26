@@ -235,7 +235,7 @@ class TestProcessDeletionView:
         with patch.object(del_req.__class__, 'execute_deletion', return_value=True):
             req = _authed_request(
                 "post", f"/admin/deletion-requests/{del_req.id}/process/",
-                admin, app, data={"admin_notes": "Approved"}
+                admin, app, data={"admin_notes": "Approved", "confirmation": "PERMANENTLY DELETE"}
             )
             view = ProcessDeletionView.as_view()
             response = view(req, request_id=del_req.id)
@@ -258,7 +258,7 @@ class TestProcessDeletionView:
         response = view(req, request_id=del_req.id)
 
         assert response.status_code == 400
-        assert "INVALID_STATUS" in response.data.get("code", "")
+        assert "REQUEST_NOT_CONFIRMED" in response.data.get("code", "")
 
     @pytest.mark.django_db
     def test_process_nonexistent_returns_404(self):

@@ -170,10 +170,10 @@ class TestStarterPreset:
         assert _get_with_mode('SECURITY_HEADERS_ENABLED', 'starter') is False
 
     def test_starter_device_limit_disabled(self):
-        assert _get_with_mode('TENXYTE_DEVICE_LIMIT_ENABLED', 'starter') is False
+        assert _get_with_mode('DEVICE_LIMIT_ENABLED', 'starter') is False
 
     def test_starter_session_limit_disabled(self):
-        assert _get_with_mode('TENXYTE_SESSION_LIMIT_ENABLED', 'starter') is False
+        assert _get_with_mode('SESSION_LIMIT_ENABLED', 'starter') is False
 
     def test_starter_max_login_attempts_relaxed(self):
         assert _get_with_mode('MAX_LOGIN_ATTEMPTS', 'starter') == 10
@@ -219,10 +219,10 @@ class TestMediumPreset:
         assert _get_with_mode('SECURITY_HEADERS_ENABLED', 'medium') is True
 
     def test_medium_device_limit_enabled(self):
-        assert _get_with_mode('TENXYTE_DEVICE_LIMIT_ENABLED', 'medium') is True
+        assert _get_with_mode('DEVICE_LIMIT_ENABLED', 'medium') is True
 
     def test_medium_max_devices(self):
-        assert _get_with_mode('TENXYTE_DEFAULT_MAX_DEVICES', 'medium') == 5
+        assert _get_with_mode('DEFAULT_MAX_DEVICES', 'medium') == 5
 
     def test_medium_max_login_attempts(self):
         assert _get_with_mode('MAX_LOGIN_ATTEMPTS', 'medium') == 5
@@ -262,19 +262,19 @@ class TestRobustPreset:
         assert _get_with_mode('LOCKOUT_DURATION_MINUTES', 'robust') == 60
 
     def test_robust_device_limit_enabled(self):
-        assert _get_with_mode('TENXYTE_DEVICE_LIMIT_ENABLED', 'robust') is True
+        assert _get_with_mode('DEVICE_LIMIT_ENABLED', 'robust') is True
 
     def test_robust_max_devices_2(self):
-        assert _get_with_mode('TENXYTE_DEFAULT_MAX_DEVICES', 'robust') == 2
+        assert _get_with_mode('DEFAULT_MAX_DEVICES', 'robust') == 2
 
     def test_robust_device_limit_action_deny(self):
-        assert _get_with_mode('TENXYTE_DEVICE_LIMIT_ACTION', 'robust') == 'deny'
+        assert _get_with_mode('DEVICE_LIMIT_ACTION', 'robust') == 'deny'
 
     def test_robust_session_limit_enabled(self):
-        assert _get_with_mode('TENXYTE_SESSION_LIMIT_ENABLED', 'robust') is True
+        assert _get_with_mode('SESSION_LIMIT_ENABLED', 'robust') is True
 
     def test_robust_max_sessions_1(self):
-        assert _get_with_mode('TENXYTE_DEFAULT_MAX_SESSIONS', 'robust') == 1
+        assert _get_with_mode('DEFAULT_MAX_SESSIONS', 'robust') == 1
 
     def test_robust_cors_allow_all_false(self):
         assert _get_with_mode('CORS_ALLOW_ALL_ORIGINS', 'robust') is False

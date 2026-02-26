@@ -1,7 +1,9 @@
 import logging
 from typing import Optional, Tuple
 from django.conf import settings
-from ..models import User, OTPCode
+from ..models import get_user_model, OTPCode
+
+User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
@@ -184,8 +186,16 @@ class OTPService:
             return False
 
         from ..backends.sms import get_sms_backend
+        from ..conf import auth_settings
 
         message = f"Votre code de vérification: {raw_code}. Valide pendant 10 minutes."
+
+        if not auth_settings.SMS_ENABLED:
+            if auth_settings.SMS_DEBUG:
+                logger.info(f"[OTP][SMS_DEBUG] To: {phone_number} | Message: {message}")
+                return True
+            logger.warning("[OTP] SMS_ENABLED=False and SMS_DEBUG=False — SMS not sent.")
+            return False
 
         try:
             backend = get_sms_backend()
