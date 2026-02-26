@@ -82,6 +82,12 @@ from .organization import (
     OrganizationInvitation,
 )
 
+# Agent models
+from .agent import (
+    AgentToken,
+    AgentPendingAction,
+)
+
 __all__ = [
     # Base
     '_get_auto_field_class',
@@ -130,4 +136,7 @@ __all__ = [
     'OrganizationRole',
     'OrganizationMembership',
     'OrganizationInvitation',
+    # Agent
+    'AgentToken',
+    'AgentPendingAction',
 ]

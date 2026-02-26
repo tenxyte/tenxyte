@@ -192,6 +192,27 @@ class TestCreateOrganization:
         assert org.description == "A test org"
         assert org.metadata == {"key": "value"}
 
+    @pytest.mark.django_db
+    def test_create_depth_limit_reached(self, service, owner, system_roles):
+        _, parent, _ = service.create_organization(name="Parent", created_by=owner)
+        from unittest import mock
+        with mock.patch.object(parent.__class__, 'can_add_child', return_value=False):
+            success, child, error = service.create_organization(
+                name="Child",
+                created_by=owner,
+                parent_id=parent.id,
+            )
+        assert success is False
+        assert "Maximum organization depth" in error
+
+    @pytest.mark.django_db
+    def test_create_exception_handling(self, service, owner, system_roles):
+        from unittest import mock
+        with mock.patch.object(service.Organization.objects, 'create', side_effect=Exception("DB Error")):
+            success, org, error = service.create_organization(name="Crash", created_by=owner)
+            assert success is False
+            assert "Error creating organization: DB Error" in error
+
 
 # ---------------------------------------------------------------------------
 # get_organization
@@ -365,6 +386,27 @@ class TestOrganizationHierarchy:
         assert success is False
         assert "not found" in error.lower()
 
+    @pytest.mark.django_db
+    def test_move_organization_not_owner(self, service, owner, other_user, system_roles):
+        _, parent, _ = service.create_organization(name="Parent", created_by=owner)
+        _, child, _ = service.create_organization(name="Child", created_by=owner)
+        
+        # other_user is not owner
+        success, error = service.move_organization(child, parent.id, other_user)
+        assert success is False
+        assert "Only the owner can move an organization" in error
+
+    @pytest.mark.django_db
+    def test_move_organization_depth_limit(self, service, owner, system_roles):
+        _, parent, _ = service.create_organization(name="Parent", created_by=owner)
+        _, child, _ = service.create_organization(name="Child", created_by=owner)
+        o = owner_of(child)
+        from unittest import mock
+        with mock.patch.object(parent.__class__, 'can_add_child', return_value=False):
+            success, error = service.move_organization(child, parent.id, o)
+        assert success is False
+        assert "Maximum depth reached for new parent" in error
+
 
 # ---------------------------------------------------------------------------
 # Member Management
@@ -462,6 +504,37 @@ class TestMemberManagement:
         assert success is False
         assert "not a member" in error
 
+    @pytest.mark.django_db
+    def test_add_member_no_permission(self, service, org, other_user, member_user, system_roles):
+        # other_user has no roles in org
+        success, membership, error = service.add_member(org, member_user, "member", other_user)
+        assert success is False
+        assert "Insufficient permissions to add members" in error
+
+    @pytest.mark.django_db
+    def test_update_member_role_no_permission(self, service, org, other_user, member_user, system_roles):
+        o = owner_of(org)
+        service.add_member(org, member_user, "member", o)
+        success, error = service.update_member_role(org, member_user, "admin", other_user)
+        assert success is False
+        assert "Insufficient permissions to manage members" in error
+
+    @pytest.mark.django_db
+    def test_update_non_member_fails(self, service, org, other_user, system_roles):
+        o = owner_of(org)
+        # other_user is not a member
+        success, error = service.update_member_role(org, other_user, "admin", o)
+        assert success is False
+        assert "User is not a member" in error
+
+    @pytest.mark.django_db
+    def test_remove_member_no_permission(self, service, org, other_user, member_user, system_roles):
+        o = owner_of(org)
+        service.add_member(org, member_user, "member", o)
+        success, error = service.remove_member(org, member_user, other_user)
+        assert success is False
+        assert "Insufficient permissions to remove members" in error
+
 
 # ---------------------------------------------------------------------------
 # Invitation Management
@@ -530,3 +603,10 @@ class TestInvitationManagement:
         )
         assert success is False
         assert "limit" in error.lower()
+
+    @pytest.mark.django_db
+    def test_create_invitation_no_permission(self, service, org, other_user, system_roles):
+        # other_user has no roles
+        success, _, error = service.create_invitation(org, "test@test.com", "member", other_user)
+        assert success is False
+        assert "Insufficient permissions to invite members" in error

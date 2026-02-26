@@ -141,6 +141,38 @@ class TestNoPriorityMode:
     def test_no_mode_password_history_enabled_by_default(self):
         assert _get_no_mode('PASSWORD_HISTORY_ENABLED') is True
 
+    def test_uncovered_properties_defaults(self):
+        s = TenxyteSettings()
+        mock = MagicMock(spec=[]) 
+        with patch('tenxyte.conf.settings', mock):
+            assert s.BASE_URL == 'http://127.0.0.1:8000'
+            assert s.API_PREFIX == '/api/v1'
+            assert s.TOTP_VALID_WINDOW == 1
+            assert s.OTP_LENGTH == 6
+            assert s.OTP_EMAIL_VALIDITY == 15
+            assert s.OTP_PHONE_VALIDITY == 10
+            assert s.OTP_MAX_ATTEMPTS == 5
+            assert s.SOCIAL_PROVIDERS == ['google', 'github', 'microsoft', 'facebook']
+            assert s.GITHUB_CLIENT_ID == ''
+            assert s.GITHUB_CLIENT_SECRET == ''
+            assert s.MICROSOFT_CLIENT_ID == ''
+            assert s.MICROSOFT_CLIENT_SECRET == ''
+            assert s.FACEBOOK_APP_ID == ''
+            assert s.FACEBOOK_APP_SECRET == ''
+            assert s.WEBAUTHN_RP_ID == 'localhost'
+            assert s.WEBAUTHN_RP_NAME == 'Tenxyte'
+            assert s.WEBAUTHN_CHALLENGE_EXPIRY_SECONDS == 300
+            assert s.MAGIC_LINK_BASE_URL == 'https://yourapp.com'
+            assert s.SIMPLE_THROTTLE_RULES == {}
+            assert s.GOOGLE_CLIENT_ID == ''
+            assert s.GOOGLE_CLIENT_SECRET == ''
+            
+    def test_api_prefix_formatting(self):
+        s = TenxyteSettings()
+        mock = _settings_with_mode('starter', TENXYTE_API_PREFIX='custom/prefix/')
+        with patch('tenxyte.conf.settings', mock):
+            assert s.API_PREFIX == '/custom/prefix'
+
 
 # ===========================================================================
 # Priority: starter preset

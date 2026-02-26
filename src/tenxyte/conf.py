@@ -176,10 +176,7 @@ class TenxyteSettings:
         """URL de base de l'API."""
         return self._get('BASE_URL', 'http://127.0.0.1:8000')
 
-    @property
-    def BASE_URL(self):
-        """URL de base de l'API."""
-        return self._get('BASE_URL', 'http://127.0.0.1:8000')
+
 
     @property
     def API_VERSION(self):
@@ -808,6 +805,30 @@ class TenxyteSettings:
         Default: 'tenxyte.OrganizationMembership'
         """
         return self._get('ORGANIZATION_MEMBERSHIP_MODEL', 'tenxyte.OrganizationMembership')
+
+    # =============================================
+    # Agent / AIRS Settings (Phase 1)
+    # =============================================
+
+    @property
+    def AIRS_ENABLED(self):
+        """Activer/désactiver le module AIRS (AI Responsibility & Security)."""
+        return self._get('AIRS_ENABLED', True)
+
+    @property
+    def AIRS_TOKEN_MAX_LIFETIME(self):
+        """Durée de vie max d'un AgentToken en secondes (24h par défaut)."""
+        return self._get('AIRS_TOKEN_MAX_LIFETIME', 86400)
+
+    @property
+    def AIRS_DEFAULT_EXPIRY(self):
+        """Durée d'expiration par défaut d'un AgentToken en secondes."""
+        return self._get('AIRS_DEFAULT_EXPIRY', 3600)
+
+    @property
+    def AIRS_REQUIRE_EXPLICIT_PERMISSIONS(self):
+        """Empêche un agent de recevoir 'toutes les permissions'."""
+        return self._get('AIRS_REQUIRE_EXPLICIT_PERMISSIONS', True)
 
 
 # Instance singleton accessible partout

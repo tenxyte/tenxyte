@@ -30,6 +30,13 @@ from .security_views import (
     BlacklistedTokenListView, BlacklistedTokenCleanupView,
     RefreshTokenListView, RefreshTokenRevokeView,
 )
+from .agent_views import (
+    AgentTokenListCreateView, AgentTokenDetailView,
+    AgentTokenRevokeView, AgentTokenSuspendView,
+    AgentTokenHeartbeatView, AgentTokenRevokeAllView,
+    AgentPendingActionListView, AgentPendingActionConfirmView,
+    AgentPendingActionDenyView,
+)
 
 __all__ = [
     'RegisterView', 'LoginEmailView', 'LoginPhoneView',
@@ -50,4 +57,9 @@ __all__ = [
     'LoginAttemptListView',
     'BlacklistedTokenListView', 'BlacklistedTokenCleanupView',
     'RefreshTokenListView', 'RefreshTokenRevokeView',
+    'AgentTokenListCreateView', 'AgentTokenDetailView',
+    'AgentTokenRevokeView', 'AgentTokenSuspendView',
+    'AgentTokenHeartbeatView', 'AgentTokenRevokeAllView',
+    'AgentPendingActionListView', 'AgentPendingActionConfirmView',
+    'AgentPendingActionDenyView',
 ]

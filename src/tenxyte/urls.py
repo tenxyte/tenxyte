@@ -39,6 +39,15 @@ from .views.webauthn_views import (
     WebAuthnCredentialListView, WebAuthnCredentialDeleteView,
 )
 
+# Agent / AIRS Views
+from .views.agent_views import (
+    AgentTokenListCreateView, AgentTokenDetailView,
+    AgentTokenRevokeView, AgentTokenSuspendView,
+    AgentTokenHeartbeatView, AgentTokenRevokeAllView,
+    AgentPendingActionListView, AgentPendingActionConfirmView,
+    AgentPendingActionDenyView,
+)
+
 app_name = 'authentication'
 
 urlpatterns = [
@@ -146,6 +155,17 @@ urlpatterns = [
     path('dashboard/security/', DashboardSecurityView.as_view(), name='dashboard_security'),
     path('dashboard/gdpr/', DashboardGDPRView.as_view(), name='dashboard_gdpr'),
     path('dashboard/organizations/', DashboardOrganizationsView.as_view(), name='dashboard_organizations'),
+
+    # Agent / AIRS
+    path('ai/tokens/', AgentTokenListCreateView.as_view(), name='agent_token_list_create'),
+    path('ai/tokens/<int:pk>/', AgentTokenDetailView.as_view(), name='agent_token_detail'),
+    path('ai/tokens/<int:pk>/revoke/', AgentTokenRevokeView.as_view(), name='agent_token_revoke'),
+    path('ai/tokens/<int:pk>/suspend/', AgentTokenSuspendView.as_view(), name='agent_token_suspend'),
+    path('ai/tokens/<int:pk>/heartbeat/', AgentTokenHeartbeatView.as_view(), name='agent_token_heartbeat'),
+    path('ai/tokens/revoke-all/', AgentTokenRevokeAllView.as_view(), name='agent_token_revoke_all'),
+    path('ai/pending-actions/', AgentPendingActionListView.as_view(), name='agent_pending_action_list'),
+    path('ai/pending-actions/<str:token>/confirm/', AgentPendingActionConfirmView.as_view(), name='agent_pending_action_confirm'),
+    path('ai/pending-actions/<str:token>/deny/', AgentPendingActionDenyView.as_view(), name='agent_pending_action_deny'),
 ]
 
 # =============================================

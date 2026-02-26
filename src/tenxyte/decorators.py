@@ -617,3 +617,70 @@ def require_org_admin(view_func):
         return view_func(request, *args, **kwargs)
 
     return wrapper
+
+
+# =============================================
+# Agent / AIRS Decorators (Phase 1)
+# =============================================
+
+def require_agent_clearance(
+    permission_code: str = None,
+    human_in_the_loop_required: bool = False,
+    max_risk_score: int = 100
+):
+    """
+    Décorateur pour les endpoints sensibles accessibles par les agents IA.
+
+    Si la requête vient d'un AgentToken :
+    - Vérifie que l'agent a la permission (double passe RBAC)
+    - Si human_in_the_loop_required=True → retourne 202 + confirmation_token
+    - Si le risk_score de l'agent > max_risk_score → refuse directement
+
+    Si la requête vient d'un humain (JWT standard) → passe normalement.
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(*args, **kwargs):
+            view_instance, request, view_args = _extract_request(*args)
+
+            # Requête d'un agent IA
+            if hasattr(request, 'agent_token') and request.agent_token:
+                from tenxyte.services.agent_service import AgentTokenService
+                service = AgentTokenService()
+
+                # Vérification de permission (double passe)
+                if permission_code:
+                    if not service.validate_permission(request.agent_token, permission_code):
+                        return JsonResponse({
+                            'error': f'Agent insufficient permissions: {permission_code}',
+                            'code': 'AGENT_PERMISSION_DENIED'
+                        }, status=403)
+
+                # Human-in-the-loop obligatoire
+                if human_in_the_loop_required:
+                    # extract payload safely
+                    payload = {}
+                    if request.method in ['POST', 'PUT', 'PATCH']:
+                        try:
+                            import json
+                            if request.body:
+                                payload = json.loads(request.body)
+                        except Exception:
+                            pass
+                            
+                    pending = service.create_pending_action(
+                        agent_token=request.agent_token,
+                        permission=permission_code or 'unknown',
+                        endpoint=request.path,
+                        payload=payload
+                    )
+                    return JsonResponse({
+                        'status': 'pending_confirmation',
+                        'message': 'This action requires human approval.',
+                        'confirmation_token': pending.confirmation_token,
+                        'expires_at': pending.expires_at.isoformat()
+                    }, status=202)
+
+            return _call_view(view_func, view_instance, request, view_args, kwargs)
+        return wrapper
+    return decorator

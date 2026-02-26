@@ -245,3 +245,44 @@ class OrganizationContextMiddleware:
             request.organization = None
         
         return self.get_response(request)
+
+class AgentTokenMiddleware:
+    """
+    Couche 4 AIRS: Si l'Authorization header est 'AgentBearer <token>',
+    valide l'AgentToken et l'attache à request.agent_token.
+    Vérifie le circuit breaker à chaque requête.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        auth = request.headers.get('Authorization', '')
+        if not auth.startswith('AgentBearer '):
+            request.agent_token = None
+            return self.get_response(request)
+            
+        from tenxyte.conf import auth_settings
+        if not getattr(auth_settings, 'AIRS_ENABLED', True):
+            return JsonResponse({'error': 'AIRS module is disabled.', 'code': 'AIRS_DISABLED'}, status=403)
+
+        raw_token = auth[12:]
+        from tenxyte.services.agent_service import AgentTokenService
+        
+        service = AgentTokenService()
+        agent_token, error = service.validate(raw_token)
+
+        if error:
+            return JsonResponse({'error': error, 'code': f'AGENT_TOKEN_{error}'}, status=403)
+
+        ok, suspend_reason = service.check_circuit_breaker(agent_token)
+        if not ok:
+            return JsonResponse({
+                'error': 'Agent token suspended by circuit breaker',
+                'code': 'AGENT_TOKEN_SUSPENDED',
+                'reason': suspend_reason
+            }, status=403)
+
+        request.agent_token = agent_token
+        request.user = agent_token.triggered_by  # L'agent agit "en tant que" l'humain
+        request.user_id = agent_token.triggered_by_id
+        return self.get_response(request)
