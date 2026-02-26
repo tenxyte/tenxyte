@@ -101,7 +101,7 @@ class AgentPendingAction(models.Model):
     denied_at             = models.DateTimeField(null=True, blank=True)
     created_at            = models.DateTimeField(auto_now_add=True)
     
-    # Forensic Audit (Phase 3)
+    # --- Forensic Audit (Phase 3) ---
     prompt_trace_id       = models.CharField(max_length=128, null=True, blank=True)
 
     class Meta:

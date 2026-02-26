@@ -45,7 +45,7 @@ from .views.agent_views import (
     AgentTokenRevokeView, AgentTokenSuspendView,
     AgentTokenHeartbeatView, AgentTokenRevokeAllView,
     AgentPendingActionListView, AgentPendingActionConfirmView,
-    AgentPendingActionDenyView,
+    AgentPendingActionDenyView, AgentTokenReportUsageView,
 )
 
 app_name = 'authentication'
@@ -166,6 +166,7 @@ urlpatterns = [
     path('ai/pending-actions/', AgentPendingActionListView.as_view(), name='agent_pending_action_list'),
     path('ai/pending-actions/<str:token>/confirm/', AgentPendingActionConfirmView.as_view(), name='agent_pending_action_confirm'),
     path('ai/pending-actions/<str:token>/deny/', AgentPendingActionDenyView.as_view(), name='agent_pending_action_deny'),
+    path('ai/tokens/<int:pk>/report-usage/', AgentTokenReportUsageView.as_view(), name='agent_token_report_usage'),
 ]
 
 # =============================================

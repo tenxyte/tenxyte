@@ -236,3 +236,31 @@ class AgentPendingActionDenyView(APIView):
             return JsonResponse({'error': 'Invalid or expired token'}, status=400)
             
         return JsonResponse({'status': 'denied'})
+
+class AgentTokenReportUsageView(APIView):
+    """
+    POST /ai/tokens/{id}/report-usage/
+    """
+    def post(self, request, pk):
+        auth = request.headers.get('Authorization', '')
+        if not auth.startswith('AgentBearer '):
+            return JsonResponse({'error': 'Unauthorized'}, status=401)
+            
+        raw_token = auth[12:]
+        service = AgentTokenService()
+        token, error = service.validate(raw_token)
+        
+        if error or str(token.id) != str(pk):
+            return JsonResponse({'error': 'Unauthorized or token mismatch'}, status=403)
+            
+        data = request.data
+        cost_usd = float(data.get('cost_usd', 0.0))
+        prompt_tokens = int(data.get('prompt_tokens', 0))
+        completion_tokens = int(data.get('completion_tokens', 0))
+        
+        success = service.report_usage(token, cost_usd, prompt_tokens, completion_tokens)
+        
+        if not success:
+            return JsonResponse({'error': 'Budget exceeded', 'status': 'suspended'}, status=403)
+            
+        return JsonResponse({'status': 'ok'})

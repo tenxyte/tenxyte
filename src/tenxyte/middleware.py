@@ -306,7 +306,57 @@ class AgentTokenMiddleware:
                         'status_code': response.status_code
                     },
                     agent_token=agent_token,
-                    on_behalf_of=request.user
+                    on_behalf_of=request.user,
+                    prompt_trace_id=request.headers.get('X-Prompt-Trace-ID')
                 )
+            
+        return response
+
+
+class PIIRedactionMiddleware:
+    """
+    Si la requête est authentifiée via AgentToken ET que TENXYTE_AIRS_REDACT_PII=True,
+    intercepte la réponse JSON et masque les champs PII configurés.
+    """
+    
+    PII_FIELDS = {
+        'email', 'phone', 'ssn', 'date_of_birth', 'address',
+        'credit_card', 'password', 'totp_secret', 'backup_codes'
+    }
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        
+        # Only redact if request is via AgentToken
+        agent_token = getattr(request, 'agent_token', None)
+        if not agent_token:
+            return response
+            
+        from tenxyte.conf import auth_settings
+        if not getattr(auth_settings, 'AIRS_REDACT_PII', False):
+            return response
+            
+        if response.get('Content-Type', '').startswith('application/json'):
+            import json
+            try:
+                data = json.loads(response.content)
+                data = self._redact(data)
+                response.content = json.dumps(data).encode('utf-8')
+            except (ValueError, TypeError):
+                pass
                 
         return response
+
+    def _redact(self, obj):
+        """Redact PII fields recursively in JSON."""
+        if isinstance(obj, dict):
+            return {
+                k: '***REDACTED***' if str(k).lower() in self.PII_FIELDS else self._redact(v)
+                for k, v in obj.items()
+            }
+        elif isinstance(obj, list):
+            return [self._redact(item) for item in obj]
+        return obj

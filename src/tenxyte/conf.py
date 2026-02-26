@@ -859,6 +859,20 @@ class TenxyteSettings:
         """Liste globale des permissions nécessitant toujours une confirmation HITL."""
         return self._get('AIRS_CONFIRMATION_REQUIRED', [])
 
+    # =============================================
+    # Agent / AIRS Settings (Phase 3)
+    # =============================================
+
+    @property
+    def AIRS_REDACT_PII(self):
+        """Activer/désactiver la rédaction des PII pour les agents."""
+        return self._get('AIRS_REDACT_PII', False)
+
+    @property
+    def AIRS_BUDGET_TRACKING_ENABLED(self):
+        """Activer/désactiver le suivi de budget pour les agents."""
+        return self._get('AIRS_BUDGET_TRACKING_ENABLED', False)
+
 # Instance singleton accessible partout
 auth_settings = TenxyteSettings()
 org_settings = auth_settings  # Alias pour clarté dans le code org

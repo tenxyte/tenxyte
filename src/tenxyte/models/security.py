@@ -138,6 +138,7 @@ class AuditLog(models.Model):
         on_delete=models.SET_NULL,
         related_name='audit_logs_agent'
     )
+    prompt_trace_id = models.CharField(max_length=128, null=True, blank=True)
     # --------------------
     action = models.CharField(max_length=50, choices=ACTION_CHOICES, db_index=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
@@ -160,7 +161,7 @@ class AuditLog(models.Model):
 
     @classmethod
     def log(cls, action: str, user=None, ip_address: str = None, user_agent: str = '',
-            application=None, details: dict = None, agent_token=None, on_behalf_of=None):
+            application=None, details: dict = None, agent_token=None, on_behalf_of=None, prompt_trace_id: str = None):
         """Create an audit log entry."""
         return cls.objects.create(
             user=user,
@@ -170,7 +171,8 @@ class AuditLog(models.Model):
             application=application,
             details=details or {},
             agent_token=agent_token,
-            on_behalf_of=on_behalf_of
+            on_behalf_of=on_behalf_of,
+            prompt_trace_id=prompt_trace_id
         )
 
     @classmethod

@@ -318,3 +318,25 @@ class AgentTokenService:
         action.denied_at = timezone.now()
         action.save(update_fields=['denied_at'])
         return action
+
+    def report_usage(self, agent_token, cost_usd: float = 0.0, prompt_tokens: int = 0, completion_tokens: int = 0) -> bool:
+        """
+        Reports usage costs for an agent token and suspends it if budget is exceeded.
+        Returns True if successful, False if budget exceeded.
+        """
+        from tenxyte.conf import auth_settings
+        if not getattr(auth_settings, 'AIRS_BUDGET_TRACKING_ENABLED', False):
+            return True
+            
+        if not agent_token.budget_limit_usd:
+            return True
+            
+        from decimal import Decimal
+        agent_token.current_spend_usd += Decimal(str(cost_usd))
+        agent_token.save(update_fields=['current_spend_usd'])
+        
+        if agent_token.current_spend_usd >= agent_token.budget_limit_usd:
+            self.suspend(agent_token, reason=AgentToken.SuspendedReason.BUDGET_EXCEEDED)
+            return False
+            
+        return True
