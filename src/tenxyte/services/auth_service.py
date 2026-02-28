@@ -344,6 +344,29 @@ class AuthService:
         # Assigner le rôle par défaut (user)
         user.assign_default_role()
 
+        # Create Default Organization if Multi-Tenancy feature is enabled
+        from ..conf import org_settings
+        if org_settings.ORGANIZATIONS_ENABLED and getattr(org_settings, 'CREATE_DEFAULT_ORGANIZATION', True):
+            try:
+                from .organization_service import OrganizationService
+                org_service = OrganizationService()
+                
+                # Determine a good name based on available info
+                name_part = first_name or user.email.split('@')[0] if user.email else "Personal"
+                org_name = f"{name_part.capitalize()}'s Workspace"
+                
+                # The service will automatically make the creator the 'owner'
+                org_service.create_organization(
+                    name=org_name,
+                    created_by=user,
+                    description=f"Default workspace for {user.email or user.full_phone}"
+                )
+            except Exception as e:
+                import logging
+                logging.getLogger('tenxyte').error(
+                    f"Failed to create default organization for user {user.id}: {e}"
+                )
+
         # Password history
         if auth_settings.PASSWORD_HISTORY_ENABLED:
             PasswordHistory.add_password(user, user.password, auth_settings.PASSWORD_HISTORY_COUNT)

@@ -88,6 +88,9 @@ from .agent import (
     AgentPendingAction,
 )
 
+# Multi-Tenancy Base Model
+from .tenant import BaseTenantModel
+
 __all__ = [
     # Base
     '_get_auto_field_class',
@@ -139,4 +142,6 @@ __all__ = [
     # Agent
     'AgentToken',
     'AgentPendingAction',
+    # Tenant
+    'BaseTenantModel',
 ]

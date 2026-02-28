@@ -200,6 +200,7 @@ class OrganizationContextMiddleware:
     Active only if TENXYTE_ORGANIZATIONS_ENABLED = True.
     
     Reads X-Org-Slug header and attaches request.organization if found.
+    Sets the global context via tenxyte.tenant_context to enforce Hard Multi-Tenancy.
     Does NOT enforce membership - that's the job of decorators.
     """
     
@@ -208,10 +209,12 @@ class OrganizationContextMiddleware:
     
     def __call__(self, request):
         from .conf import org_settings
+        from .tenant_context import set_current_organization
         
         # Feature disabled - skip
         if not org_settings.ORGANIZATIONS_ENABLED:
             request.organization = None
+            set_current_organization(None)
             return self.get_response(request)
         
         # Read X-Org-Slug header
@@ -228,13 +231,18 @@ class OrganizationContextMiddleware:
                 )
                 request.organization = organization
                 
+                # Set multi-tenant context for ORM
+                set_current_organization(organization)
+                
             except Organization.DoesNotExist:
+                set_current_organization(None)
                 return JsonResponse({
                     'error': 'Organization not found',
                     'code': 'ORG_NOT_FOUND',
                     'slug': org_slug
                 }, status=404)
             except Exception as e:
+                set_current_organization(None)
                 return JsonResponse({
                     'error': 'Error loading organization',
                     'code': 'ORG_ERROR',
@@ -243,8 +251,14 @@ class OrganizationContextMiddleware:
         else:
             # No org header - that's OK, not all endpoints need it
             request.organization = None
+            set_current_organization(None)
         
-        return self.get_response(request)
+        try:
+            return self.get_response(request)
+        finally:
+            # Always clean up context at end of request to prevent state leakage
+            # if server threads are reused
+            set_current_organization(None)
 
 class AgentTokenMiddleware:
     """

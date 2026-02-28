@@ -806,6 +806,14 @@ class TenxyteSettings:
         """
         return self._get('ORGANIZATION_MEMBERSHIP_MODEL', 'tenxyte.OrganizationMembership')
 
+    @property
+    def CREATE_DEFAULT_ORGANIZATION(self):
+        """
+        Create a default organization for new users.
+        Default: True
+        """
+        return self._get('CREATE_DEFAULT_ORGANIZATION', True)
+
     # =============================================
     # Agent / AIRS Settings (Phase 1)
     # =============================================

@@ -401,6 +401,27 @@ class SocialAuthService:
                 password=''
             )
             user.assign_default_role()
+            
+            # Create Default Organization if Multi-Tenancy feature is enabled
+            from ..conf import org_settings
+            if org_settings.ORGANIZATIONS_ENABLED and getattr(org_settings, 'CREATE_DEFAULT_ORGANIZATION', True):
+                try:
+                    from .organization_service import OrganizationService
+                    org_service = OrganizationService()
+                    
+                    name_part = user_data.get('first_name') or user.email.split('@')[0] if user.email else "Personal"
+                    org_name = f"{name_part.capitalize()}'s Workspace"
+                    
+                    org_service.create_organization(
+                        name=org_name,
+                        created_by=user,
+                        description=f"Default workspace for {user.email or user.full_phone}"
+                    )
+                except Exception as e:
+                    import logging
+                    logging.getLogger('tenxyte').error(
+                        f"Failed to create default organization for user {user.id} via social auth: {e}"
+                    )
         else:
             # Mettre à jour l'email vérifié si nécessaire
             if email and user_data.get('email_verified') and not user.is_email_verified:
