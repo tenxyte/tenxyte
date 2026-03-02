@@ -45,43 +45,19 @@ jobs:
   # SAST — Static Application Security Testing
   # ===========================================================================
   sast:
-    name: Static Security Analysis (Bandit)
+    name: Static Security Analysis (Semgrep)
     runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install Bandit
-        run: pip install bandit[toml]
-
-      - name: Run Bandit
-        run: |
-          bandit -r src/tenxyte/ \
-            --skip B101,B601 \
-            --severity-level medium \
-            --format json \
-            -o bandit-report.json || true
-
-      - name: Upload Bandit report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: bandit-report
-          path: bandit-report.json
-          retention-days: 30
-
-      - name: Fail on high severity issues
-        run: |
-          bandit -r src/tenxyte/ \
-            --skip B101,B601 \
-            --severity-level high \
-            --exit-zero false
+      - name: Run Semgrep
+        run: semgrep ci --config "p/python" --config "p/django" --config "p/security-audit" --config "p/secrets"
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
   # ===========================================================================
   # Secrets detection

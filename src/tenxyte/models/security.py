@@ -42,6 +42,11 @@ class BlacklistedToken(models.Model):
     @classmethod
     def blacklist_token(cls, token_jti: str, expires_at, user=None, reason: str = ''):
         """Add a token to the blacklist."""
+        from django.core.cache import cache
+        timeout = int((expires_at - timezone.now()).total_seconds())
+        if timeout > 0:
+            cache.set(f"bl_token_{token_jti}", True, timeout=timeout)
+
         return cls.objects.get_or_create(
             token_jti=token_jti,
             defaults={
@@ -54,7 +59,18 @@ class BlacklistedToken(models.Model):
     @classmethod
     def is_blacklisted(cls, token_jti: str) -> bool:
         """Check if a token is blacklisted."""
-        return cls.objects.filter(token_jti=token_jti).exists()
+        from django.core.cache import cache
+        if cache.get(f"bl_token_{token_jti}"):
+            return True
+            
+        token = cls.objects.filter(token_jti=token_jti).first()
+        if token:
+            timeout = int((token.expires_at - timezone.now()).total_seconds())
+            if timeout > 0:
+                cache.set(f"bl_token_{token_jti}", True, timeout=timeout)
+            return True
+            
+        return False
 
     @classmethod
     def cleanup_expired(cls) -> int:
@@ -163,6 +179,26 @@ class AuditLog(models.Model):
     def log(cls, action: str, user=None, ip_address: str = None, user_agent: str = '',
             application=None, details: dict = None, agent_token=None, on_behalf_of=None, prompt_trace_id: str = None):
         """Create an audit log entry."""
+        import logging
+        import json
+        
+        logger = logging.getLogger('tenxyte.security.audit')
+        
+        # Determine log level based on action severity
+        log_level = logging.WARNING if any(word in action for word in ['failed', 'exceeded', 'suspicious', 'locked']) else logging.INFO
+        
+        log_data = {
+            "timestamp": timezone.now().isoformat(),
+            "level": "SECURITY",
+            "event": action.upper(),
+            "ip": ip_address,
+            "userAgent": user_agent[:500] if user_agent else '',
+            "user_id": str(user.id) if user else None,
+            "details": details or {}
+        }
+        
+        logger.log(log_level, json.dumps(log_data))
+
         return cls.objects.create(
             user=user,
             action=action,

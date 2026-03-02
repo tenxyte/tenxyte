@@ -277,25 +277,33 @@ class LoginEmailView(APIView):
                 'code': 'LOGIN_FAILED'
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Vérifier 2FA si activé
-        user = data.get('_user')  # L'AuthService doit retourner l'user
-        if user and user.is_2fa_enabled:
-            from ..services import totp_service
-
-            totp_code = serializer.validated_data.get('totp_code', '')
-            if not totp_code:
+        # Vérifier 2FA si activé ou obligatoire pour ce profil
+        user = data.get('_user')
+        if user:
+            is_admin = getattr(user, 'is_staff', False) or getattr(user, 'is_superuser', False)
+            if is_admin and not getattr(user, 'is_2fa_enabled', False):
                 return Response({
-                    'error': '2FA code required',
-                    'code': '2FA_REQUIRED',
-                    'requires_2fa': True
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                    'error': 'Administrators must have 2FA enabled to login.',
+                    'code': 'ADMIN_2FA_SETUP_REQUIRED'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            if getattr(user, 'is_2fa_enabled', False):
+                from ..services import totp_service
 
-            is_valid, error_msg = totp_service.verify_2fa(user, totp_code)
-            if not is_valid:
-                return Response({
-                    'error': error_msg,
-                    'code': 'INVALID_2FA_CODE'
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                totp_code = serializer.validated_data.get('totp_code', '')
+                if not totp_code:
+                    return Response({
+                        'error': '2FA code required',
+                        'code': '2FA_REQUIRED',
+                        'requires_2fa': True
+                    }, status=status.HTTP_401_UNAUTHORIZED)
+
+                is_valid, error_msg = totp_service.verify_2fa(user, totp_code)
+                if not is_valid:
+                    return Response({
+                        'error': error_msg,
+                        'code': 'INVALID_2FA_CODE'
+                    }, status=status.HTTP_401_UNAUTHORIZED)
 
         # Retirer l'user de la réponse (on ne veut pas l'exposer)
         if '_user' in data:
@@ -409,25 +417,33 @@ class LoginPhoneView(APIView):
                 'code': 'LOGIN_FAILED'
             }, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Vérifier 2FA si activé
+        # Vérifier 2FA si activé ou obligatoire pour ce profil
         user = data.get('_user')
-        if user and user.is_2fa_enabled:
-            from ..services import totp_service
-
-            totp_code = serializer.validated_data.get('totp_code', '')
-            if not totp_code:
+        if user:
+            is_admin = getattr(user, 'is_staff', False) or getattr(user, 'is_superuser', False)
+            if is_admin and not getattr(user, 'is_2fa_enabled', False):
                 return Response({
-                    'error': '2FA code required',
-                    'code': '2FA_REQUIRED',
-                    'requires_2fa': True
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                    'error': 'Administrators must have 2FA enabled to login.',
+                    'code': 'ADMIN_2FA_SETUP_REQUIRED'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            if getattr(user, 'is_2fa_enabled', False):
+                from ..services import totp_service
 
-            is_valid, error_msg = totp_service.verify_2fa(user, totp_code)
-            if not is_valid:
-                return Response({
-                    'error': error_msg,
-                    'code': 'INVALID_2FA_CODE'
-                }, status=status.HTTP_401_UNAUTHORIZED)
+                totp_code = serializer.validated_data.get('totp_code', '')
+                if not totp_code:
+                    return Response({
+                        'error': '2FA code required',
+                        'code': '2FA_REQUIRED',
+                        'requires_2fa': True
+                    }, status=status.HTTP_401_UNAUTHORIZED)
+
+                is_valid, error_msg = totp_service.verify_2fa(user, totp_code)
+                if not is_valid:
+                    return Response({
+                        'error': error_msg,
+                        'code': 'INVALID_2FA_CODE'
+                    }, status=status.HTTP_401_UNAUTHORIZED)
 
         # Retirer l'user de la réponse
         if '_user' in data:
