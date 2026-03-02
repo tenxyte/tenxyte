@@ -326,7 +326,12 @@ PROVIDER_REGISTRY: Dict[str, AbstractOAuthProvider] = {
 def get_provider(name: str) -> Optional[AbstractOAuthProvider]:
     """Retourne le provider par son nom, ou None si inconnu/désactivé."""
     from ..conf import auth_settings
-    enabled = getattr(settings, 'TENXYTE_SOCIAL_PROVIDERS', list(PROVIDER_REGISTRY.keys()))
+    # Priorité aux réglages settings.py s'ils existent
+    enabled = getattr(settings, 'TENXYTE_SOCIAL_PROVIDERS', None)
+    if enabled is None:
+        # Sinon utiliser les défauts du provider registry filtrés par auth_settings
+        enabled = auth_settings.SOCIAL_PROVIDERS
+        
     if name not in enabled:
         return None
     return PROVIDER_REGISTRY.get(name)
@@ -386,8 +391,21 @@ class SocialAuthService:
         if connection:
             user = connection.user
         elif email:
-            # 2. Chercher par email
+            # 2. Chercher par email (Account Fusion)
+            # R10 Audit: Ne fusionner que si l'email du provider est vérifié
+            # OU si la configuration autorise la fusion non-vérifiée (déconseillé)
+            from ..conf import auth_settings
+            is_verified = user_data.get('email_verified', False)
+            
+            if not is_verified and auth_settings.SOCIAL_REQUIRE_VERIFIED_EMAIL:
+                return False, None, f'Email from {provider_name} is not verified. Authentication rejected for security.'
+
             user = User.objects.filter(email__iexact=email).first()
+            
+            # Si l'utilisateur existe mais que l'email social n'est pas vérifié,
+            # on refuse la fusion automatique pour éviter le account hijacking
+            if user and not is_verified:
+                 return False, None, f'Unverified email from {provider_name} cannot be linked to an existing account.'
         else:
             user = None
 
@@ -460,7 +478,7 @@ class SocialAuthService:
         tokens = self.jwt_service.generate_token_pair(
             user_id=str(user.id),
             application_id=str(application.id),
-            refresh_token_str=refresh_token.token
+            refresh_token_str=refresh_token.raw_token  # valeur brute, jamais persistée
         )
 
         return True, {

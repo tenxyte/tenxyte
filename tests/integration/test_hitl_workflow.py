@@ -42,7 +42,8 @@ def test_hitl_workflow(authenticated_client, user, application, permission, sett
     middleware = AgentTokenMiddleware(get_response_mock)
     
     request = RequestFactory().post('/api/test-critical-delete/', data=json.dumps({'target': 42}), content_type='application/json')
-    request.META['HTTP_AUTHORIZATION'] = f'AgentBearer {token.token}'
+    # R9: token.token is SHA-256 hash in DB; raw_token is the cleartext value for middleware lookup
+    request.META['HTTP_AUTHORIZATION'] = f'AgentBearer {token.raw_token}'
     
     response = middleware(request)
     

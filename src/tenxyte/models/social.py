@@ -38,8 +38,20 @@ class SocialConnection(models.Model):
     first_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=100, blank=True)
     avatar_url = models.URLField(max_length=500, blank=True)
-    access_token = models.TextField(blank=True)
-    refresh_token = models.TextField(blank=True)
+    # R10 Audit: OAuth tokens are NOT stored to avoid exposure if the DB is compromised.
+    # access_token and refresh_token are intentionally left blank after the OAuth flow.
+    # If your application requires re-using the access token after login, implement
+    # encrypted storage (django-cryptography) or token refresh on each API call instead.
+    access_token = models.TextField(
+        blank=True,
+        default='',
+        help_text="Not stored for security (R10 audit). Always empty."
+    )
+    refresh_token = models.TextField(
+        blank=True,
+        default='',
+        help_text="Not stored for security (R10 audit). Always empty."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -60,11 +72,13 @@ class SocialConnection(models.Model):
         first_name: str = '',
         last_name: str = '',
         avatar_url: str = '',
-        access_token: str = '',
-        refresh_token: str = '',
+        access_token: str = '',   # Ignoré — non stocké (R10)
+        refresh_token: str = '',  # Ignoré — non stocké (R10)
     ):
         """
         Crée ou met à jour une connexion sociale pour un utilisateur.
+
+        Note R10: Les access/refresh tokens OAUTH ne sont pas stockés.
 
         Returns:
             (SocialConnection instance, created: bool)
@@ -78,8 +92,8 @@ class SocialConnection(models.Model):
                 'first_name': first_name,
                 'last_name': last_name,
                 'avatar_url': avatar_url,
-                'access_token': access_token,
-                'refresh_token': refresh_token,
+                'access_token': '',   # R10: jamais persisté
+                'refresh_token': '', # R10: jamais persisté
             }
         )
         return connection, created

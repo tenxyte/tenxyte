@@ -84,7 +84,7 @@ class AgentTokenListCreateView(APIView):
 
         return JsonResponse({
             'id': token.id,
-            'token': token.token,
+            'token': token.raw_token if hasattr(token, 'raw_token') and token.raw_token else token.token,
             'agent_id': token.agent_id,
             'status': token.status,
             'expires_at': token.expires_at.isoformat(),

@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("tenxyte", "0001_initial"),
+        ("tenxyte", "0008_merge_initial"),
     ]
 
     operations = [

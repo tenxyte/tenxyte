@@ -115,8 +115,8 @@ class TestTOTPService:
             assert '-' in code  # Format: xxxx-xxxx
             parts = code.split('-')
             assert len(parts) == 2
-            assert len(parts[0]) == 4
-            assert len(parts[1]) == 4
+            assert len(parts[0]) == 8
+            assert len(parts[1]) == 8
 
         # Vérifier que les codes sont hashés
         for hashed in hashed_codes:

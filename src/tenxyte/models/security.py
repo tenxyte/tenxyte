@@ -242,7 +242,9 @@ class PasswordHistory(models.Model):
 
         for history in recent_passwords:
             try:
-                if bcrypt.checkpw(raw_password.encode('utf-8'), history.password_hash.encode('utf-8')):
+                import hashlib
+                pre_hash = hashlib.sha256(raw_password.encode('utf-8')).hexdigest()
+                if bcrypt.checkpw(pre_hash.encode('utf-8'), history.password_hash.encode('utf-8')):
                     return True
             except Exception:
                 continue

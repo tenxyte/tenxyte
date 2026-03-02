@@ -100,8 +100,9 @@ class TestAgentViews:
 
         url = reverse('authentication:agent_token_heartbeat', kwargs={'pk': token.id})
         # The agent calls this, authenticating with AgentBearer (also add application secrets so the first HTTP middleware passes)
+        # R9: token.token is SHA-256 hash in DB; token.raw_token is the raw value for auth
         api_client.credentials(
-            HTTP_AUTHORIZATION=f'AgentBearer {token.token}',
+            HTTP_AUTHORIZATION=f'AgentBearer {token.raw_token}',
             HTTP_X_ACCESS_KEY=application.access_key,
             HTTP_X_ACCESS_SECRET=application._plain_secret
         )

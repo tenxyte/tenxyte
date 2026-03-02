@@ -98,6 +98,17 @@ class Command(BaseCommand):
         else:
             self.stdout.write('  Audit logs: skipped (--audit-log-days=0)')
 
+        # 6. Agent pending actions (older than N days)
+        from tenxyte.conf import auth_settings
+        from ...models.agent import AgentPendingAction
+        agent_days = auth_settings.AGENT_ACTION_RETENTION_DAYS
+        cutoff = now - timedelta(days=agent_days)
+        total_deleted += self._cleanup_model(
+            f'Agent pending actions (older than {agent_days} days)',
+            AgentPendingAction.objects.filter(created_at__lt=cutoff),
+            dry_run,
+        )
+
         self.stdout.write('')
         if dry_run:
             self.stdout.write(self.style.WARNING(

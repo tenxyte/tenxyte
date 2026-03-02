@@ -59,6 +59,9 @@ class AuthService:
         # Vérifier le rate limiting (si activé)
         if auth_settings.RATE_LIMITING_ENABLED:
             if LoginAttempt.is_rate_limited(identifier, self.max_login_attempts, self.rate_limit_window_minutes):
+                # R14: Émettre le signal brute_force_detected
+                from tenxyte.signals import brute_force_detected
+                brute_force_detected.send(sender=self.__class__, user=None, ip_address=ip_address, attempt_count=self.max_login_attempts)
                 return False, None, 'Too many login attempts. Please try again later.'
 
         try:
@@ -86,6 +89,9 @@ class AuthService:
         # Vérifier le rate limiting (si activé)
         if auth_settings.RATE_LIMITING_ENABLED:
             if LoginAttempt.is_rate_limited(identifier, self.max_login_attempts, self.rate_limit_window_minutes):
+                # R14: Émettre le signal brute_force_detected
+                from tenxyte.signals import brute_force_detected
+                brute_force_detected.send(sender=self.__class__, user=None, ip_address=ip_address, attempt_count=self.max_login_attempts)
                 return False, None, 'Too many login attempts. Please try again later.'
 
         try:
@@ -135,6 +141,9 @@ class AuthService:
                 recent_failures = LoginAttempt.get_recent_failures(identifier, self.rate_limit_window_minutes)
                 if recent_failures >= self.max_login_attempts:
                     user.lock_account(self.lockout_duration_minutes)
+                    # R14: Émettre signal brute force (verrouillage géré via receiver dans signals.py)
+                    from tenxyte.signals import brute_force_detected
+                    brute_force_detected.send(sender=self.__class__, user=user, ip_address=ip_address, attempt_count=recent_failures)
 
             return False, None, 'Invalid credentials'
 
@@ -153,7 +162,11 @@ class AuthService:
 
         # Détection nouveau device → alerte sécurité
         if device_info:
-            self._check_new_device_alert(user, device_info, ip_address, application)
+            is_new = self._check_new_device_alert(user, device_info, ip_address, application)
+            if getattr(is_new, 'is_new_device', False) or is_new is True:
+                # R14: Émettre le signal public pour intégrateurs
+                from tenxyte.signals import suspicious_login_detected
+                suspicious_login_detected.send(sender=self.__class__, user=user, ip_address=ip_address, reason='new_device')
 
         # Mettre à jour last_login
         user.last_login = timezone.now()
@@ -170,7 +183,7 @@ class AuthService:
         tokens = self.jwt_service.generate_token_pair(
             user_id=str(user.id),
             application_id=str(application.id),
-            refresh_token_str=refresh_token.token
+            refresh_token_str=refresh_token.raw_token  # valeur brute, jamais persistée
         )
 
         # Audit log
@@ -208,8 +221,9 @@ class AuthService:
         Si la rotation est activée, le refresh token est aussi renouvelé.
         """
         try:
+            refresh_token = RefreshToken.get_by_raw_token(refresh_token_str)
             refresh_token = RefreshToken.objects.select_related('user').get(
-                token=refresh_token_str,
+                pk=refresh_token.pk,
                 application=application
             )
         except RefreshToken.DoesNotExist:
@@ -232,7 +246,7 @@ class AuthService:
                 ip_address=ip_address,
                 device_info=refresh_token.device_info
             )
-            refresh_token_str = new_refresh_token.token
+            refresh_token_str = new_refresh_token.raw_token  # valeur brute pour le client
         else:
             # Just update last_used_at
             refresh_token.save()
@@ -261,7 +275,8 @@ class AuthService:
         Optionnellement blacklist l'access token aussi.
         """
         try:
-            refresh_token = RefreshToken.objects.select_related('user').get(token=refresh_token_str)
+            refresh_token = RefreshToken.get_by_raw_token(refresh_token_str)
+            refresh_token = RefreshToken.objects.select_related('user').get(pk=refresh_token.pk)
             user = refresh_token.user
             refresh_token.revoke()
 
@@ -407,7 +422,7 @@ class AuthService:
         tokens = self.jwt_service.generate_token_pair(
             user_id=str(user.id),
             application_id=str(application.id),
-            refresh_token_str=refresh_token.token
+            refresh_token_str=refresh_token.raw_token  # valeur brute, jamais persistée
         )
 
         # Audit log

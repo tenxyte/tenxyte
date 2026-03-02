@@ -1,3 +1,5 @@
+import hashlib
+import secrets
 from django.db import models
 from django.conf import settings
 from tenxyte.models.base import AutoFieldClass
@@ -23,7 +25,12 @@ class AgentToken(models.Model):
     id = AutoFieldClass(primary_key=True)
 
     # --- Identité et délégation ---
-    token        = models.CharField(max_length=128, unique=True, db_index=True)
+    token        = models.CharField(
+        max_length=128,
+        unique=True,
+        db_index=True,
+        help_text="SHA-256 hash of the raw agent token. Never store the raw value."
+    )
     agent_id     = models.CharField(max_length=100)          # "claude-3.5-sonnet", "my-copilot-v2"
     triggered_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
@@ -82,6 +89,27 @@ class AgentToken(models.Model):
 
     def __str__(self):
         return f"AgentToken {self.agent_id} by {self.triggered_by_id} ({self.status})"
+
+    @staticmethod
+    def _hash_token(raw_token: str) -> str:
+        """Hash a raw agent token with SHA-256 for secure storage."""
+        return hashlib.sha256(raw_token.encode('utf-8')).hexdigest()
+
+    @classmethod
+    def get_by_raw_token(cls, raw_token: str):
+        """
+        Retrouve un AgentToken depuis sa valeur brute.
+
+        Raises:
+            AgentToken.DoesNotExist si le hash ne correspond à aucun token
+        """
+        token_hash = cls._hash_token(raw_token)
+        return cls.objects.get(token=token_hash)
+
+    @property
+    def raw_token(self) -> str:
+        """Retourne le token brut si disponible (seulement juste après création)."""
+        return getattr(self, '_raw_token', None)
 
 
 class AgentPendingAction(models.Model):

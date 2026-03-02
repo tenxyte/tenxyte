@@ -191,7 +191,8 @@ class AbstractUser(models.Model):
     is_phone_verified = models.BooleanField(default=False)
 
     # 2FA (TOTP)
-    totp_secret = models.CharField(max_length=32, null=True, blank=True)
+    # SECURITY (R2): totp_secret is encrypted at rest using cryptography.fernet in the service layer.
+    totp_secret = models.CharField(max_length=255, null=True, blank=True)
     is_2fa_enabled = models.BooleanField(default=False)
     backup_codes = models.JSONField(default=list, blank=True)
 
@@ -205,16 +206,15 @@ class AbstractUser(models.Model):
     )
     
     # Soft delete (RGPD)
-    is_deleted = models.BooleanField(
-        default=False,
-        help_text="Soft delete for GDPR compliance. Account is anonymized but kept for audit."
-    )
+    is_deleted = models.BooleanField(default=False, db_index=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
-    anonymization_token = models.CharField(
-        max_length=64, 
-        null=True, 
-        blank=True,
-        help_text="Token used to identify anonymized accounts for audit purposes."
+    anonymization_token = models.CharField(max_length=100, null=True, blank=True, unique=True)
+    
+    # --- GDPR / RGPD Compliance (Art. 18) ---
+    is_restricted = models.BooleanField(
+        default=False, 
+        help_text="Marque le compte comme restreint (Art. 18 RGPD). "
+                  "Limite le traitement des données sans suppression."
     )
 
     # Django admin
@@ -269,14 +269,19 @@ class AbstractUser(models.Model):
         return self.is_superuser
 
     def set_password(self, raw_password: str):
+        from ..conf import auth_settings
+        import hashlib
+        pre_hash = hashlib.sha256(raw_password.encode('utf-8')).hexdigest()
         self.password = bcrypt.hashpw(
-            raw_password.encode('utf-8'),
-            bcrypt.gensalt()
+            pre_hash.encode('utf-8'),
+            bcrypt.gensalt(rounds=auth_settings.BCRYPT_ROUNDS)
         ).decode('utf-8')
 
     def check_password(self, raw_password: str) -> bool:
+        import hashlib
+        pre_hash = hashlib.sha256(raw_password.encode('utf-8')).hexdigest()
         return bcrypt.checkpw(
-            raw_password.encode('utf-8'),
+            pre_hash.encode('utf-8'),
             self.password.encode('utf-8')
         )
 
@@ -311,33 +316,33 @@ class AbstractUser(models.Model):
         Soft delete the user account (GDPR compliance).
         Anonymizes PII data while keeping audit trail.
         """
+        from django.utils import timezone
+        import secrets
+
         if self.is_deleted:
             return False  # Already deleted
         
         if generate_token:
-            self.anonymization_token = secrets.token_urlsafe(48)
+            self.anonymization_token = secrets.token_urlsafe(32)
         
         # Anonymize personal data
         self.email = f"deleted_{self.id}@deleted.local"
         self.first_name = ""
         self.last_name = ""
-        self.phone_country_code = None
-        self.phone_number = None
-        self.google_id = None
-        self.is_email_verified = False
-        self.is_phone_verified = False
-        self.is_2fa_enabled = False
-        self.totp_secret = None
-        self.backup_codes = []
         
-        # Mark as deleted
         self.is_deleted = True
         self.deleted_at = timezone.now()
         self.is_active = False
-        self.is_staff = False
-        self.is_superuser = False
         
-        self.save()
+        self.save(update_fields=['is_deleted', 'deleted_at', 'is_active', 'anonymization_token', 'email', 'first_name', 'last_name'])
+        
+        # Revoke all Refresh Tokens
+        try:
+            from .operational import RefreshToken
+            RefreshToken.objects.filter(user=self, is_revoked=False).update(is_revoked=True)
+        except Exception:
+            pass
+
         return True
 
     @property

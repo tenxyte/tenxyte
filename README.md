@@ -323,6 +323,39 @@ Full reference with curl examples: [docs/endpoints.md](docs/endpoints.md)
 
 ---
 
+## Periodic Tasks (Maintenance)
+
+Tenxyte requires a few periodic tasks to maintain optimal performance and security. We recommend setting up **Celery Beat** or a standard *cron* job to call the following Django management commands (or their code equivalents):
+
+1. **Tokens Cleanup** (Daily at 3 AM)
+   Remove expired JWT blacklisted tokens and expired Auth/Agent/Refresh tokens:
+   ```python
+   from tenxyte.models import BlacklistedToken, RefreshToken, AgentToken
+   BlacklistedToken.cleanup_expired()
+   # Add similar logic for Refresh/Agent tokens based on expires_at
+   ```
+
+2. **OTP & WebAuthn Cleanup** (Every 15 minutes)
+   Clear expired OTP codes and unused WebAuthn authentication challenges:
+   ```python
+   from tenxyte.models import OTPCode, WebAuthnChallenge
+   OTPCode.cleanup_expired()
+   WebAuthnChallenge.cleanup_expired()
+   ```
+
+3. **Audit Log Rotation** (Monthly)
+   To comply with privacy laws (GDPR), trim or archive old audit logs securely:
+   ```python
+   from django.utils import timezone
+   from datetime import timedelta
+   from tenxyte.models import AuditLog
+   
+   cutoff = timezone.now() - timedelta(days=90)
+   AuditLog.objects.filter(timestamp__lt=cutoff).delete()
+   ```
+
+---
+
 ## Extending Models
 
 Tenxyte exposes abstract base classes: `AbstractUser`, `AbstractRole`, `AbstractPermission`, `AbstractApplication`.

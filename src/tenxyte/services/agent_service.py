@@ -72,9 +72,10 @@ class AgentTokenService:
                 dms_kwargs['heartbeat_required_every'] = dead_mans_switch['heartbeat_required_every']
                 dms_kwargs['last_heartbeat_at'] = timezone.now()
 
-        # Create token object
+        # Create token object — token brut généré ici, hashé avant persistance (R9)
+        raw_token = self._generate_token()
         token = AgentToken.objects.create(
-            token=self._generate_token(),
+            token=AgentToken._hash_token(raw_token),
             agent_id=agent_id,
             triggered_by=triggered_by,
             application=application,
@@ -84,6 +85,8 @@ class AgentTokenService:
             **cb_kwargs,
             **dms_kwargs
         )
+        # Attacher le token brut à l'instance — non persistant, disponible immédiatement
+        token._raw_token = raw_token
 
         # Set permissions
         # If granted_permissions holds models, just use set(). 
@@ -110,7 +113,7 @@ class AgentTokenService:
         Met à jour last_used_at et current_request_count (atomique).
         """
         try:
-            token = AgentToken.objects.get(token=raw_token)
+            token = AgentToken.get_by_raw_token(raw_token)
         except AgentToken.DoesNotExist:
             return None, "NOT_FOUND"
 
@@ -188,6 +191,11 @@ class AgentTokenService:
         agent_token.suspended_at = timezone.now()
         agent_token.suspended_reason = reason
         agent_token.save(update_fields=['status', 'suspended_at', 'suspended_reason'])
+        
+        # R14: Emit security signal for integrators
+        from tenxyte.signals import agent_circuit_breaker_triggered
+        agent_circuit_breaker_triggered.send(sender=self.__class__, agent_token=agent_token, reason=reason)
+        
         return agent_token
 
     def revoke_all_for_user(self, user) -> int:

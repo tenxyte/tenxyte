@@ -85,6 +85,9 @@ class OTPCode(models.Model):
 class RefreshToken(models.Model):
     """
     Refresh tokens pour JWT.
+
+    SECURITY: Le token est stocké sous forme de hash SHA-256 en base de données.
+    La valeur brute est uniquement disponible au moment de la génération via generate().
     """
     id = AutoFieldClass(primary_key=True)
     user = models.ForeignKey(
@@ -97,7 +100,12 @@ class RefreshToken(models.Model):
         on_delete=models.CASCADE,
         related_name='refresh_tokens'
     )
-    token = models.CharField(max_length=191, unique=True, db_index=True)
+    token = models.CharField(
+        max_length=191,
+        unique=True,
+        db_index=True,
+        help_text="SHA-256 hash of the raw refresh token. Never store the raw value."
+    )
     device_info = models.CharField(max_length=255, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     is_revoked = models.BooleanField(default=False)
@@ -108,17 +116,55 @@ class RefreshToken(models.Model):
     class Meta:
         db_table = 'refresh_tokens'
 
+    @staticmethod
+    def _hash_token(raw_token: str) -> str:
+        """Hash a raw refresh token with SHA-256 for secure storage."""
+        return hashlib.sha256(raw_token.encode('utf-8')).hexdigest()
+
     @classmethod
     def generate(cls, user, application, device_info: str = '', ip_address: str = None, validity_days: int = 30):
-        token = secrets.token_urlsafe(64)
-        return cls.objects.create(
+        """
+        Génère un nouveau refresh token.
+
+        Returns:
+            Tuple (RefreshToken instance, raw_token: str)
+            Le raw_token doit être retourné au client — il n'est pas conservé en DB.
+        """
+        raw_token = secrets.token_urlsafe(64)
+        token_hash = cls._hash_token(raw_token)
+        instance = cls.objects.create(
             user=user,
             application=application,
-            token=token,
+            token=token_hash,
             device_info=device_info,
             ip_address=ip_address,
             expires_at=timezone.now() + timedelta(days=validity_days)
         )
+        # Attacher le token brut à l'instance pour usage immédiat (non persistant)
+        instance._raw_token = raw_token
+        return instance
+
+    @classmethod
+    def get_by_raw_token(cls, raw_token: str):
+        """
+        Retrouve un RefreshToken depuis sa valeur brute.
+
+        Args:
+            raw_token: La valeur brute fournie par le client
+
+        Returns:
+            RefreshToken instance
+
+        Raises:
+            RefreshToken.DoesNotExist si le hash ne correspond à aucun token
+        """
+        token_hash = cls._hash_token(raw_token)
+        return cls.objects.get(token=token_hash)
+
+    @property
+    def raw_token(self) -> str:
+        """Retourne le token brut si disponible (seulement juste après generate())."""
+        return getattr(self, '_raw_token', None)
 
     def is_valid(self) -> bool:
         return (

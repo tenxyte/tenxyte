@@ -296,7 +296,8 @@ class TestRefreshTokenView:
         rt = _refresh_token(user, app)
 
         resp = _post(RefreshTokenView, "/auth/refresh/", {
-            "refresh_token": rt.token
+            # R1: rt.token is SHA-256 hash in DB; API expects raw token value
+            "refresh_token": rt._raw_token
         }, app)
         assert resp.status_code == 200
         assert "access_token" in resp.data
@@ -329,7 +330,8 @@ class TestLogoutView:
         rt = _refresh_token(user, app)
 
         resp = _post(LogoutView, "/auth/logout/", {
-            "refresh_token": rt.token
+            # R1: rt.token is SHA-256 hash in DB; API expects raw token value
+            "refresh_token": rt._raw_token
         }, app)
         assert resp.status_code == 200
         assert "Logged out" in resp.data["message"]

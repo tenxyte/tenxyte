@@ -75,6 +75,10 @@ TENXYTE_TOTP_ISSUER = "TestApp"
 TENXYTE_SMS_BACKEND = 'tenxyte.backends.sms.ConsoleBackend'
 TENXYTE_EMAIL_BACKEND = 'tenxyte.backends.email.ConsoleBackend'
 
+# R5 Audit: JWT secret key dédié (obligatoire en production)
+# Valeur de test uniquement — NE PAS UTILISER EN PRODUCTION
+TENXYTE_JWT_SECRET_KEY = 'test-jwt-secret-key-for-testing-only-not-for-production'
+
 # REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

@@ -26,8 +26,10 @@ def test_agent_middleware_captures_prompt_trace_id(agent_middleware, settings):
     # Setup test token
     user = User.objects.create_user(email="forensic@test.com", password="password")
     app = Application.objects.create(name="TestApp")
+    # R9: AgentToken.token stores a SHA-256 hash; raw value must be passed in the auth header
+    raw_token = "test-trace-token-123"
     token = AgentToken.objects.create(
-        token="test-trace-token-123",
+        token=AgentToken._hash_token(raw_token),  # store hash in DB
         agent_id="test-agent",
         triggered_by=user,
         application=app,
@@ -39,7 +41,7 @@ def test_agent_middleware_captures_prompt_trace_id(agent_middleware, settings):
         '/api/test-action/',
         data=json.dumps({'action': 'delete'}),
         content_type='application/json',
-        HTTP_AUTHORIZATION=f'AgentBearer {token.token}',
+        HTTP_AUTHORIZATION=f'AgentBearer {raw_token}',  # raw value for lookup
         HTTP_X_PROMPT_TRACE_ID='trace_abc123'
     )
     

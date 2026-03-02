@@ -12,8 +12,24 @@ class JWTService:
     """
 
     def __init__(self):
-        self.secret_key = auth_settings.JWT_SECRET_KEY
         self.algorithm = auth_settings.JWT_ALGORITHM
+        self.is_asymmetric = self.algorithm.startswith(('RS', 'PS', 'ES'))
+        
+        if self.is_asymmetric:
+            self.private_key = auth_settings.JWT_PRIVATE_KEY
+            self.public_key = auth_settings.JWT_PUBLIC_KEY
+            if not self.private_key or not self.public_key:
+                from django.core.exceptions import ImproperlyConfigured
+                raise ImproperlyConfigured(
+                    f"TENXYTE_JWT_PRIVATE_KEY and TENXYTE_JWT_PUBLIC_KEY must be set when using asymmetric algorithm {self.algorithm}."
+                )
+            self.signing_key = self.private_key
+            self.verifying_key = self.public_key
+        else:
+            self.secret_key = auth_settings.JWT_SECRET_KEY
+            self.signing_key = self.secret_key
+            self.verifying_key = self.secret_key
+
         self.access_token_lifetime = timedelta(seconds=auth_settings.JWT_ACCESS_TOKEN_LIFETIME)
         self.refresh_token_lifetime = timedelta(seconds=auth_settings.JWT_REFRESH_TOKEN_LIFETIME)
 
@@ -46,7 +62,7 @@ class JWTService:
         if extra_claims:
             payload.update(extra_claims)
 
-        token = jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
+        token = jwt.encode(payload, self.signing_key, algorithm=self.algorithm)
         return token, jti, expires_at
 
     def generate_token_pair(
@@ -78,7 +94,7 @@ class JWTService:
         try:
             payload = jwt.decode(
                 token,
-                self.secret_key,
+                self.verifying_key,
                 algorithms=[self.algorithm],
                 options={'require': ['exp', 'iat', 'user_id', 'app_id']}
             )

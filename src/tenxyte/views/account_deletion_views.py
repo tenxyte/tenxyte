@@ -444,6 +444,7 @@ def export_user_data(request: Request) -> Response:
                 'is_email_verified': request.user.is_email_verified,
                 'is_phone_verified': request.user.is_phone_verified,
                 'is_2fa_enabled': request.user.is_2fa_enabled,
+                'is_restricted': getattr(request.user, 'is_restricted', False),
                 'created_at': request.user.created_at.isoformat(),
                 'last_login': request.user.last_login.isoformat() if request.user.last_login else None,
             },
@@ -463,6 +464,46 @@ def export_user_data(request: Request) -> Response:
                 }
                 for perm in request.user.get_all_permissions()
             ],
+            'sessions': [
+                {
+                    'id': session.id,
+                    'created_at': session.created_at.isoformat(),
+                    'last_used_at': session.last_used_at.isoformat() if session.last_used_at else None,
+                    'ip_address': session.ip_address,
+                    'device_info': session.device_info,
+                    'is_revoked': session.revoked_at is not None
+                }
+                for session in request.user.refresh_tokens.all()
+            ],
+            'social_connections': [
+                {
+                    'provider': conn.provider,
+                    'provider_user_id': conn.provider_user_id,
+                    'email': conn.email,
+                    'created_at': conn.created_at.isoformat()
+                }
+                for conn in (request.user.social_connections.all() if hasattr(request.user, 'social_connections') else [])
+            ],
+            'login_attempts': [
+                {
+                    'ip_address': attempt.ip_address,
+                    'success': attempt.success,
+                    'created_at': attempt.created_at.isoformat(),
+                    'user_agent': attempt.user_agent,
+                    'failure_reason': attempt.failure_reason
+                }
+                for attempt in (request.user.login_attempts.all() if hasattr(request.user, 'login_attempts') else [])
+            ],
+            'agent_tokens': [
+                {
+                    'agent_id': token.agent_id,
+                    'status': token.status,
+                    'created_at': token.created_at.isoformat(),
+                    'expires_at': token.expires_at.isoformat(),
+                    'last_used_at': token.last_used_at.isoformat() if token.last_used_at else None
+                }
+                for token in (request.user.agent_tokens.all() if hasattr(request.user, 'agent_tokens') else [])
+            ],
             'applications': [
                 {
                     'name': app.name,
@@ -477,12 +518,13 @@ def export_user_data(request: Request) -> Response:
                     'created_at': log.created_at.isoformat(),
                     'details': log.details
                 }
-                for log in request.user.audit_logs.all()[:100]  # Limiter aux 100 plus récents
+                for log in request.user.audit_logs.all()  # R10 Audit: Supprimer la limite de 100
             ],
             'export_metadata': {
                 'exported_at': timezone.now().isoformat(),
                 'export_reason': 'user_request',
-                'user_id': request.user.id
+                'user_id': request.user.id,
+                'compliance': ['RGPD', 'GDPR', 'CCPA']
             }
         }
         

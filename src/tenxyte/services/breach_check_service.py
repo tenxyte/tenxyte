@@ -21,7 +21,7 @@ from ..conf import auth_settings
 logger = logging.getLogger(__name__)
 
 HIBP_API_URL = 'https://api.pwnedpasswords.com/range/{prefix}'
-HIBP_TIMEOUT = 5  # seconds
+HIBP_TIMEOUT = 3  # seconds
 
 
 class BreachCheckService:

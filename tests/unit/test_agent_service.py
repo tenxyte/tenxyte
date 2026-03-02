@@ -70,7 +70,8 @@ class TestAgentTokenService:
         service = AgentTokenService()
         token = service.create(triggered_by=test_user, application=test_app, granted_permissions=[permissions[0]])
 
-        validated_token, error = service.validate(token.token)
+        # R9: token.token is SHA-256 hash; token.raw_token is the raw value returned by service.create()
+        validated_token, error = service.validate(token.raw_token)
         assert error is None
         assert validated_token.id == token.id
         assert validated_token.current_request_count == 1
@@ -86,7 +87,8 @@ class TestAgentTokenService:
         service = AgentTokenService()
         token = service.create(triggered_by=test_user, application=test_app, granted_permissions=[permissions[0]], expires_in=-10)
 
-        validated_token, error = service.validate(token.token)
+        # R9: token.raw_token is the raw value, service.validate() hashes and looks up
+        validated_token, error = service.validate(token.raw_token)
         assert error == "EXPIRED"
         validated_token.refresh_from_db()
         assert validated_token.status == AgentToken.Status.EXPIRED
@@ -100,7 +102,8 @@ class TestAgentTokenService:
         token.last_heartbeat_at = timezone.now() - timedelta(seconds=100)
         token.save()
 
-        validated_token, error = service.validate(token.token)
+        # R9: token.raw_token is the raw value, service.validate() hashes and looks up
+        validated_token, error = service.validate(token.raw_token)
         assert error == "HEARTBEAT_MISSING"
         validated_token.refresh_from_db()
         assert validated_token.status == AgentToken.Status.SUSPENDED
@@ -205,12 +208,14 @@ class TestAgentTokenService:
 
     def test_validate_inactive_token(self, test_user, test_app):
         service = AgentTokenService()
+        # R9: store hash in DB so get_by_raw_token("inactive_token") can find it
+        raw = "inactive_token"
         token = AgentToken.objects.create(
-            token="inactive_token", agent_id="test", triggered_by=test_user,
+            token=AgentToken._hash_token(raw), agent_id="test", triggered_by=test_user,
             application=test_app, expires_at=timezone.now() + timedelta(days=1),
             status=AgentToken.Status.REVOKED
         )
-        validated_token, error = service.validate(token.token)
+        validated_token, error = service.validate(raw)
         assert error == "STATUS_REVOKED"
 
     def test_validate_permission_no_explicit_settings(self, test_user, test_app, permissions):

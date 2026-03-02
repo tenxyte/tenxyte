@@ -16,13 +16,7 @@ class IPBasedThrottle(SimpleRateThrottle):
     """Throttle base sur l'adresse IP."""
 
     def get_cache_key(self, request, view):
-        # Recuperer l'IP reelle (derriere proxy)
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0].strip()
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-
+        ip = get_client_ip(request)
         return f"throttle_{self.scope}_{ip}"
 
 
@@ -144,11 +138,7 @@ class ProgressiveLoginThrottle(SimpleRateThrottle):
     scope = 'progressive_login'
 
     def get_cache_key(self, request, view):
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0].strip()
-        else:
-            ip = request.META.get('REMOTE_ADDR')
+        ip = get_client_ip(request)
         return f"progressive_login_{ip}"
 
     def get_rate(self):
@@ -162,12 +152,7 @@ class ProgressiveLoginThrottle(SimpleRateThrottle):
     @classmethod
     def record_failure(cls, request):
         """Enregistre un echec de login pour augmenter le blocage."""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0].strip()
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-
+        ip = get_client_ip(request)
         cache_key = f"login_failures_{ip}"
         failures = cache.get(cache_key, 0)
         # Augmente le temps de cache exponentiellement
@@ -177,12 +162,7 @@ class ProgressiveLoginThrottle(SimpleRateThrottle):
     @classmethod
     def reset_failures(cls, request):
         """Reset les echecs apres un login reussi."""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0].strip()
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-
+        ip = get_client_ip(request)
         cache_key = f"login_failures_{ip}"
         cache.delete(cache_key)
 
@@ -277,9 +257,47 @@ class SimpleThrottleRule(SimpleRateThrottle):
 
 # ============== Helpers ==============
 
-def get_client_ip(request):
-    """Recupere l'adresse IP du client."""
+def get_client_ip(request) -> str:
+    """Récupère l'adresse IP réelle du client.
+
+    Si TENXYTE_TRUSTED_PROXIES est configuré, valide que REMOTE_ADDR est un proxy
+    de confiance avant d'accepter l'en-tête X-Forwarded-For.
+
+    Sans TRUSTED_PROXIES configuré, accepte X-Forwarded-For sans validation (r
+    isque de forge en environnement multi-proxy — voir R6 de l'audit).
+
+    Returns:
+        IP client sous forme de string.
+    """
+    from .conf import auth_settings
+    trusted = auth_settings.TRUSTED_PROXIES
+
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    remote_addr = request.META.get('REMOTE_ADDR', '')
+
     if x_forwarded_for:
-        return x_forwarded_for.split(',')[0].strip()
-    return request.META.get('REMOTE_ADDR')
+        if not trusted:
+            # Pas de liste de proxies de confiance : accepter la première IP du header
+            # (comportement legacy — configurer TENXYTE_TRUSTED_PROXIES en production)
+            return x_forwarded_for.split(',')[0].strip()
+
+        # Valider que REMOTE_ADDR est bien un proxy de confiance
+        import ipaddress
+        try:
+            remote_ip = ipaddress.ip_address(remote_addr)
+            for trusted_entry in trusted:
+                try:
+                    network = ipaddress.ip_network(trusted_entry, strict=False)
+                    if remote_ip in network:
+                        # Proxy de confiance confirmé : utiliser la première IP du header
+                        return x_forwarded_for.split(',')[0].strip()
+                except ValueError:
+                    continue
+        except ValueError:
+            pass
+        # REMOTE_ADDR n'est pas un proxy de confiance → ignorer X-Forwarded-For
+        import logging
+        logging.getLogger('tenxyte.security').warning(
+            "X-Forwarded-For header rejected: REMOTE_ADDR %s is not in TRUSTED_PROXIES.", remote_addr
+        )
+    return remote_addr

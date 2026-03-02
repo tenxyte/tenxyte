@@ -1,0 +1,102 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Every Monday at 08:00 UTC (SCA weekly scan)
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+jobs:
+  # ===========================================================================
+  # SCA — Software Composition Analysis (R3, R7, R12)
+  # Detects vulnerable dependencies
+  # ===========================================================================
+  sca:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install ".[all]" pip-audit safety
+
+      - name: pip-audit (CVE database check)
+        run: pip-audit --desc on --format markdown
+
+      - name: safety check (known vulnerabilities)
+        run: safety check --full-report
+        continue-on-error: true  # Non-bloquant en PR, bloquant en main via branch protection
+
+  # ===========================================================================
+  # SAST — Static Application Security Testing
+  # ===========================================================================
+  sast:
+    name: Static Security Analysis (Bandit)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Bandit
+        run: pip install bandit[toml]
+
+      - name: Run Bandit
+        run: |
+          bandit -r src/tenxyte/ \
+            --skip B101,B601 \
+            --severity-level medium \
+            --format json \
+            -o bandit-report.json || true
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report
+          path: bandit-report.json
+          retention-days: 30
+
+      - name: Fail on high severity issues
+        run: |
+          bandit -r src/tenxyte/ \
+            --skip B101,B601 \
+            --severity-level high \
+            --exit-zero false
+
+  # ===========================================================================
+  # Secrets detection
+  # ===========================================================================
+  secrets:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for gitleaks
+
+      - name: gitleaks (secret scanning)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

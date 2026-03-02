@@ -54,7 +54,8 @@ class TestAgentTokenMiddleware:
         service = AgentTokenService()
         token = service.create(triggered_by=test_user, application=test_app, granted_permissions=[permission])
         
-        request = RequestFactory().get('/', HTTP_AUTHORIZATION=f'AgentBearer {token.token}')
+        # R9: token.token is SHA-256 hash in DB; token.raw_token is the cleartext value for auth
+        request = RequestFactory().get('/', HTTP_AUTHORIZATION=f'AgentBearer {token.raw_token}')
         response = middleware(request)
         
         assert response.status_code == 200
@@ -79,7 +80,8 @@ class TestAgentTokenMiddleware:
         token.current_request_count = 2
         token.save()
         
-        request = RequestFactory().get('/', HTTP_AUTHORIZATION=f'AgentBearer {token.token}')
+        # R9: token.token is SHA-256 hash in DB; token.raw_token is the cleartext value for auth
+        request = RequestFactory().get('/', HTTP_AUTHORIZATION=f'AgentBearer {token.raw_token}')
         response = middleware(request)
         
         assert response.status_code == 403

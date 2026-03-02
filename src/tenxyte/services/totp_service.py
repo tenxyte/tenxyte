@@ -9,11 +9,13 @@ import base64
 import hashlib
 import secrets
 import logging
+import os
 from io import BytesIO
 from typing import Tuple, List, Optional
 
 import pyotp
 import qrcode
+from cryptography.fernet import Fernet
 
 from ..models import get_user_model
 from ..conf import auth_settings
@@ -28,6 +30,24 @@ class TOTPService:
     Service de gestion 2FA avec TOTP (Time-based One-Time Password).
     Compatible avec Google Authenticator, Authy, Microsoft Authenticator, etc.
     """
+    def __init__(self):
+        encryption_key = os.environ.get("TENXYTE_TOTP_ENCRYPTION_KEY")
+        if encryption_key:
+            self.totp_key = Fernet(encryption_key.encode('utf-8'))
+        else:
+            self.totp_key = None
+            logger.warning("TENXYTE_TOTP_ENCRYPTION_KEY not set. TOTP secrets will be stored in plaintext. This is insecure.")
+
+    def _get_decrypted_secret(self, user) -> str:
+        if not user.totp_secret:
+            return None
+        if self.totp_key:
+            try:
+                return self.totp_key.decrypt(user.totp_secret.encode('utf-8')).decode('utf-8')
+            except Exception as e:
+                logger.error(f"[TOTP] Failed to decrypt TOTP secret for user {user.id}: {e}")
+                return None
+        return user.totp_secret
 
     @property
     def ISSUER_NAME(self):
@@ -121,9 +141,9 @@ class TOTPService:
         hashed_codes = []
 
         for _ in range(self.BACKUP_CODES_COUNT):
-            # Générer un code aléatoire (ex: "a1b2-c3d4")
-            code = secrets.token_hex(self.BACKUP_CODE_LENGTH // 2)
-            formatted_code = f"{code[:4]}-{code[4:]}"
+            # Générer un code aléatoire (64 bits, ex: "a1b2c3d4-e5f6g7h8")
+            code = secrets.token_hex(self.BACKUP_CODE_LENGTH)
+            formatted_code = f"{code[:8]}-{code[8:]}"
             plain_codes.append(formatted_code)
 
             # Hasher le code pour stockage
@@ -144,17 +164,26 @@ class TOTPService:
 
         # Normaliser le code (enlever espaces, tirets optionnels)
         normalized = code.lower().replace(' ', '').replace('-', '')
-        if len(normalized) == 8:
+        if len(normalized) == 16:
             # Reformater pour le hash
-            formatted = f"{normalized[:4]}-{normalized[4:]}"
+            formatted = f"{normalized[:8]}-{normalized[8:]}"
         else:
             formatted = code.lower()
 
         code_hash = hashlib.sha256(formatted.encode()).hexdigest()
 
-        if code_hash in user.backup_codes:
+        # time-constant défensif
+        import hmac
+        # Find if any stored hash matches the provided hash
+        matched_hash = None
+        for stored in user.backup_codes:
+            if hmac.compare_digest(code_hash, stored):
+                matched_hash = stored
+                break
+
+        if matched_hash:
             # Supprimer le code utilisé
-            user.backup_codes.remove(code_hash)
+            user.backup_codes.remove(matched_hash)
             user.save(update_fields=['backup_codes'])
             logger.info(f"[TOTP] Backup code used for user {user.id}. {len(user.backup_codes)} remaining.")
             return True
@@ -172,7 +201,10 @@ class TOTPService:
         secret = self.generate_secret()
 
         # Stocker temporairement (pas encore activé)
-        user.totp_secret = secret
+        if self.totp_key:
+            user.totp_secret = self.totp_key.encrypt(secret.encode('utf-8')).decode('utf-8')
+        else:
+            user.totp_secret = secret
         user.save(update_fields=['totp_secret'])
 
         # Générer le QR code
@@ -210,7 +242,11 @@ class TOTPService:
         if user.is_2fa_enabled:
             return False, "2FA is already enabled."
 
-        if not self.verify_code(user.totp_secret, code):
+        decrypted_secret = self._get_decrypted_secret(user)
+        if not decrypted_secret:
+             return False, "Invalid internal TOTP state."
+
+        if not self.verify_code(decrypted_secret, code):
             return False, "Invalid code. Please try again."
 
         # Activer le 2FA
@@ -235,7 +271,10 @@ class TOTPService:
             return False, "2FA is not enabled."
 
         # Vérifier le code TOTP ou un code de secours
-        is_valid = self.verify_code(user.totp_secret, code)
+        decrypted_secret = self._get_decrypted_secret(user)
+        is_valid = False
+        if decrypted_secret:
+            is_valid = self.verify_code(decrypted_secret, code)
         if not is_valid:
             is_valid = self.verify_backup_code(user, code)
 
@@ -269,7 +308,8 @@ class TOTPService:
             return False, "2FA code required."
 
         # Essayer le code TOTP d'abord
-        if self.verify_code(user.totp_secret, code):
+        decrypted_secret = self._get_decrypted_secret(user)
+        if decrypted_secret and self.verify_code(decrypted_secret, code):
             return True, ""
 
         # Sinon essayer un code de secours
@@ -289,7 +329,8 @@ class TOTPService:
             return False, [], "2FA is not enabled."
 
         # Vérifier le code TOTP
-        if not self.verify_code(user.totp_secret, code):
+        decrypted_secret = self._get_decrypted_secret(user)
+        if not decrypted_secret or not self.verify_code(decrypted_secret, code):
             return False, [], "Invalid code."
 
         # Générer de nouveaux codes
