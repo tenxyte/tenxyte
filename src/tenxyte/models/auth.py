@@ -249,6 +249,12 @@ class AbstractUser(models.Model):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
+    def save(self, *args, **kwargs):
+        if self.email:
+            from django.contrib.auth.models import BaseUserManager
+            self.email = BaseUserManager.normalize_email(self.email).lower()
+        super().save(*args, **kwargs)
+
     # Proprietes requises par Django/DRF pour l'authentification
     @property
     def is_authenticated(self):

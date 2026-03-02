@@ -4,6 +4,23 @@ from .services.jwt_service import JWTService
 from .conf import auth_settings
 
 
+class RequestIDMiddleware:
+    """
+    Middleware pour ajouter un X-Request-ID unique à chaque requête pour la traçabilité.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        import uuid
+        request_id = request.headers.get('X-Request-ID') or str(uuid.uuid4())
+        request.request_id = request_id
+        
+        response = self.get_response(request)
+        response['X-Request-ID'] = request_id
+        return response
+
+
 class ApplicationAuthMiddleware:
     """
     Middleware pour valider l'authentification de l'application (première couche).
@@ -242,11 +259,12 @@ class OrganizationContextMiddleware:
                     'slug': org_slug
                 }, status=404)
             except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Error loading organization in middleware: {e}", exc_info=True)
                 set_current_organization(None)
                 return JsonResponse({
-                    'error': 'Error loading organization',
-                    'code': 'ORG_ERROR',
-                    'message': str(e)
+                    'error': 'An unexpected error occurred while loading the organization.',
+                    'code': 'ORG_ERROR'
                 }, status=500)
         else:
             # No org header - that's OK, not all endpoints need it

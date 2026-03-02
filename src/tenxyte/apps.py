@@ -23,6 +23,29 @@ class TenxyteConfig(AppConfig):
         # R8 Audit: Vérification du cache en production
         self._check_production_cache()
 
+        # R-02 Audit: Vérification de JWT_AUTH_ENABLED
+        self._check_jwt_auth_enabled()
+
+    def _check_jwt_auth_enabled(self):
+        """
+        R-02: Prevent JWT_AUTH_ENABLED=False in production.
+        """
+        from django.conf import settings
+        from .conf import auth_settings
+        import warnings
+        
+        if not auth_settings.JWT_AUTH_ENABLED:
+            if not settings.DEBUG:
+                from django.core.exceptions import ImproperlyConfigured
+                raise ImproperlyConfigured(
+                    "TENXYTE_JWT_AUTH_ENABLED=False is forbidden in production. "
+                    "Set DEBUG=True to use this flag."
+                )
+            warnings.warn(
+                "JWT authentication is DISABLED. This is a critical security risk.",
+                RuntimeWarning, stacklevel=2
+            )
+
     def _check_production_cache(self):
         """
         R8: Avertit si LocMemCache est utilisé avec le rate limiting en production.

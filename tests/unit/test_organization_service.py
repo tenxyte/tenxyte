@@ -211,7 +211,7 @@ class TestCreateOrganization:
         with mock.patch.object(service.Organization.objects, 'create', side_effect=Exception("DB Error")):
             success, org, error = service.create_organization(name="Crash", created_by=owner)
             assert success is False
-            assert "Error creating organization: DB Error" in error
+            assert "An unexpected error occurred while creating the organization." in error
 
 
 # ---------------------------------------------------------------------------

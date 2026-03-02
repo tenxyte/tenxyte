@@ -44,6 +44,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'tenxyte.middleware.RequestIDMiddleware',
     'tenxyte.middleware.ApplicationAuthMiddleware',
 ]
 

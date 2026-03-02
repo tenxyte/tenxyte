@@ -543,8 +543,10 @@ def export_user_data(request: Request) -> Response:
         return Response(user_data, status=status.HTTP_200_OK)
         
     except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Error exporting user data: {e}", exc_info=True)
         return Response({
-            'error': f'Error exporting user data: {str(e)}',
+            'error': 'An unexpected error occurred while exporting user data.',
             'user_id': request.user.id,
             'export_requested_at': timezone.now().isoformat()
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -552,9 +554,31 @@ def export_user_data(request: Request) -> Response:
 
 def _get_client_ip(request: Request) -> str:
     """Obtenir l'IP client pour les logs."""
+    from ..conf import auth_settings
+    trusted = auth_settings.TRUSTED_PROXIES
+
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    remote_addr = request.META.get('REMOTE_ADDR', '')
+
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0]
-    else:
-        ip = request.META.get('REMOTE_ADDR')
-    return ip or '127.0.0.1'
+        if not trusted:
+            return x_forwarded_for.split(',')[0].strip()
+
+        import ipaddress
+        try:
+            remote_ip = ipaddress.ip_address(remote_addr)
+            for trusted_entry in trusted:
+                try:
+                    network = ipaddress.ip_network(trusted_entry, strict=False)
+                    if remote_ip in network:
+                        return x_forwarded_for.split(',')[0].strip()
+                except ValueError:
+                    continue
+        except ValueError:
+            pass
+            
+        import logging
+        logging.getLogger('tenxyte.security').warning(
+            "X-Forwarded-For header rejected: REMOTE_ADDR %s is not in TRUSTED_PROXIES.", remote_addr
+        )
+    return remote_addr or '127.0.0.1'

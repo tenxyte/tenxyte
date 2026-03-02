@@ -72,10 +72,12 @@ class OTPCode(models.Model):
         if not self.is_valid():
             return False
 
-        self.attempts += 1
-        self.save(update_fields=['attempts'])
+        from django.db.models import F
+        OTPCode.objects.filter(pk=self.pk).update(attempts=F('attempts') + 1)
+        self.refresh_from_db(fields=['attempts'])
 
-        if self.code == self._hash_code(code):
+        import hmac
+        if hmac.compare_digest(self.code, self._hash_code(code)):
             self.is_used = True
             self.save(update_fields=['is_used'])
             return True

@@ -286,3 +286,40 @@ class PasswordHistory(models.Model):
                 continue
 
         return False
+
+
+# =============================================================================
+# SIGNALS
+# =============================================================================
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=AuditLog)
+def trigger_audit_log_webhook(sender, instance, created, **kwargs):
+    """
+    Trigger a webhook when a new AuditLog is created for real-time alerting.
+    Configuration: TENXYTE_AUDIT_WEBHOOK_URL in settings.
+    """
+    if created:
+        from ..conf import auth_settings
+        webhook_url = getattr(auth_settings, 'AUDIT_WEBHOOK_URL', None)
+        if webhook_url:
+            import threading
+            
+            def send_webhook():
+                try:
+                    import requests
+                    payload = {
+                        "action": instance.action,
+                        "user_id": instance.user_id,
+                        "ip_address": instance.ip_address,
+                        "created_at": instance.created_at.isoformat(),
+                        "details": instance.details
+                    }
+                    requests.post(webhook_url, json=payload, timeout=5)
+                except Exception as e:
+                    import logging
+                    logging.getLogger('tenxyte.security.audit').error(f"Failed to send audit webhook: {e}")
+            
+            threading.Thread(target=send_webhook, daemon=True).start()

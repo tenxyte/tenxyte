@@ -198,11 +198,11 @@ class TestConfirmDeletion:
             success, data, error = service.confirm_deletion(token="some-token")
 
         assert success is False
-        assert error == "Error confirming deletion request: DB Error"
+        assert error == "An unexpected error occurred while confirming the deletion request."
         from tenxyte.models import AuditLog
         log = AuditLog.objects.filter(action='deletion_confirmation_error').first()
         assert log is not None
-        assert log.details['error'] == "DB Error"
+        assert log.details['error'] == "Internal server error"
 
 
 class TestCancelDeletion:

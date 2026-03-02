@@ -408,11 +408,13 @@ class SocialAuthCallbackView(APIView):
             return Response(data)
             
         except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"OAuth callback failed: {e}", exc_info=True)
             return Response(
                 {
                     'error': 'OAuth2 callback processing failed',
                     'code': 'CALLBACK_ERROR',
-                    'details': str(e)
+                    'details': 'An unexpected error occurred during authentication.'
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )

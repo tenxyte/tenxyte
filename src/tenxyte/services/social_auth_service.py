@@ -406,6 +406,11 @@ class SocialAuthService:
             # on refuse la fusion automatique pour éviter le account hijacking
             if user and not is_verified:
                  return False, None, f'Unverified email from {provider_name} cannot be linked to an existing account.'
+                 
+            # R-05 Mitigation: Prevent automatic account merging by default
+            auto_merge = getattr(auth_settings, 'SOCIAL_AUTO_MERGE_ACCOUNTS', False)
+            if user and not auto_merge:
+                 return False, None, f'An account with this email already exists. Please login with your email and password to link your {provider_name} account.'
         else:
             user = None
 

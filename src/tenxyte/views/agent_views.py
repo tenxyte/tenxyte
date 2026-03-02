@@ -80,7 +80,9 @@ class AgentTokenListCreateView(APIView):
         except PermissionDenied as e:
             return JsonResponse({'error': str(e), 'code': 'PERMISSION_DENIED'}, status=403)
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
+            import logging
+            logging.getLogger(__name__).error(f"Error creating agent token: {e}", exc_info=True)
+            return JsonResponse({'error': 'An unexpected error occurred.'}, status=400)
 
         return JsonResponse({
             'id': token.id,

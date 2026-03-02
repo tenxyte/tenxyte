@@ -12,6 +12,14 @@ class SocialSettingsMixin:
         return self._get('SOCIAL_PROVIDERS', ['google', 'github', 'microsoft', 'facebook'])
 
     @property
+    def SOCIAL_AUTO_MERGE_ACCOUNTS(self):
+        """
+        Si True, fusionne automatiquement un compte social avec un compte email existant.
+        Si False, demande à l'utilisateur de se connecter par email d'abord pour lier le compte.
+        """
+        return self._get('SOCIAL_AUTO_MERGE_ACCOUNTS', False)
+
+    @property
     def GITHUB_CLIENT_ID(self):
         """GitHub OAuth App Client ID."""
         return getattr(settings, 'GITHUB_CLIENT_ID', '')

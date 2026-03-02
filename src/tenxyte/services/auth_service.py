@@ -67,6 +67,7 @@ class AuthService:
         try:
             user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
+            User().set_password(password)  # Mitigation R-04: Prevent timing attacks
             LoginAttempt.record(identifier, ip_address, application, False, 'user_not_found')
             return False, None, 'Invalid credentials'
 
@@ -100,6 +101,7 @@ class AuthService:
                 phone_number=phone_number
             )
         except User.DoesNotExist:
+            User().set_password(password)  # Mitigation R-04: Prevent timing attacks
             LoginAttempt.record(identifier, ip_address, application, False, 'user_not_found')
             return False, None, 'Invalid credentials'
 

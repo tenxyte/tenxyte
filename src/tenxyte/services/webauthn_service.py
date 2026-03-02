@@ -100,9 +100,9 @@ class WebAuthnService:
                 'options': webauthn.options_to_json(options),
             }, ''
         except Exception as e:
-            logger.error(f"WebAuthn begin_registration error: {e}")
+            logger.error(f"WebAuthn begin_registration error: {e}", exc_info=True)
             challenge_instance.delete()
-            return False, None, str(e)
+            return False, None, "An unexpected error occurred during WebAuthn registration."
 
     def complete_registration(
         self,
@@ -204,9 +204,9 @@ class WebAuthnService:
                 'options': webauthn.options_to_json(options),
             }, ''
         except Exception as e:
-            logger.error(f"WebAuthn begin_authentication error: {e}")
+            logger.error(f"WebAuthn begin_authentication error: {e}", exc_info=True)
             challenge_instance.delete()
-            return False, None, str(e)
+            return False, None, "An unexpected error occurred during WebAuthn authentication."
 
     def complete_authentication(
         self,

@@ -207,14 +207,48 @@ def rate_limit(max_requests: int = 10, window_seconds: int = 60):
 
 def get_client_ip(request) -> str:
     """
-    Récupère l'adresse IP du client.
+    Récupère l'adresse IP du client en tenant compte des proxy de confiance.
     """
+    from .conf import auth_settings
+    trusted = auth_settings.TRUSTED_PROXIES
+
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    remote_addr = request.META.get('REMOTE_ADDR', '')
+
     if x_forwarded_for:
-        ip = x_forwarded_for.split(',')[0].strip()
-    else:
-        ip = request.META.get('REMOTE_ADDR', '0.0.0.0')
-    return ip
+        if not trusted:
+            return x_forwarded_for.split(',')[0].strip()
+
+        import ipaddress
+        try:
+            remote_ip = ipaddress.ip_address(remote_addr)
+            for trusted_entry in trusted:
+                try:
+                    network = ipaddress.ip_network(trusted_entry, strict=False)
+                    if remote_ip in network:
+                        return x_forwarded_for.split(',')[0].strip()
+                except ValueError:
+                    continue
+        except ValueError:
+            pass
+        
+        import logging
+        logging.getLogger('tenxyte.security').warning(
+            "X-Forwarded-For header rejected: REMOTE_ADDR %s is not in TRUSTED_PROXIES.", remote_addr
+        )
+    return remote_addr or '127.0.0.1'
+
+
+def _get_permission_denied_response(default_msg: str, code: str, **kwargs):
+    from .conf import auth_settings
+    verbose = getattr(auth_settings, 'VERBOSE_ERRORS', False)
+    msg = default_msg if verbose else "Permission denied."
+    
+    response_data = {'error': msg, 'code': code}
+    if verbose:
+        response_data.update(kwargs)
+        
+    return JsonResponse(response_data, status=403)
 
 
 # ============== RBAC Decorators ==============
@@ -231,10 +265,7 @@ def require_role(role_code: str):
             view_instance, request, view_args = _extract_request(*args)
 
             if not request.user.has_role(role_code):
-                return JsonResponse({
-                    'error': f'Role required: {role_code}',
-                    'code': 'ROLE_REQUIRED'
-                }, status=403)
+                return _get_permission_denied_response(f'Role required: {role_code}', 'ROLE_REQUIRED')
 
             return _call_view(view_func, view_instance, request, view_args, kwargs)
 
@@ -254,10 +285,7 @@ def require_any_role(role_codes: list):
             view_instance, request, view_args = _extract_request(*args)
 
             if not request.user.has_any_role(role_codes):
-                return JsonResponse({
-                    'error': f'One of these roles required: {", ".join(role_codes)}',
-                    'code': 'ROLE_REQUIRED'
-                }, status=403)
+                return _get_permission_denied_response(f'One of these roles required: {", ".join(role_codes)}', 'ROLE_REQUIRED')
 
             return _call_view(view_func, view_instance, request, view_args, kwargs)
 
@@ -277,10 +305,7 @@ def require_all_roles(role_codes: list):
             view_instance, request, view_args = _extract_request(*args)
 
             if not request.user.has_all_roles(role_codes):
-                return JsonResponse({
-                    'error': f'All these roles required: {", ".join(role_codes)}',
-                    'code': 'ROLES_REQUIRED'
-                }, status=403)
+                return _get_permission_denied_response(f'All these roles required: {", ".join(role_codes)}', 'ROLES_REQUIRED')
 
             return _call_view(view_func, view_instance, request, view_args, kwargs)
 
@@ -300,10 +325,7 @@ def require_permission(permission_code: str):
             view_instance, request, view_args = _extract_request(*args)
 
             if not request.user.has_permission(permission_code):
-                return JsonResponse({
-                    'error': f'Permission required: {permission_code}',
-                    'code': 'PERMISSION_REQUIRED'
-                }, status=403)
+                return _get_permission_denied_response(f'Permission required: {permission_code}', 'PERMISSION_REQUIRED')
 
             return _call_view(view_func, view_instance, request, view_args, kwargs)
 
@@ -323,10 +345,7 @@ def require_any_permission(permission_codes: list):
             view_instance, request, view_args = _extract_request(*args)
 
             if not request.user.has_any_permission(permission_codes):
-                return JsonResponse({
-                    'error': f'One of these permissions required: {", ".join(permission_codes)}',
-                    'code': 'PERMISSION_REQUIRED'
-                }, status=403)
+                return _get_permission_denied_response(f'One of these permissions required: {", ".join(permission_codes)}', 'PERMISSION_REQUIRED')
 
             return _call_view(view_func, view_instance, request, view_args, kwargs)
 
@@ -346,10 +365,7 @@ def require_all_permissions(permission_codes: list):
             view_instance, request, view_args = _extract_request(*args)
 
             if not request.user.has_all_permissions(permission_codes):
-                return JsonResponse({
-                    'error': f'All these permissions required: {", ".join(permission_codes)}',
-                    'code': 'PERMISSIONS_REQUIRED'
-                }, status=403)
+                return _get_permission_denied_response(f'All these permissions required: {", ".join(permission_codes)}', 'PERMISSIONS_REQUIRED')
 
             return _call_view(view_func, view_instance, request, view_args, kwargs)
 
@@ -483,11 +499,9 @@ def require_org_role(role_code: str, check_inheritance: bool = True):
             
             # Check role
             if not request.user.has_org_role(request.organization, role_code, check_inheritance=check_inheritance):
-                return JsonResponse({
-                    'error': f'Organization role "{role_code}" required',
-                    'code': 'ORG_ROLE_REQUIRED',
-                    'required_role': role_code
-                }, status=403)
+                return _get_permission_denied_response(
+                    f'Organization role "{role_code}" required', 'ORG_ROLE_REQUIRED', required_role=role_code
+                )
             
             # Attach membership to request
             if not hasattr(request, 'org_membership'):
@@ -540,11 +554,9 @@ def require_org_permission(permission_code: str, check_inheritance: bool = True)
             
             # Check permission
             if not request.user.has_org_permission(request.organization, permission_code, check_inheritance=check_inheritance):
-                return JsonResponse({
-                    'error': f'Organization permission "{permission_code}" required',
-                    'code': 'ORG_PERMISSION_REQUIRED',
-                    'required_permission': permission_code
-                }, status=403)
+                return _get_permission_denied_response(
+                    f'Organization permission "{permission_code}" required', 'ORG_PERMISSION_REQUIRED', required_permission=permission_code
+                )
             
             # Attach membership to request
             if not hasattr(request, 'org_membership'):
@@ -605,11 +617,9 @@ def require_org_admin(view_func):
         is_admin = request.user.has_org_role(request.organization, 'admin', check_inheritance=True)
         is_owner = request.user.has_org_role(request.organization, 'owner', check_inheritance=False)
         if not (is_admin or is_owner):
-            return JsonResponse({
-                'error': 'Organization admin or owner role required',
-                'code': 'ORG_ROLE_REQUIRED',
-                'required_role': 'admin'
-            }, status=403)
+            return _get_permission_denied_response(
+                'Organization admin or owner role required', 'ORG_ROLE_REQUIRED', required_role='admin'
+            )
 
         if not hasattr(request, 'org_membership'):
             request.org_membership = request.user.get_org_membership(request.organization)
@@ -651,10 +661,9 @@ def require_agent_clearance(
                 # Vérification de permission (double passe)
                 if permission_code:
                     if not service.validate_permission(request.agent_token, permission_code):
-                        return JsonResponse({
-                            'error': f'Agent insufficient permissions: {permission_code}',
-                            'code': 'AGENT_PERMISSION_DENIED'
-                        }, status=403)
+                        return _get_permission_denied_response(
+                            f'Agent insufficient permissions: {permission_code}', 'AGENT_PERMISSION_DENIED'
+                        )
 
                 from tenxyte.conf import auth_settings
                 is_hitl_required = human_in_the_loop_required

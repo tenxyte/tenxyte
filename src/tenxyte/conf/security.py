@@ -183,6 +183,14 @@ class SecuritySettingsMixin:
             'Referrer-Policy': 'strict-origin-when-cross-origin',
         })
 
+    @property
+    def VERBOSE_ERRORS(self):
+        """
+        Activer/désactiver l'affichage des erreurs détaillées dans les accès (ex: rôle manquant exact).
+        Recommandé False en production.
+        """
+        return self._get('VERBOSE_ERRORS', False)
+
     # =============================================
     # Google OAuth Settings
     # =============================================

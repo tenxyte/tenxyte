@@ -98,11 +98,13 @@ class AccountDeletionService:
             }, ''
             
         except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Error creating deletion request: {e}", exc_info=True)
             self._audit_log('deletion_request_error', user, ip_address, {
-                'error': str(e),
+                'error': 'Internal server error',
                 'user_agent': user_agent
             })
-            return False, None, f'Error creating deletion request: {str(e)}'
+            return False, None, 'An unexpected error occurred while creating the deletion request.'
     
     def confirm_deletion(self, token: str, ip_address: str = None) -> Tuple[bool, Optional[Dict[str, Any]], str]:
         """
@@ -148,11 +150,13 @@ class AccountDeletionService:
         except AccountDeletionRequest.DoesNotExist:
             return False, None, 'Invalid or expired confirmation token'
         except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Error confirming deletion request: {e}", exc_info=True)
             self._audit_log('deletion_confirmation_error', None, ip_address, {
                 'token': token,
-                'error': str(e)
+                'error': 'Internal server error'
             })
-            return False, None, f'Error confirming deletion request: {str(e)}'
+            return False, None, 'An unexpected error occurred while confirming the deletion request.'
     
     def cancel_deletion(
         self, 

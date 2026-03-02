@@ -97,7 +97,7 @@ mysql = [
 
 # R4 — WebAuthn/FIDO2 (optionnel, contrainte de version explicite)
 webauthn = [
-    "py_webauthn>=2.0,<3.0",
+    "py_webauthn==2.0.0",
 ]
 
 # Tout inclure
@@ -107,7 +107,7 @@ all = [
     "django-mongodb-backend>=5.0",
     "psycopg2-binary>=2.9",
     "mysqlclient>=2.2",
-    "py_webauthn>=2.0,<3.0",
+    "py_webauthn==2.0.0",
 ]
 
 # Dépendances de développement

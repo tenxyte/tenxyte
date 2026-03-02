@@ -132,12 +132,34 @@ class UserAdmin(BaseUserAdmin):
     
     def _get_client_ip(self, request):
         """Get client IP address for audit logging."""
+        from .conf import auth_settings
+        trusted = auth_settings.TRUSTED_PROXIES
+
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        remote_addr = request.META.get('REMOTE_ADDR', '')
+
         if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0]
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
+            if not trusted:
+                return x_forwarded_for.split(',')[0].strip()
+
+            import ipaddress
+            try:
+                remote_ip = ipaddress.ip_address(remote_addr)
+                for trusted_entry in trusted:
+                    try:
+                        network = ipaddress.ip_network(trusted_entry, strict=False)
+                        if remote_ip in network:
+                            return x_forwarded_for.split(',')[0].strip()
+                    except ValueError:
+                        continue
+            except ValueError:
+                pass
+                
+            import logging
+            logging.getLogger('tenxyte.security').warning(
+                "X-Forwarded-For header rejected: REMOTE_ADDR %s is not in TRUSTED_PROXIES.", remote_addr
+            )
+        return remote_addr
     
     add_fieldsets = (
         (None, {

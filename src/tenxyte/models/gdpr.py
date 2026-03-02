@@ -115,7 +115,8 @@ class AccountDeletionRequest(models.Model):
             email_service.send_account_deletion_confirmation(self)
             return True
         except Exception as e:
-            # Log l'erreur mais ne pas échouer la demande
+            import logging
+            logging.getLogger(__name__).error(f"Error sending deletion confirmation email: {e}", exc_info=True)
             from .security import AuditLog
             AuditLog.objects.create(
                 action='deletion_confirmation_email_failed',
@@ -123,7 +124,7 @@ class AccountDeletionRequest(models.Model):
                 ip_address='system',
                 details={
                     'request_id': self.id,
-                    'error': str(e)
+                    'error': 'Internal server error'
                 }
             )
             return False
@@ -157,7 +158,8 @@ class AccountDeletionRequest(models.Model):
                 email_service = EmailService()
                 email_service.send_account_deletion_completed(self)
             except Exception as e:
-                # Log l'erreur mais ne pas échouer la suppression
+                import logging
+                logging.getLogger(__name__).error(f"Error sending deletion completion email: {e}", exc_info=True)
                 from .security import AuditLog
                 AuditLog.objects.create(
                     action='deletion_completion_email_failed',
@@ -165,7 +167,7 @@ class AccountDeletionRequest(models.Model):
                     ip_address='system',
                     details={
                         'request_id': self.id,
-                        'error': str(e)
+                        'error': 'Internal server error'
                     }
                 )
             

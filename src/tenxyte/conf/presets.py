@@ -22,7 +22,7 @@ SECURE_MODE_PRESETS = {
         'AUDIT_LOGGING_ENABLED':        False,
         'DEVICE_LIMIT_ENABLED':         False,
         'SESSION_LIMIT_ENABLED':        False,
-        'CORS_ALLOW_ALL_ORIGINS':       True,
+        'CORS_ALLOW_ALL_ORIGINS':       False,
         'SECURITY_HEADERS_ENABLED':     False,
     },
 

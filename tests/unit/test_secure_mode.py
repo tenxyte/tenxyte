@@ -102,8 +102,8 @@ class TestPresetDefinitions:
         assert SECURE_MODE_PRESETS['robust']['PASSWORD_HISTORY_COUNT'] > \
                SECURE_MODE_PRESETS['medium']['PASSWORD_HISTORY_COUNT']
 
-    def test_development_cors_allow_all_true(self):
-        assert SECURE_MODE_PRESETS['development']['CORS_ALLOW_ALL_ORIGINS'] is True
+    def test_development_cors_allow_all_false(self):
+        assert SECURE_MODE_PRESETS['development']['CORS_ALLOW_ALL_ORIGINS'] is False
 
     def test_medium_robust_cors_allow_all_false(self):
         assert SECURE_MODE_PRESETS['medium']['CORS_ALLOW_ALL_ORIGINS'] is False
@@ -198,7 +198,7 @@ class TestDevelopmentPreset:
         assert _get_with_mode('AUDIT_LOGGING_ENABLED', 'development') is False
 
     def test_development_cors_allow_all(self):
-        assert _get_with_mode('CORS_ALLOW_ALL_ORIGINS', 'development') is True
+        assert _get_with_mode('CORS_ALLOW_ALL_ORIGINS', 'development') is False
 
     def test_development_security_headers_disabled(self):
         assert _get_with_mode('SECURITY_HEADERS_ENABLED', 'development') is False

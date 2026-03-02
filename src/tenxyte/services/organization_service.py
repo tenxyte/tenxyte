@@ -131,7 +131,9 @@ class OrganizationService:
             return True, organization, ''
             
         except Exception as e:
-            return False, None, f'Error creating organization: {str(e)}'
+            import logging
+            logging.getLogger(__name__).error(f"Error creating organization: {e}", exc_info=True)
+            return False, None, 'An unexpected error occurred while creating the organization.'
     
     def get_organization(self, slug: str = None, org_id: int = None) -> Optional[Any]:
         """
