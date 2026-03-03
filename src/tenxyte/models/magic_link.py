@@ -39,6 +39,7 @@ class MagicLinkToken(models.Model):
     )
     token = models.CharField(max_length=191, unique=True, db_index=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=255, null=True, blank=True)
     is_used = models.BooleanField(default=False)
     used_at = models.DateTimeField(null=True, blank=True)
     expires_at = models.DateTimeField()
@@ -52,7 +53,7 @@ class MagicLinkToken(models.Model):
         return hashlib.sha256(token.encode()).hexdigest()
 
     @classmethod
-    def generate(cls, user, application=None, ip_address: str = None, expiry_minutes: int = 15):
+    def generate(cls, user, application=None, ip_address: str = None, user_agent: str = None, expiry_minutes: int = 15):
         """
         Génère un nouveau magic link token.
 
@@ -60,19 +61,26 @@ class MagicLinkToken(models.Model):
             (MagicLinkToken instance, raw_token string)
         """
         raw_token = secrets.token_urlsafe(48)
+        
+        # Truncate user_agent if it's too long
+        if user_agent and len(user_agent) > 255:
+            user_agent = user_agent[:255]
+            
         instance = cls.objects.create(
             user=user,
             application=application,
             token=cls._hash_token(raw_token),
             ip_address=ip_address,
+            user_agent=user_agent,
             expires_at=timezone.now() + timedelta(minutes=expiry_minutes)
         )
         return instance, raw_token
 
     @classmethod
-    def get_valid(cls, raw_token: str):
+    def get_valid(cls, raw_token: str, ip_address: str = None, user_agent: str = None):
         """
         Récupère un token valide (non utilisé, non expiré) depuis le token brut.
+        F-12 Security Check: Valide l'IP et le User-Agent si configuré dans TENXYTE_MAGIC_LINK_REQUIRE_SAME_CLIENT.
 
         Returns:
             MagicLinkToken instance or None
@@ -85,6 +93,23 @@ class MagicLinkToken(models.Model):
 
         if token.is_used or timezone.now() >= token.expires_at:
             return None
+            
+        from ..conf import auth_settings
+        # F-12 Mitigation: Prevent stolen link reuse by attackers
+        if getattr(auth_settings, 'MAGIC_LINK_REQUIRE_SAME_CLIENT', True):
+            if token.ip_address and ip_address and token.ip_address != ip_address:
+                import logging
+                logging.getLogger('tenxyte.security').warning(
+                    f"[Security F-12] Magic link IP mismatch. Expected {token.ip_address}, got {ip_address}")
+                return None
+                
+            if token.user_agent and user_agent:
+                truncated_ua = user_agent[:255]
+                if token.user_agent != truncated_ua:
+                    import logging
+                    logging.getLogger('tenxyte.security').warning(
+                        f"[Security F-12] Magic link User-Agent mismatch.")
+                    return None
 
         return token
 

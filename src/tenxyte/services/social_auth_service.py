@@ -392,20 +392,14 @@ class SocialAuthService:
             user = connection.user
         elif email:
             # 2. Chercher par email (Account Fusion)
-            # R10 Audit: Ne fusionner que si l'email du provider est vérifié
-            # OU si la configuration autorise la fusion non-vérifiée (déconseillé)
+            # F-03 Critical Security Fix: Strictly refuse fusion if email is not verified by provider
             from ..conf import auth_settings
             is_verified = user_data.get('email_verified', False)
             
-            if not is_verified and auth_settings.SOCIAL_REQUIRE_VERIFIED_EMAIL:
-                return False, None, f'Email from {provider_name} is not verified. Authentication rejected for security.'
+            if not is_verified:
+                return False, None, f'Email from {provider_name} is not verified. Authentication and account fusion rejected for security.'
 
             user = User.objects.filter(email__iexact=email).first()
-            
-            # Si l'utilisateur existe mais que l'email social n'est pas vérifié,
-            # on refuse la fusion automatique pour éviter le account hijacking
-            if user and not is_verified:
-                 return False, None, f'Unverified email from {provider_name} cannot be linked to an existing account.'
                  
             # R-05 Mitigation: Prevent automatic account merging by default
             auto_merge = getattr(auth_settings, 'SOCIAL_AUTO_MERGE_ACCOUNTS', False)

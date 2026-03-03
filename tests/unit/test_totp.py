@@ -125,7 +125,7 @@ class TestTOTPService:
         # Vérifier que les codes sont hashés
         for hashed in hashed_codes:
             assert isinstance(hashed, str)
-            assert len(hashed) == 64  # SHA256 hex = 64 chars
+            assert len(hashed) > 60  # Django make_password generates longer hashes
             assert hashed not in plain_codes  # Pas de code en clair
 
     def test_backup_codes_uniqueness(self):

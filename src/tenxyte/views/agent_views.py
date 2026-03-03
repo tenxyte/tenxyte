@@ -212,13 +212,21 @@ class AgentPendingActionListView(APIView):
 
 class AgentPendingActionConfirmView(APIView):
     """
-    POST /ai/pending-actions/{token}/confirm/
+    POST /ai/pending-actions/confirm/
+    Body: {"token": "..."}
     """
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, token):
+    def post(self, request, token=None):
+        passed_token = request.data.get('token') if hasattr(request, 'data') else request.POST.get('token')
+        if not passed_token and token:
+            passed_token = token  # Fallback for backward compatibility if still passed in URL temporarily
+            
+        if not passed_token:
+             return JsonResponse({'error': 'Token is required in the request body.'}, status=400)
+             
         service = AgentTokenService()
-        action = service.confirm_pending_action(token, confirmed_by=request.user)
+        action = service.confirm_pending_action(passed_token, confirmed_by=request.user)
         if not action or action.agent_token.triggered_by != request.user:
             return JsonResponse({'error': 'Invalid or expired token'}, status=400)
             
@@ -227,13 +235,21 @@ class AgentPendingActionConfirmView(APIView):
 
 class AgentPendingActionDenyView(APIView):
     """
-    POST /ai/pending-actions/{token}/deny/
+    POST /ai/pending-actions/deny/
+    Body: {"token": "..."}
     """
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, token):
+    def post(self, request, token=None):
+        passed_token = request.data.get('token') if hasattr(request, 'data') else request.POST.get('token')
+        if not passed_token and token:
+            passed_token = token  # Fallback for backward compatibility
+            
+        if not passed_token:
+             return JsonResponse({'error': 'Token is required in the request body.'}, status=400)
+             
         service = AgentTokenService()
-        action = service.deny_pending_action(token, denied_by=request.user)
+        action = service.deny_pending_action(passed_token, denied_by=request.user)
         if not action or action.agent_token.triggered_by != request.user:
             return JsonResponse({'error': 'Invalid or expired token'}, status=400)
             

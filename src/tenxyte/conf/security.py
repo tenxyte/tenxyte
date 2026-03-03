@@ -29,6 +29,15 @@ class SecuritySettingsMixin:
         """
         return self._get('TRUSTED_PROXIES', [])
 
+    @property
+    def NUM_PROXIES(self):
+        """
+        Nombre de proxies de confiance en amont de l'application (ex: Cloudflare + Nginx = 2).
+        Utilisé pour sélectionner la bonne IP dans l'en-tête X-Forwarded-For.
+        0 = aucun proxy de confiance (on utilise REMOTE_ADDR).
+        """
+        return self._get('NUM_PROXIES', 0)
+
     # =============================================
     # Multi-Application
     # =============================================
@@ -110,8 +119,8 @@ class SecuritySettingsMixin:
 
     @property
     def CORS_ENABLED(self):
-        """Activer/désactiver le middleware CORS intégré."""
-        return self._get('CORS_ENABLED', False)
+        """Activer/désactiver le middleware CORS intégré. Par défaut True pour la sécurité."""
+        return self._get('CORS_ENABLED', True)
 
     @property
     def CORS_ALLOW_ALL_ORIGINS(self):
@@ -178,6 +187,7 @@ class SecuritySettingsMixin:
         """
         return self._get('SECURITY_HEADERS', {
             'X-Content-Type-Options': 'nosniff',
+            'X-XSS-Protection': '1; mode=block',
             'X-Frame-Options': 'DENY',
             'Referrer-Policy': 'strict-origin-when-cross-origin',
             'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',

@@ -23,13 +23,13 @@ class TenxyteConfig(AppConfig):
         # R8 Audit: Vérification du cache en production
         self._check_production_cache()
 
-        # R-02 Audit: Vérification de JWT_AUTH_ENABLED
-        self._check_jwt_auth_enabled()
+        # F-17 Audit: Vérification globale de la sécurité en production
+        self._check_production_security_settings()
 
-    def _check_jwt_auth_enabled(self):
+    def _check_production_security_settings(self):
         """
-        R-02: Prevent JWT_AUTH_ENABLED=False in production.
-        Add similar checks for other critical auth flags.
+        R-02 & F-17: Prevent insecure configurations in production.
+        Checks JWT authentication, wildcard CORS, and SSL redirect.
         """
         from django.conf import settings
         from .conf import auth_settings
@@ -54,6 +54,20 @@ class TenxyteConfig(AppConfig):
                 raise ImproperlyConfigured(
                     "TENXYTE_CORS_ALLOW_ALL_ORIGINS=True combined with CORS_ALLOW_CREDENTIALS=True "
                     "is extremely dangerous in production."
+                )
+                
+            # F-17 Security Checks
+            if not getattr(settings, 'SECURE_SSL_REDIRECT', False):
+                warnings.warn(
+                    "SECURE_SSL_REDIRECT is False in production. "
+                    "Auth tokens should only be transmitted over HTTPS.",
+                    RuntimeWarning, stacklevel=2
+                )
+                
+            if auth_settings.CORS_ENABLED and '*' in auth_settings.CORS_ALLOWED_ORIGINS:
+                raise ImproperlyConfigured(
+                    "Wildcard '*' in TENXYTE_CORS_ALLOWED_ORIGINS is forbidden in production. "
+                    "Specify exact allowed origins."
                 )
         else:
             if not auth_settings.JWT_AUTH_ENABLED:

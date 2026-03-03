@@ -260,50 +260,55 @@ class SimpleThrottleRule(SimpleRateThrottle):
 def get_client_ip(request) -> str:
     """Récupère l'adresse IP réelle du client.
 
-    Si TENXYTE_TRUSTED_PROXIES est configuré, valide que REMOTE_ADDR est un proxy
-    de confiance avant d'accepter l'en-tête X-Forwarded-For.
-
-    Sans TRUSTED_PROXIES configuré, n'accepte PLUS X-Forwarded-For (correction fail-safe).
+    Utilise TENXYTE_NUM_PROXIES pour déterminer de manière sûre l'IP client
+    à partir de l'en-tête X-Forwarded-For si l'application est derrière des proxies.
+    Si TENXYTE_TRUSTED_PROXIES est défini, vérifie en plus que le proxy direct
+    est de confiance.
 
     Returns:
         IP client sous forme de string.
     """
     from .conf import auth_settings
-    trusted = auth_settings.TRUSTED_PROXIES
+    num_proxies = getattr(auth_settings, 'NUM_PROXIES', 0)
+    trusted = getattr(auth_settings, 'TRUSTED_PROXIES', [])
 
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     remote_addr = request.META.get('REMOTE_ADDR', '')
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
 
-    if x_forwarded_for:
-        if not trusted:
+    if x_forwarded_for and num_proxies > 0:
+        # Validate that REMOTE_ADDR is in TRUSTED_PROXIES if the list is not empty
+        is_trusted = True
+        if trusted:
+            is_trusted = False
+            import ipaddress
+            try:
+                remote_ip = ipaddress.ip_address(remote_addr)
+                for trusted_entry in trusted:
+                    try:
+                        network = ipaddress.ip_network(trusted_entry, strict=False)
+                        if remote_ip in network:
+                            is_trusted = True
+                            break
+                    except ValueError:
+                        continue
+            except ValueError:
+                pass
+                
+        if not is_trusted:
             import logging
             logging.getLogger('tenxyte.security').warning(
-                "X-Forwarded-For received but no TRUSTED_PROXIES are configured. "
-                "Ignoring X-Forwarded-For header to prevent IP spoofing."
+                "X-Forwarded-For header rejected: REMOTE_ADDR %s is not in TRUSTED_PROXIES.", remote_addr
             )
             return remote_addr
 
-        import ipaddress
-        try:
-            remote_ip = ipaddress.ip_address(remote_addr)
-            is_trusted = False
-            for trusted_entry in trusted:
-                try:
-                    network = ipaddress.ip_network(trusted_entry, strict=False)
-                    if remote_ip in network:
-                        is_trusted = True
-                        break
-                except ValueError:
-                    continue
-                    
-            if is_trusted:
-                return x_forwarded_for.split(',')[0].strip()
-            else:
-                 import logging
-                 logging.getLogger('tenxyte.security').warning(
-                     "X-Forwarded-For header rejected: REMOTE_ADDR %s is not in TRUSTED_PROXIES.", remote_addr
-                 )
-        except ValueError:
-            pass
+        # Sécurité F-05 : Extraire la bonne IP selon le nombre de proxies de confiance.
+        # X-Forwarded-For est une liste : client, proxy1, proxy2...
+        # L'IP la plus sûre (insérée par le premier proxy sous notre contrôle)
+        # est à l'index -num_proxies.
+        proxies = [ip.strip() for ip in x_forwarded_for.split(',')]
+        if len(proxies) >= num_proxies:
+            return proxies[-num_proxies]
+        else:
+            return proxies[0] # Fallback to the first if there are fewer proxies than num_proxies
             
     return remote_addr or '127.0.0.1'

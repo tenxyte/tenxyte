@@ -154,6 +154,7 @@ class TOTPService:
             - codes_en_clair: à afficher à l'utilisateur UNE SEULE FOIS
             - codes_hashés: à stocker en base de données
         """
+        from django.contrib.auth.hashers import make_password
         plain_codes = []
         hashed_codes = []
 
@@ -163,8 +164,8 @@ class TOTPService:
             formatted_code = f"{code[:8]}-{code[8:]}"
             plain_codes.append(formatted_code)
 
-            # Hasher le code pour stockage
-            hashed = hashlib.sha256(formatted_code.encode()).hexdigest()
+            # Hasher le code pour stockage (utilise bcrypt via le mot de passe Django par défaut)
+            hashed = make_password(formatted_code)
             hashed_codes.append(hashed)
 
         return plain_codes, hashed_codes
@@ -187,16 +188,23 @@ class TOTPService:
         else:
             formatted = code.lower()
 
-        code_hash = hashlib.sha256(formatted.encode()).hexdigest()
+        from django.contrib.auth.hashers import check_password
 
-        # time-constant défensif
-        import hmac
-        # Find if any stored hash matches the provided hash
         matched_hash = None
         for stored in user.backup_codes:
-            if hmac.compare_digest(code_hash, stored):
+            if check_password(formatted, stored):
                 matched_hash = stored
                 break
+                
+        # Handle legacy SHA-256 backup codes for backward compatibility
+        if not matched_hash:
+            import hashlib
+            import hmac
+            legacy_hash = hashlib.sha256(formatted.encode()).hexdigest()
+            for stored in user.backup_codes:
+                if not stored.startswith(('pbkdf2_', 'bcrypt', 'argon2')) and hmac.compare_digest(legacy_hash, stored):
+                    matched_hash = stored
+                    break
 
         if matched_hash:
             # Supprimer le code utilisé

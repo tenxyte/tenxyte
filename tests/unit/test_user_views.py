@@ -290,7 +290,7 @@ class TestUserDetailView:
         assert target.is_deleted is True
 
     @pytest.mark.django_db
-    def test_delete_already_deleted_returns_400(self):
+    def test_delete_already_deleted_returns_404(self):
         app = _app("UserDetail6")
         admin = _user("userdetail_admin6@test.com", "users.delete")
         target = _user("userdetail_target6@test.com")
@@ -299,7 +299,7 @@ class TestUserDetailView:
         resp = _authed_delete(UserDetailView, f"/auth/admin/users/{target.id}/",
                               admin, app, user_id=str(target.id))
 
-        assert resp.status_code == 400
+        assert resp.status_code == 404
 
     @pytest.mark.django_db
     def test_get_user_without_permission_returns_403(self):

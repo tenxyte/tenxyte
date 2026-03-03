@@ -1,15 +1,19 @@
 import pytest
 from django.test import RequestFactory
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import IntegrityError, models, connection
+from django.apps import apps
 from django.http import HttpResponse
 from unittest.mock import patch, MagicMock
+from asgiref.sync import sync_to_async
+import asyncio
 
 from tenxyte.models import Organization, BaseTenantModel, Application
 from tenxyte.tenant_context import (
     set_current_organization,
     get_current_organization,
-    set_bypass_tenant_filtering,
+    set_INTERNAL_bypass_tenant_filtering,
+    get_INTERNAL_bypass_tenant_filtering,
 )
 from tenxyte.middleware import OrganizationContextMiddleware
 from tenxyte.conf import org_settings
@@ -30,7 +34,7 @@ def ensure_organization_feature_enabled(settings):
     settings.TENXYTE_ORGANIZATIONS_ENABLED = True
     yield
     set_current_organization(None)
-    set_bypass_tenant_filtering(False)
+    set_INTERNAL_bypass_tenant_filtering(False)
 
 
 @pytest.mark.django_db
@@ -67,14 +71,14 @@ class TestTenantModelManager:
         
         with patch('django.db.models.Manager.get_queryset') as mock_super_qs:
             # 1. Bypass enabled
-            set_bypass_tenant_filtering(True)
+            set_INTERNAL_bypass_tenant_filtering(True)
             manager.get_queryset()
             mock_super_qs.assert_called_with()
             mock_super_qs.return_value.filter.assert_not_called()
             
             # Reset
             mock_super_qs.reset_mock()
-            set_bypass_tenant_filtering(False)
+            set_INTERNAL_bypass_tenant_filtering(False)
             
             # 2. Context enabled (org1)
             set_current_organization(org1)

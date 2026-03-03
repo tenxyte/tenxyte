@@ -325,6 +325,14 @@ class AgentTokenMiddleware:
         if request.method in ['POST', 'PUT', 'PATCH', 'DELETE'] and 200 <= response.status_code < 300:
             from tenxyte.models.security import AuditLog
             from tenxyte.conf import auth_settings
+            
+            prompt_trace_id = request.headers.get('X-Prompt-Trace-ID')
+            if prompt_trace_id:
+                # Sanitize / Validate prompt_trace_id (Max 128 chars, alphanumeric & dashes only)
+                import re
+                if not re.match(r'^[\w\-]{1,128}$', prompt_trace_id):
+                    prompt_trace_id = None
+            
             if auth_settings.AUDIT_LOGGING_ENABLED:
                 AuditLog.log(
                     action='suspicious_activity' if request.method == 'DELETE' else 'agent_action',
@@ -340,7 +348,7 @@ class AgentTokenMiddleware:
                     },
                     agent_token=agent_token,
                     on_behalf_of=request.user,
-                    prompt_trace_id=request.headers.get('X-Prompt-Trace-ID')
+                    prompt_trace_id=prompt_trace_id
                 )
             
         return response

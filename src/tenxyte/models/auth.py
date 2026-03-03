@@ -26,6 +26,14 @@ from .base import AutoFieldClass
 class UserManager(BaseUserManager):
     """Manager personnalisé pour le modèle User."""
 
+    def get_queryset(self):
+        """Par défaut, exclut les utilisateurs supprimés (soft delete)."""
+        return super().get_queryset().filter(is_deleted=False)
+
+    def all_with_deleted(self):
+        """Retourne tous les utilisateurs, y compris ceux supprimés."""
+        return super().get_queryset()
+
     def create_user(self, email=None, password=None, **extra_fields):
         """Crée et sauvegarde un utilisateur."""
         if not email:
@@ -254,6 +262,42 @@ class AbstractUser(models.Model):
             from django.contrib.auth.models import BaseUserManager
             self.email = BaseUserManager.normalize_email(self.email).lower()
         super().save(*args, **kwargs)
+
+    def delete(self, using=None, keep_parents=False, hard=False):
+        """
+        Soft delete for GDPR compliance (Art. 17).
+        Anonymizes the user data and marks as deleted instead of hard removing.
+        Use hard=True for immediate permanent deletion.
+        """
+        if hard:
+            return super().delete(using=using, keep_parents=keep_parents)
+            
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        
+        # Anonymize identifiers to prevent reuse conflicts and protect data
+        if self.email:
+            self.email = f"deleted_{self.id}_{self.deleted_at.timestamp()}@anonymized.local"
+            
+        import secrets
+        self.anonymization_token = secrets.token_hex(16)
+        
+        # Clear sensitive data
+        self.first_name = "Deleted"
+        self.last_name = "User"
+        self.phone_number = None
+        self.phone_country_code = None
+        self.google_id = None
+        self.totp_secret = None
+        self.backup_codes = []
+        
+        self.is_active = False
+        
+        # We don't change passwords so login fails immediately, or we could randomize it
+        self.set_password(secrets.token_hex(32))
+        
+        self.save()
+        return (1, {self._meta.label: 1})
 
     # Proprietes requises par Django/DRF pour l'authentification
     @property

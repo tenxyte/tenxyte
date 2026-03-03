@@ -40,12 +40,12 @@ Application = get_application_model()
 class UserAdmin(BaseUserAdmin):
     """Admin pour le modèle User de tenxyte."""
     
-    list_display = ('email', 'first_name', 'last_name', 'is_active', 'is_staff', 'is_banned', 'is_2fa_enabled', 'created_at')
-    list_filter = ('is_active', 'is_staff', 'is_superuser', 'is_banned', 'is_2fa_enabled', 'is_email_verified', 'is_phone_verified')
+    list_display = ('email', 'first_name', 'last_name', 'is_active', 'is_deleted', 'is_staff', 'is_banned', 'is_2fa_enabled', 'created_at')
+    list_filter = ('is_active', 'is_deleted', 'is_staff', 'is_superuser', 'is_banned', 'is_2fa_enabled', 'is_email_verified', 'is_phone_verified')
     search_fields = ('email', 'first_name', 'last_name', 'phone_number')
     ordering = ('-created_at',)
     filter_horizontal = ('roles', 'direct_permissions')
-    readonly_fields = ('created_at', 'updated_at', 'last_login')
+    readonly_fields = ('created_at', 'updated_at', 'last_login', 'deleted_at')
     
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
@@ -55,11 +55,19 @@ class UserAdmin(BaseUserAdmin):
         (_('Vérification'), {'fields': ('is_email_verified', 'is_phone_verified')}),
         (_('2FA'), {'fields': ('is_2fa_enabled', 'totp_secret', 'backup_codes')}),
         (_('Sessions'), {'fields': ('max_sessions', 'max_devices')}),
-        (_('Verrouillage'), {'fields': ('is_locked', 'locked_until', 'is_banned')}),
+        (_('Verrouillage & RGPD'), {'fields': ('is_locked', 'locked_until', 'is_banned', 'is_deleted', 'deleted_at', 'is_restricted')}),
         (_('Dates'), {'fields': ('last_login', 'created_at', 'updated_at')}),
     )
     
-    actions = ['ban_users', 'unban_users']
+    actions = ['ban_users', 'unban_users', 'hard_delete_users']
+
+    def get_queryset(self, request):
+        """Show all users including soft-deleted ones in the admin panel."""
+        qs = self.model.objects.all_with_deleted()
+        ordering = self.get_ordering(request)
+        if ordering:
+            qs = qs.order_by(*ordering)
+        return qs
     
     def ban_users(self, request, queryset):
         """Ban selected users permanently."""
@@ -111,6 +119,14 @@ class UserAdmin(BaseUserAdmin):
         self.message_user(request, f'{count} utilisateur(s) débanni(s) avec succès.', messages.SUCCESS)
     unban_users.short_description = 'Débannir les utilisateurs sélectionnés'
     
+    def hard_delete_users(self, request, queryset):
+        """Permanently delete selected users."""
+        count = queryset.count()
+        for user in queryset:
+            user.delete(hard=True)
+        self.message_user(request, f'{count} utilisateur(s) définitivement supprimé(s).', messages.WARNING)
+    hard_delete_users.short_description = 'Supprimer définitivement les utilisateurs sélectionnés (Hard Delete)'
+
     def get_actions(self, request):
         """Filter actions based on user selection."""
         actions = super().get_actions(request)

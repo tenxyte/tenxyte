@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 
 from .base import AutoFieldClass
 from ..conf import org_settings
-from ..tenant_context import get_current_organization, get_bypass_tenant_filtering
+from ..tenant_context import get_current_organization, get_INTERNAL_bypass_tenant_filtering
 
 
 class TenantManager(models.Manager):
@@ -30,7 +30,7 @@ class TenantManager(models.Manager):
             return qs
             
         # 2. Skip if filtering is explicitly bypassed for system operations
-        if get_bypass_tenant_filtering():
+        if get_INTERNAL_bypass_tenant_filtering():
             return qs
             
         # 3. Apply filter if we have a current organization in the context
@@ -100,7 +100,7 @@ class BaseTenantModel(models.Model):
                     self.organization = current_org
                 # If there's no organization and we're not bypassing, this is an error
                 # User is trying to create data without a tenant context
-                elif not get_bypass_tenant_filtering():
+                elif not get_INTERNAL_bypass_tenant_filtering():
                     raise ValidationError("Cannot save tenant model without an active organization context.")
                     
         super().save(*args, **kwargs)

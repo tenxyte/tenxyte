@@ -48,7 +48,7 @@ def test_tenxyte_cleanup_normal(cleanup_data):
     call_command('tenxyte_cleanup', stdout=out)
     output = out.getvalue()
     
-    assert 'Cleanup completed' in output
+    assert 'Nettoyage termine avec succes.' in output
     assert BlacklistedToken.objects.count() == 1
     assert OTPCode.objects.count() == 1
     assert RefreshToken.objects.count() == 1  # only valid_rt remains
@@ -62,7 +62,7 @@ def test_tenxyte_cleanup_dry_run(cleanup_data):
     output = out.getvalue()
     
     assert 'DRY RUN - no data will be deleted' in output
-    assert 'would delete' in output
+    assert 'simulation only' in output
     
     assert BlacklistedToken.objects.count() == 2
     assert OTPCode.objects.count() == 2

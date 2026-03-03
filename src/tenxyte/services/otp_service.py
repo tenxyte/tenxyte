@@ -32,6 +32,12 @@ class OTPService:
     def generate_phone_verification_otp(self, user: User) -> Tuple[OTPCode, str]:
         """
         Génère un code OTP pour vérification téléphone.
+        
+        SECURITY WARNING (F-11): L'authentification par SMS (OTP via SMS)
+        est vulnérable aux attaques de SIM Swapping (détournement de ligne).
+        Il est fortement déconseillé d'utiliser le SMS comme unique facteur
+        de récupération ou comme 2FA principal dans un contexte hautement
+        sécurisé (preset 'robust'). Préférez TOTP ou WebAuthn.
 
         Returns:
             Tuple of (OTPCode instance, raw_code)
@@ -175,6 +181,12 @@ class OTPService:
     def send_phone_otp(self, user: User, raw_code: str) -> bool:
         """
         Envoie le code OTP par SMS via le backend configuré.
+        
+        SECURITY WARNING (F-11): L'authentification par SMS (OTP via SMS)
+        est vulnérable aux attaques de SIM Swapping (détournement de ligne).
+        Il est fortement déconseillé d'utiliser le SMS comme unique facteur
+        de récupération ou comme 2FA principal dans un contexte hautement
+        sécurisé (preset 'robust'). Préférez TOTP ou WebAuthn.
 
         Args:
             user: L'utilisateur

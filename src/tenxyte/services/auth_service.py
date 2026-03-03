@@ -181,11 +181,19 @@ class AuthService:
             ip_address=ip_address,
             device_info=device_info
         )
+        
+        # F-16 Security Mitigation: Bind contextual info to access tokens
+        extra_claims = {}
+        if ip_address:
+            extra_claims['ip'] = ip_address
+        if device_info:
+            extra_claims['device'] = get_device_summary(device_info)
 
         tokens = self.jwt_service.generate_token_pair(
             user_id=str(user.id),
             application_id=str(application.id),
-            refresh_token_str=refresh_token.raw_token  # valeur brute, jamais persistée
+            refresh_token_str=refresh_token.raw_token,  # valeur brute, jamais persistée
+            extra_claims=extra_claims
         )
 
         # Audit log
@@ -252,12 +260,20 @@ class AuthService:
         else:
             # Just update last_used_at
             refresh_token.save()
+            
+        # F-16 Security Mitigation: Bind contextual info to access tokens
+        extra_claims = {}
+        if ip_address:
+            extra_claims['ip'] = ip_address
+        if refresh_token.device_info:
+            extra_claims['device'] = get_device_summary(refresh_token.device_info)
 
         # Générer un nouveau access_token
         tokens = self.jwt_service.generate_token_pair(
             user_id=str(user.id),
             application_id=str(application.id),
-            refresh_token_str=refresh_token_str
+            refresh_token_str=refresh_token_str,
+            extra_claims=extra_claims
         )
 
         # Audit log
@@ -420,11 +436,19 @@ class AuthService:
             ip_address=ip_address,
             device_info=device_info
         )
+        
+        # F-16 Security Mitigation: Bind contextual info to access tokens
+        extra_claims = {}
+        if ip_address:
+            extra_claims['ip'] = ip_address
+        if device_info:
+            extra_claims['device'] = get_device_summary(device_info)
 
         tokens = self.jwt_service.generate_token_pair(
             user_id=str(user.id),
             application_id=str(application.id),
-            refresh_token_str=refresh_token.raw_token  # valeur brute, jamais persistée
+            refresh_token_str=refresh_token.raw_token,  # valeur brute, jamais persistée
+            extra_claims=extra_claims
         )
 
         # Audit log

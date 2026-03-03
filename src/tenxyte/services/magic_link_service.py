@@ -63,6 +63,7 @@ class MagicLinkService:
             user=user,
             application=application,
             ip_address=ip_address,
+            user_agent=device_info,
             expiry_minutes=expiry_minutes
         )
 
@@ -98,9 +99,9 @@ class MagicLinkService:
         if not auth_settings.MAGIC_LINK_ENABLED:
             return False, None, 'Magic link authentication is not enabled'
 
-        token_instance = MagicLinkToken.get_valid(token)
+        token_instance = MagicLinkToken.get_valid(token, ip_address=ip_address, user_agent=device_info)
         if not token_instance:
-            return False, None, 'Invalid or expired magic link'
+            return False, None, 'Invalid or expired magic link. Note: Magic links must be opened on the same device that requested them.'
 
         user = token_instance.user
 

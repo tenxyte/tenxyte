@@ -187,6 +187,20 @@ class AuditLog(models.Model):
         # Determine log level based on action severity
         log_level = logging.WARNING if any(word in action for word in ['failed', 'exceeded', 'suspicious', 'locked']) else logging.INFO
         
+        # F-15 Security check: Ensure details payload doesn't exceed 10KB
+        safe_details = details or {}
+        try:
+            details_str = json.dumps(safe_details)
+            if len(details_str.encode('utf-8')) > 10240:  # 10KB limit
+                logger.warning(f"[Security F-15] AuditLog details truncated for action {action} (exceeded 10KB)")
+                safe_details = {
+                    "error": "Payload too large to store",
+                    "truncated": True,
+                    "original_keys": list(safe_details.keys())
+                }
+        except TypeError:
+            safe_details = {"error": "Non-serializable payload", "truncated": True}
+        
         log_data = {
             "timestamp": timezone.now().isoformat(),
             "level": "SECURITY",
@@ -194,7 +208,7 @@ class AuditLog(models.Model):
             "ip": ip_address,
             "userAgent": user_agent[:500] if user_agent else '',
             "user_id": str(user.id) if user else None,
-            "details": details or {}
+            "details": safe_details
         }
         
         logger.log(log_level, json.dumps(log_data))
@@ -205,7 +219,7 @@ class AuditLog(models.Model):
             ip_address=ip_address,
             user_agent=user_agent[:500] if user_agent else '',
             application=application,
-            details=details or {},
+            details=safe_details,
             agent_token=agent_token,
             on_behalf_of=on_behalf_of,
             prompt_trace_id=prompt_trace_id
