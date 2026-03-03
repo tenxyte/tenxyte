@@ -9,10 +9,23 @@ class JwtSettingsMixin:
         SECURITY: Une clé dédiée TENXYTE_JWT_SECRET_KEY est fortement recommandée.
         En production (DEBUG=False), cette clé DOIT être définie explicitement,
         sinon une ImproperlyConfigured exception est levée.
-        En développement, un UserWarning de sécurité est émis.
+        En développement (DEBUG=True), une clé éphémère est auto-générée avec un warning.
         """
         key = getattr(settings, 'TENXYTE_JWT_SECRET_KEY', None)
         if key is None:
+            # In DEBUG mode, auto-generate an ephemeral key (invalidated on restart)
+            if getattr(settings, 'DEBUG', False):
+                if not hasattr(self, '_dev_jwt_key'):
+                    import secrets
+                    import warnings
+                    self._dev_jwt_key = secrets.token_hex(64)
+                    warnings.warn(
+                        "TENXYTE_JWT_SECRET_KEY is not set. Using auto-generated ephemeral key "
+                        "(tokens will be invalidated on server restart). "
+                        "Set TENXYTE_JWT_SECRET_KEY for persistent tokens.",
+                        RuntimeWarning, stacklevel=2
+                    )
+                return self._dev_jwt_key
             from django.core.exceptions import ImproperlyConfigured
             raise ImproperlyConfigured(
                 "TENXYTE_JWT_SECRET_KEY must be explicitly set. "

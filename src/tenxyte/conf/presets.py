@@ -24,6 +24,7 @@ SECURE_MODE_PRESETS = {
         'SESSION_LIMIT_ENABLED':        False,
         'CORS_ALLOW_ALL_ORIGINS':       False,
         'SECURITY_HEADERS_ENABLED':     False,
+        'APPLICATION_AUTH_ENABLED':     False,       # Zero-config: no X-Access-Key needed in dev
     },
 
     # -------------------------------------------------------------------------

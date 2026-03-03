@@ -1,6 +1,4 @@
 from django.http import JsonResponse, HttpResponse
-from .models import Application
-from .services.jwt_service import JWTService
 from .conf import auth_settings
 
 
@@ -62,6 +60,7 @@ class ApplicationAuthMiddleware:
             }, status=401)
 
         try:
+            from .models import Application  # Lazy import for faster startup
             application = Application.objects.get(access_key=access_key, is_active=True)
             
             # VULN-006 Mitigation: Cache successful bcrypt verifications for 60 seconds to prevent DoS
@@ -97,7 +96,15 @@ class JWTAuthMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
-        self.jwt_service = JWTService()
+        self._jwt_service = None
+
+    @property
+    def jwt_service(self):
+        """Lazy-initialize JWTService on first access."""
+        if self._jwt_service is None:
+            from .services.jwt_service import JWTService
+            self._jwt_service = JWTService()
+        return self._jwt_service
 
     def __call__(self, request):
         # Récupérer le token d'autorisation

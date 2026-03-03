@@ -66,7 +66,7 @@ Complete Django authentication package — JWT, RBAC, 2FA (TOTP), Magic Links, P
 
 ⚙️ **Shortcut Secure Mode**
 - One-line security preset: `TENXYTE_SHORTCUT_SECURE_MODE = 'medium'`
-- Modes: `starter` / `medium` / `robust` — all individually overridable
+- Modes: `development` / `medium` / `robust` — all individually overridable
 
 ## Installation
 
@@ -207,76 +207,53 @@ INSTALLED_APPS = [
 
 > Full walkthrough: [docs/quickstart.md](docs/quickstart.md). For MongoDB, see the [MongoDB section](#mongodb--required-configuration) above first.
 
-### 1. Add to INSTALLED_APPS
+### 1. Install
 
-```python
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'tenxyte',
-]
-
-AUTH_USER_MODEL = 'tenxyte.User'
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'tenxyte.authentication.JWTAuthentication',
-    ],
-}
+```bash
+pip install tenxyte
 ```
 
-### 2. Configure URLs
+### 2. Configure (`settings.py` + `urls.py`)
 
 ```python
-from django.urls import path, include
+# settings.py — add these 2 lines
+import tenxyte
+tenxyte.setup()  # auto-configures INSTALLED_APPS, AUTH_USER_MODEL, REST_FRAMEWORK, MIDDLEWARE
+```
 
+```python
+# urls.py
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('tenxyte.urls')),
 ]
 ```
 
-### 3. Middleware
-
-```python
-MIDDLEWARE = [
-    ...
-    'tenxyte.middleware.ApplicationAuthMiddleware',
-    'tenxyte.middleware.SecurityHeadersMiddleware',  # optional
-]
-```
-
-### 4. Migrate + seed
-
-Tenxyte does not ship a pre-built migration — generate and apply from your project:
+### 3. Bootstrap
 
 ```bash
-python manage.py makemigrations
-python manage.py migrate
-python manage.py tenxyte_seed   # creates 4 roles + 41 permissions
+python manage.py tenxyte_quickstart
+# → makemigrations + migrate + seed roles/permissions + create Application
 ```
 
-### 5. Create an Application
+**Done!** In `DEBUG=True` mode (zero-config dev preset):
+- JWT secret key auto-generated (ephemeral)
+- Application auth (`X-Access-Key`) disabled — no headers needed
+- Rate limiting, lockout enabled with relaxed defaults
+
+```bash
+# First request — no special headers needed in dev!
+curl -X POST http://localhost:8000/api/v1/auth/register/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "SecureP@ss1!", "first_name": "John", "last_name": "Doe"}'
+```
+
+### Production
 
 ```python
-from tenxyte.models import Application
-
-app, secret = Application.create_application(name="My App")
-print(app.access_key, secret)  # secret shown only once — save it
+TENXYTE_JWT_SECRET_KEY = 'your-dedicated-key'      # REQUIRED
+TENXYTE_SHORTCUT_SECURE_MODE = 'medium'             # 'medium' | 'robust'
 ```
-
-### 6. Security preset (optional)
-
-```python
-TENXYTE_SHORTCUT_SECURE_MODE = 'medium'  # 'starter' | 'medium' | 'robust'
-```
-
-→ See [Settings Reference — Shortcut Secure Mode](docs/settings.md#shortcut-secure-mode)
 
 ## Usage Examples
 
