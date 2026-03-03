@@ -263,8 +263,7 @@ def get_client_ip(request) -> str:
     Si TENXYTE_TRUSTED_PROXIES est configuré, valide que REMOTE_ADDR est un proxy
     de confiance avant d'accepter l'en-tête X-Forwarded-For.
 
-    Sans TRUSTED_PROXIES configuré, accepte X-Forwarded-For sans validation (r
-    isque de forge en environnement multi-proxy — voir R6 de l'audit).
+    Sans TRUSTED_PROXIES configuré, n'accepte PLUS X-Forwarded-For (correction fail-safe).
 
     Returns:
         IP client sous forme de string.
@@ -277,27 +276,34 @@ def get_client_ip(request) -> str:
 
     if x_forwarded_for:
         if not trusted:
-            # Pas de liste de proxies de confiance : accepter la première IP du header
-            # (comportement legacy — configurer TENXYTE_TRUSTED_PROXIES en production)
-            return x_forwarded_for.split(',')[0].strip()
+            import logging
+            logging.getLogger('tenxyte.security').warning(
+                "X-Forwarded-For received but no TRUSTED_PROXIES are configured. "
+                "Ignoring X-Forwarded-For header to prevent IP spoofing."
+            )
+            return remote_addr
 
-        # Valider que REMOTE_ADDR est bien un proxy de confiance
         import ipaddress
         try:
             remote_ip = ipaddress.ip_address(remote_addr)
+            is_trusted = False
             for trusted_entry in trusted:
                 try:
                     network = ipaddress.ip_network(trusted_entry, strict=False)
                     if remote_ip in network:
-                        # Proxy de confiance confirmé : utiliser la première IP du header
-                        return x_forwarded_for.split(',')[0].strip()
+                        is_trusted = True
+                        break
                 except ValueError:
                     continue
+                    
+            if is_trusted:
+                return x_forwarded_for.split(',')[0].strip()
+            else:
+                 import logging
+                 logging.getLogger('tenxyte.security').warning(
+                     "X-Forwarded-For header rejected: REMOTE_ADDR %s is not in TRUSTED_PROXIES.", remote_addr
+                 )
         except ValueError:
             pass
-        # REMOTE_ADDR n'est pas un proxy de confiance → ignorer X-Forwarded-For
-        import logging
-        logging.getLogger('tenxyte.security').warning(
-            "X-Forwarded-For header rejected: REMOTE_ADDR %s is not in TRUSTED_PROXIES.", remote_addr
-        )
-    return remote_addr
+            
+    return remote_addr or '127.0.0.1'

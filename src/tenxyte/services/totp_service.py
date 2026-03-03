@@ -71,24 +71,41 @@ class TOTPService:
         """
         return pyotp.TOTP(secret)
 
-    def verify_code(self, secret: str, code: str, valid_window: int = 1) -> bool:
+    def verify_code(self, user: User, code: str, valid_window: int = 1) -> bool:
         """
-        Vérifie un code TOTP.
+        Vérifie un code TOTP avec protection anti-replay.
 
         Args:
-            secret: Le secret TOTP de l'utilisateur
+            user: L'utilisateur
             code: Le code à 6 chiffres entré par l'utilisateur
             valid_window: Nombre de périodes de 30s acceptées avant/après (défaut: 1)
 
         Returns:
-            True si le code est valide
+            True si le code est valide ET n'a pas été rejoué dans sa fenêtre de validité.
         """
+        secret = self._get_decrypted_secret(user)
         if not secret or not code:
             return False
 
         try:
+            from django.core.cache import cache
+            
+            # Anti-replay check
+            cache_key = f"totp_used_{user.id}_{code}"
+            if cache.get(cache_key):
+                logger.warning(f"[TOTP] Replay attack prevented for user {user.id}")
+                return False
+
             totp = self.get_totp(secret)
-            return totp.verify(code, valid_window=valid_window)
+            is_valid = totp.verify(code, valid_window=valid_window)
+            
+            if is_valid:
+                # Mark code as used for the duration of the window (+ extra margin)
+                # valid_window=1 means checking current, previous, and next 30s period.
+                # So the code could be valid for up to 90 seconds. We cache for 120s to be safe.
+                cache.set(cache_key, True, timeout=(valid_window * 30 * 2) + 60)
+                
+            return is_valid
         except Exception as e:
             logger.error(f"[TOTP] Verification error: {e}")
             return False
@@ -242,11 +259,7 @@ class TOTPService:
         if user.is_2fa_enabled:
             return False, "2FA is already enabled."
 
-        decrypted_secret = self._get_decrypted_secret(user)
-        if not decrypted_secret:
-             return False, "Invalid internal TOTP state."
-
-        if not self.verify_code(decrypted_secret, code):
+        if not self.verify_code(user, code):
             return False, "Invalid code. Please try again."
 
         # Activer le 2FA
@@ -271,10 +284,7 @@ class TOTPService:
             return False, "2FA is not enabled."
 
         # Vérifier le code TOTP ou un code de secours
-        decrypted_secret = self._get_decrypted_secret(user)
-        is_valid = False
-        if decrypted_secret:
-            is_valid = self.verify_code(decrypted_secret, code)
+        is_valid = self.verify_code(user, code)
         if not is_valid:
             is_valid = self.verify_backup_code(user, code)
 
@@ -308,8 +318,7 @@ class TOTPService:
             return False, "2FA code required."
 
         # Essayer le code TOTP d'abord
-        decrypted_secret = self._get_decrypted_secret(user)
-        if decrypted_secret and self.verify_code(decrypted_secret, code):
+        if self.verify_code(user, code):
             return True, ""
 
         # Sinon essayer un code de secours
@@ -329,8 +338,7 @@ class TOTPService:
             return False, [], "2FA is not enabled."
 
         # Vérifier le code TOTP
-        decrypted_secret = self._get_decrypted_secret(user)
-        if not decrypted_secret or not self.verify_code(decrypted_secret, code):
+        if not self.verify_code(user, code):
             return False, [], "Invalid code."
 
         # Générer de nouveaux codes

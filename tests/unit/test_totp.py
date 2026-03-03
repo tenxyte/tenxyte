@@ -35,13 +35,14 @@ class TestTOTPService:
         """Test de vérification d'un code valide."""
         totp_service = TOTPService()
         secret = totp_service.generate_secret()
+        user = type('MockUser', (object,), {'totp_secret': secret, 'id': 1})()
 
         # Générer un code valide
         totp = pyotp.TOTP(secret)
         valid_code = totp.now()
 
         # Vérifier le code
-        is_valid = totp_service.verify_code(secret, valid_code)
+        is_valid = totp_service.verify_code(user, valid_code)
 
         assert is_valid is True
 
@@ -49,8 +50,9 @@ class TestTOTPService:
         """Test de vérification d'un code invalide."""
         totp_service = TOTPService()
         secret = totp_service.generate_secret()
+        user = type('MockUser', (object,), {'totp_secret': secret, 'id': 1})()
 
-        is_valid = totp_service.verify_code(secret, "000000")
+        is_valid = totp_service.verify_code(user, "000000")
 
         assert is_valid is False
 
@@ -58,16 +60,18 @@ class TestTOTPService:
         """Test avec code vide."""
         totp_service = TOTPService()
         secret = totp_service.generate_secret()
+        user = type('MockUser', (object,), {'totp_secret': secret, 'id': 1})()
 
-        is_valid = totp_service.verify_code(secret, "")
+        is_valid = totp_service.verify_code(user, "")
 
         assert is_valid is False
 
     def test_verify_code_no_secret(self):
         """Test avec secret vide."""
         totp_service = TOTPService()
+        user = type('MockUser', (object,), {'totp_secret': None, 'id': 1})()
 
-        is_valid = totp_service.verify_code("", "123456")
+        is_valid = totp_service.verify_code(user, "123456")
 
         assert is_valid is False
 
@@ -145,9 +149,10 @@ class TestTOTPService:
 
     def test_verify_code_exception(self):
         totp_service = TOTPService()
+        user = type('MockUser', (object,), {'totp_secret': 'secret', 'id': 1})()
         with pytest.MonkeyPatch().context() as m:
             m.setattr(totp_service, "get_totp", Exception("mocked exception"))
-            assert totp_service.verify_code("secret", "123456") is False
+            assert totp_service.verify_code(user, "123456") is False
 
     def test_verify_backup_code_no_codes(self):
         totp_service = TOTPService()

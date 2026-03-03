@@ -29,22 +29,38 @@ class TenxyteConfig(AppConfig):
     def _check_jwt_auth_enabled(self):
         """
         R-02: Prevent JWT_AUTH_ENABLED=False in production.
+        Add similar checks for other critical auth flags.
         """
         from django.conf import settings
         from .conf import auth_settings
         import warnings
         
-        if not auth_settings.JWT_AUTH_ENABLED:
-            if not settings.DEBUG:
-                from django.core.exceptions import ImproperlyConfigured
+        if not settings.DEBUG:
+            from django.core.exceptions import ImproperlyConfigured
+            
+            if not auth_settings.JWT_AUTH_ENABLED:
                 raise ImproperlyConfigured(
                     "TENXYTE_JWT_AUTH_ENABLED=False is forbidden in production. "
                     "Set DEBUG=True to use this flag."
                 )
-            warnings.warn(
-                "JWT authentication is DISABLED. This is a critical security risk.",
-                RuntimeWarning, stacklevel=2
-            )
+            
+            if not getattr(auth_settings, 'APPLICATION_AUTH_ENABLED', True):
+                raise ImproperlyConfigured(
+                    "TENXYTE_APPLICATION_AUTH_ENABLED=False is forbidden in production. "
+                    "Set DEBUG=True to use this flag."
+                )
+
+            if auth_settings.CORS_ALLOW_ALL_ORIGINS and getattr(settings, 'CORS_ALLOW_CREDENTIALS', False):
+                raise ImproperlyConfigured(
+                    "TENXYTE_CORS_ALLOW_ALL_ORIGINS=True combined with CORS_ALLOW_CREDENTIALS=True "
+                    "is extremely dangerous in production."
+                )
+        else:
+            if not auth_settings.JWT_AUTH_ENABLED:
+                warnings.warn(
+                    "JWT authentication is DISABLED. This is a critical security risk.",
+                    RuntimeWarning, stacklevel=2
+                )
 
     def _check_production_cache(self):
         """

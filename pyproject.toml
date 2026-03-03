@@ -67,7 +67,7 @@ dependencies = [
     "google-auth>=2.20",
     "google-auth-oauthlib>=1.0",
     "django-cryptography>=1.1",  # R2 — chiffrement totp_secret
-    "Pillow>=10.0.1",           # R3 — CVE-2023-44271, CVE-2022-45199, CVE-2021-25289
+    "Pillow>=10.3.0",           # R3 — sécurité (CVE)
     "requests>=2.31.0",         # R7 — CVE-2023-32681
 ]
 
@@ -97,7 +97,7 @@ mysql = [
 
 # R4 — WebAuthn/FIDO2 (optionnel, contrainte de version explicite)
 webauthn = [
-    "py_webauthn==2.0.0",
+    "py_webauthn>=2.0.0",
 ]
 
 # Tout inclure
@@ -107,7 +107,7 @@ all = [
     "django-mongodb-backend>=5.0",
     "psycopg2-binary>=2.9",
     "mysqlclient>=2.2",
-    "py_webauthn==2.0.0",
+    "py_webauthn>=2.0.0",
 ]
 
 # Dépendances de développement

@@ -391,8 +391,9 @@ class TestRemainingCoverage:
                     assert rate_limit(1, 10)(lambda r: JsonResponse({"st":"ok"}))(req).status_code == 200
                     set_mock.assert_called()
 
+    @override_settings(TENXYTE_TRUSTED_PROXIES=["127.0.0.1"])
     def test_rate_limit_ip_and_get_client_ip(self): # 187, 212-217
-        req = MagicMock(META={'HTTP_X_FORWARDED_FOR': '1.2.3.4, 8.8.8.8'}, method='GET')
+        req = MagicMock(META={'HTTP_X_FORWARDED_FOR': '1.2.3.4, 8.8.8.8', 'REMOTE_ADDR': '127.0.0.1'}, method='GET')
         req.user = None
         assert get_client_ip(req) == '1.2.3.4'
         req2 = MagicMock(META={'REMOTE_ADDR': '2.2.2.2'}, method='GET')

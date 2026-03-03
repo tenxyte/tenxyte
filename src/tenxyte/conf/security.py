@@ -179,8 +179,12 @@ class SecuritySettingsMixin:
         return self._get('SECURITY_HEADERS', {
             'X-Content-Type-Options': 'nosniff',
             'X-Frame-Options': 'DENY',
-            'X-XSS-Protection': '1; mode=block',
             'Referrer-Policy': 'strict-origin-when-cross-origin',
+            'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+            'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+            'Cross-Origin-Resource-Policy': 'same-origin',
+            'Cross-Origin-Opener-Policy': 'same-origin',
+            'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
         })
 
     @property

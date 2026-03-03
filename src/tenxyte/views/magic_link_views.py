@@ -275,9 +275,13 @@ class MagicLinkVerifyView(APIView):
         )
 
         if not success:
-            return Response(
+            response = Response(
                 {'error': error, 'code': 'MAGIC_LINK_INVALID'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
+            response['Referrer-Policy'] = 'no-referrer'
+            return response
 
-        return Response(data)
+        response = Response(data)
+        response['Referrer-Policy'] = 'no-referrer'
+        return response
