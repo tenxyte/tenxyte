@@ -1,0 +1,123 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0
+django: version: 6.0.2, settings: tests.settings (from env)
+rootdir: C:\Users\bobop\Documents\own\tenxyte
+configfile: pyproject.toml
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, django-4.11.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 140 items
+
+tests\security\test_security.py .....................................    [ 26%]
+tests\unit\test_auth_service_coverage.py .......                         [ 31%]
+tests\unit\test_auth_service_edge_cases.py ....................          [ 45%]
+tests\unit\test_auth_service_extended.py ............................... [ 67%]
+........                                                                 [ 73%]
+tests\unit\test_authentication.py ..........                             [ 80%]
+tests\unit\test_auth_views.py .........................                  [ 98%]
+tests\unit\test_auth_service_edge_cases.py .                             [ 99%]
+C:\Users\bobop\AppData\Local\Python\pythoncore-3.12-64\Lib\site-packages\coverage\inorout.py:561: CoverageWarning: Module src/tenxyte/services/auth_service.py was never imported. (module-not-imported); see https://coverage.readthedocs.io/en/7.13.4/messages.html#warning-module-not-imported
+  self.warn(f"Module {pkg} was never imported.", slug="module-not-imported")
+tests\unit\test_authentication.py .
+ERROR: Coverage failure: total of 47 is less than fail-under=90
+                                                                         [100%]
+
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.10-final-0 _______________
+
+Name                                                          Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------------------------------
+src\tenxyte\__init__.py                                           9      2    78%   73-74
+src\tenxyte\admin.py                                            303    127    58%   66-70, 75-94, 100-119, 124-127, 132-147, 151-178, 233, 295, 320, 324-333, 338-355, 361-378, 384-401, 407-424, 430-444, 471, 510, 514, 518, 541, 545, 549
+src\tenxyte\apps.py                                              40     18    55%   39-68, 74, 92-105
+src\tenxyte\authentication.py                                    37      0   100%
+src\tenxyte\backends\__init__.py                                  0      0   100%
+src\tenxyte\backends\email.py                                    82     54    34%   106-149, 177-194, 207-213, 221-248
+src\tenxyte\backends\sms.py                                      73     73     0%   5-176
+src\tenxyte\conf\__init__.py                                     13      0   100%
+src\tenxyte\conf\airs.py                                         35     11    69%   8, 13, 18, 23, 32, 37, 42, 47, 52, 61, 66
+src\tenxyte\conf\auth.py                                         68     10    85%   8, 13, 18, 27, 32, 37, 42, 96, 101, 106
+src\tenxyte\conf\base.py                                         49     11    78%   27-38, 46, 61, 103, 116, 124
+src\tenxyte\conf\communication.py                                38     11    71%   14, 19, 24, 54, 59, 64, 73, 78, 83, 92, 97
+src\tenxyte\conf\jwt.py                                          33      4    88%   16-17, 32, 37
+src\tenxyte\conf\modules.py                                      20      0   100%
+src\tenxyte\conf\presets.py                                       3      0   100%
+src\tenxyte\conf\security.py                                     77     13    83%   96, 114, 123, 128, 136, 141, 146, 153, 166, 171, 180, 188, 206
+src\tenxyte\conf\social.py                                       53     17    68%   12, 20, 25, 30, 35, 40, 45, 50, 59, 64, 69, 74, 83, 88, 93, 102, 107
+src\tenxyte\decorators.py                                       310    220    29%   26, 31, 39, 57, 64-66, 81, 89, 98, 104, 112-113, 127-140, 147-160, 170-205, 225-257, 263-271, 281-293, 301-313, 321-333, 345-350, 361-373, 381-393, 411-425, 443-476, 498-530, 553-585, 617-647, 671-732
+src\tenxyte\device_info.py                                      200    145    28%   92-125, 146, 182-205, 252-255, 281, 283, 314-419
+src\tenxyte\docs\__init__.py                                      0      0   100%
+src\tenxyte\docs\schemas.py                                      56     56     0%   7-580
+src\tenxyte\filters.py                                          123    108    12%   39-55, 71-78, 90-98, 111-120, 137-150, 166-172, 188-194, 218-234, 252-266, 279-299, 319-341, 360-374
+src\tenxyte\management\__init__.py                                0      0   100%
+src\tenxyte\management\commands\__init__.py                       0      0   100%
+src\tenxyte\management\commands\tenxyte_cleanup.py               80     80     0%   1-101
+src\tenxyte\management\commands\tenxyte_purge_audit_logs.py      27     27     0%   12-77
+src\tenxyte\middleware.py                                       189    132    30%   38-39, 47, 52, 90-91, 95-111, 129, 133-150, 153-155, 158-173, 202, 205-211, 226, 229-280, 289, 292-354, 369, 372-392, 396-403
+src\tenxyte\models\__init__.py                                   13      0   100%
+src\tenxyte\models\agent.py                                      70      6    91%   91, 96, 106-107, 112, 139
+src\tenxyte\models\application.py                                52     10    81%   49, 63-64, 68, 76-83
+src\tenxyte\models\auth.py                                      302    143    53%   35, 93, 97-100, 104-108, 141, 144, 272-300, 311, 315, 319, 339-341, 362, 369-396, 405, 418-423, 438-450, 462-463, 477-500, 514-537, 549-554, 566, 578, 586, 590, 594, 612-613, 619-643, 647, 651, 663-670, 674-681, 689
+src\tenxyte\models\base.py                                       57     17    70%   19-20, 22-24, 45-47, 58-60, 71-73, 84-86
+src\tenxyte\models\gdpr.py                                       82     47    43%   88, 94-98, 108-130, 134-139, 143-176, 180-182, 186-188, 193
+src\tenxyte\models\magic_link.py                                 58     30    48%   53, 63-77, 88-114, 118-120, 123
+src\tenxyte\models\operational.py                                96     12    88%   65, 72-84
+src\tenxyte\models\organization.py                              179     71    60%   92, 106-113, 125-134, 143-146, 156-161, 166, 175-176, 180, 184-186, 239, 243-250, 318, 322, 326, 398, 415-418, 429, 433, 445-472, 476-477, 535-537, 542-544, 549-551
+src\tenxyte\models\security.py                                  103     25    76%   40, 68-71, 78-79, 176, 195-202, 231, 236-237, 322-339
+src\tenxyte\models\social.py                                     26      3    88%   63, 86-99
+src\tenxyte\models\tenant.py                                     29     14    52%   26-49, 56, 93-106
+src\tenxyte\models\webauthn.py                                   47      9    81%   44, 47-49, 84-85, 93, 96-97
+src\tenxyte\pagination.py                                        16      2    88%   42, 53
+src\tenxyte\serializers\__init__.py                              10      0   100%
+src\tenxyte\serializers\application_serializers.py               16      0   100%
+src\tenxyte\serializers\auth_serializers.py                      60     10    83%   35-37, 51, 74-76, 100-102
+src\tenxyte\serializers\gdpr_admin_serializers.py                14      1    93%   29
+src\tenxyte\serializers\organization_serializers.py              82      9    89%   71, 75-79, 94-95, 99
+src\tenxyte\serializers\otp_serializers.py                        5      0   100%
+src\tenxyte\serializers\password_serializers.py                  13      1    92%   20
+src\tenxyte\serializers\rbac_serializers.py                      79     37    53%   28-30, 34-37, 40-46, 49-58, 76-81, 84-91
+src\tenxyte\serializers\security_serializers.py                  56      4    93%   52-53, 74-75
+src\tenxyte\serializers\twofa_serializers.py                     16      0   100%
+src\tenxyte\serializers\user_admin_serializers.py                39      3    92%   27, 53, 57
+src\tenxyte\services\__init__.py                                 10      0   100%
+src\tenxyte\services\account_deletion_service.py                 96     80    17%   20-21, 120-159, 219-225, 257-268, 280-284, 328-407, 416-432, 444
+src\tenxyte\services\agent_service.py                           180    157    13%   13, 16, 27-107, 115-146, 155-177, 181-186, 190-199, 203-212, 216-228, 232-236, 242-278, 283-285, 296-310, 314-328, 335-350
+src\tenxyte\services\auth_service.py                            184     16    91%   522, 541-549, 604, 639-656
+src\tenxyte\services\breach_check_service.py                      9      0   100%
+src\tenxyte\services\email_service.py                           113     82    27%   171-208, 372-436, 453-488, 500-542, 554-578, 590-618, 633-659, 671-677
+src\tenxyte\services\jwt_service.py                              77     20    74%   19-27, 120, 126-129, 135-138, 153, 158, 162, 169
+src\tenxyte\services\magic_link_service.py                       48     34    29%   25-26, 43-84, 99-136
+src\tenxyte\services\organization_service.py                    178    134    25%   75-76, 81-89, 133-136, 149-156, 177-205, 224-241, 257-269, 289-325, 353-390, 412-443, 463-484, 497-502, 530-581, 594-645
+src\tenxyte\services\otp_service.py                              74     54    27%   46-52, 74-95, 101-122, 163-164, 177-179, 195-217
+src\tenxyte\services\social_auth_service.py                     183    124    32%   59, 64, 69, 73-86, 90-98, 113, 117-138, 141-144, 147, 156, 179, 182-203, 213, 237, 240-245, 255, 277, 280-296, 306, 328-337, 356, 379-483
+src\tenxyte\services\stats_service.py                            95     71    25%   27, 40-59, 67-72, 92-97, 105-120, 123-124, 137-144, 147-157, 171-173, 190-191, 202-204, 239-240, 251-254, 260-263, 272-276, 284-286, 298-308, 334-356
+src\tenxyte\services\totp_service.py                            164    125    24%   36, 42-50, 54, 58, 66, 72, 86-111, 118-119, 128-146, 158-171, 180-216, 226-246, 264-278, 291-309, 322-336, 345-358
+src\tenxyte\services\webauthn_service.py                        107     90    16%   23-25, 47, 50, 53-56, 69-105, 120-160, 177-209, 225-283, 291-292, 305-310
+src\tenxyte\signals.py                                           44     13    70%   85-105, 124, 127, 133
+src\tenxyte\tasks\__init__.py                                     0      0   100%
+src\tenxyte\tasks\agent_tasks.py                                 24     24     0%   1-46
+src\tenxyte\tenant_context.py                                     7      2    71%   29, 39
+src\tenxyte\throttles.py                                        128     67    48%   141-142, 146, 155-160, 165-167, 193-195, 199-200, 208-225, 228-245, 248-255, 280-312
+src\tenxyte\urls.py                                              14      0   100%
+src\tenxyte\validators.py                                        34     12    65%   225-240
+src\tenxyte\views\__init__.py                                     9      0   100%
+src\tenxyte\views\account_deletion_views.py                      52     32    38%   205-222, 334-337, 557-584
+src\tenxyte\views\agent_views.py                                135     96    29%   22-34, 37-87, 103-108, 126-132, 142-148, 157-169, 180-181, 191-210, 228-233, 251-256, 263-284
+src\tenxyte\views\application_views.py                           90     57    37%   91-101, 105-117, 236-240, 247-267, 271-289, 296-304, 381-398
+src\tenxyte\views\auth_views.py                                  59      0   100%
+src\tenxyte\views\dashboard_views.py                             36     10    72%   128-129, 146-147, 164-165, 182-183, 200-201
+src\tenxyte\views\gdpr_admin_views.py                            82     55    33%   141-179, 194-203, 299-339, 393-404
+src\tenxyte\views\magic_link_views.py                            33     14    58%   257-287
+src\tenxyte\views\organization_views.py                         141     72    49%   124-143, 244-254, 341-342, 517-526, 558-561, 686-697, 917-939, 1035-1050, 1136-1153, 1240-1246
+src\tenxyte\views\otp_views.py                                   26      8    69%   201-220
+src\tenxyte\views\password_views.py                              25      0   100%
+src\tenxyte\views\rbac_views.py                                 263    198    25%   52-62, 66-74, 105-109, 116-132, 136-141, 178-188, 192-200, 231-235, 242-258, 262-267, 302-305, 309-315, 320-330, 337-344, 353-396, 401-445, 587-590, 594-600, 605-613, 620-627, 639-684, 689-735
+src\tenxyte\views\security_views.py                             138     85    38%   82-88, 121-131, 212-213, 248-287, 305-319, 382-385, 445-466, 519-530, 589-592, 638-654
+src\tenxyte\views\social_auth_views.py                           75     55    27%   137-211, 329-413
+src\tenxyte\views\twofa_views.py                                 46     22    52%   25, 86-96, 173-190, 365-382
+src\tenxyte\views\user_views.py                                 151     86    43%   208, 302-331, 365, 406-416, 427-430, 440-445, 456-472, 482-494, 514-530, 550-566, 586-604, 624-638
+src\tenxyte\views\webauthn_views.py                              20      0   100%
+-------------------------------------------------------------------------------------------
+TOTAL                                                          6588   3468    47%
+Coverage HTML written to dir htmlcov
+FAIL Required test coverage of 90% not reached. Total coverage: 47.36%
+======================= 140 passed in 79.76s (0:01:19) ========================
