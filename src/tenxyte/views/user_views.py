@@ -210,14 +210,27 @@ class MeView(APIView):
                 'details': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer.save()
+        email_changed = 'email' in serializer.validated_data and serializer.validated_data['email'] != request.user.email
+        phone_changed = ('phone_number' in serializer.validated_data and serializer.validated_data['phone_number'] != request.user.phone_number) or ('phone_country_code' in serializer.validated_data and serializer.validated_data['phone_country_code'] != request.user.phone_country_code)
+
+        user = serializer.save()
+
+        # VULN-005 Mitigation: Reset verification flags if contact info is updated
+        if email_changed:
+            user.is_email_verified = False
+        if phone_changed:
+            user.is_phone_verified = False
+            
+        if email_changed or phone_changed:
+            user.save(update_fields=['is_email_verified', 'is_phone_verified'])
+
         return Response({
             'message': 'Profile updated successfully',
             'updated_fields': list(serializer.validated_data.keys()),
-            'user': serializer.data,
+            'user': UserSerializer(user).data,
             'verification_required': {
-                'email_changed': 'email' in serializer.validated_data,
-                'phone_changed': 'phone' in serializer.validated_data
+                'email_changed': email_changed,
+                'phone_changed': phone_changed
             }
         })
 

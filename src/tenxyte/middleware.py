@@ -63,11 +63,20 @@ class ApplicationAuthMiddleware:
 
         try:
             application = Application.objects.get(access_key=access_key, is_active=True)
-            if not application.verify_secret(access_secret):
-                return JsonResponse({
-                    'error': 'Invalid application credentials',
-                    'code': 'APP_AUTH_INVALID'
-                }, status=401)
+            
+            # VULN-006 Mitigation: Cache successful bcrypt verifications for 60 seconds to prevent DoS
+            from django.core.cache import cache
+            import hashlib
+            secret_hash = hashlib.sha256(access_secret.encode('utf-8')).hexdigest()
+            cache_key = f"app_auth_ok_{application.id}_{secret_hash}"
+            
+            if not cache.get(cache_key):
+                if not application.verify_secret(access_secret):
+                    return JsonResponse({
+                        'error': 'Invalid application credentials',
+                        'code': 'APP_AUTH_INVALID'
+                    }, status=401)
+                cache.set(cache_key, True, 60)
 
             # Attacher l'application à la requête
             request.application = application

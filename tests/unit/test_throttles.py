@@ -53,6 +53,14 @@ class TestGetClientIP:
         req = _make_request(forwarded_for="  10.0.0.2 , 192.168.0.1")
         assert get_client_ip(req) == "10.0.0.2"
 
+    @override_settings(TENXYTE_TRUSTED_PROXIES=[], TENXYTE_NUM_PROXIES=1)
+    def test_reject_forwarded_for_when_trusted_proxies_empty(self):
+        # VULN-003 Mitigation Check
+        req = _make_request(ip="5.5.5.5", forwarded_for="1.1.1.1")
+        with patch('logging.Logger.warning') as mock_warn:
+            assert get_client_ip(req) == "5.5.5.5" # Falls back to REMOTE_ADDR
+            mock_warn.assert_called()
+
 
 # ─── IPBasedThrottle ─────────────────────────────────────────────────────────
 

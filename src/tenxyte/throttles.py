@@ -276,23 +276,30 @@ def get_client_ip(request) -> str:
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
 
     if x_forwarded_for and num_proxies > 0:
-        # Validate that REMOTE_ADDR is in TRUSTED_PROXIES if the list is not empty
-        is_trusted = True
-        if trusted:
-            is_trusted = False
-            import ipaddress
-            try:
-                remote_ip = ipaddress.ip_address(remote_addr)
-                for trusted_entry in trusted:
-                    try:
-                        network = ipaddress.ip_network(trusted_entry, strict=False)
-                        if remote_ip in network:
-                            is_trusted = True
-                            break
-                    except ValueError:
-                        continue
-            except ValueError:
-                pass
+        # Validate that REMOTE_ADDR is in TRUSTED_PROXIES
+        # SECURITY VULN-003: If TRUSTED_PROXIES is empty, always reject X-Forwarded-For to prevent spoofing
+        if not trusted:
+            import logging
+            logging.getLogger('tenxyte.security').warning(
+                "X-Forwarded-For header rejected: TENXYTE_TRUSTED_PROXIES is empty but TENXYTE_NUM_PROXIES > 0. "
+                "Configure trusted proxies to enable secure IP resolution behind a reverse proxy."
+            )
+            return remote_addr
+
+        is_trusted = False
+        import ipaddress
+        try:
+            remote_ip = ipaddress.ip_address(remote_addr)
+            for trusted_entry in trusted:
+                try:
+                    network = ipaddress.ip_network(trusted_entry, strict=False)
+                    if remote_ip in network:
+                        is_trusted = True
+                        break
+                except ValueError:
+                    continue
+        except ValueError:
+            pass
                 
         if not is_trusted:
             import logging

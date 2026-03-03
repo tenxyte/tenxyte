@@ -656,3 +656,44 @@ class TestGenerateTokensForUser:
         after_count = RefreshToken.objects.filter(user=user).count()
 
         assert after_count == before_count + 1
+
+# ===========================================================================
+# dummy hash / timing attack mitigation (VULN-001)
+# ===========================================================================
+
+class TestDummyHashTimingAttackMitigation:
+
+    @pytest.mark.django_db
+    def test_get_dummy_hash_generates_and_caches(self):
+        AuthService._DUMMY_HASH = None
+        hash1 = AuthService._get_dummy_hash()
+        assert hash1 is not None
+        assert hash1.startswith('$2')  # bcrypt prefix
+        
+        # Second call should return the exact same cached string
+        hash2 = AuthService._get_dummy_hash()
+        assert hash1 == hash2
+
+    @pytest.mark.django_db
+    def test_authenticate_by_email_uses_dummy_hash_when_user_not_found(self):
+        app = _app("DummyApp1")
+        service = AuthService()
+        
+        with patch('tenxyte.models.User.check_password') as mock_checkpw:
+            success, data, error = service.authenticate_by_email("nonexistent@test.com", "Pass123!", app, "1.2.3.4")
+        
+        assert success is False
+        assert error == 'Invalid credentials'
+        mock_checkpw.assert_called_once_with("Pass123!")
+
+    @pytest.mark.django_db
+    def test_authenticate_by_phone_uses_dummy_hash_when_user_not_found(self):
+        app = _app("DummyApp2")
+        service = AuthService()
+        
+        with patch('tenxyte.models.User.check_password') as mock_checkpw:
+            success, data, error = service.authenticate_by_phone("33", "600000000", "Pass123!", app, "1.2.3.4")
+        
+        assert success is False
+        assert error == 'Invalid credentials'
+        mock_checkpw.assert_called_once_with("Pass123!")

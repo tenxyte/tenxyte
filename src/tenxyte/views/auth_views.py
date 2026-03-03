@@ -114,6 +114,45 @@ class RegisterView(APIView):
         )
 
         if not success:
+            if error in ['Email already registered', 'Phone number already registered']:
+                # VULN-002 Mitigation: Anti-enumeration. Return a generic success to hide account existence.
+                import uuid
+                response_data = {
+                    'message': 'Registration successful',
+                    'user': {
+                        'id': str(uuid.uuid4()),
+                        'email': serializer.validated_data.get('email'),
+                        'phone': f"+{serializer.validated_data.get('phone_country_code')}{serializer.validated_data.get('phone_number')}" if serializer.validated_data.get('phone_number') else "",
+                        'first_name': serializer.validated_data.get('first_name', ''),
+                        'last_name': serializer.validated_data.get('last_name', ''),
+                        'is_email_verified': False,
+                        'is_phone_verified': False,
+                        'is_2fa_enabled': False,
+                    },
+                    'verification_required': {
+                        'email': bool(serializer.validated_data.get('email')),
+                        'phone': bool(serializer.validated_data.get('phone_number'))
+                    }
+                }
+                
+                # Send a security alert to the existing owner
+                if error == 'Email already registered':
+                    try:
+                        from ..models import get_user_model
+                        from ..services.email_service import EmailService
+                        existing_user = get_user_model().objects.get(email__iexact=serializer.validated_data['email'])
+                        EmailService().send_security_alert_email(
+                            to_email=existing_user.email,
+                            alert_type='duplicate_registration',
+                            details={'ip': ip_address},
+                            first_name=existing_user.first_name
+                        )
+                    except Exception:
+                        pass
+                
+                # Ignore login_after, we don't want to generate tokens for an account they don't own
+                return Response(response_data, status=status.HTTP_201_CREATED)
+
             return Response({
                 'error': error,
                 'code': 'REGISTRATION_FAILED'

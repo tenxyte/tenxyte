@@ -95,14 +95,14 @@ class TestRegisterView:
         assert resp.status_code == 400
 
     @pytest.mark.django_db
-    def test_register_duplicate_email_returns_400(self):
+    def test_register_duplicate_email_returns_201_for_anti_enumeration(self):
         app = _app("RegView3")
         _user("dup_reg@test.com")
         resp = _post(RegisterView, "/auth/register/", {
             "email": "dup_reg@test.com",
             "password": "Pass123!",
         }, app)
-        assert resp.status_code == 400
+        assert resp.status_code == 201
 
     @pytest.mark.django_db
     def test_register_with_login_returns_tokens(self):

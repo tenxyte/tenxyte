@@ -120,7 +120,12 @@ class UserSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'is_email_verified', 'is_phone_verified',
             'is_2fa_enabled', 'roles', 'permissions', 'created_at', 'last_login'
         ]
-        read_only_fields = ['id', 'is_email_verified', 'is_phone_verified', 'is_2fa_enabled', 'created_at', 'last_login']
+        # VULN-005: Ensure sensitive fields are strictly read-only even if injected
+        read_only_fields = [
+            'id', 'is_email_verified', 'is_phone_verified', 'is_2fa_enabled', 
+            'created_at', 'last_login', 'is_staff', 'is_superuser', 
+            'is_banned', 'is_active', 'is_locked', 'is_deleted'
+        ]
 
     @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_roles(self, obj):

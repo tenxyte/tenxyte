@@ -112,6 +112,24 @@ class TestMeView:
         assert resp.data["user"]["first_name"] == "Updated"
 
     @pytest.mark.django_db
+    def test_patch_profile_resets_verification_on_contact_change(self):
+        # VULN-005 Mitigation Check
+        app = _app("MeView5")
+        user = _user("me5@test.com")
+        user.is_email_verified = True
+        user.is_phone_verified = True
+        user.save()
+
+        resp = _authed_patch(MeView, "/auth/me/", user, app,
+                             data={"email": "new_email@test.com", "phone_number": "699999999"})
+
+        assert resp.status_code == 200
+        user.refresh_from_db()
+        assert user.is_email_verified is False
+        assert user.is_phone_verified is False
+        assert user.email == "new_email@test.com"
+
+    @pytest.mark.django_db
     def test_patch_profile_invalid_data_returns_400(self):
         app = _app("MeView3")
         user = _user("me3@test.com")

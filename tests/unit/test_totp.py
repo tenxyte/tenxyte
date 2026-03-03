@@ -46,6 +46,24 @@ class TestTOTPService:
 
         assert is_valid is True
 
+    from unittest.mock import patch
+    
+    @patch('django.core.cache.cache.get')
+    def test_verify_code_anti_replay(self, mock_cache_get):
+        """Test anti-replay (VULN-007)."""
+        totp_service = TOTPService()
+        secret = totp_service.generate_secret()
+        user = type('MockUser', (object,), {'totp_secret': secret, 'id': 1})()
+
+        totp = pyotp.TOTP(secret)
+        valid_code = totp.now()
+
+        # Simulate that code was already used
+        mock_cache_get.return_value = True
+
+        is_valid = totp_service.verify_code(user, valid_code)
+        assert is_valid is False
+
     def test_verify_code_invalid(self):
         """Test de vérification d'un code invalide."""
         totp_service = TOTPService()

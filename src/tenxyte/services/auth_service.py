@@ -16,8 +16,19 @@ class AuthService:
     Service principal d'authentification
     """
 
+    _DUMMY_HASH = None
+
     def __init__(self):
         self.jwt_service = JWTService()
+
+    @classmethod
+    def _get_dummy_hash(cls):
+        if cls._DUMMY_HASH is None:
+            from ..conf import auth_settings
+            import hashlib, bcrypt
+            pre_hash = hashlib.sha256(b"dummy_password").hexdigest().encode('utf-8')
+            cls._DUMMY_HASH = bcrypt.hashpw(pre_hash, bcrypt.gensalt(rounds=auth_settings.BCRYPT_ROUNDS)).decode('utf-8')
+        return cls._DUMMY_HASH
 
     @property
     def max_login_attempts(self):
@@ -67,7 +78,9 @@ class AuthService:
         try:
             user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
-            User().set_password(password)  # Mitigation R-04: Prevent timing attacks
+            # Mitigation R-04: Prevent timing attacks by checking against a dummy hash
+            dummy_user = User(password=self._get_dummy_hash())
+            dummy_user.check_password(password)
             LoginAttempt.record(identifier, ip_address, application, False, 'user_not_found')
             return False, None, 'Invalid credentials'
 
@@ -101,7 +114,9 @@ class AuthService:
                 phone_number=phone_number
             )
         except User.DoesNotExist:
-            User().set_password(password)  # Mitigation R-04: Prevent timing attacks
+            # Mitigation R-04: Prevent timing attacks by checking against a dummy hash
+            dummy_user = User(password=self._get_dummy_hash())
+            dummy_user.check_password(password)
             LoginAttempt.record(identifier, ip_address, application, False, 'user_not_found')
             return False, None, 'Invalid credentials'
 

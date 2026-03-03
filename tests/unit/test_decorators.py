@@ -404,6 +404,15 @@ class TestRemainingCoverage:
             with patch('django.core.cache.cache.get', return_value=0):
                 assert rate_limit(1, 10)(lambda r: JsonResponse({"st":"ok"}))(req).status_code == 200
 
+    @override_settings(TENXYTE_TRUSTED_PROXIES=[], TENXYTE_NUM_PROXIES=2)
+    def test_get_client_ip_rejects_forwarded_for_when_trusted_proxies_empty(self):
+        # VULN-003 Mitigation
+        req = MagicMock(META={'HTTP_X_FORWARDED_FOR': '1.2.3.4', 'REMOTE_ADDR': '127.0.0.1'}, method='GET')
+        req.user = None
+        with patch('logging.Logger.warning') as mock_warn:
+            assert get_client_ip(req) == '127.0.0.1'
+            mock_warn.assert_called()
+
     def test_org_membership_success(self): # 438-440
         req = MagicMock()
         req.organization.slug = 'org'
