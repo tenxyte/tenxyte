@@ -83,10 +83,12 @@ Login with email + password.
 {
   "email": "user@example.com",
   "password": "SecurePass123!",
-  "totp_code": "123456"
+  "totp_code": "123456",
+  "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
 `totp_code` is only required if 2FA is enabled.
+`device_info`: Optional device fingerprinting info.
 
 **Response `200`:**
 ```json
@@ -94,7 +96,18 @@ Login with email + password.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600
+  "expires_in": 3600,
+  "device_summary": "Windows 11 Desktop",
+  "user": {
+    "id": "uuid-string",
+    "email": "user@example.com",
+    "phone": "+15551234567",
+    "first_name": "John",
+    "last_name": "Doe",
+    "is_email_verified": true,
+    "is_phone_verified": false,
+    "is_2fa_enabled": false
+  }
 }
 ```
 
@@ -104,6 +117,41 @@ Login with email + password.
   "error": "2FA code required",
   "code": "2FA_REQUIRED",
   "requires_2fa": true
+}
+```
+
+**Response `401` (Invalid credentials):**
+```json
+{
+  "error": "Invalid credentials",
+  "code": "LOGIN_FAILED"
+}
+```
+
+**Response `403` (Admin 2FA required):**
+```json
+{
+  "error": "Administrators must have 2FA enabled to login.",
+  "code": "ADMIN_2FA_SETUP_REQUIRED"
+}
+```
+
+**Response `409` (Session limit exceeded):**
+```json
+{
+  "error": "Session limit exceeded",
+  "details": "Maximum concurrent sessions (1) already reached. Please logout from other devices.",
+  "code": "SESSION_LIMIT_EXCEEDED"
+}
+```
+
+**Response `423` (Account locked):**
+```json
+{
+  "error": "Account locked",
+  "details": "Account has been locked due to too many failed login attempts.",
+  "code": "ACCOUNT_LOCKED",
+  "retry_after": 1800
 }
 ```
 
@@ -118,9 +166,12 @@ Login with phone number + password.
   "phone_country_code": "+1",
   "phone_number": "5551234567",
   "password": "SecurePass123!",
-  "totp_code": "123456"
+  "totp_code": "123456",
+  "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
+`totp_code` is only required if 2FA is enabled.
+`device_info`: Optional device fingerprinting info.
 
 **Response `200`:**
 ```json
@@ -128,27 +179,112 @@ Login with phone number + password.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600
+  "expires_in": 3600,
+  "device_summary": "Windows 11 Desktop",
+  "user": {
+    "id": "uuid-string",
+    "email": "user@example.com",
+    "phone": "+15551234567",
+    "first_name": "John",
+    "last_name": "Doe",
+    "is_email_verified": true,
+    "is_phone_verified": false,
+    "is_2fa_enabled": false
+  }
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "phone_country_code": ["Invalid country code format. Use +XX format."],
+    "phone_number": ["Phone number must be 9-15 digits."]
+  }
+}
+```
+
+**Response `401` (2FA required):**
+```json
+{
+  "error": "2FA code required",
+  "code": "2FA_REQUIRED",
+  "requires_2fa": true
+}
+```
+
+**Response `401` (Invalid credentials):**
+```json
+{
+  "error": "Invalid credentials",
+  "code": "LOGIN_FAILED"
+}
+```
+
+**Response `403` (Admin 2FA required):**
+```json
+{
+  "error": "Administrators must have 2FA enabled to login.",
+  "code": "ADMIN_2FA_SETUP_REQUIRED"
+}
+```
+
+**Response `409` (Session limit exceeded):**
+```json
+{
+  "error": "Session limit exceeded",
+  "details": "Maximum concurrent sessions (1) already reached. Please logout from other devices.",
+  "code": "SESSION_LIMIT_EXCEEDED"
+}
+```
+
+**Response `423` (Account locked):**
+```json
+{
+  "error": "Account locked",
+  "details": "Account has been locked due to too many failed login attempts.",
+  "code": "ACCOUNT_LOCKED",
+  "retry_after": 1800
 }
 ```
 
 ---
 
-### `POST /google/`
-Authenticate via Google OAuth.
+## Social Login (Multi-Provider)
 
-**Request (id_token):**
+Requires social provider configuration (Google, GitHub, Microsoft, Facebook).
+
+### `POST /social/<provider>/`
+Authenticate via OAuth2 provider.
+
+**Providers:** `google`, `github`, `microsoft`, `facebook`
+
+**Request (access_token):**
 ```json
-{ "id_token": "<google-id-token>" }
+{
+  "access_token": "ya29.a0AfH6SMC...",
+  "device_info": "v=1|os=windows;osv=11|device=desktop"
+}
 ```
 
 **Request (authorization code):**
 ```json
 {
   "code": "<authorization-code>",
-  "redirect_uri": "https://yourapp.com/auth/callback"
+  "redirect_uri": "https://yourapp.com/auth/callback",
+  "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
+
+**Request (Google ID token):**
+```json
+{
+  "id_token": "<google-id-token>",
+  "device_info": "v=1|os=windows;osv=11|device=desktop"
+}
+```
+`device_info`: Optional device fingerprinting info.
 
 **Response `200`:**
 ```json
@@ -156,10 +292,69 @@ Authenticate via Google OAuth.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
+  "expires_in": 3600,
   "user": {
-    "id": 1,
-    "email": "user@example.com"
-  }
+    "id": "uuid-string",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "is_email_verified": true,
+    "is_phone_verified": false,
+    "is_2fa_enabled": false,
+    "roles": [],
+    "permissions": []
+  },
+  "message": "Authentication successful",
+  "provider": "google",
+  "is_new_user": false
+}
+```
+
+**Response `400` (Invalid provider):**
+```json
+{
+  "error": "Unsupported provider",
+  "code": "INVALID_PROVIDER",
+  "supported_providers": ["google", "github", "microsoft", "facebook"]
+}
+```
+
+**Response `401` (Provider auth failed):**
+```json
+{
+  "error": "Provider authentication failed",
+  "code": "PROVIDER_AUTH_FAILED"
+}
+```
+
+**Response `401` (Social auth failed):**
+```json
+{
+  "error": "Social authentication failed",
+  "code": "SOCIAL_AUTH_FAILED"
+}
+```
+
+---
+
+### `GET /social/<provider>/callback/`
+OAuth2 callback endpoint for authorization code flow.
+
+**Query Parameters:**
+- `code` (required): Authorization code from provider
+- `redirect_uri` (required): Original redirect URI
+- `state` (optional): CSRF/state parameter
+
+**Response `200`:**
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "user": { ... },
+  "provider": "google",
+  "is_new_user": false
 }
 ```
 
