@@ -3488,73 +3488,226 @@ X-Org-Slug: acme-corp
 ### `POST /organizations/` 🔒
 Create an organization.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 {
   "name": "Acme Corp",
-  "slug": "acme-corp"
+  "slug": "acme-corp",
+  "description": "Technology company specializing in software solutions",
+  "parent_id": null,
+  "metadata": {
+    "industry": "technology",
+    "size": "medium"
+  },
+  "max_members": 100
 }
 ```
 
 **Response `201`:**
 ```json
 {
-  "id": "1",
+  "id": 1,
   "name": "Acme Corp",
   "slug": "acme-corp",
-  "created_at": "2023-10-01T12:00:00Z"
+  "description": "Technology company specializing in software solutions",
+  "created_at": "2024-01-15T10:30:00Z",
+  "is_active": true,
+  "member_count": 1,
+  "max_members": 100,
+  "parent": null,
+  "metadata": {
+    "industry": "technology",
+    "size": "medium"
+  }
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "slug": ["Organization with this slug already exists"],
+  "parent_id": ["Parent organization not found"]
 }
 ```
 
 ### `GET /organizations/list/` 🔒
 List organizations the current user belongs to.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters (optional):**
+- `search`: Search in name and slug
+- `is_active`: Filter by active status (true/false)
+- `parent`: Filter by parent (null = root organizations)
+- `ordering`: Sort by name, slug, created_at (with - for descending)
+- `page`: Page number
+- `page_size`: Items per page (max 100)
+
 **Response `200`:**
 ```json
-[
-  {
-    "id": "1",
-    "name": "Acme Corp",
-    "slug": "acme-corp",
-    "role": "owner"
-  }
-]
+{
+  "count": 2,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "name": "Acme Corp",
+      "slug": "acme-corp",
+      "description": "Technology company specializing in software solutions",
+      "member_count": 15,
+      "max_members": 100,
+      "is_active": true,
+      "created_at": "2024-01-15T10:30:00Z"
+    },
+    {
+      "id": 2,
+      "name": "Tech Startup",
+      "slug": "tech-startup",
+      "description": "Innovative tech startup",
+      "member_count": 8,
+      "max_members": 50,
+      "is_active": true,
+      "created_at": "2024-01-20T14:15:00Z"
+    }
+  ]
+}
 ```
 
 ### `GET /organizations/detail/` 🔒
 Get organization details.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+X-Org-Slug: acme-corp
+```
+
 **Response `200`:**
 ```json
 {
-  "id": "1",
+  "id": 1,
   "name": "Acme Corp",
   "slug": "acme-corp",
-  "created_at": "2023-10-01T12:00:00Z"
+  "description": "Technology company specializing in software solutions",
+  "metadata": {
+    "industry": "technology",
+    "size": "medium"
+  },
+  "is_active": true,
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-20T14:15:00Z",
+  "member_count": 15,
+  "max_members": 100,
+  "parent": null,
+  "children": [
+    {
+      "id": 5,
+      "name": "Acme Subsidiary",
+      "slug": "acme-subsidiary"
+    }
+  ],
+  "user_role": "owner",
+  "user_permissions": [
+    "org.manage",
+    "org.members.invite",
+    "org.members.manage"
+  ]
 }
 ```
 
-### `PATCH /organizations/update/` 🔒
+**Response `403` (Not member):**
+```json
+{
+  "error": "Access denied: You are not a member of this organization",
+  "code": "NOT_MEMBER"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Organization not found",
+  "code": "NOT_FOUND"
+}
+```
+
+### `PATCH /organizations/update/` 🔒 `org.manage`
 Update an organization.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+X-Org-Slug: acme-corp
+```
 
 **Request:**
 ```json
 {
-  "name": "Acme Corporation"
+  "name": "Acme Corporation",
+  "slug": "acme-corporation",
+  "description": "Updated technology company description",
+  "parent_id": null,
+  "metadata": {
+    "industry": "technology",
+    "size": "large"
+  },
+  "max_members": 200,
+  "is_active": true
 }
 ```
 
 **Response `200`:**
 ```json
 {
-  "id": "1",
+  "id": 1,
   "name": "Acme Corporation",
-  "slug": "acme-corp"
+  "slug": "acme-corporation",
+  "description": "Updated technology company description",
+  "updated_at": "2024-01-20T15:30:00Z",
+  "is_active": true,
+  "member_count": 15,
+  "max_members": 200,
+  "parent": null,
+  "metadata": {
+    "industry": "technology",
+    "size": "large"
+  }
 }
 ```
 
-### `DELETE /organizations/delete/` 🔒
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Cannot set max_members below current member count",
+  "code": "INVALID_MEMBER_LIMIT"
+}
+```
+
+**Response `403` (Insufficient permissions):**
+```json
+{
+  "error": "You don't have permission to manage this organization",
+  "code": "INSUFFICIENT_PERMISSIONS"
+}
+```
+
+### `DELETE /organizations/delete/` 🔒 `org.owner`
 Delete an organization.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+X-Org-Slug: acme-corp
+```
 
 **Response `200`:**
 ```json
@@ -3563,70 +3716,283 @@ Delete an organization.
 }
 ```
 
+**Response `400` (Has child organizations):**
+```json
+{
+  "error": "Cannot delete organization with child organizations",
+  "code": "HAS_CHILDREN"
+}
+```
+
+**Response `403` (Not owner):**
+```json
+{
+  "error": "Only organization owners can delete organizations",
+  "code": "NOT_OWNER"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Organization not found",
+  "code": "NOT_FOUND"
+}
+```
+
 ### `GET /organizations/tree/` 🔒
 Get the full organization hierarchy tree.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+X-Org-Slug: acme-corp
+```
 
 **Response `200`:**
 ```json
 {
-  "id": "1",
+  "id": 1,
   "name": "Acme Corp",
-  "children": []
+  "slug": "acme-corp",
+  "depth": 0,
+  "is_root": true,
+  "member_count": 25,
+  "children": [
+    {
+      "id": 5,
+      "name": "Acme Subsidiary",
+      "slug": "acme-subsidiary",
+      "depth": 1,
+      "is_root": false,
+      "member_count": 8,
+      "children": [
+        {
+          "id": 12,
+          "name": "Acme Team",
+          "slug": "acme-team",
+          "depth": 2,
+          "is_root": false,
+          "member_count": 3,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Acme Division",
+      "slug": "acme-division",
+      "depth": 1,
+      "is_root": false,
+      "member_count": 12,
+      "children": []
+    }
+  ]
 }
 ```
 
 ### `GET /organizations/members/` 🔒
 List organization members.
 
-**Response `200`:**
-```json
-[
-  {
-    "user_id": 1,
-    "email": "user@example.com",
-    "role": "member",
-    "joined_at": "2023-10-01T12:00:00Z"
-  }
-]
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+X-Org-Slug: acme-corp
 ```
 
-### `POST /organizations/members/add/` 🔒
+**Query Parameters (optional):**
+- `search`: Search in email, first name, last name
+- `role`: Filter by role (owner, admin, member)
+- `status`: Filter by status (active, inactive, pending)
+- `ordering`: Sort by joined_at, user.email, role
+- `page`: Page number
+- `page_size`: Items per page (max 100)
+
+**Response `200`:**
+```json
+{
+  "count": 15,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "user": {
+        "id": 42,
+        "email": "admin@acme.com",
+        "first_name": "John",
+        "last_name": "Doe"
+      },
+      "role": "admin",
+      "role_display": "Administrator",
+      "permissions": [
+        "org.manage",
+        "org.members.invite",
+        "org.members.manage"
+      ],
+      "inherited_permissions": [],
+      "effective_permissions": [
+        "org.manage",
+        "org.members.invite",
+        "org.members.manage"
+      ],
+      "joined_at": "2024-01-15T10:30:00Z",
+      "status": "active"
+    },
+    {
+      "id": 2,
+      "user": {
+        "id": 43,
+        "email": "user@acme.com",
+        "first_name": "Jane",
+        "last_name": "Smith"
+      },
+      "role": "member",
+      "role_display": "Member",
+      "permissions": [
+        "org.view"
+      ],
+      "inherited_permissions": [
+        "org.view"
+      ],
+      "effective_permissions": [
+        "org.view"
+      ],
+      "joined_at": "2024-01-20T14:15:00Z",
+      "status": "active"
+    }
+  ]
+}
+```
+
+### `POST /organizations/members/add/` 🔒 `org.members.invite`
 Add a member to an organization.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+X-Org-Slug: acme-corp
+```
 
 **Request:**
 ```json
 {
   "user_id": 2,
-  "role": "member"
+  "role_code": "member"
 }
 ```
 
 **Response `201`:**
 ```json
 {
-  "message": "Member added successfully"
+  "id": 25,
+  "user": {
+    "id": 2,
+    "email": "newmember@acme.com",
+    "first_name": "Jane",
+    "last_name": "Smith"
+  },
+  "role": "member",
+  "role_display": "Member",
+  "joined_at": "2024-01-20T15:30:00Z",
+  "status": "active"
 }
 ```
 
-### `PATCH /organizations/members/<user_id>/` 🔒
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Cannot add owner as regular member",
+  "code": "INVALID_ROLE_FOR_OWNER"
+}
+```
+
+**Response `403` (Insufficient permissions):**
+```json
+{
+  "error": "You don't have permission to invite members",
+  "code": "INSUFFICIENT_PERMISSIONS"
+}
+```
+
+**Response `404` (User not found):**
+```json
+{
+  "error": "User not found",
+  "code": "USER_NOT_FOUND"
+}
+```
+
+### `PATCH /organizations/members/<user_id>/` 🔒 `org.members.manage`
 Update a member's role.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+X-Org-Slug: acme-corp
+```
+
+**Path Parameters:**
+- `user_id`: ID of the user to update
 
 **Request:**
 ```json
 {
-  "role": "admin"
+  "role_code": "admin"
 }
 ```
 
 **Response `200`:**
 ```json
 {
-  "message": "Member role updated"
+  "id": 25,
+  "user": {
+    "id": 2,
+    "email": "member@acme.com",
+    "first_name": "Jane",
+    "last_name": "Smith"
+  },
+  "role": "admin",
+  "role_display": "Administrator",
+  "updated_at": "2024-01-20T16:00:00Z"
 }
 ```
 
-### `DELETE /organizations/members/<user_id>/remove/` 🔒
+**Response `400` (Cannot demote last owner):**
+```json
+{
+  "error": "Cannot demote the last owner of the organization",
+  "code": "LAST_OWNER_CANNOT_BE_DEMOTED"
+}
+```
+
+**Response `403` (Insufficient permissions):**
+```json
+{
+  "error": "You don't have permission to manage members",
+  "code": "INSUFFICIENT_PERMISSIONS"
+}
+```
+
+**Response `404` (Member not found):**
+```json
+{
+  "error": "Member not found",
+  "code": "MEMBER_NOT_FOUND"
+}
+```
+
+### `DELETE /organizations/members/<user_id>/remove/` 🔒 `org.members.remove`
 Remove a member from an organization.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+X-Org-Slug: acme-corp
+```
+
+**Path Parameters:**
+- `user_id`: ID of the user to remove
 
 **Response `200`:**
 ```json
@@ -3635,34 +4001,164 @@ Remove a member from an organization.
 }
 ```
 
-### `POST /organizations/invitations/` 🔒
+**Response `400` (Cannot remove last owner):**
+```json
+{
+  "error": "Cannot remove the last owner of the organization",
+  "code": "LAST_OWNER_CANNOT_BE_REMOVED"
+}
+```
+
+**Response `403` (Insufficient permissions):**
+```json
+{
+  "error": "You don't have permission to remove members",
+  "code": "INSUFFICIENT_PERMISSIONS"
+}
+```
+
+**Response `404` (Member not found):**
+```json
+{
+  "error": "Member not found",
+  "code": "MEMBER_NOT_FOUND"
+}
+```
+
+### `POST /organizations/invitations/` 🔒 `org.members.invite`
 Invite a user to an organization by email.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+X-Org-Slug: acme-corp
+```
 
 **Request:**
 ```json
 {
   "email": "newuser@example.com",
-  "role": "member"
+  "role_code": "member",
+  "expires_in_days": 7
 }
 ```
 
 **Response `201`:**
 ```json
 {
-  "message": "Invitation sent"
+  "id": 123,
+  "email": "newuser@example.com",
+  "role": "member",
+  "role_display": "Member",
+  "token": "inv_abc123def456",
+  "expires_at": "2024-01-27T15:30:00Z",
+  "invited_by": {
+    "id": 42,
+    "email": "admin@acme.com",
+    "first_name": "John",
+    "last_name": "Doe"
+  },
+  "organization": {
+    "id": 1,
+    "name": "Acme Corp",
+    "slug": "acme-corp"
+  },
+  "status": "pending",
+  "created_at": "2024-01-20T15:30:00Z"
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "User is already a member of this organization",
+  "code": "ALREADY_MEMBER"
+}
+```
+
+**Response `403` (Insufficient permissions):**
+```json
+{
+  "error": "You don't have permission to invite members",
+  "code": "INSUFFICIENT_PERMISSIONS"
 }
 ```
 
 ### `GET /org-roles/` 🔒
 List organization-scoped roles.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
 [
   {
-    "id": "1",
-    "name": "Admin",
-    "permissions": ["org.manage", "org.invite"]
+    "code": "owner",
+    "name": "Owner",
+    "description": "Full control over the organization",
+    "weight": 100,
+    "permissions": [
+      {
+        "code": "org.manage",
+        "name": "Manage Organization",
+        "description": "Can manage all organization settings"
+      },
+      {
+        "code": "org.members.invite",
+        "name": "Invite Members",
+        "description": "Can invite new members to the organization"
+      },
+      {
+        "code": "org.members.manage",
+        "name": "Manage Members",
+        "description": "Can manage existing members"
+      },
+      {
+        "code": "org.members.remove",
+        "name": "Remove Members",
+        "description": "Can remove members from organization"
+      }
+    ],
+    "is_system_role": true,
+    "created_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "code": "admin",
+    "name": "Administrator",
+    "description": "Administrative access without ownership",
+    "weight": 80,
+    "permissions": [
+      {
+        "code": "org.members.invite",
+        "name": "Invite Members",
+        "description": "Can invite new members to the organization"
+      },
+      {
+        "code": "org.members.manage",
+        "name": "Manage Members",
+        "description": "Can manage existing members"
+      }
+    ],
+    "is_system_role": true,
+    "created_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "code": "member",
+    "name": "Member",
+    "description": "Standard organization member",
+    "weight": 20,
+    "permissions": [
+      {
+        "code": "org.view",
+        "name": "View Organization",
+        "description": "Can view organization details"
+      }
+    ],
+    "is_system_role": true,
+    "created_at": "2024-01-01T00:00:00Z"
   }
 ]
 ```
