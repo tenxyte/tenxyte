@@ -2814,6 +2814,21 @@ POST /admin/refresh-tokens/123/revoke/
 ### `GET /admin/deletion-requests/` 🔒 `gdpr.view`
 List account deletion requests.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters (optional):**
+- `user_id`: Filter by user ID
+- `status`: Filter by status (pending, confirmation_sent, confirmed, completed, cancelled)
+- `date_from`: Requested after date (YYYY-MM-DD)
+- `date_to`: Requested before date (YYYY-MM-DD)
+- `grace_period_expiring`: Filter by grace period expiring (true/false)
+- `ordering`: Sort by requested_at, grace_period_ends_at, status
+- `page`: Page number
+- `page_size`: Items per page (max 100)
+
 **Response `200`:**
 ```json
 {
@@ -2822,53 +2837,148 @@ List account deletion requests.
   "previous": null,
   "results": [
     {
-      "id": 1,
-      "user_id": 1,
+      "id": "1",
+      "user": "123",
+      "user_email": "user@example.com",
       "status": "pending",
-      "requested_at": "2023-10-01T12:00:00Z",
-      "deletion_date": "2023-10-31T12:00:00Z"
+      "requested_at": "2024-01-01T12:00:00Z",
+      "confirmed_at": null,
+      "grace_period_ends_at": "2024-01-31T12:00:00Z",
+      "completed_at": null,
+      "ip_address": "127.0.0.1",
+      "reason": "No longer need the account",
+      "admin_notes": null,
+      "processed_by": null,
+      "processed_by_email": null,
+      "is_grace_period_expired": false
     }
   ]
 }
 ```
 
-### `GET /admin/deletion-requests/<id>/` 🔒 `gdpr.view`
+### `GET /admin/deletion-requests/<id>/` 🔒 `gdpr.admin`
 Get a deletion request.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
 
 **Response `200`:**
 ```json
 {
-  "id": 1,
-  "user_id": 1,
+  "id": "1",
+  "user": "123",
+  "user_email": "user@example.com",
   "status": "pending",
-  "requested_at": "2023-10-01T12:00:00Z",
-  "deletion_date": "2023-10-31T12:00:00Z"
+  "requested_at": "2024-01-01T12:00:00Z",
+  "confirmed_at": null,
+  "grace_period_ends_at": "2024-01-31T12:00:00Z",
+  "completed_at": null,
+  "ip_address": "127.0.0.1",
+  "reason": "No longer need the account",
+  "admin_notes": null,
+  "processed_by": null,
+  "processed_by_email": null,
+  "is_grace_period_expired": false
 }
 ```
 
-### `POST /admin/deletion-requests/<id>/process/` 🔒 `gdpr.manage`
+**Response `404` (Not found):**
+```json
+{
+  "error": "Deletion request not found",
+  "code": "NOT_FOUND"
+}
+```
+
+### `POST /admin/deletion-requests/<id>/process/` 🔒 `gdpr.process`
 Process (execute) a deletion request.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
 
 **Request:**
 ```json
-{}
-```
-
-**Response `200`:**
-```json
 {
-  "message": "Account successfully deleted"
+  "confirmation": "PERMANENTLY DELETE",
+  "admin_notes": "Processed per user request - GDPR compliance"
 }
 ```
 
-### `POST /admin/deletion-requests/process-expired/` 🔒 `gdpr.manage`
+**Response `200`:**
+```json
+{
+  "message": "Account deletion processed successfully",
+  "deletion_completed": true,
+  "processed_at": "2024-01-15T10:30:00Z",
+  "data_anonymized": true,
+  "audit_log_id": "123",
+  "user_notified": true,
+  "request": {
+    "id": "1",
+    "user": "123",
+    "user_email": "user@example.com",
+    "status": "completed",
+    "requested_at": "2024-01-01T12:00:00Z",
+    "confirmed_at": "2024-01-02T12:00:00Z",
+    "grace_period_ends_at": "2024-01-31T12:00:00Z",
+    "completed_at": "2024-01-15T10:30:00Z",
+    "ip_address": "127.0.0.1",
+    "reason": "No longer need the account",
+    "admin_notes": "Processed per user request - GDPR compliance",
+    "processed_by": "456",
+    "processed_by_email": "admin@example.com",
+    "is_grace_period_expired": false
+  }
+}
+```
+
+**Response `400` (Confirmation required):**
+```json
+{
+  "error": "Explicit confirmation required",
+  "code": "CONFIRMATION_REQUIRED"
+}
+```
+
+**Response `400` (Not confirmed):**
+```json
+{
+  "error": "Cannot process request with status \"pending\". Only confirmed requests can be processed.",
+  "code": "REQUEST_NOT_CONFIRMED"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Deletion request not found",
+  "code": "NOT_FOUND"
+}
+```
+
+### `POST /admin/deletion-requests/process-expired/` 🔒 `gdpr.process`
 Process all expired grace period deletions.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request:**
+```
+POST /admin/deletion-requests/process-expired/
+```
 
 **Response `200`:**
 ```json
 {
-  "message": "Processed 5 expired deletion requests",
-  "processed_count": 5
+  "message": "5 deletion(s) processed, 0 failed",
+  "processed": 5,
+  "failed": 0
 }
 ```
 
