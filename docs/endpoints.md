@@ -956,51 +956,119 @@ Get the current password policy requirements.
 ### `GET /me/` 🔒
 Get the current user's profile.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Headers (optional):**
+```
+X-Org-Slug: organization-slug
+```
+
 **Response `200`:**
 ```json
 {
-  "id": 1,
-  "email": "user@example.com",
-  "first_name": "Jane",
+  "id": 12345,
+  "email": "john.doe@example.com",
+  "first_name": "John",
   "last_name": "Doe",
-  "phone_country_code": "+1",
-  "phone_number": "5551234567",
-  "avatar": "https://example.com/avatar.jpg",
-  "last_login": "2023-10-01T12:00:00Z",
-  "date_joined": "2023-01-01T12:00:00Z",
+  "username": "johndoe",
+  "phone": "+33612345678",
+  "avatar": "https://cdn.example.com/avatars/john.jpg",
+  "bio": "Software developer passionate about security",
+  "timezone": "Europe/Paris",
+  "language": "fr",
   "is_active": true,
-  "is_2fa_enabled": true,
-  "roles": ["admin"],
-  "permissions": ["users.view"],
-  "organizations": [
-    {
+  "is_verified": true,
+  "date_joined": "2024-01-15T10:30:00Z",
+  "last_login": "2024-01-20T14:22:00Z",
+  "custom_fields": {
+    "department": "Engineering",
+    "employee_id": "EMP001"
+  },
+  "preferences": {
+    "email_notifications": true,
+    "sms_notifications": false,
+    "marketing_emails": false,
+    "two_factor_enabled": true
+  },
+  "organization_context": {
+    "current_org": {
       "id": "org_abc123",
       "name": "Acme Corp",
       "slug": "acme-corp"
-    }
-  ]
+    },
+    "roles": ["admin"],
+    "permissions": ["users.view"]
+  }
 }
 ```
 
 ### `PATCH /me/` 🔒
 Update the current user's profile.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Headers (optional):**
+```
+X-Org-Slug: organization-slug
+```
+
 **Request:**
 ```json
 {
   "first_name": "Jane",
-  "last_name": "Doe"
+  "last_name": "Doe",
+  "username": "janedoe",
+  "phone": "+33612345678",
+  "bio": "Senior developer",
+  "timezone": "Europe/Paris",
+  "language": "fr",
+  "custom_fields": {
+    "department": "Engineering"
+  }
 }
 ```
 
 **Response `200`:**
 ```json
 {
-  "id": 1,
-  "email": "user@example.com",
-  "first_name": "Jane",
-  "last_name": "Doe",
-  "is_active": true
+  "message": "Profile updated successfully",
+  "updated_fields": ["first_name", "last_name"],
+  "user": {
+    "id": 12345,
+    "email": "john.doe@example.com",
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "username": "janedoe",
+    "phone": "+33612345678",
+    "bio": "Senior developer",
+    "timezone": "Europe/Paris",
+    "language": "fr",
+    "is_active": true,
+    "is_verified": true,
+    "date_joined": "2024-01-15T10:30:00Z",
+    "last_login": "2024-01-20T14:22:00Z"
+  },
+  "verification_required": {
+    "email_changed": false,
+    "phone_changed": false
+  }
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "phone": ["Invalid phone format"],
+    "username": ["Username already taken"]
+  }
 }
 ```
 
@@ -1009,21 +1077,21 @@ Update the current user's profile.
 ### `GET /me/roles/` 🔒
 Get the current user's roles and permissions.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Headers (optional):**
+```
+X-Org-Slug: organization-slug
+```
+
 **Response `200`:**
 ```json
 {
-  "roles": [
-    {
-      "id": "123",
-      "code": "admin",
-      "name": "Administrator"
-    }
-  ],
-  "permissions": [
-    "users.view",
-    "users.manage",
-    "roles.view"
-  ]
+  "roles": ["admin", "user"],
+  "permissions": ["users.view", "users.manage", "roles.view"]
 }
 ```
 
