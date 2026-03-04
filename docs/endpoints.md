@@ -1,6 +1,6 @@
 # API Endpoints Reference
 
-## Table des matières
+## Table of Contents
 
 - [API Endpoints Reference](#api-endpoints-reference)
   - [Authentication](#authentication)
@@ -15,106 +15,106 @@
     - [`GET /magic-link/verify/?token=<token>`](#get-magic-linkverifytokentoken)
     - [`POST /refresh/`](#post-refresh)
     - [`POST /logout/`](#post-logout)
-    - [`POST /logout/all/` 🔒](#post-logoutall)
+    - [`POST /logout/all/` ](#post-logoutall)
   - [OTP Verification](#otp-verification)
-    - [`POST /otp/request/` 🔒](#post-otprequest)
-    - [`POST /otp/verify/email/` 🔒](#post-otpverifyemail)
-    - [`POST /otp/verify/phone/` 🔒](#post-otpverifyphone)
+    - [`POST /otp/request/` ](#post-otprequest)
+    - [`POST /otp/verify/email/` ](#post-otpverifyemail)
+    - [`POST /otp/verify/phone/` ](#post-otpverifyphone)
   - [Password Management](#password-management)
     - [`POST /password/reset/request/`](#post-passwordresetrequest)
     - [`POST /password/reset/confirm/`](#post-passwordresetconfirm)
-    - [`POST /password/change/` 🔒](#post-passwordchange)
+    - [`POST /password/change/` ](#post-passwordchange)
     - [`POST /password/strength/`](#post-passwordstrength)
     - [`GET /password/requirements/`](#get-passwordrequirements)
   - [User Profile](#user-profile)
-    - [`GET /me/` 🔒](#get-me)
-    - [`PATCH /me/` 🔒](#patch-me)
-    - [`GET /me/roles/` 🔒](#get-meroles)
+    - [`GET /me/` ](#get-me)
+    - [`PATCH /me/` ](#patch-me)
+    - [`GET /me/roles/` ](#get-meroles)
   - [Two-Factor Authentication (2FA)](#two-factor-authentication-2fa)
-    - [`GET /2fa/status/` 🔒](#get-2fastatus)
-    - [`POST /2fa/setup/` 🔒](#post-2fasetup)
-    - [`POST /2fa/confirm/` 🔒](#post-2faconfirm)
-    - [`POST /2fa/disable/` 🔒](#post-2fadisable)
-    - [`POST /2fa/backup-codes/` 🔒](#post-2fabackup-codes)
+    - [`GET /2fa/status/` ](#get-2fastatus)
+    - [`POST /2fa/setup/` ](#post-2fasetup)
+    - [`POST /2fa/confirm/` ](#post-2faconfirm)
+    - [`POST /2fa/disable/` ](#post-2fadisable)
+    - [`POST /2fa/backup-codes/` ](#post-2fabackup-codes)
   - [RBAC — Permissions](#rbac-permissions)
-    - [`GET /permissions/` 🔒 `permissions.view`](#get-permissions-permissionsview)
-    - [`POST /permissions/` 🔒 `permissions.manage`](#post-permissions-permissionsmanage)
-    - [`GET /permissions/<id>/` 🔒 `permissions.view`](#get-permissionsid-permissionsview)
-    - [`PUT /permissions/<id>/` 🔒 `permissions.manage`](#put-permissionsid-permissionsmanage)
-    - [`DELETE /permissions/<id>/` 🔒 `permissions.manage`](#delete-permissionsid-permissionsmanage)
+    - [`GET /permissions/`  `permissions.view`](#get-permissions-permissionsview)
+    - [`POST /permissions/`  `permissions.manage`](#post-permissions-permissionsmanage)
+    - [`GET /permissions/<id>/`  `permissions.view`](#get-permissionsid-permissionsview)
+    - [`PUT /permissions/<id>/`  `permissions.manage`](#put-permissionsid-permissionsmanage)
+    - [`DELETE /permissions/<id>/`  `permissions.manage`](#delete-permissionsid-permissionsmanage)
   - [RBAC — Roles](#rbac-roles)
-    - [`GET /roles/` 🔒 `roles.view`](#get-roles-rolesview)
-    - [`POST /roles/` 🔒 `roles.manage`](#post-roles-rolesmanage)
-    - [`GET /roles/<id>/` 🔒 `roles.view`](#get-rolesid-rolesview)
-    - [`PUT /roles/<id>/` 🔒 `roles.manage`](#put-rolesid-rolesmanage)
-    - [`DELETE /roles/<id>/` 🔒 `roles.manage`](#delete-rolesid-rolesmanage)
-    - [`GET /roles/<id>/permissions/` 🔒 `roles.view`](#get-rolesidpermissions-rolesview)
-    - [`POST /roles/<id>/permissions/` 🔒 `roles.manage`](#post-rolesidpermissions-rolesmanage)
+    - [`GET /roles/`  `roles.view`](#get-roles-rolesview)
+    - [`POST /roles/`  `roles.manage`](#post-roles-rolesmanage)
+    - [`GET /roles/<id>/`  `roles.view`](#get-rolesid-rolesview)
+    - [`PUT /roles/<id>/`  `roles.manage`](#put-rolesid-rolesmanage)
+    - [`DELETE /roles/<id>/`  `roles.manage`](#delete-rolesid-rolesmanage)
+    - [`GET /roles/<id>/permissions/`  `roles.view`](#get-rolesidpermissions-rolesview)
+    - [`POST /roles/<id>/permissions/`  `roles.manage`](#post-rolesidpermissions-rolesmanage)
   - [RBAC — User Roles & Permissions](#rbac-user-roles-permissions)
-    - [`GET /users/<id>/roles/` 🔒 `users.manage`](#get-usersidroles-usersmanage)
-    - [`POST /users/<id>/roles/` 🔒 `users.manage`](#post-usersidroles-usersmanage)
-    - [`DELETE /users/<id>/roles/` 🔒 `users.manage`](#delete-usersidroles-usersmanage)
-    - [`GET /users/<id>/permissions/` 🔒 `users.manage`](#get-usersidpermissions-usersmanage)
-    - [`POST /users/<id>/permissions/` 🔒 `users.manage`](#post-usersidpermissions-usersmanage)
+    - [`GET /users/<id>/roles/`  `users.manage`](#get-usersidroles-usersmanage)
+    - [`POST /users/<id>/roles/`  `users.manage`](#post-usersidroles-usersmanage)
+    - [`DELETE /users/<id>/roles/`  `users.manage`](#delete-usersidroles-usersmanage)
+    - [`GET /users/<id>/permissions/`  `users.manage`](#get-usersidpermissions-usersmanage)
+    - [`POST /users/<id>/permissions/`  `users.manage`](#post-usersidpermissions-usersmanage)
   - [Applications](#applications)
-    - [`GET /applications/` 🔒 `applications.view`](#get-applications-applicationsview)
-    - [`POST /applications/` 🔒 `applications.manage`](#post-applications-applicationsmanage)
-    - [`GET /applications/<id>/` 🔒 `applications.view`](#get-applicationsid-applicationsview)
-    - [`PUT /applications/<id>/` 🔒 `applications.manage`](#put-applicationsid-applicationsmanage)
-    - [`DELETE /applications/<id>/` 🔒 `applications.manage`](#delete-applicationsid-applicationsmanage)
-    - [`POST /applications/<id>/regenerate/` 🔒 `applications.manage`](#post-applicationsidregenerate-applicationsmanage)
+    - [`GET /applications/`  `applications.view`](#get-applications-applicationsview)
+    - [`POST /applications/`  `applications.manage`](#post-applications-applicationsmanage)
+    - [`GET /applications/<id>/`  `applications.view`](#get-applicationsid-applicationsview)
+    - [`PUT /applications/<id>/`  `applications.manage`](#put-applicationsid-applicationsmanage)
+    - [`DELETE /applications/<id>/`  `applications.manage`](#delete-applicationsid-applicationsmanage)
+    - [`POST /applications/<id>/regenerate/`  `applications.manage`](#post-applicationsidregenerate-applicationsmanage)
   - [Admin — User Management](#admin-user-management)
-    - [`GET /admin/users/` 🔒 `users.view`](#get-adminusers-usersview)
-    - [`GET /admin/users/<id>/` 🔒 `users.view`](#get-adminusersid-usersview)
-    - [`POST /admin/users/<id>/ban/` 🔒 `users.ban`](#post-adminusersidban-usersban)
-    - [`POST /admin/users/<id>/unban/` 🔒 `users.ban`](#post-adminusersidunban-usersban)
-    - [`POST /admin/users/<id>/lock/` 🔒 `users.lock`](#post-adminusersidlock-userslock)
-    - [`POST /admin/users/<id>/unlock/` 🔒 `users.lock`](#post-adminusersidunlock-userslock)
+    - [`GET /admin/users/`  `users.view`](#get-adminusers-usersview)
+    - [`GET /admin/users/<id>/`  `users.view`](#get-adminusersid-usersview)
+    - [`POST /admin/users/<id>/ban/`  `users.ban`](#post-adminusersidban-usersban)
+    - [`POST /admin/users/<id>/unban/`  `users.ban`](#post-adminusersidunban-usersban)
+    - [`POST /admin/users/<id>/lock/`  `users.lock`](#post-adminusersidlock-userslock)
+    - [`POST /admin/users/<id>/unlock/`  `users.lock`](#post-adminusersidunlock-userslock)
   - [Admin — Security](#admin-security)
-    - [`GET /admin/audit-logs/` 🔒 `audit.view`](#get-adminaudit-logs-auditview)
-    - [`GET /admin/audit-logs/<id>/` 🔒 `audit.view`](#get-adminaudit-logsid-auditview)
-    - [`GET /admin/login-attempts/` 🔒 `audit.view`](#get-adminlogin-attempts-auditview)
-    - [`GET /admin/blacklisted-tokens/` 🔒 `audit.view`](#get-adminblacklisted-tokens-auditview)
-    - [`POST /admin/blacklisted-tokens/cleanup/` 🔒 `security.view`](#post-adminblacklisted-tokenscleanup-securityview)
-    - [`GET /admin/refresh-tokens/` 🔒 `audit.view`](#get-adminrefresh-tokens-auditview)
-    - [`POST /admin/refresh-tokens/<id>/revoke/` 🔒 `security.view`](#post-adminrefresh-tokensidrevoke-securityview)
+    - [`GET /admin/audit-logs/`  `audit.view`](#get-adminaudit-logs-auditview)
+    - [`GET /admin/audit-logs/<id>/`  `audit.view`](#get-adminaudit-logsid-auditview)
+    - [`GET /admin/login-attempts/`  `audit.view`](#get-adminlogin-attempts-auditview)
+    - [`GET /admin/blacklisted-tokens/`  `audit.view`](#get-adminblacklisted-tokens-auditview)
+    - [`POST /admin/blacklisted-tokens/cleanup/`  `security.view`](#post-adminblacklisted-tokenscleanup-securityview)
+    - [`GET /admin/refresh-tokens/`  `audit.view`](#get-adminrefresh-tokens-auditview)
+    - [`POST /admin/refresh-tokens/<id>/revoke/`  `security.view`](#post-adminrefresh-tokensidrevoke-securityview)
   - [Admin — GDPR](#admin-gdpr)
-    - [`GET /admin/deletion-requests/` 🔒 `gdpr.view`](#get-admindeletion-requests-gdprview)
-    - [`GET /admin/deletion-requests/<id>/` 🔒 `gdpr.admin`](#get-admindeletion-requestsid-gdpradmin)
-    - [`POST /admin/deletion-requests/<id>/process/` 🔒 `gdpr.process`](#post-admindeletion-requestsidprocess-gdprprocess)
-    - [`POST /admin/deletion-requests/process-expired/` 🔒 `gdpr.process`](#post-admindeletion-requestsprocess-expired-gdprprocess)
+    - [`GET /admin/deletion-requests/`  `gdpr.view`](#get-admindeletion-requests-gdprview)
+    - [`GET /admin/deletion-requests/<id>/`  `gdpr.admin`](#get-admindeletion-requestsid-gdpradmin)
+    - [`POST /admin/deletion-requests/<id>/process/`  `gdpr.process`](#post-admindeletion-requestsidprocess-gdprprocess)
+    - [`POST /admin/deletion-requests/process-expired/`  `gdpr.process`](#post-admindeletion-requestsprocess-expired-gdprprocess)
   - [User — GDPR](#user-gdpr)
-    - [`POST /request-account-deletion/` 🔒](#post-request-account-deletion)
-    - [`POST /confirm-account-deletion/` 🔒](#post-confirm-account-deletion)
-    - [`POST /cancel-account-deletion/` 🔒](#post-cancel-account-deletion)
-    - [`GET /account-deletion-status/` 🔒](#get-account-deletion-status)
-    - [`POST /export-user-data/` 🔒](#post-export-user-data)
+    - [`POST /request-account-deletion/` ](#post-request-account-deletion)
+    - [`POST /confirm-account-deletion/` ](#post-confirm-account-deletion)
+    - [`POST /cancel-account-deletion/` ](#post-cancel-account-deletion)
+    - [`GET /account-deletion-status/` ](#get-account-deletion-status)
+    - [`POST /export-user-data/` ](#post-export-user-data)
   - [Dashboard](#dashboard)
-    - [`GET /dashboard/stats/` 🔒 `dashboard.view`](#get-dashboardstats-dashboardview)
-    - [`GET /dashboard/auth/` 🔒 `dashboard.view`](#get-dashboardauth-dashboardview)
-    - [`GET /dashboard/security/` 🔒 `dashboard.view`](#get-dashboardsecurity-dashboardview)
-    - [`GET /dashboard/gdpr/` 🔒 `dashboard.view`](#get-dashboardgdpr-dashboardview)
-    - [`GET /dashboard/organizations/` 🔒 `dashboard.view`](#get-dashboardorganizations-dashboardview)
+    - [`GET /dashboard/stats/`  `dashboard.view`](#get-dashboardstats-dashboardview)
+    - [`GET /dashboard/auth/`  `dashboard.view`](#get-dashboardauth-dashboardview)
+    - [`GET /dashboard/security/`  `dashboard.view`](#get-dashboardsecurity-dashboardview)
+    - [`GET /dashboard/gdpr/`  `dashboard.view`](#get-dashboardgdpr-dashboardview)
+    - [`GET /dashboard/organizations/`  `dashboard.view`](#get-dashboardorganizations-dashboardview)
   - [Organizations (opt-in)](#organizations-opt-in)
-    - [`POST /organizations/` 🔒](#post-organizations)
-    - [`GET /organizations/list/` 🔒](#get-organizationslist)
-    - [`GET /organizations/detail/` 🔒](#get-organizationsdetail)
-    - [`PATCH /organizations/update/` 🔒 `org.manage`](#patch-organizationsupdate-orgmanage)
-    - [`DELETE /organizations/delete/` 🔒 `org.owner`](#delete-organizationsdelete-orgowner)
-    - [`GET /organizations/tree/` 🔒](#get-organizationstree)
-    - [`GET /organizations/members/` 🔒](#get-organizationsmembers)
-    - [`POST /organizations/members/add/` 🔒 `org.members.invite`](#post-organizationsmembersadd-orgmembersinvite)
-    - [`PATCH /organizations/members/<user_id>/` 🔒 `org.members.manage`](#patch-organizationsmembersuserid-orgmembersmanage)
-    - [`DELETE /organizations/members/<user_id>/remove/` 🔒 `org.members.remove`](#delete-organizationsmembersuseridremove-orgmembersremove)
-    - [`POST /organizations/invitations/` 🔒 `org.members.invite`](#post-organizationsinvitations-orgmembersinvite)
-    - [`GET /org-roles/` 🔒](#get-org-roles)
+    - [`POST /organizations/` ](#post-organizations)
+    - [`GET /organizations/list/` ](#get-organizationslist)
+    - [`GET /organizations/detail/` ](#get-organizationsdetail)
+    - [`PATCH /organizations/update/`  `org.manage`](#patch-organizationsupdate-orgmanage)
+    - [`DELETE /organizations/delete/`  `org.owner`](#delete-organizationsdelete-orgowner)
+    - [`GET /organizations/tree/` ](#get-organizationstree)
+    - [`GET /organizations/members/` ](#get-organizationsmembers)
+    - [`POST /organizations/members/add/`  `org.members.invite`](#post-organizationsmembersadd-orgmembersinvite)
+    - [`PATCH /organizations/members/<user_id>/`  `org.members.manage`](#patch-organizationsmembersuserid-orgmembersmanage)
+    - [`DELETE /organizations/members/<user_id>/remove/`  `org.members.remove`](#delete-organizationsmembersuseridremove-orgmembersremove)
+    - [`POST /organizations/invitations/`  `org.members.invite`](#post-organizationsinvitations-orgmembersinvite)
+    - [`GET /org-roles/` ](#get-org-roles)
   - [WebAuthn / Passkeys (FIDO2)](#webauthn-passkeys-fido2)
-    - [`POST /webauthn/register/begin/` 🔒](#post-webauthnregisterbegin)
-    - [`POST /webauthn/register/complete/` 🔒](#post-webauthnregistercomplete)
+    - [`POST /webauthn/register/begin/` ](#post-webauthnregisterbegin)
+    - [`POST /webauthn/register/complete/` ](#post-webauthnregistercomplete)
     - [`POST /webauthn/authenticate/begin/`](#post-webauthnauthenticatebegin)
     - [`POST /webauthn/authenticate/complete/`](#post-webauthnauthenticatecomplete)
-    - [`GET /webauthn/credentials/` 🔒](#get-webauthncredentials)
-    - [`DELETE /webauthn/credentials/<id>/` 🔒](#delete-webauthncredentialsid)
+    - [`GET /webauthn/credentials/` ](#get-webauthncredentials)
+    - [`DELETE /webauthn/credentials/<id>/` ](#delete-webauthncredentialsid)
   - [Legend](#legend)
 
 ---
@@ -700,7 +700,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-### `POST /logout/all/` 🔒
+### `POST /logout/all/` 
 Logout from all devices.
 
 **Headers (required):**
@@ -725,7 +725,7 @@ Authorization: Bearer <access_token>
 
 ## OTP Verification
 
-### `POST /otp/request/` 🔒
+### `POST /otp/request/` 
 Request an OTP code (email or phone verification).
 
 **Headers (required):**
@@ -770,7 +770,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-### `POST /otp/verify/email/` 🔒
+### `POST /otp/verify/email/` 
 Verify email with OTP code.
 
 **Headers (required):**
@@ -813,7 +813,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-### `POST /otp/verify/phone/` 🔒
+### `POST /otp/verify/phone/` 
 Verify phone with OTP code.
 
 **Headers (required):**
@@ -955,7 +955,7 @@ Confirm password reset with OTP code.
 
 ---
 
-### `POST /password/change/` 🔒
+### `POST /password/change/` 
 Change password (requires current password).
 
 **Headers (required):**
@@ -1073,7 +1073,7 @@ Get the current password policy requirements.
 
 ## User Profile
 
-### `GET /me/` 🔒
+### `GET /me/` 
 Get the current user's profile.
 
 **Headers (required):**
@@ -1125,7 +1125,7 @@ X-Org-Slug: organization-slug
 }
 ```
 
-### `PATCH /me/` 🔒
+### `PATCH /me/` 
 Update the current user's profile.
 
 **Headers (required):**
@@ -1194,7 +1194,7 @@ X-Org-Slug: organization-slug
 
 ---
 
-### `GET /me/roles/` 🔒
+### `GET /me/roles/` 
 Get the current user's roles and permissions.
 
 **Headers (required):**
@@ -1219,7 +1219,7 @@ X-Org-Slug: organization-slug
 
 ## Two-Factor Authentication (2FA)
 
-### `GET /2fa/status/` 🔒
+### `GET /2fa/status/` 
 Get 2FA status for the current user.
 
 **Headers (required):**
@@ -1237,7 +1237,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-### `POST /2fa/setup/` 🔒
+### `POST /2fa/setup/` 
 Initiate 2FA setup. Returns QR code and backup codes.
 
 **Headers (required):**
@@ -1267,7 +1267,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-### `POST /2fa/confirm/` 🔒
+### `POST /2fa/confirm/` 
 Confirm 2FA activation with a TOTP code.
 
 **Headers (required):**
@@ -1307,7 +1307,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-### `POST /2fa/disable/` 🔒
+### `POST /2fa/disable/` 
 Disable 2FA (requires TOTP code or backup code).
 
 **Headers (required):**
@@ -1350,7 +1350,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-### `POST /2fa/backup-codes/` 🔒
+### `POST /2fa/backup-codes/` 
 Regenerate backup codes (invalidates old ones).
 
 **Headers (required):**
@@ -1393,7 +1393,7 @@ Authorization: Bearer <access_token>
 
 ## RBAC — Permissions
 
-### `GET /permissions/` 🔒 `permissions.view`
+### `GET /permissions/`  `permissions.view`
 List all permissions.
 
 **Headers (required):**
@@ -1423,7 +1423,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /permissions/` 🔒 `permissions.manage`
+### `POST /permissions/`  `permissions.manage`
 Create a permission.
 
 **Headers (required):**
@@ -1467,7 +1467,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /permissions/<id>/` 🔒 `permissions.view`
+### `GET /permissions/<id>/`  `permissions.view`
 Get a permission.
 
 **Headers (required):**
@@ -1501,7 +1501,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `PUT /permissions/<id>/` 🔒 `permissions.manage`
+### `PUT /permissions/<id>/`  `permissions.manage`
 Update a permission.
 
 **Headers (required):**
@@ -1554,7 +1554,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `DELETE /permissions/<id>/` 🔒 `permissions.manage`
+### `DELETE /permissions/<id>/`  `permissions.manage`
 Delete a permission.
 
 **Headers (required):**
@@ -1581,7 +1581,7 @@ Authorization: Bearer <access_token>
 
 ## RBAC — Roles
 
-### `GET /roles/` 🔒 `roles.view`
+### `GET /roles/`  `roles.view`
 List all roles.
 
 **Headers (required):**
@@ -1611,7 +1611,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /roles/` 🔒 `roles.manage`
+### `POST /roles/`  `roles.manage`
 Create a role.
 
 **Headers (required):**
@@ -1661,7 +1661,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /roles/<id>/` 🔒 `roles.view`
+### `GET /roles/<id>/`  `roles.view`
 Get a role.
 
 **Headers (required):**
@@ -1698,7 +1698,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `PUT /roles/<id>/` 🔒 `roles.manage`
+### `PUT /roles/<id>/`  `roles.manage`
 Update a role.
 
 **Headers (required):**
@@ -1761,7 +1761,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `DELETE /roles/<id>/` 🔒 `roles.manage`
+### `DELETE /roles/<id>/`  `roles.manage`
 Delete a role.
 
 **Headers (required):**
@@ -1784,7 +1784,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /roles/<id>/permissions/` 🔒 `roles.view`
+### `GET /roles/<id>/permissions/`  `roles.view`
 List permissions assigned to a role.
 
 **Headers (required):**
@@ -1819,7 +1819,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /roles/<id>/permissions/` 🔒 `roles.manage`
+### `POST /roles/<id>/permissions/`  `roles.manage`
 Assign permissions to a role.
 
 **Headers (required):**
@@ -1891,7 +1891,7 @@ Authorization: Bearer <access_token>
 
 ## RBAC — User Roles & Permissions
 
-### `GET /users/<id>/roles/` 🔒 `users.manage`
+### `GET /users/<id>/roles/`  `users.manage`
 List roles assigned to a user.
 
 **Headers (required):**
@@ -1922,7 +1922,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /users/<id>/roles/` 🔒 `users.manage`
+### `POST /users/<id>/roles/`  `users.manage`
 Assign a role to a user.
 
 **Headers (required):**
@@ -1971,7 +1971,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `DELETE /users/<id>/roles/` 🔒 `users.manage`
+### `DELETE /users/<id>/roles/`  `users.manage`
 Remove a role from a user.
 
 **Headers (required):**
@@ -2019,7 +2019,7 @@ DELETE /users/123/roles/?role_code=editor
 }
 ```
 
-### `GET /users/<id>/permissions/` 🔒 `users.manage`
+### `GET /users/<id>/permissions/`  `users.manage`
 List direct permissions for a user.
 
 **Headers (required):**
@@ -2055,7 +2055,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /users/<id>/permissions/` 🔒 `users.manage`
+### `POST /users/<id>/permissions/`  `users.manage`
 Assign a direct permission to a user.
 
 **Headers (required):**
@@ -2127,7 +2127,7 @@ Authorization: Bearer <access_token>
 
 ## Applications
 
-### `GET /applications/` 🔒 `applications.view`
+### `GET /applications/`  `applications.view`
 List all applications.
 
 **Headers (required):**
@@ -2160,7 +2160,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /applications/` 🔒 `applications.manage`
+### `POST /applications/`  `applications.manage`
 Create an application.
 
 **Headers (required):**
@@ -2207,7 +2207,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /applications/<id>/` 🔒 `applications.view`
+### `GET /applications/<id>/`  `applications.view`
 Get an application.
 
 **Headers (required):**
@@ -2236,7 +2236,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `PUT /applications/<id>/` 🔒 `applications.manage`
+### `PUT /applications/<id>/`  `applications.manage`
 Update an application.
 
 **Headers (required):**
@@ -2284,7 +2284,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `DELETE /applications/<id>/` 🔒 `applications.manage`
+### `DELETE /applications/<id>/`  `applications.manage`
 Delete an application.
 
 **Headers (required):**
@@ -2307,7 +2307,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /applications/<id>/regenerate/` 🔒 `applications.manage`
+### `POST /applications/<id>/regenerate/`  `applications.manage`
 Regenerate the application's access secret.
 
 **Headers (required):**
@@ -2364,7 +2364,7 @@ Authorization: Bearer <access_token>
 
 ## Admin — User Management
 
-### `GET /admin/users/` 🔒 `users.view`
+### `GET /admin/users/`  `users.view`
 List all users with filtering and pagination.
 
 **Headers (required):**
@@ -2414,7 +2414,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /admin/users/<id>/` 🔒 `users.view`
+### `GET /admin/users/<id>/`  `users.view`
 Get a user's full profile.
 
 **Headers (required):**
@@ -2460,7 +2460,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /admin/users/<id>/ban/` 🔒 `users.ban`
+### `POST /admin/users/<id>/ban/`  `users.ban`
 Ban a user.
 
 **Headers (required):**
@@ -2509,7 +2509,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /admin/users/<id>/unban/` 🔒 `users.ban`
+### `POST /admin/users/<id>/unban/`  `users.ban`
 Unban a user.
 
 **Headers (required):**
@@ -2556,7 +2556,7 @@ POST /admin/users/123/unban/
 }
 ```
 
-### `POST /admin/users/<id>/lock/` 🔒 `users.lock`
+### `POST /admin/users/<id>/lock/`  `users.lock`
 Lock a user account.
 
 **Headers (required):**
@@ -2607,7 +2607,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /admin/users/<id>/unlock/` 🔒 `users.lock`
+### `POST /admin/users/<id>/unlock/`  `users.lock`
 Unlock a user account.
 
 **Headers (required):**
@@ -2659,7 +2659,7 @@ POST /admin/users/123/unlock/
 
 ## Admin — Security
 
-### `GET /admin/audit-logs/` 🔒 `audit.view`
+### `GET /admin/audit-logs/`  `audit.view`
 List audit log entries.
 
 **Headers (required):**
@@ -2704,7 +2704,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /admin/audit-logs/<id>/` 🔒 `audit.view`
+### `GET /admin/audit-logs/<id>/`  `audit.view`
 Get a single audit log entry.
 
 **Headers (required):**
@@ -2739,7 +2739,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /admin/login-attempts/` 🔒 `audit.view`
+### `GET /admin/login-attempts/`  `audit.view`
 List login attempts.
 
 **Headers (required):**
@@ -2777,7 +2777,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /admin/blacklisted-tokens/` 🔒 `audit.view`
+### `GET /admin/blacklisted-tokens/`  `audit.view`
 List active blacklisted tokens.
 
 **Headers (required):**
@@ -2814,7 +2814,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /admin/blacklisted-tokens/cleanup/` 🔒 `security.view`
+### `POST /admin/blacklisted-tokens/cleanup/`  `security.view`
 Remove expired blacklisted tokens.
 
 **Headers (required):**
@@ -2835,7 +2835,7 @@ POST /admin/blacklisted-tokens/cleanup/
 }
 ```
 
-### `GET /admin/refresh-tokens/` 🔒 `audit.view`
+### `GET /admin/refresh-tokens/`  `audit.view`
 List active refresh tokens.
 
 **Headers (required):**
@@ -2877,7 +2877,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /admin/refresh-tokens/<id>/revoke/` 🔒 `security.view`
+### `POST /admin/refresh-tokens/<id>/revoke/`  `security.view`
 Revoke a specific refresh token.
 
 **Headers (required):**
@@ -2931,7 +2931,7 @@ POST /admin/refresh-tokens/123/revoke/
 
 ## Admin — GDPR
 
-### `GET /admin/deletion-requests/` 🔒 `gdpr.view`
+### `GET /admin/deletion-requests/`  `gdpr.view`
 List account deletion requests.
 
 **Headers (required):**
@@ -2976,7 +2976,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /admin/deletion-requests/<id>/` 🔒 `gdpr.admin`
+### `GET /admin/deletion-requests/<id>/`  `gdpr.admin`
 Get a deletion request.
 
 **Headers (required):**
@@ -3012,7 +3012,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /admin/deletion-requests/<id>/process/` 🔒 `gdpr.process`
+### `POST /admin/deletion-requests/<id>/process/`  `gdpr.process`
 Process (execute) a deletion request.
 
 **Headers (required):**
@@ -3080,7 +3080,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /admin/deletion-requests/process-expired/` 🔒 `gdpr.process`
+### `POST /admin/deletion-requests/process-expired/`  `gdpr.process`
 Process all expired grace period deletions.
 
 **Headers (required):**
@@ -3106,7 +3106,7 @@ POST /admin/deletion-requests/process-expired/
 
 ## User — GDPR
 
-### `POST /request-account-deletion/` 🔒
+### `POST /request-account-deletion/` 
 Request account deletion (starts grace period).
 
 **Headers (required):**
@@ -3160,7 +3160,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /confirm-account-deletion/` 🔒
+### `POST /confirm-account-deletion/` 
 Confirm account deletion request.
 
 **Request:**
@@ -3204,7 +3204,7 @@ Confirm account deletion request.
 }
 ```
 
-### `POST /cancel-account-deletion/` 🔒
+### `POST /cancel-account-deletion/` 
 Cancel a pending deletion request.
 
 **Headers (required):**
@@ -3248,7 +3248,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /account-deletion-status/` 🔒
+### `GET /account-deletion-status/` 
 Get the status of the current deletion request.
 
 **Headers (required):**
@@ -3288,7 +3288,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /export-user-data/` 🔒
+### `POST /export-user-data/` 
 Export all personal data (GDPR Article 20).
 
 **Headers (required):**
@@ -3364,7 +3364,7 @@ Authorization: Bearer <access_token>
 
 All dashboard endpoints require `dashboard.view` permission.
 
-### `GET /dashboard/stats/` 🔒 `dashboard.view`
+### `GET /dashboard/stats/`  `dashboard.view`
 Global cross-module statistics.
 
 **Headers (required):**
@@ -3419,7 +3419,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /dashboard/auth/` 🔒 `dashboard.view`
+### `GET /dashboard/auth/`  `dashboard.view`
 Detailed authentication statistics (login rates, token stats, charts).
 
 **Headers (required):**
@@ -3479,7 +3479,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /dashboard/security/` 🔒 `dashboard.view`
+### `GET /dashboard/security/`  `dashboard.view`
 Security statistics (audit summary, blacklisted tokens, suspicious activity).
 
 **Headers (required):**
@@ -3519,7 +3519,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /dashboard/gdpr/` 🔒 `dashboard.view`
+### `GET /dashboard/gdpr/`  `dashboard.view`
 GDPR compliance statistics.
 
 **Headers (required):**
@@ -3548,7 +3548,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /dashboard/organizations/` 🔒 `dashboard.view`
+### `GET /dashboard/organizations/`  `dashboard.view`
 Organization statistics (only if `TENXYTE_ORGANIZATIONS_ENABLED=True`).
 
 **Headers (required):**
@@ -3605,7 +3605,7 @@ All organization endpoints require the `X-Org-Slug` header to identify the targe
 X-Org-Slug: acme-corp
 ```
 
-### `POST /organizations/` 🔒
+### `POST /organizations/` 
 Create an organization.
 
 **Headers (required):**
@@ -3655,7 +3655,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /organizations/list/` 🔒
+### `GET /organizations/list/` 
 List organizations the current user belongs to.
 
 **Headers (required):**
@@ -3702,7 +3702,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /organizations/detail/` 🔒
+### `GET /organizations/detail/` 
 Get organization details.
 
 **Headers (required):**
@@ -3760,7 +3760,7 @@ X-Org-Slug: acme-corp
 }
 ```
 
-### `PATCH /organizations/update/` 🔒 `org.manage`
+### `PATCH /organizations/update/`  `org.manage`
 Update an organization.
 
 **Headers (required):**
@@ -3820,7 +3820,7 @@ X-Org-Slug: acme-corp
 }
 ```
 
-### `DELETE /organizations/delete/` 🔒 `org.owner`
+### `DELETE /organizations/delete/`  `org.owner`
 Delete an organization.
 
 **Headers (required):**
@@ -3860,7 +3860,7 @@ X-Org-Slug: acme-corp
 }
 ```
 
-### `GET /organizations/tree/` 🔒
+### `GET /organizations/tree/` 
 Get the full organization hierarchy tree.
 
 **Headers (required):**
@@ -3911,7 +3911,7 @@ X-Org-Slug: acme-corp
 }
 ```
 
-### `GET /organizations/members/` 🔒
+### `GET /organizations/members/` 
 List organization members.
 
 **Headers (required):**
@@ -3985,7 +3985,7 @@ X-Org-Slug: acme-corp
 }
 ```
 
-### `POST /organizations/members/add/` 🔒 `org.members.invite`
+### `POST /organizations/members/add/`  `org.members.invite`
 Add a member to an organization.
 
 **Headers (required):**
@@ -4043,7 +4043,7 @@ X-Org-Slug: acme-corp
 }
 ```
 
-### `PATCH /organizations/members/<user_id>/` 🔒 `org.members.manage`
+### `PATCH /organizations/members/<user_id>/`  `org.members.manage`
 Update a member's role.
 
 **Headers (required):**
@@ -4102,7 +4102,7 @@ X-Org-Slug: acme-corp
 }
 ```
 
-### `DELETE /organizations/members/<user_id>/remove/` 🔒 `org.members.remove`
+### `DELETE /organizations/members/<user_id>/remove/`  `org.members.remove`
 Remove a member from an organization.
 
 **Headers (required):**
@@ -4145,7 +4145,7 @@ X-Org-Slug: acme-corp
 }
 ```
 
-### `POST /organizations/invitations/` 🔒 `org.members.invite`
+### `POST /organizations/invitations/`  `org.members.invite`
 Invite a user to an organization by email.
 
 **Headers (required):**
@@ -4204,7 +4204,7 @@ X-Org-Slug: acme-corp
 }
 ```
 
-### `GET /org-roles/` 🔒
+### `GET /org-roles/` 
 List organization-scoped roles.
 
 **Headers (required):**
@@ -4289,7 +4289,7 @@ Authorization: Bearer <access_token>
 
 Requires `TENXYTE_WEBAUTHN_ENABLED = True` and `pip install py-webauthn`.
 
-### `POST /webauthn/register/begin/` 🔒
+### `POST /webauthn/register/begin/` 
 Begin passkey registration. Returns a challenge.
 
 **Headers (required):**
@@ -4342,7 +4342,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `POST /webauthn/register/complete/` 🔒
+### `POST /webauthn/register/complete/` 
 Complete passkey registration with the authenticator response.
 
 **Headers (required):**
@@ -4501,7 +4501,7 @@ Complete passkey authentication. Returns JWT tokens.
 }
 ```
 
-### `GET /webauthn/credentials/` 🔒
+### `GET /webauthn/credentials/` 
 List registered passkeys for the current user.
 
 **Headers (required):**
@@ -4535,7 +4535,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `DELETE /webauthn/credentials/<id>/` 🔒
+### `DELETE /webauthn/credentials/<id>/` 
 Delete a registered passkey.
 
 **Headers (required):**
@@ -4559,5 +4559,5 @@ Authorization: Bearer <access_token>
 
 ## Legend
 
-- 🔒 — Requires `Authorization: Bearer <access_token>`
+-  — Requires `Authorization: Bearer <access_token>`
 - `permission.code` — Requires that specific permission
