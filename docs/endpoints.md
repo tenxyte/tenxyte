@@ -742,15 +742,42 @@ Authorization: Bearer <access_token>
 ### `POST /password/reset/request/`
 Request a password reset email.
 
-**Request:**
+**Request (email):**
 ```json
 { "email": "user@example.com" }
+```
+
+**Request (phone):**
+```json
+{
+  "phone_country_code": "+33",
+  "phone_number": "612345678"
+}
 ```
 
 **Response `200`:**
 ```json
 {
-  "message": "Password reset email sent"
+  "message": "Password reset code sent",
+  "otp_id": "uuid-string",
+  "expires_at": "2024-01-01T12:00:00Z",
+  "channel": "email"
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": "Email or phone number is required"
+}
+```
+
+**Response `429` (Rate limited):**
+```json
+{
+  "error": "Too many password reset requests",
+  "retry_after": 3600
 }
 ```
 
@@ -759,11 +786,21 @@ Request a password reset email.
 ### `POST /password/reset/confirm/`
 Confirm password reset with OTP code.
 
-**Request:**
+**Request (email):**
 ```json
 {
   "email": "user@example.com",
-  "code": "123456",
+  "otp_code": "123456",
+  "new_password": "NewSecurePass456!"
+}
+```
+
+**Request (phone):**
+```json
+{
+  "phone_country_code": "+33",
+  "phone_number": "612345678",
+  "otp_code": "123456",
   "new_password": "NewSecurePass456!"
 }
 ```
@@ -771,7 +808,28 @@ Confirm password reset with OTP code.
 **Response `200`:**
 ```json
 {
-  "message": "Password reset successful"
+  "message": "Password reset successful",
+  "tokens_revoked": 3,
+  "password_safe": true
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "new_password": ["Password must be at least 8 characters long."]
+  }
+}
+```
+
+**Response `401` (Invalid/expired code):**
+```json
+{
+  "error": "OTP code has expired",
+  "details": "Please request a new password reset code",
+  "code": "OTP_EXPIRED"
 }
 ```
 
@@ -780,10 +838,15 @@ Confirm password reset with OTP code.
 ### `POST /password/change/` 🔒
 Change password (requires current password).
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 {
-  "old_password": "OldPass123!",
+  "current_password": "OldPass123!",
   "new_password": "NewPass456!"
 }
 ```
@@ -791,7 +854,27 @@ Change password (requires current password).
 **Response `200`:**
 ```json
 {
-  "message": "Password changed successfully"
+  "message": "Password changed successfully",
+  "password_strength": "strong",
+  "sessions_revoked": 2
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "new_password": ["Password must be at least 8 characters long."]
+  }
+}
+```
+
+**Response `401` (Invalid current password):**
+```json
+{
+  "error": "Current password is incorrect",
+  "code": "INVALID_PASSWORD"
 }
 ```
 
@@ -802,15 +885,47 @@ Check password strength without saving.
 
 **Request:**
 ```json
-{ "password": "MyPassword123!" }
+{ 
+  "password": "MyPassword123!",
+  "email": "user@example.com"
+}
 ```
 
 **Response `200`:**
 ```json
 {
   "score": 4,
+  "strength": "Strong",
   "is_valid": true,
-  "feedback": []
+  "errors": [],
+  "requirements": {
+    "min_length": 12,
+    "require_lowercase": true,
+    "require_uppercase": true,
+    "require_numbers": true,
+    "require_special": true
+  }
+}
+```
+
+**Response `200` (Weak password):**
+```json
+{
+  "score": 1,
+  "strength": "Weak",
+  "is_valid": false,
+  "errors": [
+    "Password must be at least 12 characters long.",
+    "Password must contain at least one number.",
+    "Password must contain at least one special character."
+  ],
+  "requirements": {
+    "min_length": 12,
+    "require_lowercase": true,
+    "require_uppercase": true,
+    "require_numbers": true,
+    "require_special": true
+  }
 }
 ```
 
@@ -822,11 +937,15 @@ Get the current password policy requirements.
 **Response `200`:**
 ```json
 {
-  "min_length": 8,
-  "require_uppercase": true,
-  "require_lowercase": true,
-  "require_number": true,
-  "require_special": true
+  "requirements": {
+    "min_length": 12,
+    "require_lowercase": true,
+    "require_uppercase": true,
+    "require_numbers": true,
+    "require_special": true
+  },
+  "min_length": 12,
+  "max_length": 128
 }
 ```
 
