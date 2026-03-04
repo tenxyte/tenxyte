@@ -1102,11 +1102,16 @@ X-Org-Slug: organization-slug
 ### `GET /2fa/status/` 🔒
 Get 2FA status for the current user.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
 {
   "is_enabled": false,
-  "has_backup_codes": false
+  "backup_codes_remaining": 0
 }
 ```
 
@@ -1115,14 +1120,28 @@ Get 2FA status for the current user.
 ### `POST /2fa/setup/` 🔒
 Initiate 2FA setup. Returns QR code and backup codes.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
 {
+  "message": "Scan the QR code with your authenticator app, then confirm with a code.",
   "secret": "JBSWY3DPEHPK3PXP",
   "qr_code": "data:image/png;base64,...",
   "provisioning_uri": "otpauth://totp/...",
   "backup_codes": ["abc123", "def456", ...],
-  "warning": "Save the backup codes securely."
+  "warning": "Save the backup codes securely. They will not be shown again."
+}
+```
+
+**Response `400` (2FA already enabled):**
+```json
+{
+  "error": "2FA is already enabled",
+  "code": "2FA_ALREADY_ENABLED"
 }
 ```
 
@@ -1131,6 +1150,11 @@ Initiate 2FA setup. Returns QR code and backup codes.
 ### `POST /2fa/confirm/` 🔒
 Confirm 2FA activation with a TOTP code.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 { "code": "123456" }
@@ -1139,7 +1163,25 @@ Confirm 2FA activation with a TOTP code.
 **Response `200`:**
 ```json
 {
-  "message": "2FA authentication successful"
+  "message": "2FA enabled successfully",
+  "is_enabled": true
+}
+```
+
+**Response `400` (Invalid code):**
+```json
+{
+  "error": "Invalid TOTP code",
+  "details": "The code provided is incorrect or outside the valid time window",
+  "code": "INVALID_CODE"
+}
+```
+
+**Response `400` (Code missing):**
+```json
+{
+  "error": "Code is required",
+  "code": "CODE_REQUIRED"
 }
 ```
 
@@ -1148,15 +1190,41 @@ Confirm 2FA activation with a TOTP code.
 ### `POST /2fa/disable/` 🔒
 Disable 2FA (requires TOTP code or backup code).
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
-{ "code": "123456" }
+{
+  "code": "123456",
+  "password": "UserP@ss123!"
+}
 ```
 
 **Response `200`:**
 ```json
 {
-  "message": "2FA disabled successfully"
+  "message": "2FA disabled successfully",
+  "is_enabled": false
+}
+```
+
+**Response `400` (Invalid code):**
+```json
+{
+  "error": "Invalid TOTP code",
+  "details": "The code provided is incorrect",
+  "code": "INVALID_CODE"
+}
+```
+
+**Response `400` (Code missing):**
+```json
+{
+  "error": "Code is required",
+  "code": "CODE_REQUIRED"
 }
 ```
 
@@ -1165,6 +1233,11 @@ Disable 2FA (requires TOTP code or backup code).
 ### `POST /2fa/backup-codes/` 🔒
 Regenerate backup codes (invalidates old ones).
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 { "code": "123456" }
@@ -1173,7 +1246,26 @@ Regenerate backup codes (invalidates old ones).
 **Response `200`:**
 ```json
 {
-  "backup_codes": ["new123", "new456"]
+  "message": "Backup codes regenerated",
+  "backup_codes": ["AB12CD34", "EF56GH78", "IJ90KL12", "MN34OP56", "QR78ST90", "UV12WX34", "YZ56AB78", "CD90EF12", "GH34IJ56", "KL78MN90"],
+  "warning": "Save these codes securely. They will not be shown again."
+}
+```
+
+**Response `400` (Invalid code):**
+```json
+{
+  "error": "Invalid TOTP code",
+  "details": "The TOTP code provided is incorrect",
+  "code": "INVALID_CODE"
+}
+```
+
+**Response `400` (Code missing):**
+```json
+{
+  "error": "TOTP code is required",
+  "code": "CODE_REQUIRED"
 }
 ```
 
