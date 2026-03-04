@@ -1,5 +1,18 @@
 # Tenxyte AIRS (AI Responsibility & Security)
 
+## Table of Contents
+
+- [Tenxyte AIRS (AI Responsibility & Security)](#tenxyte-airs-ai-responsibility-security)
+  - [Key Features](#key-features)
+    - [1. Core Agentic Parity (AgentToken)](#1-core-agentic-parity-agenttoken)
+    - [2. Circuit Breaker & Rate Limiting](#2-circuit-breaker-rate-limiting)
+    - [3. Human in the Loop (HITL)](#3-human-in-the-loop-hitl)
+    - [4. Guardrails: PII Redaction & Budget](#4-guardrails-pii-redaction-budget)
+    - [5. Forensic Audit](#5-forensic-audit)
+  - [Configuration](#configuration)
+
+---
+
 Tenxyte AIRS is a comprehensive suite of responsibility, security, and safeguards for integrated AI agents. It addresses major challenges posed by LLMs and agentic models in production environments (e.g., EchoLeak, Shadow Escape).
 
 ## Key Features
