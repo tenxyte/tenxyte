@@ -605,19 +605,46 @@ Authorization: Bearer <access_token>
 
 ## OTP Verification
 
-### `POST /otp/request/`
+### `POST /otp/request/` 🔒
 Request an OTP code (email or phone verification).
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
 
 **Request:**
 ```json
-{ "type": "email" }
+{ "otp_type": "email" }
 ```
-`type`: `"email"` or `"phone"`
+`otp_type`: `"email"` or `"phone"`
 
 **Response `200`:**
 ```json
 {
-  "message": "OTP verification code sent"
+  "message": "OTP verification code sent",
+  "otp_id": "uuid-string",
+  "expires_at": "2024-01-01T12:00:00Z",
+  "channel": "email",
+  "masked_recipient": "u***@example.com"
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "otp_type": ["Enter a valid choice."]
+  }
+}
+```
+
+**Response `429` (Rate limited):**
+```json
+{
+  "error": "Too many OTP requests",
+  "retry_after": 300
 }
 ```
 
@@ -626,6 +653,11 @@ Request an OTP code (email or phone verification).
 ### `POST /otp/verify/email/` 🔒
 Verify email with OTP code.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 { "code": "123456" }
@@ -634,7 +666,28 @@ Verify email with OTP code.
 **Response `200`:**
 ```json
 {
-  "message": "Email verified successfully"
+  "message": "Email verified successfully",
+  "email_verified": true,
+  "verified_at": "2024-01-01T12:00:00Z"
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "code": ["Ensure this field has no more than 6 characters."]
+  }
+}
+```
+
+**Response `401` (Invalid/expired code):**
+```json
+{
+  "error": "Invalid OTP code",
+  "details": "The code provided is incorrect or has expired",
+  "code": "INVALID_OTP"
 }
 ```
 
@@ -643,6 +696,11 @@ Verify email with OTP code.
 ### `POST /otp/verify/phone/` 🔒
 Verify phone with OTP code.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 { "code": "123456" }
@@ -651,7 +709,29 @@ Verify phone with OTP code.
 **Response `200`:**
 ```json
 {
-  "message": "Phone verified successfully"
+  "message": "Phone verified successfully",
+  "phone_verified": true,
+  "verified_at": "2024-01-01T12:00:00Z",
+  "phone_number": "+33612345678"
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "code": ["Ensure this field has no more than 6 characters."]
+  }
+}
+```
+
+**Response `401` (Invalid/expired code):**
+```json
+{
+  "error": "Invalid OTP code",
+  "details": "The code provided is incorrect or has expired",
+  "code": "INVALID_OTP"
 }
 ```
 
