@@ -2010,6 +2010,16 @@ Authorization: Bearer <access_token>
 ### `GET /applications/` 🔒 `applications.view`
 List all applications.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters (optional):**
+- `search`: Search in name, description
+- `is_active`: Filter by active status (true/false)
+- `ordering`: Order by name, created_at (default: name)
+
 **Response `200`:**
 ```json
 {
@@ -2020,7 +2030,11 @@ List all applications.
     {
       "id": "app_123",
       "name": "My Client App",
-      "is_active": true
+      "description": "Frontend application for user dashboard",
+      "access_key": "ak_abc123def456",
+      "is_active": true,
+      "created_at": "2024-01-01T12:00:00Z",
+      "updated_at": "2024-01-01T12:00:00Z"
     }
   ]
 }
@@ -2028,6 +2042,11 @@ List all applications.
 
 ### `POST /applications/` 🔒 `applications.manage`
 Create an application.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
 
 **Request:**
 ```json
@@ -2040,32 +2059,77 @@ Create an application.
 **Response `201`:**
 ```json
 {
-  "id": "app_124",
-  "name": "My Next.js App",
-  "access_key": "ak_abc123",
-  "access_secret": "as_def456"
+  "message": "Application created successfully",
+  "application": {
+    "id": "app_124",
+    "name": "My Next.js App",
+    "description": "Frontend client",
+    "access_key": "ak_abc123def456",
+    "is_active": true,
+    "created_at": "2024-01-01T12:00:00Z",
+    "updated_at": "2024-01-01T12:00:00Z"
+  },
+  "credentials": {
+    "access_key": "ak_abc123def456",
+    "access_secret": "as_def456ghi789"
+  },
+  "warning": "Save the access_secret now! It will never be shown again."
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "name": ["This field is required."]
+  }
 }
 ```
 
 ### `GET /applications/<id>/` 🔒 `applications.view`
 Get an application.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
 {
   "id": "app_124",
   "name": "My Next.js App",
-  "access_key": "ak_abc123"
+  "description": "Frontend client application",
+  "access_key": "ak_abc123def456",
+  "is_active": true,
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T12:00:00Z"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Application not found",
+  "code": "NOT_FOUND"
 }
 ```
 
 ### `PUT /applications/<id>/` 🔒 `applications.manage`
 Update an application.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 {
-  "name": "Updated App Name"
+  "name": "Updated App Name",
+  "description": "Updated description",
+  "is_active": true
 }
 ```
 
@@ -2073,32 +2137,106 @@ Update an application.
 ```json
 {
   "id": "app_124",
-  "name": "Updated App Name"
+  "name": "Updated App Name",
+  "description": "Updated description",
+  "access_key": "ak_abc123def456",
+  "is_active": true,
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T13:00:00Z"
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "name": ["This field may not be blank."]
+  }
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Application not found",
+  "code": "NOT_FOUND"
 }
 ```
 
 ### `DELETE /applications/<id>/` 🔒 `applications.manage`
 Delete an application.
 
-**Response `204`:**
-```json
-{}
+**Headers (required):**
 ```
-
-### `POST /applications/<id>/regenerate/` 🔒 `applications.manage`
-Regenerate the application's access secret.
-
-**Request:**
-```json
-{}
+Authorization: Bearer <access_token>
 ```
 
 **Response `200`:**
 ```json
 {
-  "id": "app_124",
-  "access_key": "ak_abc123",
-  "access_secret": "as_new789"
+  "message": "Application \"My App\" deleted successfully"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Application not found",
+  "code": "NOT_FOUND"
+}
+```
+
+### `POST /applications/<id>/regenerate/` 🔒 `applications.manage`
+Regenerate the application's access secret.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request:**
+```json
+{
+  "confirmation": "REGENERATE"
+}
+```
+
+**Response `200`:**
+```json
+{
+  "message": "Credentials regenerated successfully",
+  "application": {
+    "id": "app_124",
+    "name": "My Next.js App",
+    "description": "Frontend client",
+    "access_key": "ak_new123def456",
+    "is_active": true,
+    "created_at": "2024-01-01T12:00:00Z",
+    "updated_at": "2024-01-01T13:00:00Z"
+  },
+  "credentials": {
+    "access_key": "ak_new123def456",
+    "access_secret": "as_new789ghi012"
+  },
+  "warning": "Save the access_secret now! It will never be shown again.",
+  "old_credentials_invalidated": true
+}
+```
+
+**Response `400` (Confirmation required):**
+```json
+{
+  "error": "Confirmation required",
+  "code": "CONFIRMATION_REQUIRED"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Application not found",
+  "code": "NOT_FOUND"
 }
 ```
 
@@ -2109,7 +2247,25 @@ Regenerate the application's access secret.
 ### `GET /admin/users/` 🔒 `users.view`
 List all users with filtering and pagination.
 
-Query params: `?search=john&is_active=true&page=1`
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters (optional):**
+- `search`: Search in email, first_name, last_name
+- `is_active`: Filter by active status (true/false)
+- `is_locked`: Filter by locked account (true/false)
+- `is_banned`: Filter by banned account (true/false)
+- `is_deleted`: Filter by deleted account (true/false)
+- `is_email_verified`: Filter by email verified (true/false)
+- `is_2fa_enabled`: Filter by 2FA enabled (true/false)
+- `role`: Filter by role code
+- `date_from`: Created after (YYYY-MM-DD)
+- `date_to`: Created before (YYYY-MM-DD)
+- `ordering`: Sort by email, created_at, last_login, first_name
+- `page`: Page number
+- `page_size`: Items per page (max 100)
 
 **Response `200`:**
 ```json
@@ -2119,13 +2275,20 @@ Query params: `?search=john&is_active=true&page=1`
   "previous": null,
   "results": [
     {
-      "id": 1,
+      "id": "1",
       "email": "user@example.com",
       "first_name": "John",
       "last_name": "Doe",
       "is_active": true,
+      "is_locked": false,
       "is_banned": false,
-      "roles": ["admin"]
+      "is_deleted": false,
+      "is_email_verified": true,
+      "is_phone_verified": false,
+      "is_2fa_enabled": true,
+      "roles": ["admin", "user"],
+      "created_at": "2024-01-01T12:00:00Z",
+      "last_login": "2024-01-01T13:00:00Z"
     }
   ]
 }
@@ -2134,66 +2297,241 @@ Query params: `?search=john&is_active=true&page=1`
 ### `GET /admin/users/<id>/` 🔒 `users.view`
 Get a user's full profile.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
 {
-  "id": 1,
+  "id": "1",
   "email": "user@example.com",
+  "phone_country_code": "+33",
+  "phone_number": "612345678",
   "first_name": "John",
   "last_name": "Doe",
   "is_active": true,
+  "is_locked": false,
+  "locked_until": null,
   "is_banned": false,
-  "roles": ["admin"]
+  "is_deleted": false,
+  "deleted_at": null,
+  "is_email_verified": true,
+  "is_phone_verified": false,
+  "is_2fa_enabled": true,
+  "is_staff": false,
+  "is_superuser": false,
+  "max_sessions": 5,
+  "max_devices": 3,
+  "roles": ["admin", "user"],
+  "permissions": ["users.view", "users.manage", "posts.edit"],
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T13:00:00Z",
+  "last_login": "2024-01-01T14:00:00Z"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "User not found",
+  "code": "NOT_FOUND"
 }
 ```
 
 ### `POST /admin/users/<id>/ban/` 🔒 `users.ban`
 Ban a user.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
-{ "reason": "Terms of service violation" }
+{
+  "reason": "Terms of service violation"
+}
 ```
 
 **Response `200`:**
 ```json
 {
-  "message": "User banned successfully"
+  "message": "User banned successfully",
+  "user": {
+    "id": "1",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "is_active": false,
+    "is_banned": true,
+    "roles": ["user"],
+    "created_at": "2024-01-01T12:00:00Z",
+    "last_login": "2024-01-01T13:00:00Z"
+  }
+}
+```
+
+**Response `400` (Already banned):**
+```json
+{
+  "error": "User already banned",
+  "code": "ALREADY_BANNED"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "User not found",
+  "code": "NOT_FOUND"
 }
 ```
 
 ### `POST /admin/users/<id>/unban/` 🔒 `users.ban`
 Unban a user.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request:**
+```
+POST /admin/users/123/unban/
+```
+
 **Response `200`:**
 ```json
 {
-  "message": "User unbanned successfully"
+  "message": "User unbanned successfully",
+  "user": {
+    "id": "1",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "is_active": true,
+    "is_banned": false,
+    "roles": ["user"],
+    "created_at": "2024-01-01T12:00:00Z",
+    "last_login": "2024-01-01T13:00:00Z"
+  }
+}
+```
+
+**Response `400` (Not banned):**
+```json
+{
+  "error": "User is not banned",
+  "code": "NOT_BANNED"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "User not found",
+  "code": "NOT_FOUND"
 }
 ```
 
 ### `POST /admin/users/<id>/lock/` 🔒 `users.lock`
 Lock a user account.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
-{ "duration_minutes": 60 }
+{
+  "duration_minutes": 60,
+  "reason": "Suspicious login activity detected"
+}
 ```
 
 **Response `200`:**
 ```json
 {
-  "message": "User locked for 60 minutes"
+  "message": "User locked for 60 minutes",
+  "user": {
+    "id": "1",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "is_active": true,
+    "is_locked": true,
+    "locked_until": "2024-01-01T14:00:00Z",
+    "roles": ["user"],
+    "created_at": "2024-01-01T12:00:00Z",
+    "last_login": "2024-01-01T13:00:00Z"
+  }
+}
+```
+
+**Response `400` (Already locked):**
+```json
+{
+  "error": "User already locked",
+  "code": "ALREADY_LOCKED"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "User not found",
+  "code": "NOT_FOUND"
 }
 ```
 
 ### `POST /admin/users/<id>/unlock/` 🔒 `users.lock`
 Unlock a user account.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request:**
+```
+POST /admin/users/123/unlock/
+```
+
 **Response `200`:**
 ```json
 {
-  "message": "User unlocked successfully"
+  "message": "User unlocked successfully",
+  "user": {
+    "id": "1",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "is_active": true,
+    "is_locked": false,
+    "locked_until": null,
+    "roles": ["user"],
+    "created_at": "2024-01-01T12:00:00Z",
+    "last_login": "2024-01-01T13:00:00Z"
+  }
+}
+```
+
+**Response `400` (Not locked):**
+```json
+{
+  "error": "User is not locked",
+  "code": "NOT_LOCKED"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "User not found",
+  "code": "NOT_FOUND"
 }
 ```
 
