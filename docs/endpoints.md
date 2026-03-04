@@ -1774,77 +1774,232 @@ Authorization: Bearer <access_token>
 ### `GET /users/<id>/roles/` 🔒 `users.manage`
 List roles assigned to a user.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
-[
-  {
-    "id": "1",
-    "name": "Editor"
-  }
-]
+{
+  "user_id": "1",
+  "roles": [
+    {
+      "id": "1",
+      "code": "editor",
+      "name": "Editor",
+      "is_default": false
+    }
+  ]
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "User not found",
+  "code": "NOT_FOUND"
+}
 ```
 
 ### `POST /users/<id>/roles/` 🔒 `users.manage`
 Assign a role to a user.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 {
-  "role_ids": ["1"]
+  "role_code": "editor"
 }
 ```
 
 **Response `200`:**
 ```json
 {
-  "message": "Roles assigned successfully"
+  "message": "Role assigned",
+  "roles": ["editor", "user"]
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "role_code": ["This field is required."]
+  }
+}
+```
+
+**Response `404` (User not found):**
+```json
+{
+  "error": "User not found",
+  "code": "NOT_FOUND"
+}
+```
+
+**Response `404` (Role not found):**
+```json
+{
+  "error": "Role not found",
+  "code": "ROLE_NOT_FOUND"
 }
 ```
 
 ### `DELETE /users/<id>/roles/` 🔒 `users.manage`
 Remove a role from a user.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters (required):**
+- `role_code`: Role code to remove
+
 **Request:**
-```json
-{
-  "role_ids": ["1"]
-}
+```
+DELETE /users/123/roles/?role_code=editor
 ```
 
 **Response `200`:**
 ```json
 {
-  "message": "Roles removed successfully"
+  "message": "Role removed",
+  "roles": ["user"]
+}
+```
+
+**Response `400` (Missing parameter):**
+```json
+{
+  "error": "role_code query parameter required",
+  "code": "MISSING_PARAM"
+}
+```
+
+**Response `404` (User not found):**
+```json
+{
+  "error": "User not found",
+  "code": "NOT_FOUND"
+}
+```
+
+**Response `404` (Role not found):**
+```json
+{
+  "error": "Role not found",
+  "code": "ROLE_NOT_FOUND"
 }
 ```
 
 ### `GET /users/<id>/permissions/` 🔒 `users.manage`
 List direct permissions for a user.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
-[
-  {
-    "id": "1",
-    "code": "posts.view"
-  }
-]
+{
+  "user_id": "1",
+  "email": "user@example.com",
+  "direct_permissions": [
+    {
+      "id": "1",
+      "code": "posts.view",
+      "name": "View posts",
+      "description": "Can view blog posts",
+      "parent": null,
+      "children": [],
+      "created_at": "2024-01-01T12:00:00Z"
+    }
+  ],
+  "all_permissions": ["posts.view", "posts.edit", "users.view"]
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "User not found",
+  "code": "NOT_FOUND"
+}
 ```
 
 ### `POST /users/<id>/permissions/` 🔒 `users.manage`
 Assign a direct permission to a user.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 {
-  "permission_ids": ["1"]
+  "permission_codes": ["posts.edit", "posts.publish"]
 }
 ```
 
 **Response `200`:**
 ```json
 {
-  "message": "Permissions assigned successfully"
+  "message": "2 permission(s) added",
+  "added": ["posts.edit", "posts.publish"],
+  "user_id": "1",
+  "direct_permissions": [
+    {
+      "id": "1",
+      "code": "posts.edit",
+      "name": "Edit posts",
+      "description": "Can edit blog posts"
+    },
+    {
+      "id": "2",
+      "code": "posts.publish",
+      "name": "Publish posts",
+      "description": "Can publish blog posts"
+    }
+  ]
+}
+```
+
+**Response `200` (Some already assigned):**
+```json
+{
+  "message": "1 permission(s) added",
+  "added": ["posts.publish"],
+  "already_assigned": ["posts.edit"],
+  "user_id": "1",
+  "direct_permissions": [...]
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "permission_codes": ["This field is required."]
+  }
+}
+```
+
+**Response `400` (Permissions not found):**
+```json
+{
+  "error": "Some permissions not found",
+  "code": "PERMISSIONS_NOT_FOUND",
+  "not_found": ["invalid.permission"]
 }
 ```
 
