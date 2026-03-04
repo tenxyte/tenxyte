@@ -6,16 +6,53 @@ Tenxyte supports hierarchical organizations with org-scoped RBAC, member managem
 
 ---
 
+## Table of Contents
+
+- [Enable Organizations](#enable-organizations)
+- [Configuration](#configuration)
+- [Concepts](#concepts)
+  - [Organization](#organization)
+  - [OrganizationRole](#organizationrole)
+  - [OrganizationMembership](#organizationmembership)
+- [API Usage](#api-usage)
+  - [Create an Organization](#create-an-organization)
+  - [Create a Sub-Organization](#create-a-sub-organization)
+  - [List My Organizations](#list-my-organizations)
+  - [Get Organization Details](#get-organization-details)
+  - [Get Organization Tree](#get-organization-tree)
+  - [Update an Organization](#update-an-organization)
+  - [Delete an Organization](#delete-an-organization)
+- [Member Management](#member-management)
+  - [List Members](#list-members)
+  - [Add a Member](#add-a-member)
+  - [Update a Member's Role](#update-a-members-role)
+  - [Remove a Member](#remove-a-member)
+  - [Invite a Member by Email](#invite-a-member-by-email)
+- [Organization Roles](#organization-roles)
+- [Role Inheritance](#role-inheritance)
+- [Python API](#python-api)
+- [Org-Scoped RBAC in Views](#org-scoped-rbac-in-views)
+- [Data Model](#data-model)
+- [Settings Reference](#settings-reference)
+
+---
+
 ## Enable Organizations
+
+To enable the organizations feature, update your `settings.py`:
 
 ```python
 # settings.py
 TENXYTE_ORGANIZATIONS_ENABLED = True
+
+# Add the middleware to attach organization context to requests
+MIDDLEWARE += [
+    'tenxyte.middleware.OrganizationContextMiddleware',
+]
 ```
 
-Then run migrations:
+Then run migrations to prepare the database:
 ```bash
-python manage.py makemigrations
 python manage.py migrate
 ```
 
@@ -235,9 +272,10 @@ Create org roles programmatically:
 from tenxyte.models import OrganizationRole
 
 role = OrganizationRole.objects.create(
-    name="admin",
-    organization=org,
-    permissions=["org.manage", "org.members.manage"]
+    code="admin",
+    name="Admin",
+    description="Administrator with management permissions",
+    permissions=["org.members.invite", "org.members.manage"]
 )
 ```
 
@@ -318,18 +356,24 @@ Organization
 ├── name
 ├── slug (unique)
 ├── description
-├── parent (FK → Organization, nullable)
+├── parent (FK → self, nullable)
+├── metadata (JSON)
 ├── is_active
-├── application (FK → Application)
+├── max_members
 ├── created_at
-└── updated_at
+├── updated_at
+└── created_by (FK → User, nullable)
 
 OrganizationRole
 ├── id
+├── code (unique)
 ├── name
-├── organization (FK → Organization)
-├── permissions (M2M → Permission)
-└── created_at
+├── description
+├── is_system
+├── is_default
+├── permissions (JSON list)
+├── created_at
+└── updated_at
 
 OrganizationMembership
 ├── id
@@ -338,20 +382,21 @@ OrganizationMembership
 ├── role (FK → OrganizationRole)
 ├── status
 ├── invited_by (FK → User, nullable)
-├── invited_at
-├── joined_at
-└── is_active
+├── invited_at (nullable)
+├── created_at
+└── updated_at
 
 OrganizationInvitation
 ├── id
 ├── organization (FK → Organization)
 ├── email
 ├── role (FK → OrganizationRole)
-├── invited_by (FK → User)
 ├── token (unique)
+├── invited_by (FK → User, nullable)
+├── status
+├── created_at
 ├── expires_at
-├── accepted_at (nullable)
-└── created_at
+└── accepted_at (nullable)
 ```
 
 ---
@@ -364,6 +409,7 @@ OrganizationInvitation
 | `TENXYTE_ORG_ROLE_INHERITANCE` | `True` | Propagate roles down hierarchy |
 | `TENXYTE_ORG_MAX_DEPTH` | `5` | Max nesting depth |
 | `TENXYTE_ORG_MAX_MEMBERS` | `0` | Max members per org (0 = unlimited) |
+| `TENXYTE_CREATE_DEFAULT_ORGANIZATION`| `True` | Create a default organization for new users |
 | `TENXYTE_ORGANIZATION_MODEL` | `'tenxyte.Organization'` | Swappable model |
 | `TENXYTE_ORGANIZATION_ROLE_MODEL` | `'tenxyte.OrganizationRole'` | Swappable model |
 | `TENXYTE_ORGANIZATION_MEMBERSHIP_MODEL` | `'tenxyte.OrganizationMembership'` | Swappable model |
