@@ -4172,23 +4172,110 @@ Requires `TENXYTE_WEBAUTHN_ENABLED = True` and `pip install py-webauthn`.
 ### `POST /webauthn/register/begin/` 🔒
 Begin passkey registration. Returns a challenge.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
-{ "challenge": "...", "rp": { "id": "yourapp.com", "name": "Your App" }, "user": { "id": "...", "name": "user@example.com", "displayName": "user@example.com" } }
+{
+  "challenge": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6",
+  "rp": {
+    "name": "Tenxyte",
+    "id": "localhost:8000"
+  },
+  "user": {
+    "id": "MTIzNDU2Nzg5MA",
+    "name": "user@example.com",
+    "displayName": "user@example.com"
+  },
+  "pubKeyCredParams": [
+    {
+      "type": "public-key",
+      "alg": -7
+    },
+    {
+      "type": "public-key",
+      "alg": -257
+    },
+    {
+      "type": "public-key",
+      "alg": -8
+    }
+  ],
+  "timeout": 300000,
+  "authenticatorSelection": {
+    "authenticatorAttachment": "platform",
+    "userVerification": "preferred",
+    "requireResidentKey": false
+  },
+  "attestation": "direct"
+}
+```
+
+**Response `400` (WebAuthn disabled):**
+```json
+{
+  "error": "WebAuthn is not enabled",
+  "code": "WEBAUTHN_DISABLED"
+}
 ```
 
 ### `POST /webauthn/register/complete/` 🔒
 Complete passkey registration with the authenticator response.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
-{ "id": "...", "rawId": "...", "response": { "clientDataJSON": "...", "attestationObject": "..." }, "type": "public-key" }
+{
+  "challenge_id": 12345,
+  "credential": {
+    "id": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6",
+    "rawId": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6",
+    "response": {
+      "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiQTNINUQ3RTlGMUcyRzRIOEk4SjBLMUwyTTNONE81UDZRN1I4UzlUMFUxVjJXM1g0WTVaNiIsIm9yaWdpbiI6Imh0dHBzOi8vbG9jYWxob3N0OjgwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+      "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YVjESZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NBAAAAAAAAAAAAAAAAAAAAAAAAAAAAEGZ1bGxzY3JlZW5fYXR0ZXN0YXRpb26hYXRoRGF0YVjESZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NBAAAAAAAAAAAAAAAAAAAAAAAAAAAAEGZ1bGxzY3JlZW5fYXR0ZXN0YXRpb24"
+    },
+    "type": "public-key",
+    "clientExtensionResults": {}
+  },
+  "device_name": "iPhone 14 Pro"
+}
 ```
 
 **Response `201`:**
 ```json
 {
-  "message": "Passkey registered successfully"
+  "message": "Passkey registered successfully",
+  "credential": {
+    "id": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6",
+    "name": "iPhone 14 Pro",
+    "created_at": "2024-01-20T16:30:00Z",
+    "last_used_at": null,
+    "device_type": "mobile",
+    "is_active": true
+  }
+}
+```
+
+**Response `400` (Invalid credential):**
+```json
+{
+  "error": "Invalid WebAuthn credential response",
+  "code": "INVALID_CREDENTIAL"
+}
+```
+
+**Response `400` (Duplicate credential):**
+```json
+{
+  "error": "This credential is already registered",
+  "code": "DUPLICATE_CREDENTIAL"
 }
 ```
 
@@ -4197,12 +4284,44 @@ Begin passkey authentication. Returns a challenge.
 
 **Request:**
 ```json
-{ "email": "user@example.com" }
+{
+  "email": "user@example.com"
+}
 ```
 
 **Response `200`:**
 ```json
-{ "challenge": "...", "timeout": 60000, "rpId": "yourapp.com" }
+{
+  "challenge": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6",
+  "rpId": "localhost:8000",
+  "allowCredentials": [
+    {
+      "id": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6",
+      "type": "public-key"
+    }
+  ],
+  "userVerification": "preferred",
+  "timeout": 300000
+}
+```
+
+**Response `200` (Resident key mode):**
+```json
+{
+  "challenge": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6",
+  "rpId": "localhost:8000",
+  "allowCredentials": [],
+  "userVerification": "required",
+  "timeout": 300000
+}
+```
+
+**Response `400` (User not found):**
+```json
+{
+  "error": "User not found",
+  "code": "USER_NOT_FOUND"
+}
 ```
 
 ### `POST /webauthn/authenticate/complete/`
@@ -4210,40 +4329,111 @@ Complete passkey authentication. Returns JWT tokens.
 
 **Request:**
 ```json
-{ "id": "...", "rawId": "...", "response": { "clientDataJSON": "...", "authenticatorData": "...", "signature": "...", "userHandle": "..." }, "type": "public-key" }
+{
+  "challenge_id": 12345,
+  "credential": {
+    "id": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6",
+    "rawId": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6",
+    "response": {
+      "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiQTNINUQ3RTlGMUcyRzRIOEk4SjBLMUwyTTNONE81UDZRN1I4UzlUMFUxVjJXM1g0WTVaNiIsIm9yaWdpbiI6Imh0dHBzOi8vbG9jYWxob3N0OjgwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2UsImF1dGhlbnRpY2F0b3JEYXRhIjoiU1RaTVlJYlJibUZpYkdsemNHRnpjM2R2Y21WeVgybGtJam9pUTFWVFZFOU5SVkpmTVRJek5EVTJJaXdpYVhOemRXVmtYMlJoZEdVaU9pSXlNREkwTFRFd0xURXdWREV3T2pBd09qQXdXaUlzSW1WNGNHbHllVjlrWVhSbElqb2lNakF5TlMweE1DMHhNRlF4TURvd01Eb3dNRm9pTENKd2NtOWtkV04wSWpvaWRIbHJMVzl3WlhKaGRHOXlJaXdpYldGamFHbHVaVjltYVc1blpYSndjbWx1ZENJNklqRXlNelExTmpjNE9UQXhNak0wSW4wPQ",
+      "authenticatorData": "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MBAAAAAQ",
+      "signature": "MEUCIQCdwBCrP_zZyGLYQh9a5r3U9k4FzJg2dJ7L7fJgQIgYKj8pXuYqJ5fX9r8tY2L3K4J7G6H5F4Z3E2D1C0B8A",
+      "userHandle": "MTIzNDU2Nzg5MA"
+    },
+    "type": "public-key",
+    "clientExtensionResults": {}
+  },
+  "device_info": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15"
+}
 ```
 
 **Response `200`:**
 ```json
 {
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ...",
-  "token_type": "Bearer",
-  "expires_in": 3600
+  "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 42,
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "is_active": true,
+    "last_login": "2024-01-20T17:00:00Z"
+  },
+  "message": "Authentication successful",
+  "credential_used": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6"
+}
+```
+
+**Response `400` (Invalid assertion):**
+```json
+{
+  "error": "Invalid WebAuthn assertion",
+  "code": "INVALID_ASSERTION"
+}
+```
+
+**Response `401` (Authentication failed):**
+```json
+{
+  "error": "Authentication failed",
+  "code": "AUTH_FAILED"
 }
 ```
 
 ### `GET /webauthn/credentials/` 🔒
 List registered passkeys for the current user.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
-[
-  {
-    "id": "cred_123",
-    "name": "YubiKey 5",
-    "created_at": "2023-10-01T12:00:00Z"
-  }
-]
+{
+  "credentials": [
+    {
+      "id": 1,
+      "device_name": "iPhone 14 Pro",
+      "created_at": "2024-01-15T10:30:00Z",
+      "last_used_at": "2024-01-20T16:45:00Z",
+      "authenticator_type": "platform",
+      "is_resident_key": true,
+      "is_active": true
+    },
+    {
+      "id": 2,
+      "device_name": "YubiKey 5",
+      "created_at": "2024-01-10T14:20:00Z",
+      "last_used_at": "2024-01-18T09:15:00Z",
+      "authenticator_type": "cross-platform",
+      "is_resident_key": false,
+      "is_active": true
+    }
+  ]
+}
 ```
 
 ### `DELETE /webauthn/credentials/<id>/` 🔒
 Delete a registered passkey.
 
-**Response `200`:**
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Path Parameters:**
+- `id`: ID of the passkey to delete
+
+**Response `204`:**
+(no content - successful deletion)
+
+**Response `404` (Not found):**
 ```json
 {
-  "message": "Passkey deleted"
+  "error": "Passkey not found",
+  "code": "NOT_FOUND"
 }
 ```
 
