@@ -1,9 +1,8 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Tenxyte API",
-    "version": "0.9.1",
-    "description": "Complete Django authentication package \u2014 JWT, RBAC, 2FA (TOTP), Magic Links, Passkeys (WebAuthn), Social Login, Organizations B2B."
+    "title": "",
+    "version": "0.0.0"
   },
   "paths": {
     "/api/v1/auth/2fa/backup-codes/": {
@@ -18,7 +17,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorBackupCodesRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorBackupCodesRequest"
               },
               "examples": {
                 "RegenerateBackupCodes": {
@@ -59,12 +58,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorBackupCodesRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorBackupCodesRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorBackupCodesRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorBackupCodesRequest"
               }
             }
           },
@@ -182,7 +181,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorConfirmRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorConfirmRequest"
               },
               "examples": {
                 "Confirm2faSuccess": {
@@ -211,12 +210,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorConfirmRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorConfirmRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorConfirmRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorConfirmRequest"
               }
             }
           },
@@ -311,7 +310,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorDisableRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorDisableRequest"
               },
               "examples": {
                 "Disable2faTotp": {
@@ -340,12 +339,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorDisableRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorDisableRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorDisableRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorDisableRequest"
               }
             }
           },
@@ -1084,7 +1083,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProcessDeletionRequestRequest"
+                "$ref": "#/components/schemas/ProcessDeletionRequest"
               },
               "examples": {
                 "ProcessSuccess": {
@@ -1112,12 +1111,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ProcessDeletionRequestRequest"
+                "$ref": "#/components/schemas/ProcessDeletionRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ProcessDeletionRequestRequest"
+                "$ref": "#/components/schemas/ProcessDeletionRequest"
               }
             }
           },
@@ -1745,17 +1744,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedAdminUserUpdateRequest"
+                "$ref": "#/components/schemas/PatchedAdminUserUpdate"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedAdminUserUpdateRequest"
+                "$ref": "#/components/schemas/PatchedAdminUserUpdate"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedAdminUserUpdateRequest"
+                "$ref": "#/components/schemas/PatchedAdminUserUpdate"
               }
             }
           }
@@ -1872,17 +1871,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BanUserRequest"
+                "$ref": "#/components/schemas/BanUser"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/BanUserRequest"
+                "$ref": "#/components/schemas/BanUser"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/BanUserRequest"
+                "$ref": "#/components/schemas/BanUser"
               }
             }
           }
@@ -1940,17 +1939,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LockUserRequest"
+                "$ref": "#/components/schemas/LockUser"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/LockUserRequest"
+                "$ref": "#/components/schemas/LockUser"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/LockUserRequest"
+                "$ref": "#/components/schemas/LockUser"
               }
             }
           }
@@ -2443,7 +2442,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ApplicationCreateRequest"
+                "$ref": "#/components/schemas/ApplicationCreate"
               },
               "examples": {
                 "CreateAppSuccess": {
@@ -2468,12 +2467,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ApplicationCreateRequest"
+                "$ref": "#/components/schemas/ApplicationCreate"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ApplicationCreateRequest"
+                "$ref": "#/components/schemas/ApplicationCreate"
               }
             }
           },
@@ -2669,17 +2668,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ApplicationUpdateRequest"
+                "$ref": "#/components/schemas/ApplicationUpdate"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ApplicationUpdateRequest"
+                "$ref": "#/components/schemas/ApplicationUpdate"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ApplicationUpdateRequest"
+                "$ref": "#/components/schemas/ApplicationUpdate"
               }
             }
           }
@@ -2735,7 +2734,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedToggleApplicationStatusRequest"
+                "$ref": "#/components/schemas/PatchedToggleApplicationStatus"
               },
               "examples": {
                 "DeactivateApp": {
@@ -2754,12 +2753,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedToggleApplicationStatusRequest"
+                "$ref": "#/components/schemas/PatchedToggleApplicationStatus"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedToggleApplicationStatusRequest"
+                "$ref": "#/components/schemas/PatchedToggleApplicationStatus"
               }
             }
           }
@@ -2886,7 +2885,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RegenerateApplicationCredentialsRequest"
+                "$ref": "#/components/schemas/RegenerateApplicationCredentials"
               },
               "examples": {
                 "RegenerateSuccess": {
@@ -2906,12 +2905,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RegenerateApplicationCredentialsRequest"
+                "$ref": "#/components/schemas/RegenerateApplicationCredentials"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RegenerateApplicationCredentialsRequest"
+                "$ref": "#/components/schemas/RegenerateApplicationCredentials"
               }
             }
           },
@@ -3025,7 +3024,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CancelAccountDeletionRequest"
+                "$ref": "#/components/schemas/CancelAccountDeletion"
               },
               "examples": {
                 "CancelSuccess": {
@@ -3052,12 +3051,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/CancelAccountDeletionRequest"
+                "$ref": "#/components/schemas/CancelAccountDeletion"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/CancelAccountDeletionRequest"
+                "$ref": "#/components/schemas/CancelAccountDeletion"
               }
             }
           },
@@ -3170,7 +3169,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ConfirmAccountDeletionRequest"
+                "$ref": "#/components/schemas/ConfirmAccountDeletion"
               },
               "examples": {
                 "ConfirmSuccess": {
@@ -3198,12 +3197,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ConfirmAccountDeletionRequest"
+                "$ref": "#/components/schemas/ConfirmAccountDeletion"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ConfirmAccountDeletionRequest"
+                "$ref": "#/components/schemas/ConfirmAccountDeletion"
               }
             }
           },
@@ -3619,7 +3618,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ExportUserDataRequest"
+                "$ref": "#/components/schemas/ExportUserData"
               },
               "examples": {
                 "ExportSuccess": {
@@ -3638,12 +3637,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ExportUserDataRequest"
+                "$ref": "#/components/schemas/ExportUserData"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ExportUserDataRequest"
+                "$ref": "#/components/schemas/ExportUserData"
               }
             }
           },
@@ -3785,7 +3784,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginEmailRequest"
+                "$ref": "#/components/schemas/LoginEmail"
               },
               "examples": {
                 "LoginSuccess": {
@@ -3824,12 +3823,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/LoginEmailRequest"
+                "$ref": "#/components/schemas/LoginEmail"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/LoginEmailRequest"
+                "$ref": "#/components/schemas/LoginEmail"
               }
             }
           },
@@ -4006,7 +4005,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginPhoneRequest"
+                "$ref": "#/components/schemas/LoginPhone"
               },
               "examples": {
                 "LoginPhoneSuccess": {
@@ -4044,12 +4043,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/LoginPhoneRequest"
+                "$ref": "#/components/schemas/LoginPhone"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/LoginPhoneRequest"
+                "$ref": "#/components/schemas/LoginPhone"
               }
             }
           },
@@ -4190,7 +4189,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenRequest"
+                "$ref": "#/components/schemas/RefreshToken"
               },
               "examples": {
                 "LogoutSuccess": {
@@ -4209,12 +4208,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenRequest"
+                "$ref": "#/components/schemas/RefreshToken"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenRequest"
+                "$ref": "#/components/schemas/RefreshToken"
               }
             }
           },
@@ -4362,7 +4361,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MagicLinkRequestRequest"
+                "$ref": "#/components/schemas/MagicLinkRequest"
               },
               "examples": {
                 "RequestMagicLink": {
@@ -4397,12 +4396,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/MagicLinkRequestRequest"
+                "$ref": "#/components/schemas/MagicLinkRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/MagicLinkRequestRequest"
+                "$ref": "#/components/schemas/MagicLinkRequest"
               }
             }
           },
@@ -4841,7 +4840,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateProfileRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateProfileRequest"
               },
               "examples": {
                 "UpdateProfile": {
@@ -4872,12 +4871,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateProfileRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateProfileRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateProfileRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateProfileRequest"
               }
             }
           }
@@ -5140,7 +5139,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateOrganizationRequestRequest"
+                "$ref": "#/components/schemas/CreateOrganizationRequest"
               },
               "examples": {
                 "CreateOrgSuccess": {
@@ -5172,12 +5171,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/CreateOrganizationRequestRequest"
+                "$ref": "#/components/schemas/CreateOrganizationRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/CreateOrganizationRequestRequest"
+                "$ref": "#/components/schemas/CreateOrganizationRequest"
               }
             }
           },
@@ -5544,7 +5543,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/InviteOrganizationMemberRequestRequest"
+                "$ref": "#/components/schemas/InviteOrganizationMemberRequest"
               },
               "examples": {
                 "InviteSuccess": {
@@ -5573,12 +5572,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/InviteOrganizationMemberRequestRequest"
+                "$ref": "#/components/schemas/InviteOrganizationMemberRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/InviteOrganizationMemberRequestRequest"
+                "$ref": "#/components/schemas/InviteOrganizationMemberRequest"
               }
             }
           },
@@ -6054,7 +6053,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequest"
               },
               "examples": {
                 "UpdateRoleSuccess": {
@@ -6081,12 +6080,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequest"
               }
             }
           }
@@ -6358,7 +6357,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AddOrganizationMemberRequestRequest"
+                "$ref": "#/components/schemas/AddOrganizationMemberRequest"
               },
               "examples": {
                 "AddMemberSuccess": {
@@ -6393,12 +6392,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/AddOrganizationMemberRequestRequest"
+                "$ref": "#/components/schemas/AddOrganizationMemberRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/AddOrganizationMemberRequestRequest"
+                "$ref": "#/components/schemas/AddOrganizationMemberRequest"
               }
             }
           },
@@ -6588,7 +6587,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateOrganizationRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateOrganizationRequest"
               },
               "examples": {
                 "UpdateOrgSuccess": {
@@ -6617,12 +6616,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateOrganizationRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateOrganizationRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateOrganizationRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateOrganizationRequest"
               }
             }
           }
@@ -6737,7 +6736,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RequestOTPRequest"
+                "$ref": "#/components/schemas/RequestOTP"
               },
               "examples": {
                 "RequestEmailOtp": {
@@ -6770,12 +6769,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RequestOTPRequest"
+                "$ref": "#/components/schemas/RequestOTP"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RequestOTPRequest"
+                "$ref": "#/components/schemas/RequestOTP"
               }
             }
           },
@@ -6902,7 +6901,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/VerifyOTPRequest"
+                "$ref": "#/components/schemas/VerifyOTP"
               },
               "examples": {
                 "VerifyEmailSuccess": {
@@ -6939,12 +6938,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/VerifyOTPRequest"
+                "$ref": "#/components/schemas/VerifyOTP"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/VerifyOTPRequest"
+                "$ref": "#/components/schemas/VerifyOTP"
               }
             }
           },
@@ -7065,7 +7064,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/VerifyOTPRequest"
+                "$ref": "#/components/schemas/VerifyOTP"
               },
               "examples": {
                 "VerifyPhoneSuccess": {
@@ -7102,12 +7101,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/VerifyOTPRequest"
+                "$ref": "#/components/schemas/VerifyOTP"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/VerifyOTPRequest"
+                "$ref": "#/components/schemas/VerifyOTP"
               }
             }
           },
@@ -7231,7 +7230,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChangePasswordRequest"
+                "$ref": "#/components/schemas/ChangePassword"
               },
               "examples": {
                 "ChangePasswordSuccess": {
@@ -7269,12 +7268,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ChangePasswordRequest"
+                "$ref": "#/components/schemas/ChangePassword"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ChangePasswordRequest"
+                "$ref": "#/components/schemas/ChangePassword"
               }
             }
           },
@@ -7424,7 +7423,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordResetConfirmRequest"
+                "$ref": "#/components/schemas/PasswordResetConfirm"
               },
               "examples": {
                 "ResetConfirmEmail": {
@@ -7466,12 +7465,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordResetConfirmRequest"
+                "$ref": "#/components/schemas/PasswordResetConfirm"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordResetConfirmRequest"
+                "$ref": "#/components/schemas/PasswordResetConfirm"
               }
             }
           },
@@ -7599,7 +7598,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordResetRequestRequest"
+                "$ref": "#/components/schemas/PasswordResetRequest"
               },
               "examples": {
                 "ResetRequestEmail": {
@@ -7626,12 +7625,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordResetRequestRequest"
+                "$ref": "#/components/schemas/PasswordResetRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordResetRequestRequest"
+                "$ref": "#/components/schemas/PasswordResetRequest"
               }
             }
           }
@@ -7745,17 +7744,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordStrengthRequestRequest"
+                "$ref": "#/components/schemas/PasswordStrengthRequest"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordStrengthRequestRequest"
+                "$ref": "#/components/schemas/PasswordStrengthRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordStrengthRequestRequest"
+                "$ref": "#/components/schemas/PasswordStrengthRequest"
               }
             }
           },
@@ -7862,17 +7861,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PermissionRequest"
+                "$ref": "#/components/schemas/Permission"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PermissionRequest"
+                "$ref": "#/components/schemas/Permission"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PermissionRequest"
+                "$ref": "#/components/schemas/Permission"
               }
             }
           },
@@ -7978,17 +7977,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PermissionRequest"
+                "$ref": "#/components/schemas/Permission"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PermissionRequest"
+                "$ref": "#/components/schemas/Permission"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PermissionRequest"
+                "$ref": "#/components/schemas/Permission"
               }
             }
           },
@@ -8096,7 +8095,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenRequest"
+                "$ref": "#/components/schemas/RefreshToken"
               },
               "examples": {
                 "RefreshSuccess": {
@@ -8125,12 +8124,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenRequest"
+                "$ref": "#/components/schemas/RefreshToken"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenRequest"
+                "$ref": "#/components/schemas/RefreshToken"
               }
             }
           },
@@ -8243,31 +8242,15 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
+                "$ref": "#/components/schemas/Register"
               },
               "examples": {
                 "RegisterSuccess": {
                   "value": {
-                    "message": "Registration successful",
-                    "user": {
-                      "id": "uuid-string",
-                      "email": "user@example.com",
-                      "phone_country_code": "+1",
-                      "phone_number": "5551234567",
-                      "first_name": "John",
-                      "last_name": "Doe",
-                      "is_email_verified": false,
-                      "is_phone_verified": false,
-                      "is_2fa_enabled": false,
-                      "roles": [],
-                      "permissions": [],
-                      "created_at": "2023-10-01T12:00:00Z",
-                      "last_login": null
-                    },
-                    "verification_required": {
-                      "email": true,
-                      "phone": false
-                    }
+                    "email": "user@example.com",
+                    "password": "SecureP@ss123!",
+                    "first_name": "John",
+                    "last_name": "Doe"
                   },
                   "summary": "Inscription r\u00e9ussie"
                 },
@@ -8283,12 +8266,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
+                "$ref": "#/components/schemas/Register"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
+                "$ref": "#/components/schemas/Register"
               }
             }
           },
@@ -8313,42 +8296,22 @@
                     "user": {
                       "$ref": "#/components/schemas/User"
                     },
-                    "verification_required": {
-                      "type": "object",
-                      "properties": {
-                        "email": {
-                          "type": "boolean"
-                        },
-                        "phone": {
-                          "type": "boolean"
-                        }
-                      }
+                    "requires_otp": {
+                      "type": "boolean"
+                    },
+                    "otp_id": {
+                      "type": "string",
+                      "nullable": true
                     }
                   }
                 },
                 "examples": {
                   "RegisterSuccess": {
                     "value": {
-                      "message": "Registration successful",
-                      "user": {
-                        "id": "uuid-string",
-                        "email": "user@example.com",
-                        "phone_country_code": "+1",
-                        "phone_number": "5551234567",
-                        "first_name": "John",
-                        "last_name": "Doe",
-                        "is_email_verified": false,
-                        "is_phone_verified": false,
-                        "is_2fa_enabled": false,
-                        "roles": [],
-                        "permissions": [],
-                        "created_at": "2023-10-01T12:00:00Z",
-                        "last_login": null
-                      },
-                      "verification_required": {
-                        "email": true,
-                        "phone": false
-                      }
+                      "email": "user@example.com",
+                      "password": "SecureP@ss123!",
+                      "first_name": "John",
+                      "last_name": "Doe"
                     },
                     "summary": "Inscription r\u00e9ussie"
                   },
@@ -8419,7 +8382,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RequestAccountDeletionRequest"
+                "$ref": "#/components/schemas/RequestAccountDeletion"
               },
               "examples": {
                 "DeletionRequestSuccess": {
@@ -8452,12 +8415,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RequestAccountDeletionRequest"
+                "$ref": "#/components/schemas/RequestAccountDeletion"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RequestAccountDeletionRequest"
+                "$ref": "#/components/schemas/RequestAccountDeletion"
               }
             }
           },
@@ -8658,17 +8621,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RoleRequest"
+                "$ref": "#/components/schemas/Role"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RoleRequest"
+                "$ref": "#/components/schemas/Role"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RoleRequest"
+                "$ref": "#/components/schemas/Role"
               }
             }
           },
@@ -8774,17 +8737,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RoleRequest"
+                "$ref": "#/components/schemas/Role"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RoleRequest"
+                "$ref": "#/components/schemas/Role"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RoleRequest"
+                "$ref": "#/components/schemas/Role"
               }
             }
           },
@@ -8950,17 +8913,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+                "$ref": "#/components/schemas/ManageRolePermissions"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+                "$ref": "#/components/schemas/ManageRolePermissions"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+                "$ref": "#/components/schemas/ManageRolePermissions"
               }
             }
           },
@@ -9097,7 +9060,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SocialAuthRequestRequest"
+                "$ref": "#/components/schemas/SocialAuthRequest"
               },
               "examples": {
                 "SocialAuthGoogleToken": {
@@ -9143,12 +9106,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/SocialAuthRequestRequest"
+                "$ref": "#/components/schemas/SocialAuthRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/SocialAuthRequestRequest"
+                "$ref": "#/components/schemas/SocialAuthRequest"
               }
             }
           }
@@ -9276,139 +9239,6 @@
         }
       }
     },
-    "/api/v1/auth/social/{provider}/callback/": {
-      "get": {
-        "operationId": "social_callback_retrieve",
-        "description": "Endpoint de callback pour le flow OAuth2 authorization code. Re\u00e7oit le code d'autorisation du provider et le redirect_uri. \u00c9change le code contre des tokens et authentifie l'utilisateur. Retourne les tokens JWT ou une erreur. Peut rediriger vers l'application cliente avec les tokens.",
-        "summary": "Callback OAuth2",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "provider",
-            "schema": {
-              "type": "string"
-            },
-            "required": true
-          }
-        ],
-        "tags": [
-          "Social Auth"
-        ],
-        "security": [
-          {
-            "jwtAuth": []
-          },
-          {}
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "access": {
-                      "type": "string"
-                    },
-                    "refresh": {
-                      "type": "string"
-                    },
-                    "user": {
-                      "$ref": "#/components/schemas/User"
-                    },
-                    "provider": {
-                      "type": "string"
-                    },
-                    "is_new_user": {
-                      "type": "boolean"
-                    }
-                  }
-                },
-                "examples": {
-                  "CallbackSuccess": {
-                    "value": {
-                      "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-                      "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-                      "user": {
-                        "id": 42,
-                        "email": "user@example.com",
-                        "first_name": "John",
-                        "last_name": "Doe"
-                      },
-                      "provider": "google",
-                      "is_new_user": false
-                    },
-                    "summary": "Callback r\u00e9ussi"
-                  },
-                  "CallbackInvalidCode": {
-                    "value": {
-                      "error": "Invalid authorization code",
-                      "code": "INVALID_CODE"
-                    },
-                    "summary": "Code invalide"
-                  }
-                }
-              }
-            },
-            "description": ""
-          },
-          "302": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "description": "Redirection vers application cliente avec tokens",
-                  "headers": {
-                    "Location": {
-                      "description": "URL de redirection avec tokens en param\u00e8tres",
-                      "schema": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "description": ""
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "code": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            },
-            "description": ""
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "code": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            },
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/v1/auth/users/{user_id}/permissions/": {
       "get": {
         "operationId": "users_permissions_retrieve",
@@ -9479,17 +9309,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+                "$ref": "#/components/schemas/ManageRolePermissions"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+                "$ref": "#/components/schemas/ManageRolePermissions"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+                "$ref": "#/components/schemas/ManageRolePermissions"
               }
             }
           },
@@ -9667,17 +9497,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AssignRoleRequest"
+                "$ref": "#/components/schemas/AssignRole"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/AssignRoleRequest"
+                "$ref": "#/components/schemas/AssignRole"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/AssignRoleRequest"
+                "$ref": "#/components/schemas/AssignRole"
               }
             }
           },
@@ -9795,7 +9625,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequest"
               },
               "examples": {
                 "AuthBeginResidentKey": {
@@ -9812,12 +9642,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequest"
               }
             }
           }
@@ -9913,7 +9743,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequest"
               },
               "examples": {
                 "AuthCompleteSuccess": {
@@ -9938,12 +9768,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequest"
               }
             }
           },
@@ -10295,7 +10125,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequest"
               },
               "examples": {
                 "RegisterCompleteSuccess": {
@@ -10321,12 +10151,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequest"
               }
             }
           },
@@ -10445,17 +10275,18 @@
           "agent_action"
         ],
         "type": "string",
-        "description": "* `login` - Login\n* `login_failed` - Login Failed\n* `logout` - Logout\n* `logout_all` - Logout All Devices\n* `token_refresh` - Token Refresh\n* `password_change` - Password Changed\n* `password_reset_request` - Password Reset Requested\n* `password_reset_complete` - Password Reset Completed\n* `2fa_enabled` - 2FA Enabled\n* `2fa_disabled` - 2FA Disabled\n* `2fa_backup_used` - 2FA Backup Code Used\n* `account_created` - Account Created\n* `account_locked` - Account Locked\n* `account_unlocked` - Account..."
+        "description": "* `login` - Login\n* `login_failed` - Login Failed\n* `logout` - Logout\n* `logout_all` - Logout All Devices\n* `token_refresh` - Token Refresh\n* `password_change` - Password Changed\n* `password_reset_request` - Password Reset Requested\n* `password_reset_complete` - Password Reset Completed\n* `2fa_enabled` - 2FA Enabled\n* `2fa_disabled` - 2FA Disabled\n* `2fa_backup_used` - 2FA Backup Code Used\n* `account_created` - Account Created\n* `account_locked` - Account Locked\n* `account_unlocked` - Account Unlocked\n* `email_verified` - Email Verified\n* `phone_verified` - Phone Verified\n* `role_assigned` - Role Assigned\n* `role_removed` - Role Removed\n* `permission_changed` - Permission Changed\n* `app_created` - Application Created\n* `app_credentials_regenerated` - Application Credentials Regenerated\n* `account_deleted` - Account Deleted\n* `suspicious_activity` - Suspicious Activity Detected\n* `session_limit_exceeded` - Session Limit Exceeded\n* `device_limit_exceeded` - Device Limit Exceeded\n* `new_device_detected` - New Device Detected\n* `agent_action` - Agent Action Executed"
       },
-      "AddOrganizationMemberRequestRequest": {
+      "AddOrganizationMemberRequest": {
         "type": "object",
         "properties": {
           "user_id": {
-            "type": "integer"
+            "type": "integer",
+            "description": "ID de l'utilisateur \u00e0 ajouter"
           },
           "role_code": {
             "type": "string",
-            "minLength": 1
+            "description": "R\u00f4le du membre (owner non autoris\u00e9)"
           }
         },
         "required": [
@@ -10507,7 +10338,8 @@
             "nullable": true
           },
           "is_banned": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Permanent ban (manual admin action). Cannot be auto-lifted."
           },
           "is_deleted": {
             "type": "boolean"
@@ -10536,13 +10368,15 @@
             "type": "integer",
             "maximum": 9223372036854775807,
             "minimum": 0,
-            "format": "int64"
+            "format": "int64",
+            "description": "Maximum concurrent sessions allowed (0 = unlimited)"
           },
           "max_devices": {
             "type": "integer",
             "maximum": 9223372036854775807,
             "minimum": 0,
-            "format": "int64"
+            "format": "int64",
+            "description": "Maximum unique devices allowed (0 = unlimited)"
           },
           "roles": {
             "type": "array",
@@ -10611,7 +10445,8 @@
             "type": "boolean"
           },
           "is_banned": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Permanent ban (manual admin action). Cannot be auto-lifted."
           },
           "is_deleted": {
             "type": "boolean"
@@ -10690,13 +10525,12 @@
           "updated_at"
         ]
       },
-      "ApplicationCreateRequest": {
+      "ApplicationCreate": {
         "type": "object",
         "description": "Serializer pour cr\u00e9er une application",
         "properties": {
           "name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 100
           },
           "description": {
@@ -10708,13 +10542,12 @@
           "name"
         ]
       },
-      "ApplicationUpdateRequest": {
+      "ApplicationUpdate": {
         "type": "object",
         "description": "Serializer pour mettre \u00e0 jour une application",
         "properties": {
           "name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 100
           },
           "description": {
@@ -10725,12 +10558,11 @@
           }
         }
       },
-      "AssignRoleRequest": {
+      "AssignRole": {
         "type": "object",
         "properties": {
           "role_code": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           }
         },
         "required": [
@@ -10787,14 +10619,14 @@
           "user_email"
         ]
       },
-      "BanUserRequest": {
+      "BanUser": {
         "type": "object",
         "description": "Serializer for banning a user.",
         "properties": {
           "reason": {
             "type": "string",
-            "minLength": 1,
             "default": "",
+            "description": "Reason for the ban (stored in audit log)",
             "maxLength": 500
           }
         }
@@ -10846,25 +10678,24 @@
           "user_email"
         ]
       },
-      "CancelAccountDeletionRequest": {
+      "CancelAccountDeletion": {
         "type": "object",
         "properties": {
           "password": {
             "type": "string",
-            "minLength": 1
+            "description": "Mot de passe actuel requis pour annulation"
           }
         },
         "required": [
           "password"
         ]
       },
-      "ChangePasswordRequest": {
+      "ChangePassword": {
         "type": "object",
         "properties": {
           "current_password": {
             "type": "string",
-            "writeOnly": true,
-            "minLength": 1
+            "writeOnly": true
           },
           "new_password": {
             "type": "string",
@@ -10877,43 +10708,48 @@
           "new_password"
         ]
       },
-      "ConfirmAccountDeletionRequest": {
+      "ConfirmAccountDeletion": {
         "type": "object",
         "properties": {
           "token": {
             "type": "string",
-            "minLength": 1
+            "description": "Token de confirmation re\u00e7u par email"
           }
         },
         "required": [
           "token"
         ]
       },
-      "CreateOrganizationRequestRequest": {
+      "CreateOrganizationRequest": {
         "type": "object",
         "properties": {
           "name": {
             "type": "string",
-            "minLength": 1
+            "description": "Nom de l'organisation"
           },
           "slug": {
-            "type": "string"
+            "type": "string",
+            "description": "Slug unique (optionnel, g\u00e9n\u00e9r\u00e9 automatiquement)"
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "description": "Description (optionnel)"
           },
           "parent_id": {
             "type": "integer",
-            "nullable": true
+            "nullable": true,
+            "description": "ID organisation parent (optionnel)"
           },
           "metadata": {
             "type": "object",
             "additionalProperties": {},
-            "nullable": true
+            "nullable": true,
+            "description": "M\u00e9tadonn\u00e9es personnalis\u00e9es (optionnel)"
           },
           "max_members": {
             "type": "integer",
-            "default": 0
+            "default": 0,
+            "description": "Limite de membres (0 = illimit\u00e9)"
           }
         },
         "required": [
@@ -10963,7 +10799,8 @@
             "nullable": true
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "description": "Optional reason for deletion request"
           },
           "admin_notes": {
             "type": "string"
@@ -10990,35 +10827,36 @@
           "user_email"
         ]
       },
-      "ExportUserDataRequest": {
+      "ExportUserData": {
         "type": "object",
         "properties": {
           "password": {
             "type": "string",
-            "minLength": 1
+            "description": "Mot de passe actuel requis pour exporter les donn\u00e9es"
           }
         },
         "required": [
           "password"
         ]
       },
-      "InviteOrganizationMemberRequestRequest": {
+      "InviteOrganizationMemberRequest": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
             "format": "email",
-            "minLength": 1
+            "description": "Email de l'utilisateur \u00e0 inviter"
           },
           "role_code": {
             "type": "string",
-            "minLength": 1
+            "description": "R\u00f4le attribu\u00e9 apr\u00e8s acceptation"
           },
           "expires_in_days": {
             "type": "integer",
             "maximum": 30,
             "minimum": 1,
-            "default": 7
+            "default": 7,
+            "description": "Dur\u00e9e de validit\u00e9 en jours (1-30)"
           }
         },
         "required": [
@@ -11026,7 +10864,7 @@
           "role_code"
         ]
       },
-      "LockUserRequest": {
+      "LockUser": {
         "type": "object",
         "description": "Serializer for locking a user account.",
         "properties": {
@@ -11034,12 +10872,13 @@
             "type": "integer",
             "maximum": 43200,
             "minimum": 1,
-            "default": 30
+            "default": 30,
+            "description": "Lock duration in minutes (default: 30, max: 30 days)"
           },
           "reason": {
             "type": "string",
-            "minLength": 1,
             "default": "",
+            "description": "Reason for the lock (stored in audit log)",
             "maxLength": 500
           }
         }
@@ -11083,26 +10922,26 @@
           "ip_address"
         ]
       },
-      "LoginEmailRequest": {
+      "LoginEmail": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
-            "format": "email",
-            "minLength": 1
+            "format": "email"
           },
           "password": {
             "type": "string",
-            "writeOnly": true,
-            "minLength": 1
+            "writeOnly": true
           },
           "totp_code": {
             "type": "string",
+            "description": "Code 2FA (requis si 2FA activ\u00e9)",
             "maxLength": 10
           },
           "device_info": {
             "type": "string",
             "default": "",
+            "description": "Device info au format v1 (ex: v=1|os=windows;osv=11|device=desktop)",
             "maxLength": 255
           }
         },
@@ -11111,31 +10950,30 @@
           "password"
         ]
       },
-      "LoginPhoneRequest": {
+      "LoginPhone": {
         "type": "object",
         "properties": {
           "phone_country_code": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 5
           },
           "phone_number": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 20
           },
           "password": {
             "type": "string",
-            "writeOnly": true,
-            "minLength": 1
+            "writeOnly": true
           },
           "totp_code": {
             "type": "string",
+            "description": "Code 2FA (requis si 2FA activ\u00e9)",
             "maxLength": 10
           },
           "device_info": {
             "type": "string",
             "default": "",
+            "description": "Device info au format v1 (ex: v=1|os=windows;osv=11|device=desktop)",
             "maxLength": 255
           }
         },
@@ -11145,18 +10983,18 @@
           "phone_number"
         ]
       },
-      "MagicLinkRequestRequest": {
+      "MagicLinkRequest": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
             "format": "email",
-            "minLength": 1
+            "description": "Adresse email pour recevoir le magic link"
           },
           "validation_url": {
             "type": "string",
             "format": "uri",
-            "minLength": 1
+            "description": "URL pour construire le lien de v\u00e9rification (obligatoire)"
           }
         },
         "required": [
@@ -11164,15 +11002,15 @@
           "validation_url"
         ]
       },
-      "ManageRolePermissionsRequest": {
+      "ManageRolePermissions": {
         "type": "object",
         "properties": {
           "permission_codes": {
             "type": "array",
             "items": {
-              "type": "string",
-              "minLength": 1
+              "type": "string"
             },
+            "description": "Liste des codes de permissions \u00e0 ajouter ou retirer",
             "minItems": 1
           }
         },
@@ -11196,26 +11034,36 @@
         ],
         "properties": {
           "count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of items",
+            "example": 150
           },
           "page": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Current page number",
+            "example": 1
           },
           "page_size": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Items per page",
+            "example": 20
           },
           "total_pages": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of pages",
+            "example": 8
           },
           "next": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the next page"
           },
           "previous": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the previous page"
           },
           "results": {
             "type": "array",
@@ -11233,26 +11081,36 @@
         ],
         "properties": {
           "count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of items",
+            "example": 150
           },
           "page": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Current page number",
+            "example": 1
           },
           "page_size": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Items per page",
+            "example": 20
           },
           "total_pages": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of pages",
+            "example": 8
           },
           "next": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the next page"
           },
           "previous": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the previous page"
           },
           "results": {
             "type": "array",
@@ -11270,26 +11128,36 @@
         ],
         "properties": {
           "count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of items",
+            "example": 150
           },
           "page": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Current page number",
+            "example": 1
           },
           "page_size": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Items per page",
+            "example": 20
           },
           "total_pages": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of pages",
+            "example": 8
           },
           "next": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the next page"
           },
           "previous": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the previous page"
           },
           "results": {
             "type": "array",
@@ -11307,26 +11175,36 @@
         ],
         "properties": {
           "count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of items",
+            "example": 150
           },
           "page": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Current page number",
+            "example": 1
           },
           "page_size": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Items per page",
+            "example": 20
           },
           "total_pages": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of pages",
+            "example": 8
           },
           "next": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the next page"
           },
           "previous": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the previous page"
           },
           "results": {
             "type": "array",
@@ -11344,26 +11222,36 @@
         ],
         "properties": {
           "count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of items",
+            "example": 150
           },
           "page": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Current page number",
+            "example": 1
           },
           "page_size": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Items per page",
+            "example": 20
           },
           "total_pages": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of pages",
+            "example": 8
           },
           "next": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the next page"
           },
           "previous": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the previous page"
           },
           "results": {
             "type": "array",
@@ -11381,26 +11269,36 @@
         ],
         "properties": {
           "count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of items",
+            "example": 150
           },
           "page": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Current page number",
+            "example": 1
           },
           "page_size": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Items per page",
+            "example": 20
           },
           "total_pages": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of pages",
+            "example": 8
           },
           "next": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the next page"
           },
           "previous": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the previous page"
           },
           "results": {
             "type": "array",
@@ -11418,26 +11316,36 @@
         ],
         "properties": {
           "count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of items",
+            "example": 150
           },
           "page": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Current page number",
+            "example": 1
           },
           "page_size": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Items per page",
+            "example": 20
           },
           "total_pages": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of pages",
+            "example": 8
           },
           "next": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the next page"
           },
           "previous": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the previous page"
           },
           "results": {
             "type": "array",
@@ -11455,26 +11363,36 @@
         ],
         "properties": {
           "count": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of items",
+            "example": 150
           },
           "page": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Current page number",
+            "example": 1
           },
           "page_size": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Items per page",
+            "example": 20
           },
           "total_pages": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Total number of pages",
+            "example": 8
           },
           "next": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the next page"
           },
           "previous": {
             "type": "string",
             "nullable": true,
-            "format": "uri"
+            "format": "uri",
+            "description": "URL to the previous page"
           },
           "results": {
             "type": "array",
@@ -11484,13 +11402,13 @@
           }
         }
       },
-      "PasswordResetConfirmRequest": {
+      "PasswordResetConfirm": {
         "type": "object",
         "properties": {
           "code": {
             "type": "string",
-            "minLength": 6,
-            "maxLength": 6
+            "maxLength": 6,
+            "minLength": 6
           },
           "new_password": {
             "type": "string",
@@ -11502,32 +11420,28 @@
           "new_password"
         ]
       },
-      "PasswordResetRequestRequest": {
+      "PasswordResetRequest": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
-            "format": "email",
-            "minLength": 1
+            "format": "email"
           },
           "phone_country_code": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 5
           },
           "phone_number": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 20
           }
         }
       },
-      "PasswordStrengthRequestRequest": {
+      "PasswordStrengthRequest": {
         "type": "object",
         "properties": {
           "password": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "email": {
             "type": "string",
@@ -11538,18 +11452,16 @@
           "password"
         ]
       },
-      "PatchedAdminUserUpdateRequest": {
+      "PatchedAdminUserUpdate": {
         "type": "object",
         "description": "Serializer for admin user updates (partial).",
         "properties": {
           "first_name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 100
           },
           "last_name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 100
           },
           "is_active": {
@@ -11571,91 +11483,101 @@
           }
         }
       },
-      "PatchedToggleApplicationStatusRequest": {
+      "PatchedToggleApplicationStatus": {
         "type": "object",
         "properties": {
           "is_active": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Nouveau statut actif de l'application"
           }
         }
       },
-      "PatchedUpdateOrganizationMemberRoleRequestRequest": {
+      "PatchedUpdateOrganizationMemberRoleRequest": {
         "type": "object",
         "properties": {
           "role_code": {
             "type": "string",
-            "minLength": 1
+            "description": "Nouveau r\u00f4le (owner n\u00e9cessite droits appropri\u00e9s)"
           }
         }
       },
-      "PatchedUpdateOrganizationRequestRequest": {
+      "PatchedUpdateOrganizationRequest": {
         "type": "object",
         "properties": {
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Nom de l'organisation"
           },
           "slug": {
-            "type": "string"
+            "type": "string",
+            "description": "Nouveau slug unique"
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "description": "Description"
           },
           "parent_id": {
             "type": "integer",
-            "nullable": true
+            "nullable": true,
+            "description": "Nouveau parent ID"
           },
           "metadata": {
             "type": "object",
             "additionalProperties": {},
-            "nullable": true
+            "nullable": true,
+            "description": "M\u00e9tadonn\u00e9es"
           },
           "max_members": {
             "type": "integer",
-            "nullable": true
+            "nullable": true,
+            "description": "Nouvelle limite membres"
           },
           "is_active": {
             "type": "boolean",
-            "nullable": true
+            "nullable": true,
+            "description": "Statut actif"
           }
         }
       },
-      "PatchedUpdateProfileRequestRequest": {
+      "PatchedUpdateProfileRequest": {
         "type": "object",
         "properties": {
           "first_name": {
             "type": "string",
-            "minLength": 1,
+            "description": "Pr\u00e9nom (max 30 caract\u00e8res)",
             "maxLength": 30
           },
           "last_name": {
             "type": "string",
-            "minLength": 1,
+            "description": "Nom (max 30 caract\u00e8res)",
             "maxLength": 30
           },
           "username": {
             "type": "string",
-            "minLength": 1,
+            "description": "Nom d'utilisateur unique (alphanum\u00e9rique + underscores)",
             "maxLength": 20
           },
           "phone": {
             "type": "string",
-            "minLength": 1
+            "description": "Num\u00e9ro de t\u00e9l\u00e9phone au format international (+33612345678)"
           },
           "bio": {
             "type": "string",
+            "description": "Biographie (max 500 caract\u00e8res)",
             "maxLength": 500
           },
           "timezone": {
             "type": "string",
-            "minLength": 1
+            "description": "Fuseau horaire (ex: Europe/Paris, America/New_York)"
           },
           "language": {
             "type": "string",
-            "minLength": 1
+            "description": "Langue pr\u00e9f\u00e9r\u00e9e"
           },
           "custom_fields": {
             "type": "object",
-            "additionalProperties": {}
+            "additionalProperties": {},
+            "description": "Champs personnalis\u00e9s (selon configuration organisation)"
           }
         }
       },
@@ -11683,6 +11605,12 @@
             "nullable": true,
             "readOnly": true
           },
+          "parent_code": {
+            "type": "string",
+            "writeOnly": true,
+            "nullable": true,
+            "description": "Code de la permission parente (hi\u00e9rarchie)"
+          },
           "children": {
             "type": "array",
             "items": {
@@ -11706,47 +11634,31 @@
           "parent"
         ]
       },
-      "PermissionRequest": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "description": {
-            "type": "string"
-          },
-          "parent_code": {
-            "type": "string",
-            "writeOnly": true,
-            "nullable": true,
-            "minLength": 1
-          }
-        },
-        "required": [
-          "code",
-          "name"
-        ]
-      },
-      "ProcessDeletionRequestRequest": {
+      "ProcessDeletionRequest": {
         "type": "object",
         "properties": {
           "confirmation": {
             "type": "string",
-            "minLength": 1
+            "description": "Texte de confirmation \"PERMANENTLY DELETE\""
           },
           "admin_notes": {
-            "type": "string"
+            "type": "string",
+            "description": "Notes administratives optionnelles"
           }
         },
         "required": [
           "confirmation"
+        ]
+      },
+      "RefreshToken": {
+        "type": "object",
+        "properties": {
+          "refresh_token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "refresh_token"
         ]
       },
       "RefreshTokenAdmin": {
@@ -11813,49 +11725,34 @@
           "user_email"
         ]
       },
-      "RefreshTokenRequest": {
-        "type": "object",
-        "properties": {
-          "refresh_token": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "refresh_token"
-        ]
-      },
-      "RegenerateApplicationCredentialsRequest": {
+      "RegenerateApplicationCredentials": {
         "type": "object",
         "properties": {
           "confirmation": {
             "type": "string",
-            "minLength": 1
+            "description": "Texte de confirmation \"REGENERATE\""
           }
         },
         "required": [
           "confirmation"
         ]
       },
-      "RegisterRequest": {
+      "Register": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
             "format": "email",
-            "nullable": true,
-            "minLength": 1
+            "nullable": true
           },
           "phone_country_code": {
             "type": "string",
             "nullable": true,
-            "minLength": 1,
             "maxLength": 5
           },
           "phone_number": {
             "type": "string",
             "nullable": true,
-            "minLength": 1,
             "maxLength": 20
           },
           "password": {
@@ -11865,23 +11762,23 @@
           },
           "first_name": {
             "type": "string",
-            "minLength": 1,
             "default": "",
             "maxLength": 100
           },
           "last_name": {
             "type": "string",
-            "minLength": 1,
             "default": "",
             "maxLength": 100
           },
           "login": {
             "type": "boolean",
-            "default": false
+            "default": false,
+            "description": "Si True, l'utilisateur est connect\u00e9 imm\u00e9diatement apr\u00e8s l'inscription (tokens JWT retourn\u00e9s)"
           },
           "device_info": {
             "type": "string",
             "default": "",
+            "description": "Device info au format v1 (ex: v=1|os=windows;osv=11|device=desktop)",
             "maxLength": 255
           }
         },
@@ -11889,25 +11786,27 @@
           "password"
         ]
       },
-      "RequestAccountDeletionRequest": {
+      "RequestAccountDeletion": {
         "type": "object",
         "properties": {
           "password": {
             "type": "string",
-            "minLength": 1
+            "description": "Mot de passe actuel requis pour confirmation"
           },
           "otp_code": {
-            "type": "string"
+            "type": "string",
+            "description": "Code OTP \u00e0 6 chiffres (requis si 2FA activ\u00e9)"
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "description": "Raison optionnelle de la suppression"
           }
         },
         "required": [
           "password"
         ]
       },
-      "RequestOTPRequest": {
+      "RequestOTP": {
         "type": "object",
         "properties": {
           "otp_type": {
@@ -11942,6 +11841,13 @@
               "$ref": "#/components/schemas/Permission"
             },
             "readOnly": true
+          },
+          "permission_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "writeOnly": true
           },
           "is_default": {
             "type": "boolean"
@@ -11992,58 +11898,28 @@
           "name"
         ]
       },
-      "RoleRequest": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 50
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "description": {
-            "type": "string"
-          },
-          "permission_codes": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            },
-            "writeOnly": true
-          },
-          "is_default": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "code",
-          "name"
-        ]
-      },
-      "SocialAuthRequestRequest": {
+      "SocialAuthRequest": {
         "type": "object",
         "properties": {
           "access_token": {
             "type": "string",
-            "minLength": 1
+            "description": "OAuth2 access token du provider"
           },
           "code": {
             "type": "string",
-            "minLength": 1
+            "description": "Authorization code flow"
           },
           "redirect_uri": {
-            "type": "string"
+            "type": "string",
+            "description": "URI de redirection (requis avec code)"
           },
           "id_token": {
-            "type": "string"
+            "type": "string",
+            "description": "Google ID token uniquement"
           },
           "device_info": {
-            "type": "string"
+            "type": "string",
+            "description": "Informations device (optionnel)"
           }
         }
       },
@@ -12058,40 +11934,40 @@
         "type": "string",
         "description": "* `pending` - Pending\n* `confirmation_sent` - Confirmation Sent\n* `confirmed` - Confirmed\n* `completed` - Completed\n* `cancelled` - Cancelled"
       },
-      "TwoFactorBackupCodesRequestRequest": {
+      "TwoFactorBackupCodesRequest": {
         "type": "object",
         "properties": {
           "code": {
             "type": "string",
-            "minLength": 1
+            "description": "Code TOTP \u00e0 6 chiffres pour validation"
           }
         },
         "required": [
           "code"
         ]
       },
-      "TwoFactorConfirmRequestRequest": {
+      "TwoFactorConfirmRequest": {
         "type": "object",
         "properties": {
           "code": {
             "type": "string",
-            "minLength": 1
+            "description": "Code TOTP \u00e0 6 chiffres"
           }
         },
         "required": [
           "code"
         ]
       },
-      "TwoFactorDisableRequestRequest": {
+      "TwoFactorDisableRequest": {
         "type": "object",
         "properties": {
           "code": {
             "type": "string",
-            "minLength": 1
+            "description": "Code TOTP ou code de secours \u00e0 8 chiffres"
           },
           "password": {
             "type": "string",
-            "minLength": 1
+            "description": "Mot de passe de l'utilisateur pour confirmation"
           }
         },
         "required": [
@@ -12099,41 +11975,44 @@
           "password"
         ]
       },
-      "VerifyOTPRequest": {
+      "VerifyOTP": {
         "type": "object",
         "properties": {
           "code": {
             "type": "string",
-            "minLength": 6,
-            "maxLength": 6
+            "maxLength": 6,
+            "minLength": 6
           }
         },
         "required": [
           "code"
         ]
       },
-      "WebAuthnAuthenticateBeginRequestRequest": {
+      "WebAuthnAuthenticateBeginRequest": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
             "format": "email",
-            "minLength": 1
+            "description": "Optionnel \u2014 pour credentials utilisateur sp\u00e9cifiques"
           }
         }
       },
-      "WebAuthnAuthenticateCompleteRequestRequest": {
+      "WebAuthnAuthenticateCompleteRequest": {
         "type": "object",
         "properties": {
           "challenge_id": {
-            "type": "integer"
+            "type": "integer",
+            "description": "ID du challenge g\u00e9n\u00e9r\u00e9"
           },
           "credential": {
             "type": "object",
-            "additionalProperties": {}
+            "additionalProperties": {},
+            "description": "Assertion WebAuthn du navigateur"
           },
           "device_info": {
-            "type": "string"
+            "type": "string",
+            "description": "Informations sur le device (optionnel)"
           }
         },
         "required": [
@@ -12141,107 +12020,27 @@
           "credential"
         ]
       },
-      "WebAuthnRegisterCompleteRequestRequest": {
+      "WebAuthnRegisterCompleteRequest": {
         "type": "object",
         "properties": {
           "challenge_id": {
-            "type": "integer"
+            "type": "integer",
+            "description": "ID du challenge g\u00e9n\u00e9r\u00e9"
           },
           "credential": {
             "type": "object",
-            "additionalProperties": {}
+            "additionalProperties": {},
+            "description": "Credential WebAuthn du navigateur"
           },
           "device_name": {
-            "type": "string"
+            "type": "string",
+            "description": "Nom optionnel du device"
           }
         },
         "required": [
           "challenge_id",
           "credential"
         ]
-      },
-      "StandardErrorResponse": {
-        "type": "object",
-        "description": "Standard error response format",
-        "properties": {
-          "error": {
-            "type": "string",
-            "description": "Error message"
-          },
-          "code": {
-            "type": "string",
-            "description": "Machine-readable error code"
-          },
-          "details": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "object"
-              }
-            ],
-            "description": "Additional error details"
-          },
-          "retry_after": {
-            "type": "integer",
-            "description": "Seconds to wait before retry",
-            "nullable": true
-          }
-        },
-        "required": [
-          "error"
-        ],
-        "x-cache-hint": "reference",
-        "x-cache-ttl": 86400
-      },
-      "PaginatedResponse": {
-        "type": "object",
-        "description": "Standard paginated response format",
-        "properties": {
-          "count": {
-            "type": "integer",
-            "description": "Total number of items"
-          },
-          "next": {
-            "type": "string",
-            "description": "URL of next page",
-            "nullable": true
-          },
-          "previous": {
-            "type": "string",
-            "description": "URL of previous page",
-            "nullable": true
-          },
-          "results": {
-            "type": "array",
-            "description": "Array of results"
-          }
-        },
-        "required": [
-          "count",
-          "results"
-        ],
-        "x-cache-hint": "reference",
-        "x-cache-ttl": 86400
-      },
-      "SuccessResponse": {
-        "type": "object",
-        "description": "Standard success response format",
-        "properties": {
-          "message": {
-            "type": "string",
-            "description": "Success message"
-          },
-          "data": {
-            "description": "Response data"
-          }
-        },
-        "required": [
-          "message"
-        ],
-        "x-cache-hint": "reference",
-        "x-cache-ttl": 86400
       }
     },
     "securitySchemes": {
@@ -12251,6 +12050,5 @@
         "bearerFormat": "JWT"
       }
     }
-  },
-  "x-cache-ttl": 3600
+  }
 }

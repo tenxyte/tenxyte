@@ -1,12 +1,13 @@
 {
   "summary": {
-    "original_size_bytes": 186660,
-    "optimized_size_bytes": 180752,
+    "original_size_bytes": 192026,
+    "optimized_size_bytes": 186118,
     "size_reduction_bytes": 5908,
-    "reduction_percentage": 3.17,
+    "reduction_percentage": 3.08,
     "schemas_removed": 0,
     "references_added": 0,
     "duplicates_found": 0,
+    "corrupted_paths": 0,
     "optimizations_count": 5
   },
   "optimizations": [
@@ -16,6 +17,7 @@
     "Added caching hints for better performance",
     "Compressed 1 large descriptions"
   ],
+  "corrupted_path_details": [],
   "recommendations": [
     "Consider using the optimized schema for production"
   ]
