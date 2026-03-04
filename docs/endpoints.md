@@ -2989,9 +2989,16 @@ POST /admin/deletion-requests/process-expired/
 ### `POST /request-account-deletion/` 🔒
 Request account deletion (starts grace period).
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 {
+  "password": "current_password",
+  "otp_code": "123456",
   "reason": "No longer using the service"
 }
 ```
@@ -2999,8 +3006,37 @@ Request account deletion (starts grace period).
 **Response `201`:**
 ```json
 {
-  "message": "Account deletion requested",
-  "deletion_date": "2023-10-31T12:00:00Z"
+  "message": "Account deletion request created successfully",
+  "deletion_request_id": 123,
+  "scheduled_deletion_date": "2024-02-15T10:30:00Z",
+  "grace_period_days": 30,
+  "cancellation_token": "cancel_abc123def456",
+  "data_retention_policy": {
+    "anonymization_after": "30 days",
+    "final_deletion_after": "90 days"
+  }
+}
+```
+
+**Response `400` (Invalid password):**
+```json
+{
+  "error": "Invalid password",
+  "details": {
+    "password": ["Invalid password"]
+  }
+}
+```
+
+**Response `400` (Already pending):**
+```json
+{
+  "error": "Account deletion already pending",
+  "code": "DELETION_ALREADY_PENDING",
+  "existing_request": {
+    "scheduled_deletion_date": "2024-02-15T10:30:00Z",
+    "cancellation_token": "cancel_abc123"
+  }
 }
 ```
 
@@ -3010,58 +3046,195 @@ Confirm account deletion request.
 **Request:**
 ```json
 {
-  "confirmation_code": "123456"
+  "token": "confirm_abc123def456"
 }
 ```
 
 **Response `200`:**
 ```json
 {
-  "message": "Account deletion confirmed"
+  "message": "Account deletion confirmed successfully",
+  "deletion_confirmed": true,
+  "grace_period_ends": "2024-02-15T10:30:00Z",
+  "cancellation_instructions": "Use the cancellation token from the initial request to cancel before the grace period ends."
+}
+```
+
+**Response `400` (Token required):**
+```json
+{
+  "error": "Confirmation token is required"
+}
+```
+
+**Response `400` (Invalid token):**
+```json
+{
+  "error": "Invalid confirmation token",
+  "code": "INVALID_TOKEN"
+}
+```
+
+**Response `410` (Token expired):**
+```json
+{
+  "error": "Confirmation token has expired",
+  "code": "TOKEN_EXPIRED",
+  "expired_at": "2024-01-16T10:30:00Z"
 }
 ```
 
 ### `POST /cancel-account-deletion/` 🔒
 Cancel a pending deletion request.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
-{}
+{
+  "password": "CurrentPassword123!"
+}
 ```
 
 **Response `200`:**
 ```json
 {
-  "message": "Account deletion cancelled"
+  "message": "Account deletion cancelled successfully",
+  "deletion_cancelled": true,
+  "account_reactivated": true,
+  "cancellation_time": "2024-01-15T14:30:00Z",
+  "security_note": "Your account has been reactivated and you can continue using the service normally."
+}
+```
+
+**Response `400` (Invalid password):**
+```json
+{
+  "error": "Invalid password",
+  "details": {
+    "password": ["Invalid password"]
+  }
+}
+```
+
+**Response `404` (No pending deletion):**
+```json
+{
+  "error": "No pending deletion request found",
+  "code": "NO_PENDING_DELETION"
 }
 ```
 
 ### `GET /account-deletion-status/` 🔒
 Get the status of the current deletion request.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
 {
-  "has_pending_request": true,
-  "status": "pending",
-  "deletion_date": "2023-10-31T12:00:00Z"
+  "total_requests": 2,
+  "active_request": {
+    "id": "123",
+    "status": "pending",
+    "requested_at": "2024-01-15T10:30:00Z",
+    "grace_period_ends_at": "2024-02-14T10:30:00Z",
+    "days_remaining": 15
+  },
+  "history": [
+    {
+      "id": "123",
+      "status": "pending",
+      "requested_at": "2024-01-15T10:30:00Z",
+      "confirmed_at": null,
+      "completed_at": null,
+      "reason": "No longer using the service"
+    },
+    {
+      "id": "100",
+      "status": "cancelled",
+      "requested_at": "2023-12-01T09:00:00Z",
+      "confirmed_at": null,
+      "completed_at": "2023-12-02T10:00:00Z",
+      "reason": "Changed mind"
+    }
+  ]
 }
 ```
 
 ### `POST /export-user-data/` 🔒
 Export all personal data (GDPR Article 20).
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
-{}
+{
+  "password": "CurrentPassword123!"
+}
 ```
 
 **Response `200`:**
 ```json
 {
-  "profile": {},
-  "activity": [],
-  "security": {}
+  "user_info": {
+    "id": "123",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "created_at": "2024-01-01T12:00:00Z",
+    "last_login": "2024-01-15T10:30:00Z"
+  },
+  "roles": [
+    {
+      "id": "1",
+      "name": "user",
+      "description": "Standard user role"
+    }
+  ],
+  "permissions": [
+    "profile.view",
+    "profile.edit"
+  ],
+  "applications": [
+    {
+      "id": "app_456",
+      "name": "My Client App",
+      "created_at": "2024-01-05T09:00:00Z"
+    }
+  ],
+  "audit_logs": [
+    {
+      "action": "login",
+      "timestamp": "2024-01-15T10:30:00Z",
+      "ip_address": "127.0.0.1"
+    }
+  ],
+  "export_metadata": {
+    "exported_at": "2024-01-15T14:30:00Z",
+    "export_format": "json",
+    "total_records": 15,
+    "data_retention_policy": "Available for 30 days"
+  }
+}
+```
+
+**Response `400` (Invalid password):**
+```json
+{
+  "error": "Invalid password",
+  "details": {
+    "password": ["Invalid password"]
+  }
 }
 ```
 
