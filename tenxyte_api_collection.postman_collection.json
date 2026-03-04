@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "00fe1b60-0ca0-420d-9cc5-0d7ca1ed2301",
+    "_postman_id": "c793a65c-4d33-4151-9b57-c6f0887820c9",
     "name": "Tenxyte API (v0.9.1)",
     "description": "Complete Django authentication package — JWT, RBAC, 2FA (TOTP), Magic Links, Passkeys (WebAuthn), Social Login, Organizations B2B.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -929,7 +929,7 @@
                 "value": "multipart/form-data"
               }
             ],
-            "description": "Retourne le score et la force d'un mot de passe sans l'enregistrer.",
+            "description": "Retourne le score et la force d'un mot de passe sans l'enregistrer. Utile pour fournir un retour en temps réel dans l'interface utilisateur. L'email (optionnel) permet de vérifier si le mot de passe contient une partie de l'email.",
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/password/strength/",
               "host": [
@@ -1183,7 +1183,7 @@
                 "value": "multipart/form-data"
               }
             ],
-            "description": "Crée une nouvelle permission.",
+            "description": "Crée une nouvelle permission. Le code doit être unique et structuré (ex: `users.view`). Peut être rattaché à une permission parente via `parent_code`.",
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/permissions/",
               "host": [
@@ -1275,7 +1275,7 @@
                 "value": "multipart/form-data"
               }
             ],
-            "description": "Met à jour les informations d'une permission.",
+            "description": "Met à jour les informations d'une permission. Seuls le nom et la description sont généralement modifiés, le code servant d'identifiant technique immuable.",
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/permissions/{permission_id}/",
               "host": [
@@ -1444,7 +1444,7 @@
                 "value": "multipart/form-data"
               }
             ],
-            "description": "Crée un nouveau rôle avec les permissions spécifiées.",
+            "description": "Crée un nouveau rôle. Vous pouvez assigner des permissions immédiatement via la liste `permission_codes`.",
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/roles/",
               "host": [
@@ -1536,7 +1536,7 @@
                 "value": "multipart/form-data"
               }
             ],
-            "description": "Met à jour les informations d'un rôle.",
+            "description": "Met à jour les informations d'un rôle. Vous pouvez modifier le nom, la description, le statut par défaut, et remplacer toutes les permissions assignées via `permission_codes`.",
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/roles/{role_id}/",
               "host": [
@@ -1681,7 +1681,7 @@
                 "value": "multipart/form-data"
               }
             ],
-            "description": "Ajoute une ou plusieurs permissions à un rôle existant.",
+            "description": "Ajoute une ou plusieurs permissions à un rôle existant. Seuls les codes de permissions sont requis.",
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/roles/{role_id}/permissions/",
               "host": [
@@ -1975,7 +1975,7 @@
                 "value": "multipart/form-data"
               }
             ],
-            "description": "Ajoute un rôle à un utilisateur.",
+            "description": "Ajoute un rôle à un utilisateur à l'aide de son `role_code` (ex: `admin`, `tech_support`).",
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/users/{user_id}/roles/",
               "host": [
@@ -2252,7 +2252,7 @@
                 "value": "multipart/form-data"
               }
             ],
-            "description": "Met à jour les informations d'une application. Le secret ne peut pas être modifié (utilisez l'endpoint de régénération).",
+            "description": "Met à jour les informations d'une application. Tous les champs fournis remplaceront les valeurs existantes. Le secret ne peut pas être modifié (utilisez l'endpoint de régénération).",
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/applications/{app_id}/",
               "host": [
@@ -4066,7 +4066,7 @@
                 "value": "multipart/form-data"
               }
             ],
-            "description": "Met à jour les informations d'un utilisateur. Réservé aux admins.",
+            "description": "Met à jour partiellement les informations d'un utilisateur. Tous les champs sont optionnels. Réservé aux admins (permission users.update). Supporte la désactivation de compte, la promotion staff/superuser, et la limite de sessions/appareils.",
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/admin/users/{user_id}/",
               "host": [
@@ -4167,7 +4167,7 @@
                 "value": "multipart/form-data"
               }
             ],
-            "description": "Bannit un utilisateur de manière permanente. Nécessite la permission users.ban.",
+            "description": "Bannit un utilisateur de manière permanente. Désactive le compte (is_active=False). Nécessite la permission users.ban. La raison est stockée dans le journal d'audit.",
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/admin/users/{user_id}/ban/",
               "host": [
@@ -4223,7 +4223,7 @@
                 "value": "multipart/form-data"
               }
             ],
-            "description": "Verrouille temporairement un compte utilisateur.",
+            "description": "Verrouille temporairement un compte utilisateur. La durée est configurable (défaut: 30 min, max: 30 jours). Nécessite la permission users.lock. La raison est stockée dans le journal d'audit.",
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/admin/users/{user_id}/lock/",
               "host": [
@@ -5117,6 +5117,581 @@
       "description": "Endpoints tagged: Admin - GDPR"
     },
     {
+      "name": "📂 AI Agents",
+      "item": [
+        {
+          "name": "GET Liste les actions en attente de validation HITL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Retourne les AgentPendingActions non-confirmées et non-expirées des agents de l'utilisateur. HITL = Human-In-The-Loop. Si X-Org-Slug est fourni, filtre les actions relatives aux tokens de cette organisation.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/ai/pending-actions/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "ai",
+                "pending-actions"
+              ],
+              "variable": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response is successful', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 5000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Confirme une action agent en attente (HITL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "description": "Approuve une action agent en attente via son confirmation_token. Le token est reçu par l'humain (email, webhook, etc.) lorsque l'agent demande une validation. Une fois confirmé, l'agent peut poursuivre l'action.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/ai/pending-actions/{token}/confirm/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "ai",
+                "pending-actions",
+                "{token}",
+                "confirm"
+              ],
+              "variable": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "description": "Path parameter: token"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response is successful', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 5000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Refuse une action agent en attente (HITL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "description": "Refuse une action agent en attente via son confirmation_token. Le token est reçu par l'humain lorsque l'agent demande une validation. Une fois refusée, l'agent est notifié que l'action est bloquée.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/ai/pending-actions/{token}/deny/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "ai",
+                "pending-actions",
+                "{token}",
+                "deny"
+              ],
+              "variable": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "description": "Path parameter: token"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response is successful', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 5000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Liste les tokens agent de l'utilisateur",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Retourne tous les AgentTokens créés par l'utilisateur authentifié. Si X-Org-Slug est fourni, filtre les tokens liés à cette organisation.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "ai",
+                "tokens"
+              ],
+              "variable": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response is successful', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 5000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const r = pm.response.json();",
+                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
+                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Crée un nouveau token agent (AIRS)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "description": "Crée un AgentToken avec des permissions limitées pour un agent IA. Le token utilise le scheme AgentBearer pour s'identifier. Nécessite que AIRS_ENABLED soit True dans la configuration. Le contexte organisationnel peut être fourni via le header X-Org-Slug ou via le champ 'organization' dans le corps de la requête.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "ai",
+                "tokens"
+              ],
+              "variable": []
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response is successful', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201]);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 5000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const r = pm.response.json();",
+                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
+                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET Détails d'un token agent",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Retourne les détails d'un AgentToken appartenant à l'utilisateur.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/{id}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "ai",
+                "tokens",
+                "{id}"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Path parameter: id"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response is successful', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 5000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const r = pm.response.json();",
+                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
+                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Heartbeat d'un token agent",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "description": "Signal de vie envoyé par l'agent. Utilise le scheme `AgentBearer <token>` dans l'en-tête Authorization. Renouvelle le dead man's switch si configuré.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/{id}/heartbeat/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "ai",
+                "tokens",
+                "{id}",
+                "heartbeat"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Path parameter: id"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response is successful', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 5000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const r = pm.response.json();",
+                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
+                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Rapporte l'usage d'un token agent (coûts LLM)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "description": "Rapporte la consommation LLM d'une session agent. Utilise AgentBearer dans Authorization. Si le budget est dépassé, le token est suspendu automatiquement.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/{id}/report-usage/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "ai",
+                "tokens",
+                "{id}",
+                "report-usage"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Path parameter: id"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response is successful', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 5000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const r = pm.response.json();",
+                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
+                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Révoque un token agent",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "description": "Révoque immédiatement un AgentToken. Le token ne pourra plus être utilisé.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/{id}/revoke/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "ai",
+                "tokens",
+                "{id}",
+                "revoke"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Path parameter: id"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response is successful', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 5000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const r = pm.response.json();",
+                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
+                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Suspend un token agent",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "description": "Suspend temporairement un AgentToken (raison: MANUAL).",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/{id}/suspend/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "ai",
+                "tokens",
+                "{id}",
+                "suspend"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "Path parameter: id"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response is successful', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 5000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const r = pm.response.json();",
+                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
+                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Révoque tous les tokens agent (coupe-circuit)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "description": "Révoque immédiatement TOUS les AgentTokens actifs de l'utilisateur. Action de coupe-circuit d'urgence.",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/revoke-all/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "ai",
+                "tokens",
+                "revoke-all"
+              ],
+              "variable": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Response is successful', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 5000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    const r = pm.response.json();",
+                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
+                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Endpoints tagged: AI Agents"
+    },
+    {
       "name": "📂 Social Auth",
       "item": [
         {
@@ -5178,7 +5753,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "description": "Endpoint de callback pour le flow OAuth2 authorization code. Reçoit le code d'autorisation du provider et le redirect_uri. Échange le code contre des tokens et authentifie l'utilisateur. Retourne les tokens JWT ou une erreur. Peut rediriger vers l'application cliente avec les tokens.",
+            "description": "Endpoint de callback pour le flow OAuth2 authorization code. Reçoit le code d'autorisation du provider et le redirect_uri. Échange le code contre des tokens et authentifie l'utilisateur. Retourne les tokens JWT ou redirige vers l'application cliente.",
             "url": {
               "raw": "{{baseUrl}}/api/v1/auth/social/{provider}/callback/",
               "host": [
@@ -5197,6 +5772,26 @@
                   "key": "provider",
                   "value": "",
                   "description": "Path parameter: provider"
+                }
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "",
+                  "description": "Authorization code du provider",
+                  "disabled": true
+                },
+                {
+                  "key": "redirect_uri",
+                  "value": "",
+                  "description": "URI de redirection originale",
+                  "disabled": true
+                },
+                {
+                  "key": "state",
+                  "value": "",
+                  "description": "Parameter CSRF/state pour sécurité",
+                  "disabled": true
                 }
               ]
             }
@@ -5221,545 +5816,6 @@
         }
       ],
       "description": "Endpoints tagged: Social Auth"
-    },
-    {
-      "name": "📂 ai",
-      "item": [
-        {
-          "name": "GET GET /api/v1/auth/ai/pending-actions/",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "description": "GET /ai/pending-actions/",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/ai/pending-actions/",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "ai",
-                "pending-actions"
-              ],
-              "variable": []
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Response is successful', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
-                  "});",
-                  "",
-                  "pm.test('Response time < 5000ms', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "POST POST /api/v1/auth/ai/pending-actions/{token}/confirm/",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "description": "POST /ai/pending-actions/confirm/\nBody: {\"token\": \"...\"}",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/ai/pending-actions/{token}/confirm/",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "ai",
-                "pending-actions",
-                "{token}",
-                "confirm"
-              ],
-              "variable": [
-                {
-                  "key": "token",
-                  "value": "",
-                  "description": "Path parameter: token"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Response is successful', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
-                  "});",
-                  "",
-                  "pm.test('Response time < 5000ms', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "POST POST /api/v1/auth/ai/pending-actions/{token}/deny/",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "description": "POST /ai/pending-actions/deny/\nBody: {\"token\": \"...\"}",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/ai/pending-actions/{token}/deny/",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "ai",
-                "pending-actions",
-                "{token}",
-                "deny"
-              ],
-              "variable": [
-                {
-                  "key": "token",
-                  "value": "",
-                  "description": "Path parameter: token"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Response is successful', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
-                  "});",
-                  "",
-                  "pm.test('Response time < 5000ms', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "GET GET /api/v1/auth/ai/tokens/",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "description": "GET /ai/tokens/\nPOST /ai/tokens/\nListe les AgentTokens actifs ou en crée un nouveau.",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "ai",
-                "tokens"
-              ],
-              "variable": []
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Response is successful', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
-                  "});",
-                  "",
-                  "pm.test('Response time < 5000ms', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
-                  "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "    const r = pm.response.json();",
-                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
-                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "POST POST /api/v1/auth/ai/tokens/",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "description": "GET /ai/tokens/\nPOST /ai/tokens/\nListe les AgentTokens actifs ou en crée un nouveau.",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "ai",
-                "tokens"
-              ],
-              "variable": []
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Response is successful', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
-                  "});",
-                  "",
-                  "pm.test('Response time < 5000ms', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
-                  "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "    const r = pm.response.json();",
-                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
-                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "GET GET /api/v1/auth/ai/tokens/{id}/",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "description": "GET /ai/tokens/{id}/",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/{id}/",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "ai",
-                "tokens",
-                "{id}"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "",
-                  "description": "Path parameter: id"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Response is successful', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
-                  "});",
-                  "",
-                  "pm.test('Response time < 5000ms', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
-                  "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "    const r = pm.response.json();",
-                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
-                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "POST POST /api/v1/auth/ai/tokens/{id}/heartbeat/",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "description": "POST /ai/tokens/{id}/heartbeat/\nCalled by the agent itself using the token.",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/{id}/heartbeat/",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "ai",
-                "tokens",
-                "{id}",
-                "heartbeat"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "",
-                  "description": "Path parameter: id"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Response is successful', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
-                  "});",
-                  "",
-                  "pm.test('Response time < 5000ms', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
-                  "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "    const r = pm.response.json();",
-                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
-                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "POST POST /api/v1/auth/ai/tokens/{id}/report-usage/",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "description": "POST /ai/tokens/{id}/report-usage/",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/{id}/report-usage/",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "ai",
-                "tokens",
-                "{id}",
-                "report-usage"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "",
-                  "description": "Path parameter: id"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Response is successful', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
-                  "});",
-                  "",
-                  "pm.test('Response time < 5000ms', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
-                  "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "    const r = pm.response.json();",
-                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
-                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "POST POST /api/v1/auth/ai/tokens/{id}/revoke/",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "description": "POST /ai/tokens/{id}/revoke/",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/{id}/revoke/",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "ai",
-                "tokens",
-                "{id}",
-                "revoke"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "",
-                  "description": "Path parameter: id"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Response is successful', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
-                  "});",
-                  "",
-                  "pm.test('Response time < 5000ms', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
-                  "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "    const r = pm.response.json();",
-                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
-                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "POST POST /api/v1/auth/ai/tokens/{id}/suspend/",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "description": "POST /ai/tokens/{id}/suspend/",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/{id}/suspend/",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "ai",
-                "tokens",
-                "{id}",
-                "suspend"
-              ],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "",
-                  "description": "Path parameter: id"
-                }
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Response is successful', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
-                  "});",
-                  "",
-                  "pm.test('Response time < 5000ms', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
-                  "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "    const r = pm.response.json();",
-                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
-                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "POST POST /api/v1/auth/ai/tokens/revoke-all/",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "description": "POST /ai/tokens/revoke-all/\nCoupe-circuit nucléaire.",
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/ai/tokens/revoke-all/",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "ai",
-                "tokens",
-                "revoke-all"
-              ],
-              "variable": []
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Response is successful', function () {",
-                  "    pm.expect(pm.response.code).to.be.oneOf([200]);",
-                  "});",
-                  "",
-                  "pm.test('Response time < 5000ms', function () {",
-                  "    pm.expect(pm.response.responseTime).to.be.below(5000);",
-                  "});",
-                  "",
-                  "if (pm.response.code === 200) {",
-                  "    const r = pm.response.json();",
-                  "    if (r.access) pm.collectionVariables.set('accessToken', r.access);",
-                  "    if (r.refresh) pm.collectionVariables.set('refreshToken', r.refresh);",
-                  "}"
-                ]
-              }
-            }
-          ]
-        }
-      ],
-      "description": "Endpoints tagged: ai"
     }
   ]
 }

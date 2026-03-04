@@ -56,7 +56,7 @@ Application = get_application_model()
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='create_app_success',
                 summary='Application créée avec secret',
                 value={
@@ -167,9 +167,48 @@ class ApplicationListView(APIView):
         tags=['Applications'],
         summary="Modifier une application",
         description="Met à jour les informations d'une application. "
+                    "Tous les champs fournis remplaceront les valeurs existantes. "
                     "Le secret ne peut pas être modifié (utilisez l'endpoint de régénération).",
         request=ApplicationUpdateSerializer,
-        responses={200: ApplicationSerializer, 404: OpenApiTypes.OBJECT}
+        responses={200: ApplicationSerializer, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
+        examples=[
+            OpenApiExample(
+                name='update_app',
+                summary='Mise à jour complète',
+                description='Met à jour le nom, la description et le statut.',
+                request_only=True,
+                value={
+                    'name': 'Production External API',
+                    'description': 'Handles all incoming requests from the new frontend v3',
+                    'is_active': True
+                }
+            ),
+            OpenApiExample(
+                name='update_success',
+                summary='Mise à jour réussie',
+                response_only=True,
+                status_codes=['200'],
+                value={
+                    'id': 10,
+                    'name': 'Production External API',
+                    'description': 'Handles all incoming requests from the new frontend v3',
+                    'client_id': 'app_abc123...',
+                    'is_active': True,
+                    'created_at': '2024-01-01T10:00:00Z',
+                    'updated_at': '2024-01-20T14:30:00Z'
+                }
+            ),
+            OpenApiExample(
+                name='app_not_found',
+                summary='Application introuvable',
+                response_only=True,
+                status_codes=['404'],
+                value={
+                    'error': 'Application not found',
+                    'code': 'NOT_FOUND'
+                }
+            )
+        ]
     ),
     patch=extend_schema(
         tags=['Applications'],
@@ -359,14 +398,14 @@ class ApplicationRegenerateView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='regenerate_success',
                 summary='Credentials régénérés',
                 value={
                     'confirmation': 'REGENERATE'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='confirmation_required',
                 summary='Confirmation requise',
                 value={

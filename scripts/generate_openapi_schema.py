@@ -50,6 +50,7 @@ def generate_schema(output_path: Path, fmt: str = "json") -> dict:
     )
     spectacular.setdefault('SERVE_INCLUDE_SCHEMA', False)
     spectacular.setdefault('COMPONENT_SPLIT_REQUEST', True)
+    spectacular.setdefault('SECURITY', [{'jwtAuth': []}])
 
     from drf_spectacular.generators import SchemaGenerator
     from drf_spectacular.validation import validate_schema
@@ -67,6 +68,9 @@ def generate_schema(output_path: Path, fmt: str = "json") -> dict:
     if not schema:
         print("❌ drf-spectacular returned an empty schema — check your INSTALLED_APPS and urlconf.")
         return {}
+
+    # Add global security requirements
+    schema['security'] = [{'jwtAuth': []}]
 
     print(f"✅ Schema generated — {len(schema.get('paths', {}))} paths found")
 
@@ -163,6 +167,12 @@ def print_summary(schema: dict, issues: list):
 
 
 def main():
+    # Fix Unicode on Windows (cp1252 console crashes on emoji)
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
     parser = argparse.ArgumentParser(
         description="Generate OpenAPI schema from Django views via drf-spectacular"
     )

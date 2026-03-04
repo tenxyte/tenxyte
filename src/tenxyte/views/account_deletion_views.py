@@ -67,7 +67,7 @@ from ..serializers import PasswordSerializer
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(request_only=True, 
             name='deletion_request_success',
             summary='Demande de suppression créée',
             value={
@@ -76,7 +76,7 @@ from ..serializers import PasswordSerializer
                 'reason': 'No longer need the account'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='deletion_already_pending',
             summary='Suppression déjà en cours',
             value={
@@ -88,7 +88,7 @@ from ..serializers import PasswordSerializer
                 }
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='invalid_2fa',
             summary='Code 2FA invalide',
             value={
@@ -135,7 +135,7 @@ def request_account_deletion(request: Request) -> Response:
                 "vérifier que l'utilisateur a bien accès à son email. "
                 "Après confirmation, le compte entre en période de grâce de 30 jours.",
     request=inline_serializer(
-        name='ConfirmAccountDeletion',
+        name='TokenRequest',
         fields={
             'token': serializers.CharField(help_text='Token de confirmation reçu par email')
         }
@@ -174,14 +174,14 @@ def request_account_deletion(request: Request) -> Response:
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='confirm_success',
             summary='Suppression confirmée',
             value={
                 'token': 'confirm_abc123def456'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='token_expired',
             summary='Token expiré',
             value={
@@ -190,7 +190,7 @@ def request_account_deletion(request: Request) -> Response:
                 'expired_at': '2024-01-16T10:30:00Z'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='invalid_token',
             summary='Token invalide',
             value={
@@ -265,14 +265,14 @@ def confirm_account_deletion(request: Request) -> Response:
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(request_only=True, 
             name='cancel_success',
             summary='Suppression annulée',
             value={
                 'password': 'CurrentPassword123!'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='no_pending_deletion',
             summary='Aucune suppression en cours',
             value={
@@ -280,7 +280,7 @@ def confirm_account_deletion(request: Request) -> Response:
                 'code': 'NO_PENDING_DELETION'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='invalid_password',
             summary='Mot de passe invalide',
             value={
@@ -389,14 +389,14 @@ def account_deletion_status(request: Request) -> Response:
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(request_only=True, 
             name='export_success',
             summary='Exportation des données réussie',
             value={
                 'password': 'CurrentPassword123!'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='invalid_password',
             summary='Mot de passe invalide',
             value={

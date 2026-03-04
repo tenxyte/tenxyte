@@ -73,7 +73,7 @@ class MagicLinkRequestView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='request_magic_link',
                 summary='Demander magic link',
                 value={
@@ -81,7 +81,7 @@ class MagicLinkRequestView(APIView):
                     'validation_url': 'https://app.example.com/auth-magic/link/verify'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='magic_link_disabled',
                 summary='Magic link désactivé',
                 value={
@@ -89,7 +89,7 @@ class MagicLinkRequestView(APIView):
                     'details': 'Contact administrator to enable magic link authentication'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='validation_url_missing',
                 summary='Validation URL manquant',
                 value={
@@ -97,7 +97,7 @@ class MagicLinkRequestView(APIView):
                     'code': 'VALIDATION_URL_REQUIRED'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='magic_link_rate_limited',
                 summary='Limite de rate dépassée',
                 value={
@@ -224,7 +224,7 @@ class MagicLinkVerifyView(APIView):
                     'message': 'Magic link verified successfully'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='magic_link_already_used',
                 summary='Magic link déjà utilisé',
                 value={
@@ -233,7 +233,7 @@ class MagicLinkVerifyView(APIView):
                     'code': 'LINK_ALREADY_USED'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='magic_link_expired',
                 summary='Magic link expiré',
                 value={
@@ -242,7 +242,7 @@ class MagicLinkVerifyView(APIView):
                     'code': 'LINK_EXPIRED'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='invalid_magic_link_token',
                 summary='Token magic link invalide',
                 value={

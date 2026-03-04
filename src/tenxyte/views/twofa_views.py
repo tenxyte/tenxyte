@@ -65,12 +65,12 @@ class TwoFactorSetupView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='setup_2fa_success',
                 summary='Configuration 2FA réussie',
                 value={}
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='2fa_already_enabled',
                 summary='2FA déjà activé',
                 value={
@@ -141,14 +141,14 @@ class TwoFactorConfirmView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='confirm_2fa_success',
                 summary='Confirmation 2FA réussie',
                 value={
                     'code': '123456'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='invalid_totp_code',
                 summary='Code TOTP invalide',
                 value={
@@ -157,7 +157,7 @@ class TwoFactorConfirmView(APIView):
                     'code': 'INVALID_CODE'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='totp_window_expired',
                 summary='Fenêtre TOTP expirée',
                 value={
@@ -233,7 +233,7 @@ class TwoFactorDisableView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='disable_2fa_totp',
                 summary='Désactiver 2FA avec code TOTP',
                 value={
@@ -241,7 +241,7 @@ class TwoFactorDisableView(APIView):
                     'password': 'UserP@ss123!'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='disable_2fa_backup',
                 summary='Désactiver 2FA avec code de secours',
                 value={
@@ -249,7 +249,7 @@ class TwoFactorDisableView(APIView):
                     'password': 'UserP@ss123!'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='invalid_password_disable',
                 summary='Mot de passe incorrect',
                 value={
@@ -339,7 +339,7 @@ class TwoFactorBackupCodesView(APIView):
                     'code': '123456'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='backup_codes_response',
                 summary='Réponse avec nouveaux codes',
                 value={
@@ -349,7 +349,7 @@ class TwoFactorBackupCodesView(APIView):
                     'warning': 'Save these codes securely. They will not be shown again.'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='invalid_totp_backup',
                 summary='Code TOTP invalide',
                 value={

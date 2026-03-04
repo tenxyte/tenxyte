@@ -425,12 +425,12 @@ def list_sessions(request):
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='revoke_session_success',
             summary='Session révoquée',
             value=None
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='cannot_revoke_current',
             summary='Impossible de révoquer session actuelle',
             value={
@@ -497,14 +497,14 @@ def revoke_session(request, session_id):
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='revoke_all_success',
             summary='Toutes sessions révoquées',
             value={
                 'confirmation': 'REVOKE ALL'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='confirmation_required',
             summary='Confirmation requise',
             value={
@@ -626,7 +626,7 @@ def list_devices(request):
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='revoke_device_success',
             summary='Device révoqué',
             value=None
@@ -725,7 +725,7 @@ def revoke_device(request, device_id):
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='audit_log_filtered',
             summary='Audit log filtré par action',
             value={

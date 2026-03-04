@@ -26,34 +26,6 @@
                     "code": "123456"
                   },
                   "summary": "R\u00e9g\u00e9n\u00e9rer codes de secours"
-                },
-                "BackupCodesResponse": {
-                  "value": {
-                    "message": "Backup codes regenerated",
-                    "backup_codes": [
-                      "AB12CD34",
-                      "EF56GH78",
-                      "IJ90KL12",
-                      "MN34OP56",
-                      "QR78ST90",
-                      "UV12WX34",
-                      "YZ56AB78",
-                      "CD90EF12",
-                      "GH34IJ56",
-                      "KL78MN90"
-                    ],
-                    "codes_count": 10,
-                    "warning": "Save these codes securely. They will not be shown again."
-                  },
-                  "summary": "R\u00e9ponse avec nouveaux codes"
-                },
-                "InvalidTotpBackup": {
-                  "value": {
-                    "error": "Invalid TOTP code",
-                    "details": "The TOTP code provided is incorrect",
-                    "code": "INVALID_CODE"
-                  },
-                  "summary": "Code TOTP invalide"
                 }
               }
             },
@@ -71,6 +43,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -183,30 +158,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/TwoFactorConfirmRequestRequest"
-              },
-              "examples": {
-                "Confirm2faSuccess": {
-                  "value": {
-                    "code": "123456"
-                  },
-                  "summary": "Confirmation 2FA r\u00e9ussie"
-                },
-                "InvalidTotpCode": {
-                  "value": {
-                    "error": "Invalid TOTP code",
-                    "details": "The code provided is incorrect or outside the valid time window",
-                    "code": "INVALID_CODE"
-                  },
-                  "summary": "Code TOTP invalide"
-                },
-                "TotpWindowExpired": {
-                  "value": {
-                    "error": "TOTP code expired",
-                    "details": "The code is outside the valid 30-second window",
-                    "code": "TOTP_WINDOW_EXPIRED"
-                  },
-                  "summary": "Fen\u00eatre TOTP expir\u00e9e"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -223,6 +174,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -327,14 +281,6 @@
                     "password": "UserP@ss123!"
                   },
                   "summary": "D\u00e9sactiver 2FA avec code de secours"
-                },
-                "InvalidPasswordDisable": {
-                  "value": {
-                    "error": "Invalid password",
-                    "details": "The password provided is incorrect",
-                    "code": "INVALID_PASSWORD"
-                  },
-                  "summary": "Mot de passe incorrect"
                 }
               }
             },
@@ -352,6 +298,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -380,20 +329,6 @@
                   }
                 },
                 "examples": {
-                  "Disable2faTotp": {
-                    "value": {
-                      "code": "123456",
-                      "password": "UserP@ss123!"
-                    },
-                    "summary": "D\u00e9sactiver 2FA avec code TOTP"
-                  },
-                  "Disable2faBackup": {
-                    "value": {
-                      "code": "12345678",
-                      "password": "UserP@ss123!"
-                    },
-                    "summary": "D\u00e9sactiver 2FA avec code de secours"
-                  },
                   "InvalidPasswordDisable": {
                     "value": {
                       "error": "Invalid password",
@@ -440,6 +375,9 @@
           "2FA"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -527,6 +465,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -553,6 +494,9 @@
           "Account"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
@@ -658,6 +602,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -693,6 +640,9 @@
           "Admin - Security"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -785,6 +735,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -810,6 +763,9 @@
           "Admin - Security"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -914,6 +870,9 @@
           "Admin - GDPR"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -1034,6 +993,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -1085,29 +1047,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ProcessDeletionRequestRequest"
-              },
-              "examples": {
-                "ProcessSuccess": {
-                  "value": {
-                    "confirmation": "PERMANENTLY DELETE",
-                    "admin_notes": "Processed per user request - GDPR compliance"
-                  },
-                  "summary": "Suppression trait\u00e9e"
-                },
-                "ConfirmationRequired": {
-                  "value": {
-                    "error": "Explicit confirmation required",
-                    "code": "CONFIRMATION_REQUIRED"
-                  },
-                  "summary": "Confirmation requise"
-                },
-                "RequestNotConfirmed": {
-                  "value": {
-                    "error": "Cannot process unconfirmed deletion request",
-                    "code": "REQUEST_NOT_CONFIRMED"
-                  },
-                  "summary": "Demande non confirm\u00e9e"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -1124,6 +1063,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -1250,6 +1192,9 @@
           "Admin - GDPR"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -1391,6 +1336,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -1477,6 +1425,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -1512,6 +1463,9 @@
           "Admin - Security"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -1660,6 +1614,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -1698,6 +1655,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -1726,7 +1686,7 @@
       },
       "patch": {
         "operationId": "admin_users_partial_update",
-        "description": "Met \u00e0 jour les informations d'un utilisateur. R\u00e9serv\u00e9 aux admins.",
+        "description": "Met \u00e0 jour partiellement les informations d'un utilisateur. Tous les champs sont optionnels. R\u00e9serv\u00e9 aux admins (permission users.update). Supporte la d\u00e9sactivation de compte, la promotion staff/superuser, et la limite de sessions/appareils.",
         "summary": "Modifier un utilisateur (admin)",
         "parameters": [
           {
@@ -1746,6 +1706,32 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PatchedAdminUserUpdateRequest"
+              },
+              "examples": {
+                "UpdateProfileFields": {
+                  "value": {
+                    "first_name": "Jane",
+                    "last_name": "Smith"
+                  },
+                  "summary": "Mise \u00e0 jour nom/pr\u00e9nom",
+                  "description": "Modifier les champs de profil de base d'un utilisateur."
+                },
+                "DeactivateUser": {
+                  "value": {
+                    "is_active": false
+                  },
+                  "summary": "D\u00e9sactiver un compte",
+                  "description": "D\u00e9sactiver un compte utilisateur sans le bannir ni le supprimer."
+                },
+                "PromoteToStaff": {
+                  "value": {
+                    "is_staff": true,
+                    "max_sessions": 3,
+                    "max_devices": 2
+                  },
+                  "summary": "Promouvoir en staff",
+                  "description": "Accorder les droits staff avec des limites de session renforc\u00e9es."
+                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -1761,6 +1747,9 @@
           }
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -1794,6 +1783,15 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "examples": {
+                  "UserNotFound": {
+                    "value": {
+                      "error": "User not found",
+                      "code": "NOT_FOUND"
+                    },
+                    "summary": "Utilisateur introuvable"
+                  }
                 }
               }
             },
@@ -1819,6 +1817,9 @@
           "Admin - Users"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -1853,7 +1854,7 @@
     "/api/v1/auth/admin/users/{user_id}/ban/": {
       "post": {
         "operationId": "admin_users_ban_create",
-        "description": "Bannit un utilisateur de mani\u00e8re permanente. N\u00e9cessite la permission users.ban.",
+        "description": "Bannit un utilisateur de mani\u00e8re permanente. D\u00e9sactive le compte (is_active=False). N\u00e9cessite la permission users.ban. La raison est stock\u00e9e dans le journal d'audit.",
         "summary": "Bannir un utilisateur",
         "parameters": [
           {
@@ -1873,6 +1874,20 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/BanUserRequest"
+              },
+              "examples": {
+                "BanWithReason": {
+                  "value": {
+                    "reason": "Repeated ToS violations \u2014 spam and abusive content"
+                  },
+                  "summary": "Bannissement avec raison",
+                  "description": "Bannir un utilisateur en pr\u00e9cisant la raison (recommand\u00e9 pour l'audit)."
+                },
+                "BanNoReason": {
+                  "value": {},
+                  "summary": "Bannissement sans raison",
+                  "description": "Le champ reason est optionnel."
+                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -1891,6 +1906,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -1899,6 +1917,40 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminUserDetail"
+                },
+                "examples": {
+                  "BanSuccess": {
+                    "value": {
+                      "message": "User banned successfully",
+                      "user": {
+                        "id": 42,
+                        "email": "offender@example.com",
+                        "is_active": false,
+                        "is_banned": true
+                      }
+                    },
+                    "summary": "Bannissement r\u00e9ussi"
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                },
+                "examples": {
+                  "AlreadyBanned": {
+                    "value": {
+                      "error": "User already banned",
+                      "code": "ALREADY_BANNED"
+                    },
+                    "summary": "Utilisateur d\u00e9j\u00e0 banni"
+                  }
                 }
               }
             },
@@ -1910,6 +1962,15 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "examples": {
+                  "UserNotFound": {
+                    "value": {
+                      "error": "User not found",
+                      "code": "NOT_FOUND"
+                    },
+                    "summary": "Utilisateur introuvable"
+                  }
                 }
               }
             },
@@ -1921,7 +1982,7 @@
     "/api/v1/auth/admin/users/{user_id}/lock/": {
       "post": {
         "operationId": "admin_users_lock_create",
-        "description": "Verrouille temporairement un compte utilisateur.",
+        "description": "Verrouille temporairement un compte utilisateur. La dur\u00e9e est configurable (d\u00e9faut: 30 min, max: 30 jours). N\u00e9cessite la permission users.lock. La raison est stock\u00e9e dans le journal d'audit.",
         "summary": "Verrouiller un compte",
         "parameters": [
           {
@@ -1941,6 +2002,23 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/LockUserRequest"
+              },
+              "examples": {
+                "LockDefault": {
+                  "value": {
+                    "reason": "Suspicious login activity detected"
+                  },
+                  "summary": "Verrouillage 30 min (d\u00e9faut)",
+                  "description": "Verrouille le compte pour la dur\u00e9e par d\u00e9faut (30 minutes)."
+                },
+                "LockCustomDuration": {
+                  "value": {
+                    "duration_minutes": 1440,
+                    "reason": "Pending security review \u2014 account suspended by admin"
+                  },
+                  "summary": "Verrouillage dur\u00e9e personnalis\u00e9e",
+                  "description": "Verrouille le compte pour 24 heures avec une raison explicite."
+                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -1959,6 +2037,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -1967,6 +2048,40 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminUserDetail"
+                },
+                "examples": {
+                  "LockSuccess": {
+                    "value": {
+                      "message": "User locked for 30 minutes",
+                      "user": {
+                        "id": 42,
+                        "email": "user@example.com",
+                        "is_locked": true,
+                        "locked_until": "2024-01-20T15:00:00Z"
+                      }
+                    },
+                    "summary": "Verrouillage r\u00e9ussi"
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                },
+                "examples": {
+                  "AlreadyLocked": {
+                    "value": {
+                      "error": "User already locked",
+                      "code": "ALREADY_LOCKED"
+                    },
+                    "summary": "Compte d\u00e9j\u00e0 verrouill\u00e9"
+                  }
                 }
               }
             },
@@ -1978,6 +2093,15 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "examples": {
+                  "UserNotFound": {
+                    "value": {
+                      "error": "User not found",
+                      "code": "NOT_FOUND"
+                    },
+                    "summary": "Utilisateur introuvable"
+                  }
                 }
               }
             },
@@ -2005,6 +2129,9 @@
           "Admin - Users"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -2057,6 +2184,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -2086,19 +2216,43 @@
     },
     "/api/v1/auth/ai/pending-actions/": {
       "get": {
-        "operationId": "ai_pending_actions_retrieve",
-        "description": "GET /ai/pending-actions/",
+        "operationId": "ai_pending_actions_list",
+        "description": "Retourne les AgentPendingActions non-confirm\u00e9es et non-expir\u00e9es des agents de l'utilisateur. HITL = Human-In-The-Loop. Si X-Org-Slug est fourni, filtre les actions relatives aux tokens de cette organisation.",
+        "summary": "Liste les actions en attente de validation HITL",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Org-Slug",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Slug de l'organisation pour filtrer les actions (multi-tenant context)"
+          }
+        ],
         "tags": [
-          "ai"
+          "AI Agents"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
         ],
         "responses": {
           "200": {
-            "description": "No response body"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentPendingActionList"
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         }
       }
@@ -2106,7 +2260,8 @@
     "/api/v1/auth/ai/pending-actions/{token}/confirm/": {
       "post": {
         "operationId": "ai_pending_actions_confirm_create",
-        "description": "POST /ai/pending-actions/confirm/\nBody: {\"token\": \"...\"}",
+        "description": "Approuve une action agent en attente via son confirmation_token. Le token est re\u00e7u par l'humain (email, webhook, etc.) lorsque l'agent demande une validation. Une fois confirm\u00e9, l'agent peut poursuivre l'action.",
+        "summary": "Confirme une action agent en attente (HITL)",
         "parameters": [
           {
             "in": "path",
@@ -2118,16 +2273,81 @@
           }
         ],
         "tags": [
-          "ai"
+          "AI Agents"
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentConfirmRequestRequest"
+              },
+              "examples": {
+                "ConfirmAction": {
+                  "value": {
+                    "token": "hitl_a1b2c3d4e5f6..."
+                  },
+                  "summary": "Confirmer une action agent",
+                  "description": "Approuver une action en fournissant son confirmation_token."
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentConfirmRequestRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentConfirmRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
         ],
         "responses": {
           "200": {
-            "description": "No response body"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSuccessResponse"
+                },
+                "examples": {
+                  "ConfirmSuccess": {
+                    "value": {
+                      "status": "confirmed"
+                    },
+                    "summary": "Action confirm\u00e9e"
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentErrorResponse"
+                },
+                "examples": {
+                  "InvalidOrExpired": {
+                    "value": {
+                      "error": "Invalid or expired token"
+                    },
+                    "summary": "Token invalide ou expir\u00e9"
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         }
       }
@@ -2135,7 +2355,8 @@
     "/api/v1/auth/ai/pending-actions/{token}/deny/": {
       "post": {
         "operationId": "ai_pending_actions_deny_create",
-        "description": "POST /ai/pending-actions/deny/\nBody: {\"token\": \"...\"}",
+        "description": "Refuse une action agent en attente via son confirmation_token. Le token est re\u00e7u par l'humain lorsque l'agent demande une validation. Une fois refus\u00e9e, l'agent est notifi\u00e9 que l'action est bloqu\u00e9e.",
+        "summary": "Refuse une action agent en attente (HITL)",
         "parameters": [
           {
             "in": "path",
@@ -2147,60 +2368,259 @@
           }
         ],
         "tags": [
-          "ai"
+          "AI Agents"
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRequestRequest"
+              },
+              "examples": {
+                "DenyAction": {
+                  "value": {
+                    "token": "hitl_a1b2c3d4e5f6..."
+                  },
+                  "summary": "Refuser une action agent",
+                  "description": "Refuser une action en fournissant son confirmation_token."
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRequestRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
         ],
         "responses": {
           "200": {
-            "description": "No response body"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSuccessResponse"
+                },
+                "examples": {
+                  "DenySuccess": {
+                    "value": {
+                      "status": "denied"
+                    },
+                    "summary": "Action refus\u00e9e"
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentErrorResponse"
+                },
+                "examples": {
+                  "InvalidOrExpired": {
+                    "value": {
+                      "error": "Invalid or expired token"
+                    },
+                    "summary": "Token invalide ou expir\u00e9"
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         }
       }
     },
     "/api/v1/auth/ai/tokens/": {
       "get": {
-        "operationId": "ai_tokens_retrieve",
-        "description": "GET /ai/tokens/\nPOST /ai/tokens/\nListe les AgentTokens actifs ou en cr\u00e9e un nouveau.",
+        "operationId": "ai_tokens_list",
+        "description": "Retourne tous les AgentTokens cr\u00e9\u00e9s par l'utilisateur authentifi\u00e9. Si X-Org-Slug est fourni, filtre les tokens li\u00e9s \u00e0 cette organisation.",
+        "summary": "Liste les tokens agent de l'utilisateur",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Org-Slug",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Slug de l'organisation pour filtrer les tokens (multi-tenant context)"
+          }
+        ],
         "tags": [
-          "ai"
+          "AI Agents"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
         ],
         "responses": {
           "200": {
-            "description": "No response body"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentTokenList"
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         }
       },
       "post": {
         "operationId": "ai_tokens_create",
-        "description": "GET /ai/tokens/\nPOST /ai/tokens/\nListe les AgentTokens actifs ou en cr\u00e9e un nouveau.",
-        "tags": [
-          "ai"
+        "description": "Cr\u00e9e un AgentToken avec des permissions limit\u00e9es pour un agent IA. Le token utilise le scheme AgentBearer pour s'identifier. N\u00e9cessite que AIRS_ENABLED soit True dans la configuration. Le contexte organisationnel peut \u00eatre fourni via le header X-Org-Slug ou via le champ 'organization' dans le corps de la requ\u00eate.",
+        "summary": "Cr\u00e9e un nouveau token agent (AIRS)",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Org-Slug",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Slug de l'organisation (multi-tenant context) \u2014 alternatif au champ organization du body"
+          }
         ],
+        "tags": [
+          "AI Agents"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentTokenCreateRequestRequest"
+              },
+              "examples": {
+                "CreateMinimal": {
+                  "value": {
+                    "agent_id": "my-bot-v1"
+                  },
+                  "summary": "Token minimal",
+                  "description": "Cr\u00e9er un token avec seulement l'identifiant agent (dur\u00e9e et permissions par d\u00e9faut)."
+                },
+                "CreateFull": {
+                  "value": {
+                    "agent_id": "finance-agent-v2",
+                    "expires_in": 3600,
+                    "permissions": [
+                      "read:reports",
+                      "write:invoices"
+                    ],
+                    "organization": "acme-corp",
+                    "budget_limit_usd": 5.0,
+                    "circuit_breaker": {
+                      "max_requests": 100,
+                      "window_seconds": 60
+                    }
+                  },
+                  "summary": "Token complet avec budget et circuit-breaker",
+                  "description": "Cr\u00e9er un token avec permissions, budget max, et circuit-breaker configur\u00e9."
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentTokenCreateRequestRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentTokenCreateRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
         ],
         "responses": {
-          "200": {
-            "description": "No response body"
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTokenCreated"
+                },
+                "examples": {
+                  "CreateSuccess": {
+                    "value": {
+                      "id": 7,
+                      "token": "AgentBearer eyJ...",
+                      "agent_id": "my-bot-v1",
+                      "status": "active",
+                      "expires_at": "2024-01-20T15:00:00Z"
+                    },
+                    "summary": "Token cr\u00e9\u00e9 avec succ\u00e8s"
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentErrorResponse"
+                },
+                "examples": {
+                  "PermissionDenied": {
+                    "value": {
+                      "error": "Agent not allowed to request this permission",
+                      "code": "PERMISSION_DENIED"
+                    },
+                    "summary": "Permission refus\u00e9e"
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         }
       }
     },
     "/api/v1/auth/ai/tokens/{id}/": {
       "get": {
-        "operationId": "ai_tokens_retrieve_2",
-        "description": "GET /ai/tokens/{id}/",
+        "operationId": "ai_tokens_retrieve",
+        "description": "Retourne les d\u00e9tails d'un AgentToken appartenant \u00e0 l'utilisateur.",
+        "summary": "D\u00e9tails d'un token agent",
         "parameters": [
           {
             "in": "path",
@@ -2208,20 +2628,41 @@
             "schema": {
               "type": "integer"
             },
+            "description": "ID du token agent",
             "required": true
           }
         ],
         "tags": [
-          "ai"
+          "AI Agents"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
         ],
         "responses": {
           "200": {
-            "description": "No response body"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTokenDetail"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentErrorResponse"
+                }
+              }
+            },
+            "description": ""
           }
         }
       }
@@ -2229,21 +2670,35 @@
     "/api/v1/auth/ai/tokens/{id}/heartbeat/": {
       "post": {
         "operationId": "ai_tokens_heartbeat_create",
-        "description": "POST /ai/tokens/{id}/heartbeat/\nCalled by the agent itself using the token.",
+        "description": "Signal de vie envoy\u00e9 par l'agent. Utilise le scheme `AgentBearer <token>` dans l'en-t\u00eate Authorization. Renouvelle le dead man's switch si configur\u00e9.",
+        "summary": "Heartbeat d'un token agent",
         "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "schema": {
+              "type": "string"
+            },
+            "description": "AgentBearer <raw_token>",
+            "required": true
+          },
           {
             "in": "path",
             "name": "id",
             "schema": {
               "type": "integer"
             },
+            "description": "ID du token agent",
             "required": true
           }
         ],
         "tags": [
-          "ai"
+          "AI Agents"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -2251,7 +2706,34 @@
         ],
         "responses": {
           "200": {
-            "description": "No response body"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentErrorResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentErrorResponse"
+                }
+              }
+            },
+            "description": ""
           }
         }
       }
@@ -2259,21 +2741,66 @@
     "/api/v1/auth/ai/tokens/{id}/report-usage/": {
       "post": {
         "operationId": "ai_tokens_report_usage_create",
-        "description": "POST /ai/tokens/{id}/report-usage/",
+        "description": "Rapporte la consommation LLM d'une session agent. Utilise AgentBearer dans Authorization. Si le budget est d\u00e9pass\u00e9, le token est suspendu automatiquement.",
+        "summary": "Rapporte l'usage d'un token agent (co\u00fbts LLM)",
         "parameters": [
+          {
+            "in": "header",
+            "name": "Authorization",
+            "schema": {
+              "type": "string"
+            },
+            "description": "AgentBearer <raw_token>",
+            "required": true
+          },
           {
             "in": "path",
             "name": "id",
             "schema": {
               "type": "integer"
             },
+            "description": "ID du token agent",
             "required": true
           }
         ],
         "tags": [
-          "ai"
+          "AI Agents"
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentReportUsageRequestRequest"
+              },
+              "examples": {
+                "ReportUsage": {
+                  "value": {
+                    "cost_usd": 0.042,
+                    "prompt_tokens": 1250,
+                    "completion_tokens": 450
+                  },
+                  "summary": "Rapporter une session LLM",
+                  "description": "Indique le co\u00fbt et les tokens consomm\u00e9s lors de la derni\u00e8re action de l'agent."
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentReportUsageRequestRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentReportUsageRequestRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -2281,7 +2808,59 @@
         ],
         "responses": {
           "200": {
-            "description": "No response body"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSuccessResponse"
+                },
+                "examples": {
+                  "ReportSuccess": {
+                    "value": {
+                      "status": "ok"
+                    },
+                    "summary": "Rapport accept\u00e9"
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentErrorResponse"
+                },
+                "examples": {
+                  "Unauthorized": {
+                    "value": {
+                      "error": "Unauthorized"
+                    },
+                    "summary": "Non autoris\u00e9 ou token invalide"
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentReportUsageBudget"
+                },
+                "examples": {
+                  "BudgetExceeded": {
+                    "value": {
+                      "error": "Budget exceeded",
+                      "status": "suspended"
+                    },
+                    "summary": "Budget d\u00e9pass\u00e9 (Token suspendu)"
+                  }
+                }
+              }
+            },
+            "description": ""
           }
         }
       }
@@ -2289,7 +2868,8 @@
     "/api/v1/auth/ai/tokens/{id}/revoke/": {
       "post": {
         "operationId": "ai_tokens_revoke_create",
-        "description": "POST /ai/tokens/{id}/revoke/",
+        "description": "R\u00e9voque imm\u00e9diatement un AgentToken. Le token ne pourra plus \u00eatre utilis\u00e9.",
+        "summary": "R\u00e9voque un token agent",
         "parameters": [
           {
             "in": "path",
@@ -2297,20 +2877,41 @@
             "schema": {
               "type": "integer"
             },
+            "description": "ID du token agent",
             "required": true
           }
         ],
         "tags": [
-          "ai"
+          "AI Agents"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
         ],
         "responses": {
           "200": {
-            "description": "No response body"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentErrorResponse"
+                }
+              }
+            },
+            "description": ""
           }
         }
       }
@@ -2318,7 +2919,8 @@
     "/api/v1/auth/ai/tokens/{id}/suspend/": {
       "post": {
         "operationId": "ai_tokens_suspend_create",
-        "description": "POST /ai/tokens/{id}/suspend/",
+        "description": "Suspend temporairement un AgentToken (raison: MANUAL).",
+        "summary": "Suspend un token agent",
         "parameters": [
           {
             "in": "path",
@@ -2326,20 +2928,41 @@
             "schema": {
               "type": "integer"
             },
+            "description": "ID du token agent",
             "required": true
           }
         ],
         "tags": [
-          "ai"
+          "AI Agents"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
         ],
         "responses": {
           "200": {
-            "description": "No response body"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSuccessResponse"
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentErrorResponse"
+                }
+              }
+            },
+            "description": ""
           }
         }
       }
@@ -2347,18 +2970,29 @@
     "/api/v1/auth/ai/tokens/revoke-all/": {
       "post": {
         "operationId": "ai_tokens_revoke_all_create",
-        "description": "POST /ai/tokens/revoke-all/\nCoupe-circuit nucl\u00e9aire.",
+        "description": "R\u00e9voque imm\u00e9diatement TOUS les AgentTokens actifs de l'utilisateur. Action de coupe-circuit d'urgence.",
+        "summary": "R\u00e9voque tous les tokens agent (coupe-circuit)",
         "tags": [
-          "ai"
+          "AI Agents"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
         ],
         "responses": {
           "200": {
-            "description": "No response body"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRevokeAllOk"
+                }
+              }
+            },
+            "description": ""
           }
         }
       }
@@ -2417,6 +3051,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -2446,17 +3083,6 @@
                 "$ref": "#/components/schemas/ApplicationCreateRequest"
               },
               "examples": {
-                "CreateAppSuccess": {
-                  "value": {
-                    "name": "Mobile App v2",
-                    "description": "Application mobile iOS/Android",
-                    "redirect_uris": [
-                      "myapp://callback",
-                      "https://app.example.com/auth"
-                    ]
-                  },
-                  "summary": "Application cr\u00e9\u00e9e avec secret"
-                },
                 "SecretWarning": {
                   "value": {
                     "client_secret": "sk_live_1234567890abcdef...",
@@ -2480,6 +3106,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -2569,6 +3198,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -2650,7 +3282,7 @@
       },
       "put": {
         "operationId": "applications_update",
-        "description": "Met \u00e0 jour les informations d'une application. Le secret ne peut pas \u00eatre modifi\u00e9 (utilisez l'endpoint de r\u00e9g\u00e9n\u00e9ration).",
+        "description": "Met \u00e0 jour les informations d'une application. Tous les champs fournis remplaceront les valeurs existantes. Le secret ne peut pas \u00eatre modifi\u00e9 (utilisez l'endpoint de r\u00e9g\u00e9n\u00e9ration).",
         "summary": "Modifier une application",
         "parameters": [
           {
@@ -2670,6 +3302,17 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ApplicationUpdateRequest"
+              },
+              "examples": {
+                "UpdateApp": {
+                  "value": {
+                    "name": "Production External API",
+                    "description": "Handles all incoming requests from the new frontend v3",
+                    "is_active": true
+                  },
+                  "summary": "Mise \u00e0 jour compl\u00e8te",
+                  "description": "Met \u00e0 jour le nom, la description et le statut."
+                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -2688,6 +3331,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -2696,6 +3342,31 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Application"
+                },
+                "examples": {
+                  "UpdateSuccess": {
+                    "value": {
+                      "id": 10,
+                      "name": "Production External API",
+                      "description": "Handles all incoming requests from the new frontend v3",
+                      "client_id": "app_abc123...",
+                      "is_active": true,
+                      "created_at": "2024-01-01T10:00:00Z",
+                      "updated_at": "2024-01-20T14:30:00Z"
+                    },
+                    "summary": "Mise \u00e0 jour r\u00e9ussie"
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
                 }
               }
             },
@@ -2707,6 +3378,15 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "examples": {
+                  "AppNotFound": {
+                    "value": {
+                      "error": "Application not found",
+                      "code": "NOT_FOUND"
+                    },
+                    "summary": "Application introuvable"
+                  }
                 }
               }
             },
@@ -2765,6 +3445,9 @@
           }
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -2836,6 +3519,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -2887,21 +3573,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RegenerateApplicationCredentialsRequest"
-              },
-              "examples": {
-                "RegenerateSuccess": {
-                  "value": {
-                    "confirmation": "REGENERATE"
-                  },
-                  "summary": "Credentials r\u00e9g\u00e9n\u00e9r\u00e9s"
-                },
-                "ConfirmationRequired": {
-                  "value": {
-                    "error": "Confirmation required",
-                    "code": "CONFIRMATION_REQUIRED"
-                  },
-                  "summary": "Confirmation requise"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -2918,6 +3589,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -3033,20 +3707,6 @@
                     "password": "CurrentPassword123!"
                   },
                   "summary": "Suppression annul\u00e9e"
-                },
-                "NoPendingDeletion": {
-                  "value": {
-                    "error": "No pending deletion request found",
-                    "code": "NO_PENDING_DELETION"
-                  },
-                  "summary": "Aucune suppression en cours"
-                },
-                "InvalidPassword": {
-                  "value": {
-                    "error": "Invalid password",
-                    "code": "INVALID_PASSWORD"
-                  },
-                  "summary": "Mot de passe invalide"
                 }
               }
             },
@@ -3064,6 +3724,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
@@ -3094,12 +3757,6 @@
                   }
                 },
                 "examples": {
-                  "CancelSuccess": {
-                    "value": {
-                      "password": "CurrentPassword123!"
-                    },
-                    "summary": "Suppression annul\u00e9e"
-                  },
                   "NoPendingDeletion": {
                     "value": {
                       "error": "No pending deletion request found",
@@ -3170,46 +3827,26 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ConfirmAccountDeletionRequest"
-              },
-              "examples": {
-                "ConfirmSuccess": {
-                  "value": {
-                    "token": "confirm_abc123def456"
-                  },
-                  "summary": "Suppression confirm\u00e9e"
-                },
-                "TokenExpired": {
-                  "value": {
-                    "error": "Confirmation token has expired",
-                    "code": "TOKEN_EXPIRED",
-                    "expired_at": "2024-01-16T10:30:00Z"
-                  },
-                  "summary": "Token expir\u00e9"
-                },
-                "InvalidToken": {
-                  "value": {
-                    "error": "Invalid confirmation token",
-                    "code": "INVALID_TOKEN"
-                  },
-                  "summary": "Token invalide"
-                }
+                "$ref": "#/components/schemas/TokenRequestRequest"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ConfirmAccountDeletionRequest"
+                "$ref": "#/components/schemas/TokenRequestRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ConfirmAccountDeletionRequest"
+                "$ref": "#/components/schemas/TokenRequestRequest"
               }
             }
           },
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -3337,6 +3974,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -3363,6 +4003,9 @@
           "Dashboard"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -3395,6 +4038,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -3421,6 +4067,9 @@
           "Dashboard"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -3481,6 +4130,9 @@
           "Dashboard"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -3627,12 +4279,6 @@
                     "password": "CurrentPassword123!"
                   },
                   "summary": "Exportation des donn\u00e9es r\u00e9ussie"
-                },
-                "InvalidPassword": {
-                  "value": {
-                    "error": "Invalid password"
-                  },
-                  "summary": "Mot de passe invalide"
                 }
               }
             },
@@ -3650,6 +4296,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
@@ -3683,12 +4332,6 @@
                   }
                 },
                 "examples": {
-                  "ExportSuccess": {
-                    "value": {
-                      "password": "CurrentPassword123!"
-                    },
-                    "summary": "Exportation des donn\u00e9es r\u00e9ussie"
-                  },
                   "InvalidPassword": {
                     "value": {
                       "error": "Invalid password"
@@ -3802,23 +4445,6 @@
                     "totp_code": "123456"
                   },
                   "summary": "Connexion avec 2FA"
-                },
-                "SessionLimitExceeded": {
-                  "value": {
-                    "error": "Session limit exceeded",
-                    "details": "Maximum concurrent sessions (1) already reached. Please logout from other devices.",
-                    "code": "SESSION_LIMIT_EXCEEDED"
-                  },
-                  "summary": "Limite de session d\u00e9pass\u00e9e"
-                },
-                "AccountLocked": {
-                  "value": {
-                    "error": "Account locked",
-                    "details": "Account has been locked due to too many failed login attempts.",
-                    "code": "ACCOUNT_LOCKED",
-                    "retry_after": 1800
-                  },
-                  "summary": "Compte verrouill\u00e9"
                 }
               }
             },
@@ -3836,6 +4462,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -3869,21 +4498,6 @@
                   }
                 },
                 "examples": {
-                  "LoginSuccess": {
-                    "value": {
-                      "email": "user@example.com",
-                      "password": "SecureP@ss123!"
-                    },
-                    "summary": "Connexion r\u00e9ussie"
-                  },
-                  "LoginWith2fa": {
-                    "value": {
-                      "email": "user@example.com",
-                      "password": "SecureP@ss123!",
-                      "totp_code": "123456"
-                    },
-                    "summary": "Connexion avec 2FA"
-                  },
                   "SessionLimitExceeded": {
                     "value": {
                       "error": "Session limit exceeded",
@@ -4059,6 +4673,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -4089,23 +4706,6 @@
                   }
                 },
                 "examples": {
-                  "LoginPhoneSuccess": {
-                    "value": {
-                      "phone_country_code": "+33",
-                      "phone_number": "612345678",
-                      "password": "SecureP@ss123!"
-                    },
-                    "summary": "Connexion par t\u00e9l\u00e9phone r\u00e9ussie"
-                  },
-                  "LoginPhoneWith2fa": {
-                    "value": {
-                      "phone_country_code": "+33",
-                      "phone_number": "612345678",
-                      "password": "SecureP@ss123!",
-                      "totp_code": "123456"
-                    },
-                    "summary": "Connexion par t\u00e9l\u00e9phone avec 2FA"
-                  },
                   "InvalidPhoneFormat": {
                     "value": {
                       "error": "Validation error",
@@ -4193,12 +4793,6 @@
                 "$ref": "#/components/schemas/RefreshTokenRequest"
               },
               "examples": {
-                "LogoutSuccess": {
-                  "value": {
-                    "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-                  },
-                  "summary": "D\u00e9connexion r\u00e9ussie"
-                },
                 "LogoutWithAccessToken": {
                   "value": {
                     "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
@@ -4221,6 +4815,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -4292,6 +4889,9 @@
           "Auth"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -4371,27 +4971,6 @@
                     "validation_url": "https://app.example.com/auth-magic/link/verify"
                   },
                   "summary": "Demander magic link"
-                },
-                "MagicLinkDisabled": {
-                  "value": {
-                    "error": "Magic links are disabled",
-                    "details": "Contact administrator to enable magic link authentication"
-                  },
-                  "summary": "Magic link d\u00e9sactiv\u00e9"
-                },
-                "ValidationUrlMissing": {
-                  "value": {
-                    "error": "Validation URL is required",
-                    "code": "VALIDATION_URL_REQUIRED"
-                  },
-                  "summary": "Validation URL manquant"
-                },
-                "MagicLinkRateLimited": {
-                  "value": {
-                    "error": "Too many magic link requests",
-                    "retry_after": 3600
-                  },
-                  "summary": "Limite de rate d\u00e9pass\u00e9e"
                 }
               }
             },
@@ -4409,6 +4988,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -4434,13 +5016,6 @@
                   }
                 },
                 "examples": {
-                  "RequestMagicLink": {
-                    "value": {
-                      "email": "user@example.com",
-                      "validation_url": "https://app.example.com/auth-magic/link/verify"
-                    },
-                    "summary": "Demander magic link"
-                  },
                   "MagicLinkDisabled": {
                     "value": {
                       "error": "Magic links are disabled",
@@ -4544,6 +5119,9 @@
           "Magic Link"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -4686,6 +5264,9 @@
         "security": [
           {
             "jwtAuth": []
+          },
+          {
+            "jwtAuth": []
           }
         ],
         "responses": {
@@ -4781,38 +5362,6 @@
                       }
                     }
                   }
-                },
-                "examples": {
-                  "UserProfileComplete": {
-                    "value": {
-                      "id": 12345,
-                      "email": "john.doe@example.com",
-                      "first_name": "John",
-                      "last_name": "Doe",
-                      "username": "johndoe",
-                      "phone": "+33612345678",
-                      "avatar": "https://cdn.example.com/avatars/john.jpg",
-                      "bio": "Software developer passionate about security",
-                      "timezone": "Europe/Paris",
-                      "language": "fr",
-                      "is_active": true,
-                      "is_verified": true,
-                      "date_joined": "2024-01-15T10:30:00Z",
-                      "last_login": "2024-01-20T14:22:00Z",
-                      "custom_fields": {
-                        "department": "Engineering",
-                        "employee_id": "EMP001",
-                        "manager": "jane.smith@example.com"
-                      },
-                      "preferences": {
-                        "email_notifications": true,
-                        "sms_notifications": false,
-                        "marketing_emails": false,
-                        "two_factor_enabled": true
-                      }
-                    },
-                    "summary": "Profil utilisateur complet"
-                  }
                 }
               }
             },
@@ -4853,20 +5402,6 @@
                     "timezone": "Europe/Paris"
                   },
                   "summary": "Mise \u00e0 jour profil"
-                },
-                "ValidationError": {
-                  "value": {
-                    "error": "Validation failed",
-                    "field_errors": {
-                      "phone": [
-                        "Invalid phone format"
-                      ],
-                      "username": [
-                        "Username already taken"
-                      ]
-                    }
-                  },
-                  "summary": "Erreur de validation"
                 }
               }
             },
@@ -4883,6 +5418,9 @@
           }
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
@@ -4992,6 +5530,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -5018,6 +5559,9 @@
           "Organizations"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -5143,15 +5687,6 @@
                 "$ref": "#/components/schemas/CreateOrganizationRequestRequest"
               },
               "examples": {
-                "CreateOrgSuccess": {
-                  "value": {
-                    "name": "Acme Corp",
-                    "slug": "acme-corp",
-                    "description": "Technologie et innovation",
-                    "max_members": 100
-                  },
-                  "summary": "Cr\u00e9ation r\u00e9ussie"
-                },
                 "CreateOrgWithParent": {
                   "value": {
                     "name": "Acme France",
@@ -5160,13 +5695,6 @@
                     "description": "Filiale fran\u00e7aise"
                   },
                   "summary": "Cr\u00e9ation avec parent"
-                },
-                "HierarchyDepthLimit": {
-                  "value": {
-                    "error": "Organization hierarchy depth limit exceeded (max 5 levels)",
-                    "code": "HIERARCHY_DEPTH_LIMIT"
-                  },
-                  "summary": "Limite profondeur hi\u00e9rarchie"
                 }
               }
             },
@@ -5184,6 +5712,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -5298,6 +5829,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -5391,6 +5925,9 @@
           "Organizations"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -5554,20 +6091,6 @@
                     "expires_in_days": 7
                   },
                   "summary": "Invitation envoy\u00e9e"
-                },
-                "AlreadyMember": {
-                  "value": {
-                    "error": "User is already a member of this organization",
-                    "code": "ALREADY_MEMBER"
-                  },
-                  "summary": "D\u00e9j\u00e0 membre"
-                },
-                "InvitationExists": {
-                  "value": {
-                    "error": "Pending invitation already exists for this email",
-                    "code": "INVITATION_EXISTS"
-                  },
-                  "summary": "Invitation existante"
                 }
               }
             },
@@ -5585,6 +6108,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -5622,14 +6148,6 @@
                   }
                 },
                 "examples": {
-                  "InviteSuccess": {
-                    "value": {
-                      "email": "new.user@example.com",
-                      "role_code": "member",
-                      "expires_in_days": 7
-                    },
-                    "summary": "Invitation envoy\u00e9e"
-                  },
                   "AlreadyMember": {
                     "value": {
                       "error": "User is already a member of this organization",
@@ -5737,6 +6255,9 @@
           "Organizations"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -5908,6 +6429,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -6055,28 +6579,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequestRequest"
-              },
-              "examples": {
-                "UpdateRoleSuccess": {
-                  "value": {
-                    "role_code": "admin"
-                  },
-                  "summary": "R\u00f4le mis \u00e0 jour"
-                },
-                "CannotDemoteOwner": {
-                  "value": {
-                    "error": "Cannot demote organization owner",
-                    "code": "CANNOT_DEMOTE_OWNER"
-                  },
-                  "summary": "Impossible de r\u00e9trograder owner"
-                },
-                "LastOwnerError": {
-                  "value": {
-                    "error": "Cannot remove role from last organization owner",
-                    "code": "LAST_OWNER_REQUIRED"
-                  },
-                  "summary": "Dernier propri\u00e9taire"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -6092,6 +6594,9 @@
           }
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -6234,6 +6739,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -6359,36 +6867,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AddOrganizationMemberRequestRequest"
-              },
-              "examples": {
-                "AddMemberSuccess": {
-                  "value": {
-                    "user_id": 123,
-                    "role_code": "member"
-                  },
-                  "summary": "Membre ajout\u00e9 avec succ\u00e8s"
-                },
-                "MemberLimitExceeded": {
-                  "value": {
-                    "error": "Organization member limit exceeded",
-                    "code": "MEMBER_LIMIT_EXCEEDED"
-                  },
-                  "summary": "Limite de membres d\u00e9pass\u00e9e"
-                },
-                "AlreadyMember": {
-                  "value": {
-                    "error": "User is already a member of this organization",
-                    "code": "ALREADY_MEMBER"
-                  },
-                  "summary": "D\u00e9j\u00e0 membre"
-                },
-                "InvalidRole": {
-                  "value": {
-                    "error": "Cannot assign owner role through add_member",
-                    "code": "INVALID_ROLE"
-                  },
-                  "summary": "R\u00f4le invalide"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -6405,6 +6883,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -6548,6 +7029,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -6589,30 +7073,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PatchedUpdateOrganizationRequestRequest"
-              },
-              "examples": {
-                "UpdateOrgSuccess": {
-                  "value": {
-                    "name": "Acme Corporation",
-                    "description": "Mise \u00e0 jour description",
-                    "max_members": 200
-                  },
-                  "summary": "Mise \u00e0 jour r\u00e9ussie"
-                },
-                "ParentConstraintViolation": {
-                  "value": {
-                    "error": "Cannot set parent: would create circular hierarchy",
-                    "code": "CIRCULAR_HIERARCHY"
-                  },
-                  "summary": "Violation contrainte parent"
-                },
-                "MemberLimitTooLow": {
-                  "value": {
-                    "error": "Member limit cannot be less than current member count",
-                    "code": "MEMBER_LIMIT_VIOLATION"
-                  },
-                  "summary": "Limite membres trop basse"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -6628,6 +7088,9 @@
           }
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -6751,20 +7214,6 @@
                     "otp_type": "phone_verification"
                   },
                   "summary": "Demande OTP par SMS"
-                },
-                "NoEmailError": {
-                  "value": {
-                    "error": "No email address on account",
-                    "code": "NO_EMAIL"
-                  },
-                  "summary": "Aucune adresse email"
-                },
-                "OtpRateLimited": {
-                  "value": {
-                    "error": "Too many OTP requests",
-                    "retry_after": 300
-                  },
-                  "summary": "Limite OTP d\u00e9pass\u00e9e"
                 }
               }
             },
@@ -6782,6 +7231,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -6903,38 +7355,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/VerifyOTPRequest"
-              },
-              "examples": {
-                "VerifyEmailSuccess": {
-                  "value": {
-                    "code": "123456"
-                  },
-                  "summary": "V\u00e9rification email r\u00e9ussie"
-                },
-                "InvalidOtpCode": {
-                  "value": {
-                    "error": "Invalid OTP code",
-                    "details": "The code provided is incorrect or has expired",
-                    "code": "INVALID_OTP"
-                  },
-                  "summary": "Code OTP invalide"
-                },
-                "OtpExpired": {
-                  "value": {
-                    "error": "OTP code has expired",
-                    "details": "Please request a new verification code",
-                    "code": "OTP_EXPIRED"
-                  },
-                  "summary": "Code OTP expir\u00e9"
-                },
-                "MaxAttemptsReached": {
-                  "value": {
-                    "error": "Maximum OTP attempts reached",
-                    "details": "Please request a new verification code",
-                    "code": "MAX_ATTEMPTS_REACHED"
-                  },
-                  "summary": "Maximum de tentatives atteint"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -6951,6 +7371,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -7066,38 +7489,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/VerifyOTPRequest"
-              },
-              "examples": {
-                "VerifyPhoneSuccess": {
-                  "value": {
-                    "code": "123456"
-                  },
-                  "summary": "V\u00e9rification t\u00e9l\u00e9phone r\u00e9ussie"
-                },
-                "InvalidPhoneOtp": {
-                  "value": {
-                    "error": "Invalid OTP code",
-                    "details": "The code provided is incorrect or has expired",
-                    "code": "INVALID_OTP"
-                  },
-                  "summary": "Code OTP t\u00e9l\u00e9phone invalide"
-                },
-                "PhoneNotVerified": {
-                  "value": {
-                    "error": "Phone number not verified",
-                    "details": "Please request an OTP verification first",
-                    "code": "PHONE_NOT_VERIFIED"
-                  },
-                  "summary": "T\u00e9l\u00e9phone non v\u00e9rifi\u00e9"
-                },
-                "OtpWindowExpired": {
-                  "value": {
-                    "error": "OTP verification window expired",
-                    "details": "The 10-minute verification window has passed",
-                    "code": "OTP_WINDOW_EXPIRED"
-                  },
-                  "summary": "Fen\u00eatre de v\u00e9rification expir\u00e9e"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -7114,6 +7505,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -7232,39 +7626,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ChangePasswordRequest"
-              },
-              "examples": {
-                "ChangePasswordSuccess": {
-                  "value": {
-                    "current_password": "OldP@ss123!",
-                    "new_password": "NewSecureP@ss456!",
-                    "confirm_password": "NewSecureP@ss456!"
-                  },
-                  "summary": "Changement r\u00e9ussi"
-                },
-                "InvalidCurrentPassword": {
-                  "value": {
-                    "error": "Current password is incorrect",
-                    "code": "INVALID_PASSWORD"
-                  },
-                  "summary": "Mot de passe actuel incorrect"
-                },
-                "PasswordReused": {
-                  "value": {
-                    "error": "Password has already been used",
-                    "details": "You cannot reuse any of your last 5 passwords",
-                    "code": "PASSWORD_REUSED"
-                  },
-                  "summary": "Mot de passe d\u00e9j\u00e0 utilis\u00e9"
-                },
-                "PasswordBreached": {
-                  "value": {
-                    "error": "Password breach detected",
-                    "details": "This password has been found in known data breaches. Please choose a different password.",
-                    "code": "PASSWORD_BREACHED"
-                  },
-                  "summary": "Mot de passe dans une fuite"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -7281,6 +7642,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -7395,6 +7759,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -7445,22 +7812,6 @@
                     "confirm_password": "NewSecureP@ss123!"
                   },
                   "summary": "Confirmation par t\u00e9l\u00e9phone"
-                },
-                "OtpExpired": {
-                  "value": {
-                    "error": "OTP code has expired",
-                    "details": "Please request a new password reset code",
-                    "code": "OTP_EXPIRED"
-                  },
-                  "summary": "Code OTP expir\u00e9"
-                },
-                "BreachPasswordReset": {
-                  "value": {
-                    "error": "Password breach detected",
-                    "details": "This password has been found in known data breaches. Please choose a different password.",
-                    "code": "PASSWORD_BREACH"
-                  },
-                  "summary": "Mot de passe dans une fuite"
                 }
               }
             },
@@ -7478,6 +7829,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -7502,25 +7856,6 @@
                   }
                 },
                 "examples": {
-                  "ResetConfirmEmail": {
-                    "value": {
-                      "email": "user@example.com",
-                      "otp_code": "123456",
-                      "new_password": "NewSecureP@ss123!",
-                      "confirm_password": "NewSecureP@ss123!"
-                    },
-                    "summary": "Confirmation par email"
-                  },
-                  "ResetConfirmPhone": {
-                    "value": {
-                      "phone_country_code": "+33",
-                      "phone_number": "612345678",
-                      "otp_code": "123456",
-                      "new_password": "NewSecureP@ss123!",
-                      "confirm_password": "NewSecureP@ss123!"
-                    },
-                    "summary": "Confirmation par t\u00e9l\u00e9phone"
-                  },
                   "OtpExpired": {
                     "value": {
                       "error": "OTP code has expired",
@@ -7614,13 +7949,6 @@
                     "phone_number": "612345678"
                   },
                   "summary": "Demande par t\u00e9l\u00e9phone"
-                },
-                "ResetRateLimited": {
-                  "value": {
-                    "error": "Too many password reset requests",
-                    "retry_after": 3600
-                  },
-                  "summary": "Limite de rate d\u00e9pass\u00e9e"
                 }
               }
             },
@@ -7637,6 +7965,9 @@
           }
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -7669,19 +8000,6 @@
                   }
                 },
                 "examples": {
-                  "ResetRequestEmail": {
-                    "value": {
-                      "email": "user@example.com"
-                    },
-                    "summary": "Demande par email"
-                  },
-                  "ResetRequestPhone": {
-                    "value": {
-                      "phone_country_code": "+33",
-                      "phone_number": "612345678"
-                    },
-                    "summary": "Demande par t\u00e9l\u00e9phone"
-                  },
                   "ResetRateLimited": {
                     "value": {
                       "error": "Too many password reset requests",
@@ -7736,7 +8054,7 @@
     "/api/v1/auth/password/strength/": {
       "post": {
         "operationId": "password_strength_create",
-        "description": "Retourne le score et la force d'un mot de passe sans l'enregistrer.",
+        "description": "Retourne le score et la force d'un mot de passe sans l'enregistrer. Utile pour fournir un retour en temps r\u00e9el dans l'interface utilisateur. L'email (optionnel) permet de v\u00e9rifier si le mot de passe contient une partie de l'email.",
         "summary": "Verifier la force d'un mot de passe",
         "tags": [
           "Password"
@@ -7746,6 +8064,16 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PasswordStrengthRequestRequest"
+              },
+              "examples": {
+                "StrongPassword": {
+                  "value": {
+                    "password": "Tr0ub4dour&55$",
+                    "email": "user@example.com"
+                  },
+                  "summary": "Mot de passe fort",
+                  "description": "Un mot de passe long avec diff\u00e9rents types de caract\u00e8res."
+                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -7765,6 +8093,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -7774,6 +8105,52 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "examples": {
+                  "StrongPassword": {
+                    "value": {
+                      "password": "Tr0ub4dour&55$",
+                      "email": "user@example.com"
+                    },
+                    "summary": "Mot de passe fort",
+                    "description": "Un mot de passe long avec diff\u00e9rents types de caract\u00e8res."
+                  },
+                  "StrongResponse": {
+                    "value": {
+                      "score": 4,
+                      "strength": "Strong",
+                      "is_valid": true,
+                      "errors": [],
+                      "requirements": {
+                        "min_length": 12,
+                        "require_lowercase": true,
+                        "require_uppercase": true,
+                        "require_numbers": true,
+                        "require_special": true
+                      }
+                    },
+                    "summary": "R\u00e9ponse (Fort)"
+                  },
+                  "WeakResponse": {
+                    "value": {
+                      "score": 1,
+                      "strength": "Weak",
+                      "is_valid": false,
+                      "errors": [
+                        "Le mot de passe doit contenir au moins 12 caract\u00e8res.",
+                        "Le mot de passe doit contenir au moins un chiffre.",
+                        "Le mot de passe doit contenir au moins un caract\u00e8re sp\u00e9cial."
+                      ],
+                      "requirements": {
+                        "min_length": 12,
+                        "require_lowercase": true,
+                        "require_uppercase": true,
+                        "require_numbers": true,
+                        "require_special": true
+                      }
+                    },
+                    "summary": "R\u00e9ponse (Faible/Invalide)"
+                  }
                 }
               }
             },
@@ -7836,6 +8213,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -7853,7 +8233,7 @@
       },
       "post": {
         "operationId": "permissions_create",
-        "description": "Cr\u00e9e une nouvelle permission.",
+        "description": "Cr\u00e9e une nouvelle permission. Le code doit \u00eatre unique et structur\u00e9 (ex: `users.view`). Peut \u00eatre rattach\u00e9 \u00e0 une permission parente via `parent_code`.",
         "summary": "Cr\u00e9er une permission",
         "tags": [
           "RBAC"
@@ -7863,6 +8243,27 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PermissionRequest"
+              },
+              "examples": {
+                "CreateStandalonePermission": {
+                  "value": {
+                    "code": "reports.view",
+                    "name": "Consulter les rapports",
+                    "description": "Permet de voir tous les rapports d'activit\u00e9."
+                  },
+                  "summary": "Permission globale",
+                  "description": "Cr\u00e9ation d'une permission principale sans parent."
+                },
+                "CreateChildPermission": {
+                  "value": {
+                    "code": "reports.export",
+                    "name": "Exporter les rapports",
+                    "description": "Permet d'exporter les rapports au format PDF ou CSV.",
+                    "parent_code": "reports.view"
+                  },
+                  "summary": "Permission enfant",
+                  "description": "Cr\u00e9ation d'une sous-permission rattach\u00e9e \u00e0 une permission parente (via parent_code)."
+                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -7882,6 +8283,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -7890,6 +8294,23 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Permission"
+                },
+                "examples": {
+                  "CreateSuccess": {
+                    "value": {
+                      "id": "10",
+                      "code": "reports.export",
+                      "name": "Exporter les rapports",
+                      "description": "Permet d'exporter les rapports au format PDF ou CSV.",
+                      "parent": {
+                        "id": "9",
+                        "code": "reports.view"
+                      },
+                      "children": [],
+                      "created_at": "2024-01-20T10:00:00Z"
+                    },
+                    "summary": "Permission cr\u00e9\u00e9e"
+                  }
                 }
               }
             },
@@ -7931,6 +8352,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -7959,7 +8383,7 @@
       },
       "put": {
         "operationId": "permissions_update",
-        "description": "Met \u00e0 jour les informations d'une permission.",
+        "description": "Met \u00e0 jour les informations d'une permission. Seuls le nom et la description sont g\u00e9n\u00e9ralement modifi\u00e9s, le code servant d'identifiant technique immuable.",
         "summary": "Modifier une permission",
         "parameters": [
           {
@@ -7979,6 +8403,16 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PermissionRequest"
+              },
+              "examples": {
+                "UpdatePermission": {
+                  "value": {
+                    "name": "Consulter tous les rapports (Admin)",
+                    "description": "Permet de voir les rapports de toutes les organisations."
+                  },
+                  "summary": "Mise \u00e0 jour d'une permission",
+                  "description": "Modifier le nom et la description d'une permission existante."
+                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -7998,6 +8432,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -8006,6 +8443,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Permission"
+                },
+                "examples": {
+                  "UpdateSuccess": {
+                    "value": {
+                      "id": "9",
+                      "code": "reports.view",
+                      "name": "Consulter tous les rapports (Admin)",
+                      "description": "Permet de voir les rapports de toutes les organisations.",
+                      "parent": null,
+                      "children": [
+                        {
+                          "id": "10",
+                          "code": "reports.export",
+                          "name": "Exporter les rapports"
+                        }
+                      ],
+                      "created_at": "2024-01-20T10:00:00Z"
+                    },
+                    "summary": "Mise \u00e0 jour r\u00e9ussie"
+                  }
                 }
               }
             },
@@ -8028,6 +8485,15 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "examples": {
+                  "PermissionNotFound": {
+                    "value": {
+                      "error": "Permission not found",
+                      "code": "NOT_FOUND"
+                    },
+                    "summary": "Permission introuvable"
+                  }
                 }
               }
             },
@@ -8053,6 +8519,9 @@
           "RBAC"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -8097,30 +8566,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RefreshTokenRequest"
-              },
-              "examples": {
-                "RefreshSuccess": {
-                  "value": {
-                    "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-                  },
-                  "summary": "Rafra\u00eechissement r\u00e9ussi"
-                },
-                "RefreshExpired": {
-                  "value": {
-                    "error": "Refresh token expired",
-                    "details": "Please login again to get a new refresh token",
-                    "code": "REFRESH_EXPIRED"
-                  },
-                  "summary": "Refresh token expir\u00e9"
-                },
-                "RefreshBlacklisted": {
-                  "value": {
-                    "error": "Refresh token has been revoked",
-                    "details": "This refresh token has been blacklisted due to logout",
-                    "code": "REFRESH_BLACKLISTED"
-                  },
-                  "summary": "Refresh token blacklist\u00e9"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -8137,6 +8582,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -8270,14 +8718,6 @@
                     }
                   },
                   "summary": "Inscription r\u00e9ussie"
-                },
-                "BreachPassword": {
-                  "value": {
-                    "error": "Password breach detected",
-                    "details": "This password has been found in known data breaches. Please choose a different password.",
-                    "code": "PASSWORD_BREACH"
-                  },
-                  "summary": "Mot de passe trouv\u00e9 dans une fuite"
                 }
               }
             },
@@ -8295,6 +8735,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -8429,24 +8872,6 @@
                     "reason": "No longer need the account"
                   },
                   "summary": "Demande de suppression cr\u00e9\u00e9e"
-                },
-                "DeletionAlreadyPending": {
-                  "value": {
-                    "error": "Account deletion already pending",
-                    "code": "DELETION_ALREADY_PENDING",
-                    "existing_request": {
-                      "scheduled_deletion_date": "2024-02-15T10:30:00Z",
-                      "cancellation_token": "cancel_abc123"
-                    }
-                  },
-                  "summary": "Suppression d\u00e9j\u00e0 en cours"
-                },
-                "Invalid2fa": {
-                  "value": {
-                    "error": "Invalid or missing OTP code",
-                    "code": "INVALID_2FA_CODE"
-                  },
-                  "summary": "Code 2FA invalide"
                 }
               }
             },
@@ -8464,6 +8889,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           }
@@ -8505,14 +8933,6 @@
                   }
                 },
                 "examples": {
-                  "DeletionRequestSuccess": {
-                    "value": {
-                      "password": "CurrentPassword123!",
-                      "otp_code": "123456",
-                      "reason": "No longer need the account"
-                    },
-                    "summary": "Demande de suppression cr\u00e9\u00e9e"
-                  },
                   "DeletionAlreadyPending": {
                     "value": {
                       "error": "Account deletion already pending",
@@ -8585,6 +9005,14 @@
         "summary": "Lister les r\u00f4les",
         "parameters": [
           {
+            "in": "header",
+            "name": "X-Org-Slug",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Slug de l'organisation pour le filtrage contextuel"
+          },
+          {
             "in": "query",
             "name": "is_default",
             "schema": {
@@ -8632,6 +9060,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -8649,7 +9080,7 @@
       },
       "post": {
         "operationId": "roles_create",
-        "description": "Cr\u00e9e un nouveau r\u00f4le avec les permissions sp\u00e9cifi\u00e9es.",
+        "description": "Cr\u00e9e un nouveau r\u00f4le. Vous pouvez assigner des permissions imm\u00e9diatement via la liste `permission_codes`.",
         "summary": "Cr\u00e9er un r\u00f4le",
         "tags": [
           "RBAC"
@@ -8659,6 +9090,22 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RoleRequest"
+              },
+              "examples": {
+                "CreateRole": {
+                  "value": {
+                    "code": "tech_support",
+                    "name": "Support Technique",
+                    "description": "Acc\u00e8s en lecture aux utilisateurs et logs.",
+                    "permission_codes": [
+                      "users.view",
+                      "logs.view"
+                    ],
+                    "is_default": false
+                  },
+                  "summary": "R\u00f4le avec permissions",
+                  "description": "Cr\u00e9ation d'un r\u00f4le \"Support Technique\" incluant des permissions initiales."
+                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -8678,6 +9125,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -8686,6 +9136,32 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Role"
+                },
+                "examples": {
+                  "CreateSuccess": {
+                    "value": {
+                      "id": "19",
+                      "code": "tech_support",
+                      "name": "Support Technique",
+                      "description": "Acc\u00e8s en lecture aux utilisateurs et logs.",
+                      "permissions": [
+                        {
+                          "id": "5",
+                          "code": "users.view",
+                          "name": "Lister les utilisateurs"
+                        },
+                        {
+                          "id": "12",
+                          "code": "logs.view",
+                          "name": "Consulter les logs"
+                        }
+                      ],
+                      "is_default": false,
+                      "created_at": "2024-01-20T10:00:00Z",
+                      "updated_at": "2024-01-20T10:00:00Z"
+                    },
+                    "summary": "Cr\u00e9ation r\u00e9ussie"
+                  }
                 }
               }
             },
@@ -8727,6 +9203,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -8755,7 +9234,7 @@
       },
       "put": {
         "operationId": "roles_update",
-        "description": "Met \u00e0 jour les informations d'un r\u00f4le.",
+        "description": "Met \u00e0 jour les informations d'un r\u00f4le. Vous pouvez modifier le nom, la description, le statut par d\u00e9faut, et remplacer toutes les permissions assign\u00e9es via `permission_codes`.",
         "summary": "Modifier un r\u00f4le",
         "parameters": [
           {
@@ -8775,6 +9254,22 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RoleRequest"
+              },
+              "examples": {
+                "UpdateRole": {
+                  "value": {
+                    "name": "Support Technique (Niveau 2)",
+                    "description": "Acc\u00e8s \u00e9tendu pour la r\u00e9solution d'incidents.",
+                    "permission_codes": [
+                      "users.view",
+                      "logs.view",
+                      "logs.export"
+                    ],
+                    "is_default": false
+                  },
+                  "summary": "Mise \u00e0 jour d'un r\u00f4le",
+                  "description": "Renomme le r\u00f4le et met \u00e0 jour ses permissions."
+                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -8794,6 +9289,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -8802,6 +9300,37 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Role"
+                },
+                "examples": {
+                  "UpdateSuccess": {
+                    "value": {
+                      "id": "19",
+                      "code": "tech_support",
+                      "name": "Support Technique (Niveau 2)",
+                      "description": "Acc\u00e8s \u00e9tendu pour la r\u00e9solution d'incidents.",
+                      "permissions": [
+                        {
+                          "id": "5",
+                          "code": "users.view",
+                          "name": "Lister les utilisateurs"
+                        },
+                        {
+                          "id": "12",
+                          "code": "logs.view",
+                          "name": "Consulter les logs"
+                        },
+                        {
+                          "id": "13",
+                          "code": "logs.export",
+                          "name": "Exporter les logs"
+                        }
+                      ],
+                      "is_default": false,
+                      "created_at": "2024-01-20T10:00:00Z",
+                      "updated_at": "2024-02-15T14:30:00Z"
+                    },
+                    "summary": "Mise \u00e0 jour r\u00e9ussie"
+                  }
                 }
               }
             },
@@ -8824,6 +9353,15 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "examples": {
+                  "RoleNotFound": {
+                    "value": {
+                      "error": "Role not found",
+                      "code": "NOT_FOUND"
+                    },
+                    "summary": "R\u00f4le introuvable"
+                  }
                 }
               }
             },
@@ -8849,6 +9387,9 @@
           "RBAC"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -8902,6 +9443,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -8931,7 +9475,7 @@
       },
       "post": {
         "operationId": "roles_permissions_create",
-        "description": "Ajoute une ou plusieurs permissions \u00e0 un r\u00f4le existant.",
+        "description": "Ajoute une ou plusieurs permissions \u00e0 un r\u00f4le existant. Seuls les codes de permissions sont requis.",
         "summary": "Ajouter des permissions \u00e0 un r\u00f4le",
         "parameters": [
           {
@@ -8951,6 +9495,18 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+              },
+              "examples": {
+                "AddPermissionsRequest": {
+                  "value": {
+                    "permission_codes": [
+                      "users.create",
+                      "users.update"
+                    ]
+                  },
+                  "summary": "Ajouter des permissions",
+                  "description": "Ajoute deux permissions sp\u00e9cifiques au r\u00f4le."
+                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -8970,6 +9526,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -8979,6 +9538,66 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "examples": {
+                  "AddPermissionsSuccess": {
+                    "value": {
+                      "message": "2 permission(s) added",
+                      "added": [
+                        "users.create",
+                        "users.update"
+                      ],
+                      "role_code": "tech_support",
+                      "permissions": [
+                        {
+                          "id": "5",
+                          "code": "users.view",
+                          "name": "Lister les utilisateurs"
+                        },
+                        {
+                          "id": "6",
+                          "code": "users.create",
+                          "name": "Cr\u00e9er un utilisateur"
+                        },
+                        {
+                          "id": "7",
+                          "code": "users.update",
+                          "name": "Modifier un utilisateur"
+                        }
+                      ]
+                    },
+                    "summary": "Permissions ajout\u00e9es"
+                  },
+                  "PermissionsAlreadyAssigned": {
+                    "value": {
+                      "message": "1 permission(s) added",
+                      "added": [
+                        "users.update"
+                      ],
+                      "already_assigned": [
+                        "users.create"
+                      ],
+                      "role_code": "tech_support",
+                      "permissions": [
+                        {
+                          "id": "5",
+                          "code": "users.view",
+                          "name": "Lister les utilisateurs"
+                        },
+                        {
+                          "id": "6",
+                          "code": "users.create",
+                          "name": "Cr\u00e9er un utilisateur"
+                        },
+                        {
+                          "id": "7",
+                          "code": "users.update",
+                          "name": "Modifier un utilisateur"
+                        }
+                      ]
+                    },
+                    "summary": "Certaines d\u00e9j\u00e0 assign\u00e9es"
+                  }
                 }
               }
             },
@@ -8990,6 +9609,18 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "examples": {
+                  "PermissionsNotFound": {
+                    "value": {
+                      "error": "Some permissions not found",
+                      "code": "PERMISSIONS_NOT_FOUND",
+                      "not_found": [
+                        "users.delete_all"
+                      ]
+                    },
+                    "summary": "Permissions introuvables"
+                  }
                 }
               }
             },
@@ -9026,6 +9657,9 @@
           "RBAC"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -9118,26 +9752,6 @@
                     "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6..."
                   },
                   "summary": "Auth Google avec ID token"
-                },
-                "ProviderNotSupported": {
-                  "value": {
-                    "error": "Provider 'linkedin' is not supported or not enabled.",
-                    "code": "PROVIDER_NOT_SUPPORTED",
-                    "supported_providers": [
-                      "google",
-                      "github",
-                      "microsoft",
-                      "facebook"
-                    ]
-                  },
-                  "summary": "Provider non support\u00e9"
-                },
-                "MissingRedirectUri": {
-                  "value": {
-                    "error": "redirect_uri is required with code",
-                    "code": "REDIRECT_URI_REQUIRED"
-                  },
-                  "summary": "Redirect URI manquant"
                 }
               }
             },
@@ -9154,6 +9768,9 @@
           }
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -9279,22 +9896,58 @@
     "/api/v1/auth/social/{provider}/callback/": {
       "get": {
         "operationId": "social_callback_retrieve",
-        "description": "Endpoint de callback pour le flow OAuth2 authorization code. Re\u00e7oit le code d'autorisation du provider et le redirect_uri. \u00c9change le code contre des tokens et authentifie l'utilisateur. Retourne les tokens JWT ou une erreur. Peut rediriger vers l'application cliente avec les tokens.",
+        "description": "Endpoint de callback pour le flow OAuth2 authorization code. Re\u00e7oit le code d'autorisation du provider et le redirect_uri. \u00c9change le code contre des tokens et authentifie l'utilisateur. Retourne les tokens JWT ou redirige vers l'application cliente.",
         "summary": "Callback OAuth2",
         "parameters": [
+          {
+            "in": "query",
+            "name": "code",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Authorization code du provider",
+            "required": true
+          },
           {
             "in": "path",
             "name": "provider",
             "schema": {
+              "type": "string",
+              "enum": [
+                "facebook",
+                "github",
+                "google",
+                "microsoft"
+              ]
+            },
+            "description": "Provider OAuth2",
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "redirect_uri",
+            "schema": {
               "type": "string"
             },
+            "description": "URI de redirection originale",
             "required": true
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Parameter CSRF/state pour s\u00e9curit\u00e9"
           }
         ],
         "tags": [
           "Social Auth"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -9305,36 +9958,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "access": {
-                      "type": "string"
-                    },
-                    "refresh": {
-                      "type": "string"
-                    },
-                    "user": {
-                      "$ref": "#/components/schemas/User"
-                    },
-                    "provider": {
-                      "type": "string"
-                    },
-                    "is_new_user": {
-                      "type": "boolean"
-                    }
-                  }
+                  "$ref": "#/components/schemas/SocialCallbackResponse"
                 },
                 "examples": {
                   "CallbackSuccess": {
                     "value": {
                       "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
                       "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-                      "user": {
-                        "id": 42,
-                        "email": "user@example.com",
-                        "first_name": "John",
-                        "last_name": "Doe"
-                      },
                       "provider": "google",
                       "is_new_user": false
                     },
@@ -9356,15 +9986,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "Redirection vers application cliente avec tokens",
-                  "headers": {
-                    "Location": {
-                      "description": "URL de redirection avec tokens en param\u00e8tres",
-                      "schema": {
-                        "type": "string"
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/SocialCallbackRedirect"
                 }
               }
             },
@@ -9374,15 +9996,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "code": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/SocialCallbackError"
                 }
               }
             },
@@ -9392,15 +10006,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "code": {
-                      "type": "string"
-                    }
-                  }
+                  "$ref": "#/components/schemas/SocialCallbackUnauthorized"
                 }
               }
             },
@@ -9428,6 +10034,9 @@
           "RBAC"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -9480,6 +10089,18 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+              },
+              "examples": {
+                "AddDirectPermissionsRequest": {
+                  "value": {
+                    "permission_codes": [
+                      "users.view",
+                      "reports.export"
+                    ]
+                  },
+                  "summary": "Ajouter des permissions directes",
+                  "description": "Ajoute deux permissions sp\u00e9cifiques \u00e0 l'utilisateur."
+                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -9499,6 +10120,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -9508,6 +10132,19 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "examples": {
+                  "AddDirectPermissionsSuccess": {
+                    "value": {
+                      "status": "Permissions issues successfully added",
+                      "direct_permissions": [
+                        "users.view",
+                        "reports.export"
+                      ]
+                    },
+                    "summary": "Succ\u00e8s de l'ajout",
+                    "description": "Les permissions ont \u00e9t\u00e9 ajout\u00e9es avec succ\u00e8s."
+                  }
                 }
               }
             },
@@ -9530,6 +10167,16 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "examples": {
+                  "UserNotFound": {
+                    "value": {
+                      "error": "User not found",
+                      "code": "NOT_FOUND"
+                    },
+                    "summary": "Utilisateur introuvable",
+                    "description": "L'ID utilisateur fourni n'existe pas."
+                  }
                 }
               }
             },
@@ -9555,6 +10202,9 @@
           "RBAC"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -9619,6 +10269,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -9648,7 +10301,7 @@
       },
       "post": {
         "operationId": "users_roles_create",
-        "description": "Ajoute un r\u00f4le \u00e0 un utilisateur.",
+        "description": "Ajoute un r\u00f4le \u00e0 un utilisateur \u00e0 l'aide de son `role_code` (ex: `admin`, `tech_support`).",
         "summary": "Assigner un r\u00f4le",
         "parameters": [
           {
@@ -9668,6 +10321,15 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AssignRoleRequest"
+              },
+              "examples": {
+                "AssignRoleRequest": {
+                  "value": {
+                    "role_code": "tech_support"
+                  },
+                  "summary": "Assigner un r\u00f4le",
+                  "description": "Affecter le r\u00f4le \"Support Technique\" \u00e0 l'utilisateur."
+                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -9687,6 +10349,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -9696,6 +10361,18 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "examples": {
+                  "AssignRoleSuccess": {
+                    "value": {
+                      "message": "Role assigned",
+                      "roles": [
+                        "tech_support",
+                        "default_user"
+                      ]
+                    },
+                    "summary": "Assignation r\u00e9ussie"
+                  }
                 }
               }
             },
@@ -9707,6 +10384,15 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": {}
+                },
+                "examples": {
+                  "RoleNotFound": {
+                    "value": {
+                      "error": "Role not found",
+                      "code": "ROLE_NOT_FOUND"
+                    },
+                    "summary": "R\u00f4le introuvable"
+                  }
                 }
               }
             },
@@ -9741,6 +10427,9 @@
           "RBAC"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -9826,6 +10515,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -9868,12 +10560,6 @@
                   "AuthBeginResidentKey": {
                     "value": {},
                     "summary": "Auth resident key"
-                  },
-                  "AuthBeginUserSpecific": {
-                    "value": {
-                      "email": "user@example.com"
-                    },
-                    "summary": "Auth utilisateur sp\u00e9cifique"
                   }
                 }
               }
@@ -9914,26 +10600,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequestRequest"
-              },
-              "examples": {
-                "AuthCompleteSuccess": {
-                  "value": {
-                    "challenge_id": 456,
-                    "credential": {
-                      "id": "credentialId",
-                      "rawId": "rawId",
-                      "response": {}
-                    }
-                  },
-                  "summary": "Authentification r\u00e9ussie"
-                },
-                "CounterReplayAttack": {
-                  "value": {
-                    "error": "Credential counter replay detected",
-                    "code": "REPLAY_ATTACK"
-                  },
-                  "summary": "Attaque replay d\u00e9tect\u00e9e"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -9950,6 +10616,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -10054,6 +10723,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -10127,6 +10799,9 @@
           {
             "jwtAuth": []
           },
+          {
+            "jwtAuth": []
+          },
           {}
         ],
         "responses": {
@@ -10170,6 +10845,9 @@
           "WebAuthn"
         ],
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -10296,27 +10974,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequestRequest"
-              },
-              "examples": {
-                "RegisterCompleteSuccess": {
-                  "value": {
-                    "challenge_id": 123,
-                    "credential": {
-                      "id": "credentialId",
-                      "rawId": "rawId",
-                      "response": {}
-                    },
-                    "device_name": "iPhone 14"
-                  },
-                  "summary": "Enregistrement r\u00e9ussi"
-                },
-                "CredentialAlreadyExists": {
-                  "value": {
-                    "error": "Credential already registered",
-                    "code": "CREDENTIAL_EXISTS"
-                  },
-                  "summary": "Credential d\u00e9j\u00e0 existante"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -10333,6 +10990,9 @@
           "required": true
         },
         "security": [
+          {
+            "jwtAuth": []
+          },
           {
             "jwtAuth": []
           },
@@ -10649,6 +11309,278 @@
           "roles"
         ]
       },
+      "AgentConfirmRequestRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "AgentErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AgentPendingActionList": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "agent_id": {
+            "type": "string"
+          },
+          "permission": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": {},
+            "nullable": true
+          },
+          "confirmation_token": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "agent_id",
+          "confirmation_token",
+          "created_at",
+          "endpoint",
+          "expires_at",
+          "id",
+          "payload",
+          "permission"
+        ]
+      },
+      "AgentReportUsageBudget": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "status"
+        ]
+      },
+      "AgentReportUsageRequestRequest": {
+        "type": "object",
+        "properties": {
+          "cost_usd": {
+            "type": "number",
+            "format": "double"
+          },
+          "prompt_tokens": {
+            "type": "integer"
+          },
+          "completion_tokens": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "completion_tokens",
+          "cost_usd",
+          "prompt_tokens"
+        ]
+      },
+      "AgentRevokeAllOk": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count",
+          "status"
+        ]
+      },
+      "AgentSuccessResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "AgentTokenCreateRequestRequest": {
+        "type": "object",
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expires_in": {
+            "type": "integer"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "organization": {
+            "type": "string",
+            "minLength": 1
+          },
+          "budget_limit_usd": {
+            "type": "number",
+            "format": "double"
+          },
+          "circuit_breaker": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "dead_mans_switch": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "agent_id"
+        ]
+      },
+      "AgentTokenCreated": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "token": {
+            "type": "string"
+          },
+          "agent_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "agent_id",
+          "expires_at",
+          "id",
+          "status",
+          "token"
+        ]
+      },
+      "AgentTokenDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "agent_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "organization": {
+            "type": "string",
+            "nullable": true
+          },
+          "current_request_count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "agent_id",
+          "created_at",
+          "current_request_count",
+          "expires_at",
+          "id",
+          "organization",
+          "status"
+        ]
+      },
+      "AgentTokenList": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "agent_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "organization": {
+            "type": "string",
+            "nullable": true
+          },
+          "current_request_count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "agent_id",
+          "created_at",
+          "current_request_count",
+          "expires_at",
+          "id",
+          "organization",
+          "status"
+        ]
+      },
       "Application": {
         "type": "object",
         "description": "Serializer pour afficher les applications (sans le secret)",
@@ -10875,18 +11807,6 @@
         "required": [
           "current_password",
           "new_password"
-        ]
-      },
-      "ConfirmAccountDeletionRequest": {
-        "type": "object",
-        "properties": {
-          "token": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "token"
         ]
       },
       "CreateOrganizationRequestRequest": {
@@ -12047,6 +12967,70 @@
           }
         }
       },
+      "SocialCallbackError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "error"
+        ]
+      },
+      "SocialCallbackRedirect": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "location"
+        ]
+      },
+      "SocialCallbackResponse": {
+        "type": "object",
+        "properties": {
+          "access": {
+            "type": "string"
+          },
+          "refresh": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "is_new_user": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "access",
+          "is_new_user",
+          "provider",
+          "refresh"
+        ]
+      },
+      "SocialCallbackUnauthorized": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "error"
+        ]
+      },
       "StatusEnum": {
         "enum": [
           "pending",
@@ -12057,6 +13041,18 @@
         ],
         "type": "string",
         "description": "* `pending` - Pending\n* `confirmation_sent` - Confirmation Sent\n* `confirmed` - Confirmed\n* `completed` - Completed\n* `cancelled` - Cancelled"
+      },
+      "TokenRequestRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "token"
+        ]
       },
       "TwoFactorBackupCodesRequestRequest": {
         "type": "object",
@@ -12252,5 +13248,10 @@
       }
     }
   },
+  "security": [
+    {
+      "jwtAuth": []
+    }
+  ],
   "x-cache-ttl": 3600
 }

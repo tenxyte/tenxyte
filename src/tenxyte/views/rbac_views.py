@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiExample, inline_serializer
 from drf_spectacular.types import OpenApiTypes
 
 from ..serializers import (
@@ -35,9 +35,54 @@ Permission = get_permission_model()
     post=extend_schema(
         tags=['RBAC'],
         summary="Créer une permission",
-        description="Crée une nouvelle permission.",
+        description="Crée une nouvelle permission. "
+                    "Le code doit être unique et structuré (ex: `users.view`). "
+                    "Peut être rattaché à une permission parente via `parent_code`.",
         request=PermissionSerializer,
-        responses={201: PermissionSerializer, 400: OpenApiTypes.OBJECT}
+        responses={201: PermissionSerializer, 400: OpenApiTypes.OBJECT},
+        examples=[
+            OpenApiExample(
+                name='create_standalone_permission',
+                summary='Permission globale',
+                description='Création d\'une permission principale sans parent.',
+                request_only=True,
+                value={
+                    'code': 'reports.view',
+                    'name': 'Consulter les rapports',
+                    'description': 'Permet de voir tous les rapports d\'activité.'
+                }
+            ),
+            OpenApiExample(
+                name='create_child_permission',
+                summary='Permission enfant',
+                description='Création d\'une sous-permission rattachée à une permission parente (via parent_code).',
+                request_only=True,
+                value={
+                    'code': 'reports.export',
+                    'name': 'Exporter les rapports',
+                    'description': 'Permet d\'exporter les rapports au format PDF ou CSV.',
+                    'parent_code': 'reports.view'
+                }
+            ),
+            OpenApiExample(
+                name='create_success',
+                summary='Permission créée',
+                response_only=True,
+                status_codes=['201'],
+                value={
+                    'id': '10',
+                    'code': 'reports.export',
+                    'name': 'Exporter les rapports',
+                    'description': 'Permet d\'exporter les rapports au format PDF ou CSV.',
+                    'parent': {
+                        'id': '9',
+                        'code': 'reports.view'
+                    },
+                    'children': [],
+                    'created_at': '2024-01-20T10:00:00Z'
+                }
+            )
+        ]
     )
 )
 class PermissionListView(APIView):
@@ -84,9 +129,54 @@ class PermissionListView(APIView):
     put=extend_schema(
         tags=['RBAC'],
         summary="Modifier une permission",
-        description="Met à jour les informations d'une permission.",
+        description="Met à jour les informations d'une permission. "
+                    "Seuls le nom et la description sont généralement modifiés, "
+                    "le code servant d'identifiant technique immuable.",
         request=PermissionSerializer,
-        responses={200: PermissionSerializer, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+        responses={200: PermissionSerializer, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
+        examples=[
+            OpenApiExample(
+                name='update_permission',
+                summary='Mise à jour d\'une permission',
+                description='Modifier le nom et la description d\'une permission existante.',
+                request_only=True,
+                value={
+                    'name': 'Consulter tous les rapports (Admin)',
+                    'description': 'Permet de voir les rapports de toutes les organisations.'
+                }
+            ),
+            OpenApiExample(
+                name='update_success',
+                summary='Mise à jour réussie',
+                response_only=True,
+                status_codes=['200'],
+                value={
+                    'id': '9',
+                    'code': 'reports.view',
+                    'name': 'Consulter tous les rapports (Admin)',
+                    'description': 'Permet de voir les rapports de toutes les organisations.',
+                    'parent': None,
+                    'children': [
+                        {
+                            'id': '10',
+                            'code': 'reports.export',
+                            'name': 'Exporter les rapports'
+                        }
+                    ],
+                    'created_at': '2024-01-20T10:00:00Z'
+                }
+            ),
+            OpenApiExample(
+                name='permission_not_found',
+                summary='Permission introuvable',
+                response_only=True,
+                status_codes=['404'],
+                value={
+                    'error': 'Permission not found',
+                    'code': 'NOT_FOUND'
+                }
+            )
+        ]
     ),
     delete=extend_schema(
         tags=['RBAC'],
@@ -150,6 +240,13 @@ class PermissionDetailView(APIView):
         summary="Lister les rôles",
         description="Retourne la liste paginée de tous les rôles disponibles.",
         parameters=[
+            OpenApiParameter(
+                name='X-Org-Slug',
+                type=str,
+                location=OpenApiParameter.HEADER,
+                required=False,
+                description="Slug de l'organisation pour le filtrage contextuel"
+            ),
             OpenApiParameter('search', str, description='Recherche dans code et name'),
             OpenApiParameter('is_default', bool, description='Filtrer par is_default'),
             OpenApiParameter('ordering', str, description='Tri: code, name, is_default, created_at'),
@@ -161,9 +258,52 @@ class PermissionDetailView(APIView):
     post=extend_schema(
         tags=['RBAC'],
         summary="Créer un rôle",
-        description="Crée un nouveau rôle avec les permissions spécifiées.",
+        description="Crée un nouveau rôle. "
+                    "Vous pouvez assigner des permissions immédiatement via la liste `permission_codes`.",
         request=RoleSerializer,
-        responses={201: RoleSerializer, 400: OpenApiTypes.OBJECT}
+        responses={201: RoleSerializer, 400: OpenApiTypes.OBJECT},
+        examples=[
+            OpenApiExample(
+                name='create_role',
+                summary='Rôle avec permissions',
+                description='Création d\'un rôle "Support Technique" incluant des permissions initiales.',
+                request_only=True,
+                value={
+                    'code': 'tech_support',
+                    'name': 'Support Technique',
+                    'description': 'Accès en lecture aux utilisateurs et logs.',
+                    'permission_codes': ['users.view', 'logs.view'],
+                    'is_default': False
+                }
+            ),
+            OpenApiExample(
+                name='create_success',
+                summary='Création réussie',
+                response_only=True,
+                status_codes=['201'],
+                value={
+                    'id': '19',
+                    'code': 'tech_support',
+                    'name': 'Support Technique',
+                    'description': 'Accès en lecture aux utilisateurs et logs.',
+                    'permissions': [
+                        {
+                            'id': '5',
+                            'code': 'users.view',
+                            'name': 'Lister les utilisateurs'
+                        },
+                        {
+                            'id': '12',
+                            'code': 'logs.view',
+                            'name': 'Consulter les logs'
+                        }
+                    ],
+                    'is_default': False,
+                    'created_at': '2024-01-20T10:00:00Z',
+                    'updated_at': '2024-01-20T10:00:00Z'
+                }
+            )
+        ]
     )
 )
 class RoleListView(APIView):
@@ -210,9 +350,67 @@ class RoleListView(APIView):
     put=extend_schema(
         tags=['RBAC'],
         summary="Modifier un rôle",
-        description="Met à jour les informations d'un rôle.",
+        description="Met à jour les informations d'un rôle. "
+                    "Vous pouvez modifier le nom, la description, le statut par défaut, "
+                    "et remplacer toutes les permissions assignées via `permission_codes`.",
         request=RoleSerializer,
-        responses={200: RoleSerializer, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+        responses={200: RoleSerializer, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
+        examples=[
+            OpenApiExample(
+                name='update_role',
+                summary='Mise à jour d\'un rôle',
+                description='Renomme le rôle et met à jour ses permissions.',
+                request_only=True,
+                value={
+                    'name': 'Support Technique (Niveau 2)',
+                    'description': 'Accès étendu pour la résolution d\'incidents.',
+                    'permission_codes': ['users.view', 'logs.view', 'logs.export'],
+                    'is_default': False
+                }
+            ),
+            OpenApiExample(
+                name='update_success',
+                summary='Mise à jour réussie',
+                response_only=True,
+                status_codes=['200'],
+                value={
+                    'id': '19',
+                    'code': 'tech_support',
+                    'name': 'Support Technique (Niveau 2)',
+                    'description': 'Accès étendu pour la résolution d\'incidents.',
+                    'permissions': [
+                        {
+                            'id': '5',
+                            'code': 'users.view',
+                            'name': 'Lister les utilisateurs'
+                        },
+                        {
+                            'id': '12',
+                            'code': 'logs.view',
+                            'name': 'Consulter les logs'
+                        },
+                        {
+                            'id': '13',
+                            'code': 'logs.export',
+                            'name': 'Exporter les logs'
+                        }
+                    ],
+                    'is_default': False,
+                    'created_at': '2024-01-20T10:00:00Z',
+                    'updated_at': '2024-02-15T14:30:00Z'
+                }
+            ),
+            OpenApiExample(
+                name='role_not_found',
+                summary='Rôle introuvable',
+                response_only=True,
+                status_codes=['404'],
+                value={
+                    'error': 'Role not found',
+                    'code': 'NOT_FOUND'
+                }
+            )
+        ]
     ),
     delete=extend_schema(
         tags=['RBAC'],
@@ -280,9 +478,65 @@ class RoleDetailView(APIView):
     post=extend_schema(
         tags=['RBAC'],
         summary="Ajouter des permissions à un rôle",
-        description="Ajoute une ou plusieurs permissions à un rôle existant.",
+        description="Ajoute une ou plusieurs permissions à un rôle existant. "
+                    "Seuls les codes de permissions sont requis.",
         request=ManageRolePermissionsSerializer,
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
+        examples=[
+            OpenApiExample(
+                name='add_permissions_request',
+                summary='Ajouter des permissions',
+                description='Ajoute deux permissions spécifiques au rôle.',
+                request_only=True,
+                value={
+                    'permission_codes': ['users.create', 'users.update']
+                }
+            ),
+            OpenApiExample(
+                name='add_permissions_success',
+                summary='Permissions ajoutées',
+                response_only=True,
+                status_codes=['200'],
+                value={
+                    'message': '2 permission(s) added',
+                    'added': ['users.create', 'users.update'],
+                    'role_code': 'tech_support',
+                    'permissions': [
+                        {'id': '5', 'code': 'users.view', 'name': 'Lister les utilisateurs'},
+                        {'id': '6', 'code': 'users.create', 'name': 'Créer un utilisateur'},
+                        {'id': '7', 'code': 'users.update', 'name': 'Modifier un utilisateur'}
+                    ]
+                }
+            ),
+            OpenApiExample(
+                name='permissions_already_assigned',
+                summary='Certaines déjà assignées',
+                response_only=True,
+                status_codes=['200'],
+                value={
+                    'message': '1 permission(s) added',
+                    'added': ['users.update'],
+                    'already_assigned': ['users.create'],
+                    'role_code': 'tech_support',
+                    'permissions': [
+                        {'id': '5', 'code': 'users.view', 'name': 'Lister les utilisateurs'},
+                        {'id': '6', 'code': 'users.create', 'name': 'Créer un utilisateur'},
+                        {'id': '7', 'code': 'users.update', 'name': 'Modifier un utilisateur'}
+                    ]
+                }
+            ),
+            OpenApiExample(
+                name='permissions_not_found',
+                summary='Permissions introuvables',
+                response_only=True,
+                status_codes=['400'],
+                value={
+                    'error': 'Some permissions not found',
+                    'code': 'PERMISSIONS_NOT_FOUND',
+                    'not_found': ['users.delete_all']
+                }
+            )
+        ]
     ),
     delete=extend_schema(
         tags=['RBAC'],
@@ -455,9 +709,41 @@ class RolePermissionsView(APIView):
     post=extend_schema(
         tags=['RBAC'],
         summary="Assigner un rôle",
-        description="Ajoute un rôle à un utilisateur.",
+        description="Ajoute un rôle à un utilisateur à l'aide de son `role_code` "
+                    "(ex: `admin`, `tech_support`).",
         request=AssignRoleSerializer,
-        responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+        responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
+        examples=[
+            OpenApiExample(
+                name='assign_role_request',
+                summary='Assigner un rôle',
+                description='Affecter le rôle "Support Technique" à l\'utilisateur.',
+                request_only=True,
+                value={
+                    'role_code': 'tech_support'
+                }
+            ),
+            OpenApiExample(
+                name='assign_role_success',
+                summary='Assignation réussie',
+                response_only=True,
+                status_codes=['200'],
+                value={
+                    'message': 'Role assigned',
+                    'roles': ['tech_support', 'default_user']
+                }
+            ),
+            OpenApiExample(
+                name='role_not_found',
+                summary='Rôle introuvable',
+                response_only=True,
+                status_codes=['404'],
+                value={
+                    'error': 'Role not found',
+                    'code': 'ROLE_NOT_FOUND'
+                }
+            )
+        ]
     ),
     delete=extend_schema(
         tags=['RBAC'],
@@ -567,7 +853,40 @@ class UserRolesView(APIView):
         summary="Ajouter des permissions directes à un utilisateur",
         description="Ajoute une ou plusieurs permissions directement à un utilisateur.",
         request=ManageRolePermissionsSerializer,
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
+        examples=[
+            OpenApiExample(
+                name='add_direct_permissions_request',
+                summary='Ajouter des permissions directes',
+                description='Ajoute deux permissions spécifiques à l\'utilisateur.',
+                request_only=True,
+                value={
+                    'permission_codes': ['users.view', 'reports.export']
+                }
+            ),
+            OpenApiExample(
+                name='add_direct_permissions_success',
+                summary='Succès de l\'ajout',
+                description='Les permissions ont été ajoutées avec succès.',
+                response_only=True,
+                status_codes=['200'],
+                value={
+                    'status': 'Permissions issues successfully added',
+                    'direct_permissions': ['users.view', 'reports.export']
+                }
+            ),
+            OpenApiExample(
+                name='user_not_found',
+                summary='Utilisateur introuvable',
+                description='L\'ID utilisateur fourni n\'existe pas.',
+                response_only=True,
+                status_codes=['404'],
+                value={
+                    'error': 'User not found',
+                    'code': 'NOT_FOUND'
+                }
+            )
+        ]
     ),
     delete=extend_schema(
         tags=['RBAC'],

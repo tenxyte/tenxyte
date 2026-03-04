@@ -442,31 +442,71 @@ Request a magic link sent by email.
 
 **Request:**
 ```json
-{ "email": "user@example.com" }
-```
-
-**Response `200`:**
-```json
-{ "message": "Magic link sent" }
-```
-
----
-
-### `POST /magic-link/verify/`
-Verify a magic link token and receive JWT tokens.
-
-**Request:**
-```json
-{ "token": "<magic-link-token>" }
+{
+  "email": "user@example.com",
+  "validation_url": "https://app.example.com/auth-magic/link/verify"
+}
 ```
 
 **Response `200`:**
 ```json
 {
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ...",
-  "token_type": "Bearer",
-  "expires_in": 3600
+  "message": "If this email is registered, a magic link has been sent."
+}
+```
+
+**Response `400` (Validation URL missing):**
+```json
+{
+  "error": "Validation URL is required",
+  "code": "VALIDATION_URL_REQUIRED"
+}
+```
+
+**Response `429` (Rate limited):**
+```json
+{
+  "error": "Too many magic link requests",
+  "retry_after": 3600
+}
+```
+
+---
+
+### `GET /magic-link/verify/?token=<token>`
+Verify a magic link token and receive JWT tokens.
+
+**Response `200`:**
+```json
+{
+  "access": "eyJ...",
+  "refresh": "eyJ...",
+  "user": {
+    "id": 42,
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe"
+  },
+  "message": "Magic link verified successfully",
+  "session_id": "uuid-string",
+  "device_id": "uuid-string"
+}
+```
+
+**Response `400` (Token missing):**
+```json
+{
+  "error": "Token is required",
+  "code": "TOKEN_REQUIRED"
+}
+```
+
+**Response `401` (Invalid/used/expired token):**
+```json
+{
+  "error": "Invalid magic link token",
+  "details": "The token provided is not valid",
+  "code": "INVALID_TOKEN"
 }
 ```
 
@@ -484,7 +524,27 @@ Refresh the access token.
 ```json
 {
   "access_token": "eyJ...",
-  "refresh_token": "eyJ..."
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "refresh_token": ["This field is required."]
+  }
+}
+```
+
+**Response `401` (Invalid/expired refresh token):**
+```json
+{
+  "error": "Refresh token expired or revoked",
+  "code": "REFRESH_FAILED"
 }
 ```
 
@@ -498,14 +558,47 @@ Logout (revokes refresh token + blacklists access token).
 { "refresh_token": "eyJ..." }
 ```
 
+**Headers (optional):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Response `200`:**
+```json
+{ "message": "Logged out successfully" }
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "refresh_token": ["This field is required."]
+  }
+}
+```
+
 ---
 
 ### `POST /logout/all/` 🔒
 Logout from all devices.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
 { "message": "Logged out from 3 devices" }
+```
+
+**Response `401` (Unauthorized):**
+```json
+{
+  "error": "Authentication credentials were not provided",
+  "details": "JWT token is required"
+}
 ```
 
 ---

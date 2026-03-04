@@ -60,14 +60,14 @@ class PasswordResetRequestView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='reset_request_email',
                 summary='Demande par email',
                 value={
                     'email': 'user@example.com'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='reset_request_phone',
                 summary='Demande par téléphone',
                 value={
@@ -75,7 +75,7 @@ class PasswordResetRequestView(APIView):
                     'phone_number': '612345678'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='reset_rate_limited',
                 summary='Limite de rate dépassée',
                 value={
@@ -162,7 +162,7 @@ class PasswordResetConfirmView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='reset_confirm_email',
                 summary='Confirmation par email',
                 value={
@@ -172,7 +172,7 @@ class PasswordResetConfirmView(APIView):
                     'confirm_password': 'NewSecureP@ss123!'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='reset_confirm_phone',
                 summary='Confirmation par téléphone',
                 value={
@@ -183,7 +183,7 @@ class PasswordResetConfirmView(APIView):
                     'confirm_password': 'NewSecureP@ss123!'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='otp_expired',
                 summary='Code OTP expiré',
                 value={
@@ -192,7 +192,7 @@ class PasswordResetConfirmView(APIView):
                     'code': 'OTP_EXPIRED'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='breach_password_reset',
                 summary='Mot de passe dans une fuite',
                 value={
@@ -294,7 +294,7 @@ class ChangePasswordView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='change_password_success',
                 summary='Changement réussi',
                 value={
@@ -303,7 +303,7 @@ class ChangePasswordView(APIView):
                     'confirm_password': 'NewSecureP@ss456!'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='invalid_current_password',
                 summary='Mot de passe actuel incorrect',
                 value={
@@ -311,7 +311,7 @@ class ChangePasswordView(APIView):
                     'code': 'INVALID_PASSWORD'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='password_reused',
                 summary='Mot de passe déjà utilisé',
                 value={
@@ -320,7 +320,7 @@ class ChangePasswordView(APIView):
                     'code': 'PASSWORD_REUSED'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='password_breached',
                 summary='Mot de passe dans une fuite',
                 value={
@@ -372,7 +372,9 @@ class PasswordStrengthView(APIView):
     @extend_schema(
         tags=['Password'],
         summary="Verifier la force d'un mot de passe",
-        description="Retourne le score et la force d'un mot de passe sans l'enregistrer.",
+        description="Retourne le score et la force d'un mot de passe sans l'enregistrer. "
+                    "Utile pour fournir un retour en temps réel dans l'interface utilisateur. "
+                    "L'email (optionnel) permet de vérifier si le mot de passe contient une partie de l'email.",
         request=inline_serializer(
             name='PasswordStrengthRequest',
             fields={
@@ -380,7 +382,61 @@ class PasswordStrengthView(APIView):
                 'email': serializers.EmailField(required=False, allow_blank=True)
             }
         ),
-        responses={200: OpenApiTypes.OBJECT}
+        responses={200: OpenApiTypes.OBJECT},
+        examples=[
+            OpenApiExample(
+                name='strong_password',
+                summary='Mot de passe fort',
+                description='Un mot de passe long avec différents types de caractères.',
+                value={
+                    'password': 'Tr0ub4dour&55$',
+                    'email': 'user@example.com'
+                },
+                response_only=False,
+            ),
+            OpenApiExample(
+                name='strong_response',
+                summary='Réponse (Fort)',
+                response_only=True,
+                status_codes=['200'],
+                value={
+                    'score': 4,
+                    'strength': 'Strong',
+                    'is_valid': True,
+                    'errors': [],
+                    'requirements': {
+                        'min_length': 12,
+                        'require_lowercase': True,
+                        'require_uppercase': True,
+                        'require_numbers': True,
+                        'require_special': True
+                    }
+                }
+            ),
+            OpenApiExample(
+                name='weak_response',
+                summary='Réponse (Faible/Invalide)',
+                response_only=True,
+                status_codes=['200'],
+                value={
+                    'score': 1,
+                    'strength': 'Weak',
+                    'is_valid': False,
+                    'errors': [
+                        'Le mot de passe doit contenir au moins 12 caractères.',
+                        'Le mot de passe doit contenir au moins un chiffre.',
+                        'Le mot de passe doit contenir au moins un caractère spécial.'
+                    ],
+                    'requirements': {
+                        'min_length': 12,
+                        'require_lowercase': True,
+                        'require_uppercase': True,
+                        'require_numbers': True,
+                        'require_special': True
+                    }
+                }
+            )
+        ]
     )
     def post(self, request):
         from ..validators import password_validator

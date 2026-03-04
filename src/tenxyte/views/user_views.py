@@ -86,7 +86,7 @@ class MeView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='user_profile_complete',
                 summary='Profil utilisateur complet',
                 value={
@@ -189,7 +189,7 @@ class MeView(APIView):
                     'timezone': 'Europe/Paris'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='validation_error',
                 summary='Erreur de validation',
                 value={
@@ -293,14 +293,14 @@ class AvatarUploadView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='avatar_upload_success',
                 summary='Avatar uploadé avec succès',
                 value={
                     'avatar': 'binary_file_data'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='file_too_large',
                 summary='Fichier trop volumineux',
                 value={
@@ -460,9 +460,54 @@ class UserDetailView(APIView):
     @extend_schema(
         tags=['Admin - Users'],
         summary="Modifier un utilisateur (admin)",
-        description="Met à jour les informations d'un utilisateur. Réservé aux admins.",
+        description="Met à jour partiellement les informations d'un utilisateur. "
+                    "Tous les champs sont optionnels. Réservé aux admins (permission users.update). "
+                    "Supporte la désactivation de compte, la promotion staff/superuser, "
+                    "et la limite de sessions/appareils.",
         request=AdminUserUpdateSerializer,
-        responses={200: AdminUserDetailSerializer, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+        responses={200: AdminUserDetailSerializer, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
+        examples=[
+            OpenApiExample(
+                name='update_profile_fields',
+                summary='Mise à jour nom/prénom',
+                description='Modifier les champs de profil de base d\'un utilisateur.',
+                request_only=True,
+                value={
+                    'first_name': 'Jane',
+                    'last_name': 'Smith',
+                }
+            ),
+            OpenApiExample(
+                name='deactivate_user',
+                summary='Désactiver un compte',
+                description='Désactiver un compte utilisateur sans le bannir ni le supprimer.',
+                request_only=True,
+                value={
+                    'is_active': False,
+                }
+            ),
+            OpenApiExample(
+                name='promote_to_staff',
+                summary='Promouvoir en staff',
+                description='Accorder les droits staff avec des limites de session renforcées.',
+                request_only=True,
+                value={
+                    'is_staff': True,
+                    'max_sessions': 3,
+                    'max_devices': 2,
+                }
+            ),
+            OpenApiExample(
+                name='user_not_found',
+                summary='Utilisateur introuvable',
+                response_only=True,
+                status_codes=['404'],
+                value={
+                    'error': 'User not found',
+                    'code': 'NOT_FOUND',
+                }
+            ),
+        ]
     )
     @require_permission('users.update')
     def patch(self, request, user_id):
@@ -518,9 +563,65 @@ class UserBanView(APIView):
     @extend_schema(
         tags=['Admin - Users'],
         summary="Bannir un utilisateur",
-        description="Bannit un utilisateur de manière permanente. Nécessite la permission users.ban.",
+        description="Bannit un utilisateur de manière permanente. "
+                    "Désactive le compte (is_active=False). "
+                    "Nécessite la permission users.ban. "
+                    "La raison est stockée dans le journal d'audit.",
         request=BanUserSerializer,
-        responses={200: AdminUserDetailSerializer, 404: OpenApiTypes.OBJECT}
+        responses={200: AdminUserDetailSerializer, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
+        examples=[
+            OpenApiExample(
+                name='ban_with_reason',
+                summary='Bannissement avec raison',
+                description='Bannir un utilisateur en précisant la raison (recommandé pour l\'audit).',
+                request_only=True,
+                value={
+                    'reason': 'Repeated ToS violations — spam and abusive content',
+                }
+            ),
+            OpenApiExample(
+                name='ban_no_reason',
+                summary='Bannissement sans raison',
+                description='Le champ reason est optionnel.',
+                request_only=True,
+                value={}
+            ),
+            OpenApiExample(
+                name='ban_success',
+                summary='Bannissement réussi',
+                response_only=True,
+                status_codes=['200'],
+                value={
+                    'message': 'User banned successfully',
+                    'user': {
+                        'id': 42,
+                        'email': 'offender@example.com',
+                        'is_active': False,
+                        'is_banned': True,
+                    }
+                }
+            ),
+            OpenApiExample(
+                name='already_banned',
+                summary='Utilisateur déjà banni',
+                response_only=True,
+                status_codes=['400'],
+                value={
+                    'error': 'User already banned',
+                    'code': 'ALREADY_BANNED',
+                }
+            ),
+            OpenApiExample(
+                name='user_not_found',
+                summary='Utilisateur introuvable',
+                response_only=True,
+                status_codes=['404'],
+                value={
+                    'error': 'User not found',
+                    'code': 'NOT_FOUND',
+                }
+            ),
+        ]
     )
     @require_permission('users.ban')
     def post(self, request, user_id):
@@ -590,9 +691,68 @@ class UserLockView(APIView):
     @extend_schema(
         tags=['Admin - Users'],
         summary="Verrouiller un compte",
-        description="Verrouille temporairement un compte utilisateur.",
+        description="Verrouille temporairement un compte utilisateur. "
+                    "La durée est configurable (défaut: 30 min, max: 30 jours). "
+                    "Nécessite la permission users.lock. "
+                    "La raison est stockée dans le journal d'audit.",
         request=LockUserSerializer,
-        responses={200: AdminUserDetailSerializer, 404: OpenApiTypes.OBJECT}
+        responses={200: AdminUserDetailSerializer, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
+        examples=[
+            OpenApiExample(
+                name='lock_default',
+                summary='Verrouillage 30 min (défaut)',
+                description='Verrouille le compte pour la durée par défaut (30 minutes).',
+                request_only=True,
+                value={
+                    'reason': 'Suspicious login activity detected',
+                }
+            ),
+            OpenApiExample(
+                name='lock_custom_duration',
+                summary='Verrouillage durée personnalisée',
+                description='Verrouille le compte pour 24 heures avec une raison explicite.',
+                request_only=True,
+                value={
+                    'duration_minutes': 1440,
+                    'reason': 'Pending security review — account suspended by admin',
+                }
+            ),
+            OpenApiExample(
+                name='lock_success',
+                summary='Verrouillage réussi',
+                response_only=True,
+                status_codes=['200'],
+                value={
+                    'message': 'User locked for 30 minutes',
+                    'user': {
+                        'id': 42,
+                        'email': 'user@example.com',
+                        'is_locked': True,
+                        'locked_until': '2024-01-20T15:00:00Z',
+                    }
+                }
+            ),
+            OpenApiExample(
+                name='already_locked',
+                summary='Compte déjà verrouillé',
+                response_only=True,
+                status_codes=['400'],
+                value={
+                    'error': 'User already locked',
+                    'code': 'ALREADY_LOCKED',
+                }
+            ),
+            OpenApiExample(
+                name='user_not_found',
+                summary='Utilisateur introuvable',
+                response_only=True,
+                status_codes=['404'],
+                value={
+                    'error': 'User not found',
+                    'code': 'NOT_FOUND',
+                }
+            ),
+        ]
     )
     @require_permission('users.lock')
     def post(self, request, user_id):
@@ -710,7 +870,7 @@ class DeleteAccountView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='delete_success',
                 summary='Compte supprimé avec succès',
                 value={
@@ -719,7 +879,7 @@ class DeleteAccountView(APIView):
                     'reason': 'Moving to another platform'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='confirmation_required',
                 summary='Confirmation requise',
                 value={
@@ -727,7 +887,7 @@ class DeleteAccountView(APIView):
                     'code': 'CONFIRMATION_REQUIRED'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='owner_restriction',
                 summary='Restriction propriétaire',
                 value={
