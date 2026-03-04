@@ -1276,6 +1276,16 @@ Authorization: Bearer <access_token>
 ### `GET /permissions/` 🔒 `permissions.view`
 List all permissions.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters (optional):**
+- `search`: Search in code, name
+- `parent`: Filter by parent (null for root permissions, or parent ID)
+- `ordering`: Order by code, name, created_at (default: code)
+
 **Response `200`:**
 ```json
 {
@@ -1296,9 +1306,19 @@ List all permissions.
 ### `POST /permissions/` 🔒 `permissions.manage`
 Create a permission.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
-{ "code": "posts.publish", "name": "Publish Posts" }
+{
+  "code": "posts.publish",
+  "name": "Publish Posts",
+  "description": "Can publish blog posts",
+  "parent_code": "posts.manage"
+}
 ```
 
 **Response `201`:**
@@ -1307,30 +1327,74 @@ Create a permission.
   "id": "2",
   "code": "posts.publish",
   "name": "Publish Posts",
-  "description": ""
+  "description": "Can publish blog posts",
+  "parent": {
+    "id": "1",
+    "code": "posts.manage"
+  },
+  "children": [],
+  "created_at": "2024-01-01T12:00:00Z"
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "code": ["Permission with this code already exists."]
+  }
 }
 ```
 
 ### `GET /permissions/<id>/` 🔒 `permissions.view`
 Get a permission.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
 {
   "id": "1",
   "code": "users.view",
-  "name": "View users"
+  "name": "View users",
+  "description": "Can view user list",
+  "parent": null,
+  "children": [
+    {
+      "id": "2",
+      "code": "users.view.profile"
+    }
+  ],
+  "created_at": "2024-01-01T12:00:00Z"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Permission not found",
+  "code": "NOT_FOUND"
 }
 ```
 
 ### `PUT /permissions/<id>/` 🔒 `permissions.manage`
 Update a permission.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 {
-  "code": "users.view",
-  "name": "View all users"
+  "name": "View all users",
+  "description": "Can view all users in the system",
+  "parent_code": null
 }
 ```
 
@@ -1339,16 +1403,58 @@ Update a permission.
 {
   "id": "1",
   "code": "users.view",
-  "name": "View all users"
+  "name": "View all users",
+  "description": "Can view all users in the system",
+  "parent": null,
+  "children": [
+    {
+      "id": "2",
+      "code": "users.view.profile"
+    }
+  ],
+  "created_at": "2024-01-01T12:00:00Z"
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "parent_code": ["Parent permission not found"]
+  }
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Permission not found",
+  "code": "NOT_FOUND"
 }
 ```
 
 ### `DELETE /permissions/<id>/` 🔒 `permissions.manage`
 Delete a permission.
 
-**Response `204`:**
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Response `200`:**
 ```json
-{}
+{
+  "message": "Permission deleted"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Permission not found",
+  "code": "NOT_FOUND"
+}
 ```
 
 ---
@@ -1357,6 +1463,16 @@ Delete a permission.
 
 ### `GET /roles/` 🔒 `roles.view`
 List all roles.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters (optional):**
+- `search`: Search in code, name
+- `is_default`: Filter by is_default (true/false)
+- `ordering`: Order by code, name, created_at (default: name)
 
 **Response `200`:**
 ```json
@@ -1367,8 +1483,9 @@ List all roles.
   "results": [
     {
       "id": "1",
+      "code": "editor",
       "name": "Editor",
-      "description": "Can edit content"
+      "is_default": false
     }
   ]
 }
@@ -1377,12 +1494,19 @@ List all roles.
 ### `POST /roles/` 🔒 `roles.manage`
 Create a role.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 {
+  "code": "editor",
   "name": "Editor",
   "description": "Can edit content",
-  "parent": null
+  "permission_codes": ["posts.edit", "posts.view"],
+  "is_default": false
 }
 ```
 
@@ -1390,32 +1514,85 @@ Create a role.
 ```json
 {
   "id": "1",
+  "code": "editor",
   "name": "Editor",
   "description": "Can edit content",
-  "parent": null
+  "permissions": [
+    {
+      "id": "1",
+      "code": "posts.edit",
+      "name": "Edit posts",
+      "description": "Can edit blog posts"
+    }
+  ],
+  "is_default": false,
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T12:00:00Z"
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "code": ["Role with this code already exists."]
+  }
 }
 ```
 
 ### `GET /roles/<id>/` 🔒 `roles.view`
 Get a role.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
 {
   "id": "1",
+  "code": "editor",
   "name": "Editor",
-  "description": "Can edit content"
+  "description": "Can edit content",
+  "permissions": [
+    {
+      "id": "1",
+      "code": "posts.edit",
+      "name": "Edit posts",
+      "description": "Can edit blog posts"
+    }
+  ],
+  "is_default": false,
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T12:00:00Z"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Role not found",
+  "code": "NOT_FOUND"
 }
 ```
 
 ### `PUT /roles/<id>/` 🔒 `roles.manage`
 Update a role.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 {
   "name": "Senior Editor",
-  "description": "Can edit and publish"
+  "description": "Can edit and publish content",
+  "permission_codes": ["posts.edit", "posts.publish", "posts.view"],
+  "is_default": false
 }
 ```
 
@@ -1423,47 +1600,170 @@ Update a role.
 ```json
 {
   "id": "1",
+  "code": "editor",
   "name": "Senior Editor",
-  "description": "Can edit and publish"
+  "description": "Can edit and publish content",
+  "permissions": [
+    {
+      "id": "1",
+      "code": "posts.edit",
+      "name": "Edit posts",
+      "description": "Can edit blog posts"
+    },
+    {
+      "id": "2",
+      "code": "posts.publish",
+      "name": "Publish posts",
+      "description": "Can publish blog posts"
+    }
+  ],
+  "is_default": false,
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T13:00:00Z"
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "permission_codes": ["Permission 'invalid.code' not found"]
+  }
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Role not found",
+  "code": "NOT_FOUND"
 }
 ```
 
 ### `DELETE /roles/<id>/` 🔒 `roles.manage`
 Delete a role.
 
-**Response `204`:**
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Response `200`:**
 ```json
-{}
+{
+  "message": "Role deleted"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Role not found",
+  "code": "NOT_FOUND"
+}
 ```
 
 ### `GET /roles/<id>/permissions/` 🔒 `roles.view`
 List permissions assigned to a role.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
-[
-  {
-    "id": "1",
-    "code": "posts.publish",
-    "name": "Publish Posts"
-  }
-]
+{
+  "role_id": "1",
+  "role_code": "editor",
+  "permissions": [
+    {
+      "id": "1",
+      "code": "posts.publish",
+      "name": "Publish Posts",
+      "description": "Can publish blog posts",
+      "parent": null,
+      "children": [],
+      "created_at": "2024-01-01T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Role not found",
+  "code": "NOT_FOUND"
+}
 ```
 
 ### `POST /roles/<id>/permissions/` 🔒 `roles.manage`
 Assign permissions to a role.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Request:**
 ```json
 {
-  "permission_ids": ["1", "2"]
+  "permission_codes": ["posts.edit", "posts.publish"]
 }
 ```
 
 **Response `200`:**
 ```json
 {
-  "message": "Permissions assigned successfully"
+  "message": "2 permission(s) added",
+  "added": ["posts.edit", "posts.publish"],
+  "role_code": "editor",
+  "permissions": [
+    {
+      "id": "1",
+      "code": "posts.edit",
+      "name": "Edit posts",
+      "description": "Can edit blog posts"
+    },
+    {
+      "id": "2",
+      "code": "posts.publish",
+      "name": "Publish posts",
+      "description": "Can publish blog posts"
+    }
+  ]
+}
+```
+
+**Response `200` (Some already assigned):**
+```json
+{
+  "message": "1 permission(s) added",
+  "added": ["posts.publish"],
+  "already_assigned": ["posts.edit"],
+  "role_code": "editor",
+  "permissions": [...]
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "permission_codes": ["This field is required."]
+  }
+}
+```
+
+**Response `400` (Permissions not found):**
+```json
+{
+  "error": "Some permissions not found",
+  "code": "PERMISSIONS_NOT_FOUND",
+  "not_found": ["invalid.permission"]
 }
 ```
 
