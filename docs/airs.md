@@ -27,9 +27,15 @@ Decorators like `@require_agent_clearance` redirect agent requests if human conf
 
 ## Configuration
 
-Settings available in `src/tenxyte/conf.py`:
+Settings available to be defined in your Django `settings.py` (defaults managed via `src/tenxyte/conf/airs.py`):
 - `TENXYTE_AIRS_ENABLED` (Default: `True`)
+- `TENXYTE_AIRS_TOKEN_MAX_LIFETIME` (Default: `86400`)
+- `TENXYTE_AIRS_DEFAULT_EXPIRY` (Default: `3600`)
+- `TENXYTE_AIRS_REQUIRE_EXPLICIT_PERMISSIONS` (Default: `True`)
 - `TENXYTE_AIRS_CIRCUIT_BREAKER_ENABLED` (Default: `True`)
-- `TENXYTE_AIRS_CONFIRMATION_REQUIRED` (Array of HITL extensions, e.g., `['users.delete']`)
+- `TENXYTE_AIRS_DEFAULT_MAX_RPM` (Default: `60`)
+- `TENXYTE_AIRS_DEFAULT_MAX_TOTAL` (Default: `1000`)
+- `TENXYTE_AIRS_DEFAULT_MAX_FAILURES` (Default: `10`)
+- `TENXYTE_AIRS_CONFIRMATION_REQUIRED` (Array of permission codes, e.g., `['users.delete']`)
 - `TENXYTE_AIRS_REDACT_PII` (Default: `False`)
 - `TENXYTE_AIRS_BUDGET_TRACKING_ENABLED` (Default: `False`)
