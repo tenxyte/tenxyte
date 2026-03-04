@@ -5,7 +5,7 @@ Welcome to the comprehensive documentation for the Tenxyte Django authentication
 ## 📚 Documentation Structure
 
 ### 📖 **Developer Guides**
-- [**Quickstart**](quickstart.md) - Get started in 5 minutes
+- [**Quickstart**](quickstart.md) - Get started in 2 minutes
 - [**Settings Reference**](settings.md) - All 150+ configuration options
 - [**API Endpoints**](endpoints.md) - Full endpoint reference with examples
 - [**RBAC Guide**](rbac.md) - Roles, permissions, and decorators
@@ -15,7 +15,9 @@ Welcome to the comprehensive documentation for the Tenxyte Django authentication
 ### 🔧 **Technical Documentation**
 - [**Database Setup**](../DATABASE_SETUP.md) - PostgreSQL, MySQL, MongoDB, SQLite
 - [**Schemas Reference**](schemas.md) - Reusable schema components
-- [**Testing Guide**](testing.md) - Testing strategies and examples
+- [**Testing Guide**](TESTING.md) - Testing strategies and examples
+- [**Periodic Tasks**](periodic_tasks.md) - Scheduled maintenance and cleanup tasks
+- [**Troubleshooting**](troubleshooting.md) - Common issues and solutions
 
 ## 🎯 **Enhanced Features Overview**
 
@@ -152,11 +154,9 @@ python manage.py migrate
 ### Static Documentation
 - **Documentation Site**: `docs_site/index.html`
 - **Postman Collection**: `tenxyte_api_collection.postman_collection.json`
-- **Migration Guide**: `MIGRATION_GUIDE.md`
+- **Migration Guide**: [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)
 
 ### Developer Resources
-- **Enhancement Overview**: `DOCUMENTATION_ENHANCEMENTS.md`
-- **Implementation Progress**: `../VIEWS_DOC.md`
 - **Scripts Documentation**: `../scripts/README.md`
 
 ## 🔍 **Key Features Documentation**
@@ -266,5 +266,3 @@ The Tenxyte documentation provides:
 - **Security Focused** - Privacy and security features documented
 
 This enhanced documentation significantly improves the developer experience and reduces integration time for the Tenxyte authentication system.
-
-For the complete overview of enhancements, see [Documentation Enhancements](DOCUMENTATION_ENHANCEMENTS.md).

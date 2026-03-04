@@ -2083,6 +2083,285 @@
         }
       }
     },
+    "/api/v1/auth/ai/pending-actions/": {
+      "get": {
+        "operationId": "ai_pending_actions_retrieve",
+        "description": "GET /ai/pending-actions/",
+        "tags": [
+          "ai"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/ai/pending-actions/{token}/confirm/": {
+      "post": {
+        "operationId": "ai_pending_actions_confirm_create",
+        "description": "POST /ai/pending-actions/confirm/\nBody: {\"token\": \"...\"}",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "ai"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/ai/pending-actions/{token}/deny/": {
+      "post": {
+        "operationId": "ai_pending_actions_deny_create",
+        "description": "POST /ai/pending-actions/deny/\nBody: {\"token\": \"...\"}",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "ai"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/ai/tokens/": {
+      "get": {
+        "operationId": "ai_tokens_retrieve",
+        "description": "GET /ai/tokens/\nPOST /ai/tokens/\nListe les AgentTokens actifs ou en cr\u00e9e un nouveau.",
+        "tags": [
+          "ai"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          }
+        }
+      },
+      "post": {
+        "operationId": "ai_tokens_create",
+        "description": "GET /ai/tokens/\nPOST /ai/tokens/\nListe les AgentTokens actifs ou en cr\u00e9e un nouveau.",
+        "tags": [
+          "ai"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/ai/tokens/{id}/": {
+      "get": {
+        "operationId": "ai_tokens_retrieve_2",
+        "description": "GET /ai/tokens/{id}/",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "ai"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/ai/tokens/{id}/heartbeat/": {
+      "post": {
+        "operationId": "ai_tokens_heartbeat_create",
+        "description": "POST /ai/tokens/{id}/heartbeat/\nCalled by the agent itself using the token.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "ai"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/ai/tokens/{id}/report-usage/": {
+      "post": {
+        "operationId": "ai_tokens_report_usage_create",
+        "description": "POST /ai/tokens/{id}/report-usage/",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "ai"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/ai/tokens/{id}/revoke/": {
+      "post": {
+        "operationId": "ai_tokens_revoke_create",
+        "description": "POST /ai/tokens/{id}/revoke/",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "ai"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/ai/tokens/{id}/suspend/": {
+      "post": {
+        "operationId": "ai_tokens_suspend_create",
+        "description": "POST /ai/tokens/{id}/suspend/",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "ai"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/ai/tokens/revoke-all/": {
+      "post": {
+        "operationId": "ai_tokens_revoke_all_create",
+        "description": "POST /ai/tokens/revoke-all/\nCoupe-circuit nucl\u00e9aire.",
+        "tags": [
+          "ai"
+        ],
+        "security": [
+          {
+            "jwtAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "No response body"
+          }
+        }
+      }
+    },
     "/api/v1/auth/applications/": {
       "get": {
         "operationId": "applications_list",
@@ -3493,65 +3772,6 @@
         }
       }
     },
-    "/api/v1/auth/google/": {
-      "post": {
-        "operationId": "google_create",
-        "description": "Authentifie un utilisateur via Google OAuth. Accepte id_token, access_token ou code.",
-        "summary": "Authentification Google OAuth",
-        "tags": [
-          "Auth"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GoogleAuth"
-              }
-            },
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/GoogleAuth"
-              }
-            },
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/GoogleAuth"
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "jwtAuth": []
-          },
-          {}
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": {}
-                }
-              }
-            },
-            "description": ""
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": {}
-                }
-              }
-            },
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/v1/auth/login/email/": {
       "post": {
         "operationId": "login_email_create",
@@ -4146,7 +4366,8 @@
               "examples": {
                 "RequestMagicLink": {
                   "value": {
-                    "email": "user@example.com"
+                    "email": "user@example.com",
+                    "validation_url": "https://app.example.com/auth-magic/link/verify"
                   },
                   "summary": "Demander magic link"
                 },
@@ -4156,6 +4377,13 @@
                     "details": "Contact administrator to enable magic link authentication"
                   },
                   "summary": "Magic link d\u00e9sactiv\u00e9"
+                },
+                "ValidationUrlMissing": {
+                  "value": {
+                    "error": "Validation URL is required",
+                    "code": "VALIDATION_URL_REQUIRED"
+                  },
+                  "summary": "Validation URL manquant"
                 },
                 "MagicLinkRateLimited": {
                   "value": {
@@ -4207,7 +4435,8 @@
                 "examples": {
                   "RequestMagicLink": {
                     "value": {
-                      "email": "user@example.com"
+                      "email": "user@example.com",
+                      "validation_url": "https://app.example.com/auth-magic/link/verify"
                     },
                     "summary": "Demander magic link"
                   },
@@ -4217,6 +4446,13 @@
                       "details": "Contact administrator to enable magic link authentication"
                     },
                     "summary": "Magic link d\u00e9sactiv\u00e9"
+                  },
+                  "ValidationUrlMissing": {
+                    "value": {
+                      "error": "Validation URL is required",
+                      "code": "VALIDATION_URL_REQUIRED"
+                    },
+                    "summary": "Validation URL manquant"
                   },
                   "MagicLinkRateLimited": {
                     "value": {
@@ -10035,10 +10271,11 @@
           "suspicious_activity",
           "session_limit_exceeded",
           "device_limit_exceeded",
-          "new_device_detected"
+          "new_device_detected",
+          "agent_action"
         ],
         "type": "string",
-        "description": "* `login` - Login\n* `login_failed` - Login Failed\n* `logout` - Logout\n* `logout_all` - Logout All Devices\n* `token_refresh` - Token Refresh\n* `password_change` - Password Changed\n* `password_reset_request` - Password Reset Requested\n* `password_reset_complete` - Password Reset Completed\n* `2fa_enabled` - 2FA Enabled\n* `2fa_disabled` - 2FA Disabled\n* `2fa_backup_used` - 2FA Backup Code Used\n* `account_created` - Account Created\n* `account_locked` - Account Locked\n* `account_unlocked` - Account Unlocked\n* `email_verified` - Email Verified\n* `phone_verified` - Phone Verified\n* `role_assigned` - Role Assigned\n* `role_removed` - Role Removed\n* `permission_changed` - Permission Changed\n* `app_created` - Application Created\n* `app_credentials_regenerated` - Application Credentials Regenerated\n* `account_deleted` - Account Deleted\n* `suspicious_activity` - Suspicious Activity Detected\n* `session_limit_exceeded` - Session Limit Exceeded\n* `device_limit_exceeded` - Device Limit Exceeded\n* `new_device_detected` - New Device Detected"
+        "description": "* `login` - Login\n* `login_failed` - Login Failed\n* `logout` - Logout\n* `logout_all` - Logout All Devices\n* `token_refresh` - Token Refresh\n* `password_change` - Password Changed\n* `password_reset_request` - Password Reset Requested\n* `password_reset_complete` - Password Reset Completed\n* `2fa_enabled` - 2FA Enabled\n* `2fa_disabled` - 2FA Disabled\n* `2fa_backup_used` - 2FA Backup Code Used\n* `account_created` - Account Created\n* `account_locked` - Account Locked\n* `account_unlocked` - Account Unlocked\n* `email_verified` - Email Verified\n* `phone_verified` - Phone Verified\n* `role_assigned` - Role Assigned\n* `role_removed` - Role Removed\n* `permission_changed` - Permission Changed\n* `app_created` - Application Created\n* `app_credentials_regenerated` - Application Credentials Regenerated\n* `account_deleted` - Account Deleted\n* `suspicious_activity` - Suspicious Activity Detected\n* `session_limit_exceeded` - Session Limit Exceeded\n* `device_limit_exceeded` - Device Limit Exceeded\n* `new_device_detected` - New Device Detected\n* `agent_action` - Agent Action Executed"
       },
       "AddOrganizationMemberRequest": {
         "type": "object",
@@ -10105,8 +10342,7 @@
             "description": "Permanent ban (manual admin action). Cannot be auto-lifted."
           },
           "is_deleted": {
-            "type": "boolean",
-            "description": "Soft delete for GDPR compliance. Account is anonymized but kept for audit."
+            "type": "boolean"
           },
           "deleted_at": {
             "type": "string",
@@ -10213,8 +10449,7 @@
             "description": "Permanent ban (manual admin action). Cannot be auto-lifted."
           },
           "is_deleted": {
-            "type": "boolean",
-            "description": "Soft delete for GDPR compliance. Account is anonymized but kept for audit."
+            "type": "boolean"
           },
           "is_email_verified": {
             "type": "boolean"
@@ -10604,29 +10839,6 @@
           "password"
         ]
       },
-      "GoogleAuth": {
-        "type": "object",
-        "properties": {
-          "id_token": {
-            "type": "string"
-          },
-          "access_token": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          },
-          "redirect_uri": {
-            "type": "string"
-          },
-          "device_info": {
-            "type": "string",
-            "default": "",
-            "description": "Device info au format v1 (ex: v=1|os=windows;osv=11|device=desktop)",
-            "maxLength": 255
-          }
-        }
-      },
       "InviteOrganizationMemberRequest": {
         "type": "object",
         "properties": {
@@ -10778,10 +10990,16 @@
             "type": "string",
             "format": "email",
             "description": "Adresse email pour recevoir le magic link"
+          },
+          "validation_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL pour construire le lien de v\u00e9rification (obligatoire)"
           }
         },
         "required": [
-          "email"
+          "email",
+          "validation_url"
         ]
       },
       "ManageRolePermissions": {

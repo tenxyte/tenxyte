@@ -89,3 +89,8 @@ test_debug.txt
 TESTING.md
 TESTS_PROCESSED.md
 END_TO_END.md
+ROADMAP.md
+
+old_dists/
+old_dists/*
+old_dists/*/*

@@ -1,25 +1,25 @@
 """
-Tenxyte — Tâches Périodiques de Maintenance et Sécurité
+Tenxyte — Periodic Maintenance and Security Tasks
 ========================================================
 
-Ce document décrit les tâches qui doivent être exécutées périodiquement
-pour maintenir la santé et la sécurité de votre installation Tenxyte.
+This document describes the tasks that must be executed periodically
+to maintain the health and security of your Tenxyte installation.
 
-Intégration possible avec Celery Beat, APScheduler, ou cron.
+Possible integration with Celery Beat, APScheduler, or cron.
 
-R15 Audit: Documenter et automatiser les tâches de nettoyage périodiques.
+R15 Audit: Document and automate periodic cleanup tasks.
 """
 
 # ============================================================================
-# TÂCHES QUOTIDIENNES
+# DAILY TASKS
 # ============================================================================
 
-# 1. Nettoyage des refresh tokens expirés
+# 1. Cleanup of expired refresh tokens
 # ----------------------------------------
-# Les RefreshToken révoqués ou expirés s'accumulent en base de données.
-# Cette commande de gestion Django supprime les entrées obsolètes.
+# Revoked or expired RefreshTokens accumulate in the database.
+# This Django management command deletes obsolete entries.
 #
-# Celery Beat (recommandé):
+# Celery Beat (recommended):
 #   from celery import shared_task
 #   @shared_task
 #   def cleanup_refresh_tokens():
@@ -33,47 +33,47 @@ R15 Audit: Documenter et automatiser les tâches de nettoyage périodiques.
 #       ).update(is_revoked=True)
 #       return f"Cleaned {count} expired/revoked refresh tokens"
 #
-# Cron alternatif:
+# Alternative Cron:
 #   0 3 * * * python manage.py cleanup_tokens
 
-# 2. Nettoyage des audit logs anciens (rétention)
+# 2. Cleanup of old audit logs (retention)
 # -------------------------------------------------
-# Définir une politique de rétention pour éviter une croissance illimitée.
-# Les réglementations (RGPD, SOC 2) peuvent imposer une rétention minimale ET maximale.
+# Define a retention policy to avoid unlimited growth.
+# Regulations (GDPR, SOC 2) may impose both minimum AND maximum retention.
 #
-# Exemple : garder 90 jours d'audit logs
+# Example: keeping 90 days of audit logs
 #   from tenxyte.models import AuditLog
 #   from django.utils.timezone import now
 #   from datetime import timedelta
 #   AuditLog.objects.filter(created_at__lt=now() - timedelta(days=90)).delete()
 
-# 3. Nettoyage des OTP expirés
+# 3. Cleanup of expired OTPs
 # -----------------------------
-# Les OTPCode non utilisés s'accumulent.
+# Unused OTPCodes accumulate.
 #   from tenxyte.models import OTPCode
 #   from django.utils import timezone
 #   OTPCode.objects.filter(expires_at__lt=timezone.now()).delete()
 
 
 # ============================================================================
-# TÂCHES HEBDOMADAIRES
+# WEEKLY TASKS
 # ============================================================================
 
-# 4. Nettoyage des AgentToken expirés ou révoqués (AIRS)
+# 4. Cleanup of expired or revoked AgentTokens (AIRS)
 # --------------------------------------------------------
 #   from tenxyte.models.agent import AgentToken
 #   from django.utils import timezone
 #   AgentToken.objects.filter(
-#       expires_at__lt=timezone.now()  # expirés
+#       expires_at__lt=timezone.now()  # expired
 #   ).delete()
 
-# 5. Nettoyage des MagicLink / tokens de vérification expirés
+# 5. Cleanup of expired MagicLink / verification tokens
 # ------------------------------------------------------------
-# Selon vos modèles : UnverifiedEmail, PhoneVerification, etc.
+# Depending on your models: UnverifiedEmail, PhoneVerification, etc.
 
-# 6. Archivage des LoginAttempt anciens
+# 6. Archiving of old LoginAttempts
 # ----------------------------------------
-# Les LoginAttempt n'ont pas besoin d'être conservés indéfiniment.
+# LoginAttempts don't need to be kept indefinitely.
 #   from tenxyte.models import LoginAttempt
 #   from django.utils.timezone import now
 #   from datetime import timedelta
@@ -81,21 +81,21 @@ R15 Audit: Documenter et automatiser les tâches de nettoyage périodiques.
 
 
 # ============================================================================
-# TÂCHES MENSUELLES / SÉCURITÉ
+# MONTHLY / SECURITY TASKS
 # ============================================================================
 
-# 7. Rotation de la FIELD_ENCRYPTION_KEY
+# 7. FIELD_ENCRYPTION_KEY Rotation
 # -----------------------------------------
-# Si vous utilisez django-cryptography pour le chiffrement du totp_secret (R2),
-# planifiez une rotation périodique de la clé. Procédure :
-# 1. Déchiffrer tous les champs avec l'ancienne clé
-# 2. Chiffrer avec la nouvelle clé
-# 3. Mettre à jour FIELD_ENCRYPTION_KEY dans settings.py
-# Voir : https://django-cryptography.readthedocs.io/en/latest/key-rotation.html
+# If you use django-cryptography for totp_secret encryption (R2),
+# plan periodic key rotation. Procedure:
+# 1. Decrypt all fields with the old key
+# 2. Encrypt with the new key
+# 3. Update FIELD_ENCRYPTION_KEY in settings.py
+# See: https://django-cryptography.readthedocs.io/en/latest/key-rotation.html
 
-# 8. Audit des tokens AgentToken à longue durée de vie
+# 8. Audit of long-lived AgentTokens
 # -----------------------------------------------------
-# Identifier les tokens AIRS avec une durée de vie > 24h qui n'ont pas été utilisés :
+# Identify AIRS tokens with life > 24h that haven't been used:
 #   from tenxyte.models.agent import AgentToken
 #   from django.utils import timezone
 #   from datetime import timedelta
@@ -104,22 +104,22 @@ R15 Audit: Documenter et automatiser les tâches de nettoyage périodiques.
 #       last_used_at__lt=timezone.now() - timedelta(days=7)
 #   )
 
-# 9. Vérification des dépendances vulnérables
+# 9. Vulnerable dependency check
 # --------------------------------------------
-# À exécuter manuellement ou en CI (R3, R7 audit) :
+# Run manually or in CI (R3, R7 audit):
 #   pip-audit
 #   safety check
 #   bandit -r src/tenxyte/
 
 
 # ============================================================================
-# CONFIGURATION CELERY BEAT (exemple)
+# CELERY BEAT CONFIGURATION (example)
 # ============================================================================
 
 # CELERY_BEAT_SCHEDULE = {
 #     'tenxyte-cleanup-daily': {
 #         'task': 'myapp.tasks.tenxyte_daily_cleanup',
-#         'schedule': crontab(hour=3, minute=0),  # 3h du matin
+#         'schedule': crontab(hour=3, minute=0),  # 3 AM
 #     },
 #     'tenxyte-cleanup-weekly': {
 #         'task': 'myapp.tasks.tenxyte_weekly_cleanup',

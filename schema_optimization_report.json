@@ -1,9 +1,9 @@
 {
   "summary": {
-    "original_size_bytes": 183711,
-    "optimized_size_bytes": 177654,
-    "size_reduction_bytes": 6057,
-    "reduction_percentage": 3.3,
+    "original_size_bytes": 186660,
+    "optimized_size_bytes": 180752,
+    "size_reduction_bytes": 5908,
+    "reduction_percentage": 3.17,
     "schemas_removed": 0,
     "references_added": 0,
     "duplicates_found": 0,

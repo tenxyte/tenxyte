@@ -1,74 +1,81 @@
 {
   "summary": {
-    "total_issues": 0,
+    "total_issues": 1,
     "critical_issues": 0,
-    "warnings": 0,
-    "endpoint_coverage": 62.0,
+    "warnings": 1,
+    "endpoint_coverage": 66.0,
     "example_coverage": 40.0,
     "error_coverage": 100.0
   },
   "statistics": {
-    "extend_schema_decorators": 92,
-    "openapi_examples": 154,
+    "extend_schema_decorators": 91,
+    "openapi_examples": 155,
     "error_examples": 13,
     "multi_tenant_documented": 3
   },
   "coverage": {
     "endpoints": [
-      "DELETE /application_views/",
-      "GET /dashboard_views/",
-      "DELETE /webauthn_views/",
-      "PUT /rbac_views/",
-      "POST /webauthn_views/",
-      "GET /gdpr_admin_views/",
-      "POST /user_views/",
-      "POST /password_views/",
-      "GET /application_views/",
-      "GET /user_views/",
-      "GET /security_views/",
-      "POST /security_views/",
-      "POST /gdpr_admin_views/",
-      "POST /twofa_views/",
+      "GET /twofa_views/",
       "PUT /application_views/",
-      "GET /social_auth_views/",
-      "GET /password_views/",
+      "POST /social_auth_views/",
+      "GET /agent_views/",
+      "GET /magic_link_views/",
+      "POST /auth_views/",
+      "GET /security_views/",
+      "POST /webauthn_views/",
       "POST /application_views/",
       "PATCH /application_views/",
-      "GET /magic_link_views/",
-      "POST /otp_views/",
-      "PATCH /user_views/",
+      "POST /user_views/",
+      "DELETE /application_views/",
+      "GET /user_views/",
+      "GET /social_auth_views/",
+      "POST /magic_link_views/",
+      "PUT /rbac_views/",
       "DELETE /user_views/",
       "GET /rbac_views/",
-      "POST /rbac_views/",
       "DELETE /rbac_views/",
-      "POST /auth_views/",
-      "POST /magic_link_views/",
-      "GET /twofa_views/",
       "GET /webauthn_views/",
-      "POST /social_auth_views/"
+      "GET /password_views/",
+      "POST /agent_views/",
+      "POST /security_views/",
+      "POST /password_views/",
+      "POST /otp_views/",
+      "GET /gdpr_admin_views/",
+      "POST /twofa_views/",
+      "GET /dashboard_views/",
+      "POST /gdpr_admin_views/",
+      "POST /rbac_views/",
+      "PATCH /user_views/",
+      "DELETE /webauthn_views/",
+      "GET /application_views/"
     ],
     "examples": [
-      "auth_validation_error",
+      "auth_login_success",
+      "error_validation_error",
       "error_not_found",
-      "error_permission_denied",
+      "success_login_success",
       "success_multi_tenant_success",
       "success_file_upload_success",
-      "success_login_success",
-      "error_validation_error",
-      "auth_login_success"
+      "error_permission_denied",
+      "auth_validation_error"
     ],
     "error_codes": [
-      "404",
-      "403",
-      "401",
       "423",
-      "409",
       "429",
       "500",
-      "400"
+      "401",
+      "409",
+      "400",
+      "404",
+      "403"
     ]
   },
-  "issues": [],
+  "issues": [
+    {
+      "severity": "warning",
+      "message": "Potential multi-tenant endpoint missing X-Org-Slug in C:\\Users\\bobop\\Documents\\own\\tenxyte\\src\\tenxyte\\views\\agent_views.py"
+    }
+  ],
   "recommendations": [
     "Documentation looks good! Consider adding more edge case examples."
   ]

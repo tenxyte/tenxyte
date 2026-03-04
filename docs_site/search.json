@@ -146,6 +146,61 @@
       "content": "Déverrouille un compte utilisateur."
     },
     {
+      "title": "/api/v1/auth/ai/pending-actions/",
+      "url": "api-reference.html#op-ai-pending-actions-retrieve",
+      "content": "GET /ai/pending-actions/"
+    },
+    {
+      "title": "/api/v1/auth/ai/pending-actions/{token}/confirm/",
+      "url": "api-reference.html#op-ai-pending-actions-confirm-create",
+      "content": "POST /ai/pending-actions/confirm/\nBody: {\"token\": \"...\"}"
+    },
+    {
+      "title": "/api/v1/auth/ai/pending-actions/{token}/deny/",
+      "url": "api-reference.html#op-ai-pending-actions-deny-create",
+      "content": "POST /ai/pending-actions/deny/\nBody: {\"token\": \"...\"}"
+    },
+    {
+      "title": "/api/v1/auth/ai/tokens/",
+      "url": "api-reference.html#op-ai-tokens-retrieve",
+      "content": "GET /ai/tokens/\nPOST /ai/tokens/\nListe les AgentTokens actifs ou en crée un nouveau."
+    },
+    {
+      "title": "/api/v1/auth/ai/tokens/",
+      "url": "api-reference.html#op-ai-tokens-create",
+      "content": "GET /ai/tokens/\nPOST /ai/tokens/\nListe les AgentTokens actifs ou en crée un nouveau."
+    },
+    {
+      "title": "/api/v1/auth/ai/tokens/{id}/",
+      "url": "api-reference.html#op-ai-tokens-retrieve-2",
+      "content": "GET /ai/tokens/{id}/"
+    },
+    {
+      "title": "/api/v1/auth/ai/tokens/{id}/heartbeat/",
+      "url": "api-reference.html#op-ai-tokens-heartbeat-create",
+      "content": "POST /ai/tokens/{id}/heartbeat/\nCalled by the agent itself using the token."
+    },
+    {
+      "title": "/api/v1/auth/ai/tokens/{id}/report-usage/",
+      "url": "api-reference.html#op-ai-tokens-report-usage-create",
+      "content": "POST /ai/tokens/{id}/report-usage/"
+    },
+    {
+      "title": "/api/v1/auth/ai/tokens/{id}/revoke/",
+      "url": "api-reference.html#op-ai-tokens-revoke-create",
+      "content": "POST /ai/tokens/{id}/revoke/"
+    },
+    {
+      "title": "/api/v1/auth/ai/tokens/{id}/suspend/",
+      "url": "api-reference.html#op-ai-tokens-suspend-create",
+      "content": "POST /ai/tokens/{id}/suspend/"
+    },
+    {
+      "title": "/api/v1/auth/ai/tokens/revoke-all/",
+      "url": "api-reference.html#op-ai-tokens-revoke-all-create",
+      "content": "POST /ai/tokens/revoke-all/\nCoupe-circuit nucléaire."
+    },
+    {
       "title": "Lister les applications",
       "url": "api-reference.html#op-applications-list",
       "content": "Retourne la liste paginée de toutes les applications enregistrées."
@@ -219,11 +274,6 @@
       "title": "Exporter mes données",
       "url": "api-reference.html#op-export-user-data-create",
       "content": "Exporte toutes les données personnelles de l'utilisateur conformément au droit à la portabilité du RGPD. Nécessite le mot de passe actuel pour des raisons de sécurité."
-    },
-    {
-      "title": "Authentification Google OAuth",
-      "url": "api-reference.html#op-google-create",
-      "content": "Authentifie un utilisateur via Google OAuth. Accepte id_token, access_token ou code."
     },
     {
       "title": "Connexion par email",

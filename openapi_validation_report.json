@@ -1,17 +1,17 @@
 {
   "summary": {
-    "total_issues": 14,
+    "total_issues": 24,
     "critical_issues": 0,
-    "warnings": 0,
-    "info": 14,
-    "quality_score": 86.0,
+    "warnings": 11,
+    "info": 13,
+    "quality_score": 32.0,
     "performance_issues": 0
   },
   "statistics": {
-    "total_paths": 80,
-    "total_operations": 99,
-    "total_examples": 255,
-    "schema_size_bytes": 183711,
+    "total_paths": 89,
+    "total_operations": 109,
+    "total_examples": 257,
+    "schema_size_bytes": 186660,
     "security_coverage": 100.0,
     "org_header_operations": 13
   },
@@ -29,12 +29,52 @@
       "message": "Missing examples for POST /api/v1/auth/admin/users/{user_id}/lock/"
     },
     {
-      "severity": "info",
-      "message": "Missing examples for PUT /api/v1/auth/applications/{app_id}/"
+      "severity": "warning",
+      "message": "Missing summary for GET /api/v1/auth/ai/pending-actions/"
+    },
+    {
+      "severity": "warning",
+      "message": "Missing summary for POST /api/v1/auth/ai/pending-actions/{token}/confirm/"
+    },
+    {
+      "severity": "warning",
+      "message": "Missing summary for POST /api/v1/auth/ai/pending-actions/{token}/deny/"
+    },
+    {
+      "severity": "warning",
+      "message": "Missing summary for GET /api/v1/auth/ai/tokens/"
+    },
+    {
+      "severity": "warning",
+      "message": "Missing summary for POST /api/v1/auth/ai/tokens/"
+    },
+    {
+      "severity": "warning",
+      "message": "Missing summary for GET /api/v1/auth/ai/tokens/{id}/"
+    },
+    {
+      "severity": "warning",
+      "message": "Missing summary for POST /api/v1/auth/ai/tokens/{id}/heartbeat/"
+    },
+    {
+      "severity": "warning",
+      "message": "Missing summary for POST /api/v1/auth/ai/tokens/{id}/report-usage/"
+    },
+    {
+      "severity": "warning",
+      "message": "Missing summary for POST /api/v1/auth/ai/tokens/{id}/revoke/"
+    },
+    {
+      "severity": "warning",
+      "message": "Missing summary for POST /api/v1/auth/ai/tokens/{id}/suspend/"
+    },
+    {
+      "severity": "warning",
+      "message": "Missing summary for POST /api/v1/auth/ai/tokens/revoke-all/"
     },
     {
       "severity": "info",
-      "message": "Missing examples for POST /api/v1/auth/google/"
+      "message": "Missing examples for PUT /api/v1/auth/applications/{app_id}/"
     },
     {
       "severity": "info",
@@ -76,12 +116,12 @@
   "performance_issues": [],
   "duplicates": {},
   "recommendations": [
-    "Excellent! OpenAPI specification is production-ready"
+    "Address 11 warnings to improve documentation quality"
   ],
   "schema_info": {
     "version": "3.0.3",
     "title": "",
-    "paths_count": 80,
+    "paths_count": 89,
     "components_count": 2
   }
 }

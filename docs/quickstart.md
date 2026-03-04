@@ -1,4 +1,4 @@
-# Quickstart — Tenxyte en 2 minutes
+# Quickstart — Tenxyte in 2 minutes
 
 ## 1. Install
 
@@ -9,12 +9,12 @@ pip install tenxyte
 ## 2. Configure `settings.py`
 
 ```python
-# settings.py — ajoutez ces 2 lignes
+# settings.py — add these 2 lines
 import tenxyte
-tenxyte.setup()  # auto-configure INSTALLED_APPS, AUTH_USER_MODEL, REST_FRAMEWORK, MIDDLEWARE
+tenxyte.setup()  # auto-configures INSTALLED_APPS, AUTH_USER_MODEL, REST_FRAMEWORK, MIDDLEWARE
 ```
 
-Puis ajoutez les URLs :
+Then add the URLs:
 
 ```python
 # urls.py
@@ -32,20 +32,20 @@ urlpatterns = [
 python manage.py tenxyte_quickstart
 ```
 
-Cette commande unique exécute :
+This single command executes:
 - `makemigrations` + `migrate`
-- Seed des rôles et permissions (4 rôles, 41 permissions)
-- Création d'une Application par défaut (credentials affichés)
+- Seed roles and permissions (4 roles, 41 permissions)
+- Create a default Application (credentials displayed)
 
-## ✅ Prêt !
+## ✅ Ready!
 
-En mode `DEBUG=True` (zero-config), le preset `development` s'active automatiquement :
-- Pas besoin de `TENXYTE_JWT_SECRET_KEY` (clé éphémère auto-générée)
-- Pas besoin d'Application credentials (X-Access-Key désactivé)
-- Rate limiting, lockout, et sécurité de base activés
+In `DEBUG=True` mode (zero-config), the `development` preset is automatically activated:
+- No need for `TENXYTE_JWT_SECRET_KEY` (auto-generated ephemeral key)
+- No need for Application credentials (X-Access-Key disabled)
+- Rate limiting, lockout, and basic security enabled
 
 ```bash
-# Votre première requête — aucun header spécial requis en dev !
+# Your first request — no special headers required in dev!
 curl -X POST http://localhost:8000/api/v1/auth/register/ \
   -H "Content-Type: application/json" \
   -d '{"email": "user@example.com", "password": "SecureP@ss1!", "first_name": "John", "last_name": "Doe"}'
@@ -55,32 +55,32 @@ curl -X POST http://localhost:8000/api/v1/auth/register/ \
 
 ## Production
 
-En production (`DEBUG=False`), configurez explicitement :
+In production (`DEBUG=False`), configure explicitly:
 
 ```python
 # settings.py
-TENXYTE_JWT_SECRET_KEY = 'your-dedicated-jwt-secret-key'  # OBLIGATOIRE
-TENXYTE_SHORTCUT_SECURE_MODE = 'medium'  # ou 'robust'
+TENXYTE_JWT_SECRET_KEY = 'your-dedicated-jwt-secret-key'  # REQUIRED
+TENXYTE_SHORTCUT_SECURE_MODE = 'medium'  # or 'robust'
 
-# Si Application auth est nécessaire (recommandé) :
-# TENXYTE_APPLICATION_AUTH_ENABLED = True  # déjà True par défaut hors dev preset
+# If Application auth is needed (recommended):
+# TENXYTE_APPLICATION_AUTH_ENABLED = True  # already True by default outside dev preset
 ```
 
-Tous les settings individuels restent overridables :
+All individual settings remain overridable:
 
 ```python
 TENXYTE_SHORTCUT_SECURE_MODE = 'medium'
-TENXYTE_MAX_LOGIN_ATTEMPTS = 3       # override le preset
-TENXYTE_BREACH_CHECK_ENABLED = True  # override le preset
+TENXYTE_MAX_LOGIN_ATTEMPTS = 3       # overrides the preset
+TENXYTE_BREACH_CHECK_ENABLED = True  # overrides the preset
 ```
 
-→ [Settings Reference](settings.md) pour les 150+ options.
+→ [Settings Reference](settings.md) for the 150+ options.
 
 ---
 
-## Configuration manuelle (alternative)
+## Manual Configuration (Alternative)
 
-Si vous préférez ne pas utiliser `tenxyte.setup()` :
+If you prefer not to use `tenxyte.setup()`:
 
 ```python
 # settings.py
@@ -104,7 +104,7 @@ MIDDLEWARE = [
 ]
 ```
 
-Puis exécutez :
+Then run:
 
 ```bash
 python manage.py makemigrations
@@ -116,14 +116,14 @@ python manage.py tenxyte_seed
 
 ## MongoDB
 
-Pour MongoDB, voir la [configuration MongoDB](#mongodb--required-configuration) dans le README.
+For MongoDB, see the [MongoDB configuration](#mongodb--required-configuration) section in the README.
 
 ---
 
 ## Next Steps
 
-- [Settings Reference](settings.md) — 150+ options de configuration
-- [API Endpoints](endpoints.md) — Référence complète avec exemples curl
-- [RBAC Guide](rbac.md) — Rôles, permissions, décorateurs
+- [Settings Reference](settings.md) — 150+ configuration options
+- [API Endpoints](endpoints.md) — Full reference with curl examples
+- [RBAC Guide](rbac.md) — Roles, permissions, decorators
 - [Security Guide](security.md) — Rate limiting, 2FA, device fingerprinting
-- [Organizations Guide](organizations.md) — Config multi-tenant B2B
+- [Organizations Guide](organizations.md) — B2B multi-tenant setup
