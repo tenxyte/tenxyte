@@ -352,9 +352,82 @@ OAuth2 callback endpoint for authorization code flow.
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
   "expires_in": 3600,
-  "user": { ... },
+  "device_summary": "Windows 11 Desktop",
+  "user": {
+    "id": "uuid-string",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "is_email_verified": true,
+    "is_phone_verified": false,
+    "is_2fa_enabled": false,
+    "roles": [],
+    "permissions": []
+  },
   "provider": "google",
   "is_new_user": false
+}
+```
+
+**Response `302` (Redirect with tokens):**
+```
+Location: https://yourapp.com/auth/callback?access_token=eyJ...&refresh_token=eyJ...
+```
+
+**Response `400` (Invalid provider):**
+```json
+{
+  "error": "Provider 'xyz' is not supported.",
+  "code": "PROVIDER_NOT_SUPPORTED"
+}
+```
+
+**Response `400` (Missing code):**
+```json
+{
+  "error": "Authorization code is required",
+  "code": "MISSING_CODE"
+}
+```
+
+**Response `400` (Missing redirect_uri):**
+```json
+{
+  "error": "redirect_uri is required",
+  "code": "MISSING_REDIRECT_URI"
+}
+```
+
+**Response `400` (Callback error):**
+```json
+{
+  "error": "OAuth2 callback processing failed",
+  "code": "CALLBACK_ERROR",
+  "details": "An unexpected error occurred during authentication."
+}
+```
+
+**Response `401` (Code exchange failed):**
+```json
+{
+  "error": "Failed to exchange authorization code",
+  "code": "CODE_EXCHANGE_FAILED"
+}
+```
+
+**Response `401` (Provider auth failed):**
+```json
+{
+  "error": "Could not retrieve user data from google",
+  "code": "PROVIDER_AUTH_FAILED"
+}
+```
+
+**Response `401` (Social auth failed):**
+```json
+{
+  "error": "Social authentication failed",
+  "code": "SOCIAL_AUTH_FAILED"
 }
 ```
 

@@ -32,7 +32,7 @@ from .views.dashboard_views import (
     DashboardGDPRView, DashboardOrganizationsView,
 )
 from .views.magic_link_views import MagicLinkRequestView, MagicLinkVerifyView
-from .views.social_auth_views import SocialAuthView
+from .views.social_auth_views import SocialAuthView, SocialAuthCallbackView
 from .views.webauthn_views import (
     WebAuthnRegisterBeginView, WebAuthnRegisterCompleteView,
     WebAuthnAuthenticateBeginView, WebAuthnAuthenticateCompleteView,
@@ -60,6 +60,7 @@ urlpatterns = [
 
     # Social Login Multi-Provider
     path('social/<str:provider>/', SocialAuthView.as_view(), name='social_auth'),
+    path('social/<str:provider>/callback/', SocialAuthCallbackView.as_view(), name='social_auth_callback'),
 
     # Token management
     path('refresh/', RefreshTokenView.as_view(), name='refresh_token'),
