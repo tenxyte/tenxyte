@@ -2542,7 +2542,21 @@ POST /admin/users/123/unlock/
 ### `GET /admin/audit-logs/` 🔒 `audit.view`
 List audit log entries.
 
-Query params: `?action=login&user_id=1&from=2026-01-01`
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters (optional):**
+- `user_id`: Filter by user ID
+- `action`: Filter by action (login, login_failed, password_change, etc.)
+- `ip_address`: Filter by IP address
+- `application_id`: Filter by application ID
+- `date_from`: After date (YYYY-MM-DD)
+- `date_to`: Before date (YYYY-MM-DD)
+- `ordering`: Sort by created_at, action, user
+- `page`: Page number
+- `page_size`: Items per page (max 100)
 
 **Response `200`:**
 ```json
@@ -2552,12 +2566,19 @@ Query params: `?action=login&user_id=1&from=2026-01-01`
   "previous": null,
   "results": [
     {
-      "id": 1,
+      "id": "1",
+      "user": "123",
+      "user_email": "user@example.com",
       "action": "login",
-      "user_id": 1,
-      "timestamp": "2023-10-01T12:00:00Z",
       "ip_address": "127.0.0.1",
-      "user_agent": "Mozilla/5.0..."
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      "application": "app_456",
+      "application_name": "My Client App",
+      "details": {
+        "success": true,
+        "method": "password"
+      },
+      "created_at": "2024-01-01T12:00:00Z"
     }
   ]
 }
@@ -2566,18 +2587,55 @@ Query params: `?action=login&user_id=1&from=2026-01-01`
 ### `GET /admin/audit-logs/<id>/` 🔒 `audit.view`
 Get a single audit log entry.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
 {
-  "id": 1,
+  "id": "1",
+  "user": "123",
+  "user_email": "user@example.com",
   "action": "login",
-  "user_id": 1,
-  "timestamp": "2023-10-01T12:00:00Z"
+  "ip_address": "127.0.0.1",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "application": "app_456",
+  "application_name": "My Client App",
+  "details": {
+    "success": true,
+    "method": "password"
+  },
+  "created_at": "2024-01-01T12:00:00Z"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Audit log not found",
+  "code": "NOT_FOUND"
 }
 ```
 
 ### `GET /admin/login-attempts/` 🔒 `audit.view`
 List login attempts.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters (optional):**
+- `identifier`: Filter by identifier (email/phone)
+- `ip_address`: Filter by IP address
+- `success`: Filter by success/failure (true/false)
+- `date_from`: After date (YYYY-MM-DD)
+- `date_to`: Before date (YYYY-MM-DD)
+- `ordering`: Sort by created_at, identifier, ip_address
+- `page`: Page number
+- `page_size`: Items per page (max 100)
 
 **Response `200`:**
 ```json
@@ -2587,12 +2645,13 @@ List login attempts.
   "previous": null,
   "results": [
     {
-      "id": 1,
-      "user_id": 1,
-      "email": "user@example.com",
-      "successful": false,
+      "id": "1",
+      "identifier": "user@example.com",
       "ip_address": "127.0.0.1",
-      "timestamp": "2023-10-01T12:00:00Z"
+      "application": "app_456",
+      "success": false,
+      "failure_reason": "Invalid password",
+      "created_at": "2024-01-01T12:00:00Z"
     }
   ]
 }
@@ -2601,6 +2660,19 @@ List login attempts.
 ### `GET /admin/blacklisted-tokens/` 🔒 `audit.view`
 List active blacklisted tokens.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters (optional):**
+- `user_id`: Filter by user ID
+- `reason`: Filter by reason (logout, password_change, security)
+- `expired`: Filter by expired (true/false)
+- `ordering`: Sort by blacklisted_at, expires_at
+- `page`: Page number
+- `page_size`: Items per page (max 100)
+
 **Response `200`:**
 ```json
 {
@@ -2609,16 +2681,31 @@ List active blacklisted tokens.
   "previous": null,
   "results": [
     {
-      "id": 1,
-      "jti": "jti12345",
-      "blacklisted_on": "2023-10-01T12:00:00Z"
+      "id": "1",
+      "token_jti": "jti123456789",
+      "user": "123",
+      "user_email": "user@example.com",
+      "blacklisted_at": "2024-01-01T12:00:00Z",
+      "expires_at": "2024-01-01T18:00:00Z",
+      "reason": "logout",
+      "is_expired": false
     }
   ]
 }
 ```
 
-### `POST /admin/blacklisted-tokens/cleanup/` 🔒 `audit.manage`
+### `POST /admin/blacklisted-tokens/cleanup/` 🔒 `security.view`
 Remove expired blacklisted tokens.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request:**
+```
+POST /admin/blacklisted-tokens/cleanup/
+```
 
 **Response `200`:**
 ```json
@@ -2631,6 +2718,20 @@ Remove expired blacklisted tokens.
 ### `GET /admin/refresh-tokens/` 🔒 `audit.view`
 List active refresh tokens.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters (optional):**
+- `user_id`: Filter by user ID
+- `application_id`: Filter by application ID
+- `is_revoked`: Filter by revoked (true/false)
+- `expired`: Filter by expired (true/false)
+- `ordering`: Sort by created_at, expires_at, last_used_at
+- `page`: Page number
+- `page_size`: Items per page (max 100)
+
 **Response `200`:**
 ```json
 {
@@ -2639,23 +2740,70 @@ List active refresh tokens.
   "previous": null,
   "results": [
     {
-      "id": 1,
-      "jti": "rt123",
-      "user_id": 1,
-      "expires_at": "2023-11-01T12:00:00Z",
-      "is_revoked": false
+      "id": "1",
+      "user": "123",
+      "user_email": "user@example.com",
+      "application": "app_456",
+      "application_name": "My Client App",
+      "device_info": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      "ip_address": "127.0.0.1",
+      "is_revoked": false,
+      "is_expired": false,
+      "expires_at": "2024-02-01T12:00:00Z",
+      "created_at": "2024-01-01T12:00:00Z",
+      "last_used_at": "2024-01-01T13:00:00Z"
     }
   ]
 }
 ```
 
-### `POST /admin/refresh-tokens/<id>/revoke/` 🔒 `audit.manage`
+### `POST /admin/refresh-tokens/<id>/revoke/` 🔒 `security.view`
 Revoke a specific refresh token.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request:**
+```
+POST /admin/refresh-tokens/123/revoke/
+```
 
 **Response `200`:**
 ```json
 {
-  "message": "Token revoked successfully"
+  "message": "Token revoked successfully",
+  "token": {
+    "id": "1",
+    "user": "123",
+    "user_email": "user@example.com",
+    "application": "app_456",
+    "application_name": "My Client App",
+    "device_info": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "ip_address": "127.0.0.1",
+    "is_revoked": true,
+    "is_expired": false,
+    "expires_at": "2024-02-01T12:00:00Z",
+    "created_at": "2024-01-01T12:00:00Z",
+    "last_used_at": "2024-01-01T13:00:00Z"
+  }
+}
+```
+
+**Response `400` (Already revoked):**
+```json
+{
+  "error": "Token already revoked",
+  "code": "ALREADY_REVOKED"
+}
+```
+
+**Response `404` (Not found):**
+```json
+{
+  "error": "Refresh token not found",
+  "code": "NOT_FOUND"
 }
 ```
 
