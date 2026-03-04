@@ -39,8 +39,13 @@ class RegisterView(APIView):
                 'properties': {
                     'message': {'type': 'string'},
                     'user': {'$ref': '#/components/schemas/User'},
-                    'requires_otp': {'type': 'boolean'},
-                    'otp_id': {'type': 'string', 'nullable': True}
+                    'verification_required': {
+                        'type': 'object',
+                        'properties': {
+                            'email': {'type': 'boolean'},
+                            'phone': {'type': 'boolean'}
+                        }
+                    }
                 }
             },
             400: {
@@ -64,10 +69,26 @@ class RegisterView(APIView):
                 name='register_success',
                 summary='Inscription réussie',
                 value={
-                    'email': 'user@example.com',
-                    'password': 'SecureP@ss123!',
-                    'first_name': 'John',
-                    'last_name': 'Doe'
+                    'message': 'Registration successful',
+                    'user': {
+                        'id': 'uuid-string',
+                        'email': 'user@example.com',
+                        'phone_country_code': '+1',
+                        'phone_number': '5551234567',
+                        'first_name': 'John',
+                        'last_name': 'Doe',
+                        'is_email_verified': False,
+                        'is_phone_verified': False,
+                        'is_2fa_enabled': False,
+                        'roles': [],
+                        'permissions': [],
+                        'created_at': '2023-10-01T12:00:00Z',
+                        'last_login': None
+                    },
+                    'verification_required': {
+                        'email': True,
+                        'phone': False
+                    }
                 }
             ),
             OpenApiExample(

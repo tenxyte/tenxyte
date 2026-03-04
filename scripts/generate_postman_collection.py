@@ -270,10 +270,13 @@ class PostmanCollectionGenerator:
                     "mode": "raw",
                     "raw": json.dumps({
                         "email": "newuser@example.com",
+                        "phone_country_code": "+1",
+                        "phone_number": "5551234567",
                         "password": "NewPassword123!",
                         "first_name": "New",
                         "last_name": "User",
-                        "phone": "+1234567890"
+                        "login": False,
+                        "device_info": "v=1|os=windows;osv=11|device=desktop"
                     }, indent=2)
                 },
                 "url": {
@@ -281,7 +284,48 @@ class PostmanCollectionGenerator:
                     "host": ["{{baseUrl}}"],
                     "path": ["api", "auth", "register", ""]
                 }
-            }
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "pm.test('Registration successful', function () {",
+                            "    pm.expect(pm.response.code).to.be.oneOf([201, 400, 429]);",
+                            "});",
+                            "",
+                            "if (pm.response.code === 201) {",
+                            "    const response = pm.response.json();",
+                            "    pm.test('Response contains required fields', function () {",
+                            "        pm.expect(response).to.have.property('message');",
+                            "        pm.expect(response).to.have.property('user');",
+                            "        pm.expect(response).to.have.property('verification_required');",
+                            "    });",
+                            "    ",
+                            "    pm.test('User data is valid', function () {",
+                            "        const response = pm.response.json();",
+                            "        pm.expect(response.user).to.have.property('id');",
+                            "        pm.expect(response.user).to.have.property('email');",
+                            "        pm.expect(response.user).to.have.property('first_name');",
+                            "        pm.expect(response.user).to.have.property('last_name');",
+                            "        pm.expect(response.user).to.have.property('is_email_verified');",
+                            "        pm.expect(response.user).to.have.property('is_phone_verified');",
+                            "        pm.expect(response.user).to.have.property('is_2fa_enabled');",
+                            "    });",
+                            "    ",
+                            "    pm.test('Verification required structure', function () {",
+                            "        const response = pm.response.json();",
+                            "        pm.expect(response.verification_required).to.have.property('email');",
+                            "        pm.expect(response.verification_required).to.have.property('phone');",
+                            "        pm.expect(typeof response.verification_required.email).to.be.equal('boolean');",
+                            "        pm.expect(typeof response.verification_required.phone).to.be.equal('boolean');",
+                            "    });",
+                            "}"
+                        ]
+                    }
+                }
+            ]
         }
     
     def create_refresh_token_request(self) -> Dict:

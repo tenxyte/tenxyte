@@ -76,7 +76,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"NewPassword123!\",\n  \"first_name\": \"New\",\n  \"last_name\": \"User\",\n  \"phone\": \"+1234567890\"\n}"
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"phone_country_code\": \"+1\",\n  \"phone_number\": \"5551234567\",\n  \"password\": \"NewPassword123!\",\n  \"first_name\": \"New\",\n  \"last_name\": \"User\",\n  \"login\": false,\n  \"device_info\": \"v=1|os=windows;osv=11|device=desktop\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/register/",
@@ -90,7 +90,48 @@
                 ""
               ]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Registration successful', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([201, 400, 429]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.test('Response contains required fields', function () {",
+                  "        pm.expect(response).to.have.property('message');",
+                  "        pm.expect(response).to.have.property('user');",
+                  "        pm.expect(response).to.have.property('verification_required');",
+                  "    });",
+                  "    ",
+                  "    pm.test('User data is valid', function () {",
+                  "        const response = pm.response.json();",
+                  "        pm.expect(response.user).to.have.property('id');",
+                  "        pm.expect(response.user).to.have.property('email');",
+                  "        pm.expect(response.user).to.have.property('first_name');",
+                  "        pm.expect(response.user).to.have.property('last_name');",
+                  "        pm.expect(response.user).to.have.property('is_email_verified');",
+                  "        pm.expect(response.user).to.have.property('is_phone_verified');",
+                  "        pm.expect(response.user).to.have.property('is_2fa_enabled');",
+                  "    });",
+                  "    ",
+                  "    pm.test('Verification required structure', function () {",
+                  "        const response = pm.response.json();",
+                  "        pm.expect(response.verification_required).to.have.property('email');",
+                  "        pm.expect(response.verification_required).to.have.property('phone');",
+                  "        pm.expect(typeof response.verification_required.email).to.be.equal('boolean');",
+                  "        pm.expect(typeof response.verification_required.phone).to.be.equal('boolean');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "POST Refresh Token",
