@@ -3247,60 +3247,230 @@ All dashboard endpoints require `dashboard.view` permission.
 ### `GET /dashboard/stats/` 🔒 `dashboard.view`
 Global cross-module statistics.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters (optional):**
+- `period`: Analysis period (7d, 30d, 90d) - default: 7d
+- `compare`: Include comparison with previous period (true/false)
+- `X-Org-Slug`: Organization slug for filtering by organization
+
 **Response `200`:**
 ```json
 {
-  "total_users": 1500,
-  "active_users": 1200,
-  "new_users_today": 15
+  "summary": {
+    "total_users": 1500,
+    "active_users": 1200,
+    "total_organizations": 25,
+    "total_applications": 85,
+    "active_sessions": 240,
+    "pending_deletions": 3
+  },
+  "trends": {
+    "user_growth": 0.15,
+    "login_success_rate": 0.95,
+    "application_usage": 0.08,
+    "security_incidents": 0.02
+  },
+  "organization_context": {
+    "current_org": {
+      "id": "org_123",
+      "name": "Acme Corp",
+      "user_count": 150
+    },
+    "org_users_only": true
+  },
+  "charts": {
+    "daily_logins": [
+      {"date": "2024-01-09", "count": 350},
+      {"date": "2024-01-10", "count": 380}
+    ],
+    "user_registrations": [
+      {"date": "2024-01-09", "count": 15},
+      {"date": "2024-01-10", "count": 18}
+    ],
+    "security_events": [
+      {"date": "2024-01-09", "count": 5},
+      {"date": "2024-01-10", "count": 3}
+    ]
+  }
 }
 ```
 
 ### `GET /dashboard/auth/` 🔒 `dashboard.view`
 Detailed authentication statistics (login rates, token stats, charts).
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
 {
-  "logins_today": 350,
-  "failed_logins_today": 12,
-  "active_sessions": 240
+  "login_stats": {
+    "today": {
+      "total": 350,
+      "success_count": 338,
+      "failed_count": 12,
+      "success_rate": 0.966
+    },
+    "this_week": {
+      "total": 2450,
+      "success_count": 2365,
+      "failed_count": 85,
+      "success_rate": 0.965
+    },
+    "this_month": {
+      "total": 10500,
+      "success_count": 10185,
+      "failed_count": 315,
+      "success_rate": 0.970
+    }
+  },
+  "login_by_method": {
+    "password": 320,
+    "social_google": 25,
+    "social_github": 5
+  },
+  "registration_stats": {
+    "today": 15,
+    "this_week": 95,
+    "this_month": 420
+  },
+  "token_stats": {
+    "active_refresh_tokens": 240,
+    "blacklisted_tokens": 8,
+    "expired_today": 12
+  },
+  "top_login_failure_reasons": [
+    {"reason": "Invalid password", "count": 45},
+    {"reason": "Account not found", "count": 28},
+    {"reason": "Account locked", "count": 12}
+  ],
+  "charts": {
+    "logins_per_day_7d": [
+      {"date": "2024-01-09", "success": 338, "failed": 12},
+      {"date": "2024-01-10", "success": 355, "failed": 15}
+    ]
+  }
 }
 ```
 
 ### `GET /dashboard/security/` 🔒 `dashboard.view`
 Security statistics (audit summary, blacklisted tokens, suspicious activity).
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
 {
-  "total_banned_users": 5,
-  "total_locked_users": 2,
-  "suspicious_activities_7d": 18
+  "audit_summary_24h": {
+    "total_events": 1250,
+    "login_attempts": 350,
+    "failed_logins": 12,
+    "password_changes": 8,
+    "account_locks": 2
+  },
+  "blacklisted_tokens": {
+    "active": 8,
+    "expired_today": 12,
+    "total_created_24h": 5
+  },
+  "suspicious_activity": {
+    "last_24h": 3,
+    "last_7d": 18,
+    "top_ips": [
+      {"ip_address": "192.168.1.100", "events": 15},
+      {"ip_address": "10.0.0.50", "events": 8}
+    ]
+  },
+  "account_security": {
+    "locked_accounts": 2,
+    "banned_accounts": 5,
+    "2fa_adoption_rate": 0.35,
+    "password_changes_today": 8
+  }
 }
 ```
 
 ### `GET /dashboard/gdpr/` 🔒 `dashboard.view`
 GDPR compliance statistics.
 
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
 **Response `200`:**
 ```json
 {
-  "pending_deletions": 3,
-  "processed_deletions": 15,
-  "data_exports_30d": 8
+  "deletion_requests": {
+    "total": 18,
+    "by_status": {
+      "pending": 3,
+      "confirmation_sent": 2,
+      "confirmed": 5,
+      "completed": 15,
+      "cancelled": 2
+    },
+    "grace_period_expiring_7d": 2
+  },
+  "data_exports": {
+    "total_today": 2,
+    "total_this_month": 8
+  }
 }
 ```
 
 ### `GET /dashboard/organizations/` 🔒 `dashboard.view`
 Organization statistics (only if `TENXYTE_ORGANIZATIONS_ENABLED=True`).
 
-**Response `200`:**
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Response `200` (Enabled):**
 ```json
 {
+  "enabled": true,
   "total_organizations": 45,
-  "active_organizations": 40,
-  "average_members_per_org": 8.5
+  "active": 40,
+  "with_sub_orgs": 12,
+  "members": {
+    "total": 382,
+    "avg_per_org": 8.5,
+    "by_role": {
+      "owner": 45,
+      "admin": 90,
+      "member": 247
+    }
+  },
+  "top_organizations": [
+    {
+      "name": "Acme Corp",
+      "slug": "acme-corp",
+      "members": 25
+    },
+    {
+      "name": "Tech Startup",
+      "slug": "tech-startup",
+      "members": 18
+    }
+  ]
+}
+```
+
+**Response `200` (Disabled):**
+```json
+{
+  "enabled": false
 }
 ```
 
