@@ -24,19 +24,52 @@ Register a new user.
 ```json
 {
   "email": "user@example.com",
+  "phone_country_code": "+1",
+  "phone_number": "5551234567",
   "password": "SecurePass123!",
   "first_name": "John",
   "last_name": "Doe",
-  "login": false
+  "login": false,
+  "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
+`email` or `phone_country_code` + `phone_number` is required.
+`login`: If true, returns JWT tokens for immediate login.
+`device_info`: Optional device fingerprinting info.
 
 **Response `201`:**
 ```json
 {
   "message": "Registration successful",
-  "user": { "id": 1, "email": "user@example.com", ... },
-  "verification_required": { "email": true, "phone": false }
+  "user": {
+    "id": "uuid-string",
+    "email": "user@example.com",
+    "phone_country_code": "+1",
+    "phone_number": "5551234567",
+    "first_name": "John",
+    "last_name": "Doe",
+    "is_email_verified": false,
+    "is_phone_verified": false,
+    "is_2fa_enabled": false,
+    "roles": [],
+    "permissions": [],
+    "created_at": "2023-10-01T12:00:00Z",
+    "last_login": null
+  },
+  "verification_required": {
+    "email": true,
+    "phone": false
+  }
+}
+```
+
+If `login: true` in request, also includes:
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 3600
 }
 ```
 
