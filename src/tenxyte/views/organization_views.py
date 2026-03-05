@@ -88,7 +88,7 @@ User = get_user_model()
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='create_org_success',
             summary='Création réussie',
             value={
@@ -108,7 +108,7 @@ User = get_user_model()
                 'description': 'Filiale française'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='hierarchy_depth_limit',
             summary='Limite profondeur hiérarchie',
             value={
@@ -218,7 +218,7 @@ def create_organization(request: Request) -> Response:
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='list_orgs_success',
             summary='Liste paginée',
             value={
@@ -309,7 +309,7 @@ def list_organizations(request: Request) -> Response:
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='get_org_success',
             summary='Détails organisation',
             value={
@@ -323,7 +323,7 @@ def list_organizations(request: Request) -> Response:
                 'user_permissions': ['manage_members', 'view_reports']
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='org_not_member',
             summary='Non-membre',
             value={
@@ -398,7 +398,7 @@ def get_organization(request: Request) -> Response:
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='update_org_success',
             summary='Mise à jour réussie',
             value={
@@ -407,7 +407,7 @@ def get_organization(request: Request) -> Response:
                 'max_members': 200
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='parent_constraint_violation',
             summary='Violation contrainte parent',
             value={
@@ -415,7 +415,7 @@ def get_organization(request: Request) -> Response:
                 'code': 'CIRCULAR_HIERARCHY'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='member_limit_too_low',
             summary='Limite membres trop basse',
             value={
@@ -486,12 +486,12 @@ def update_organization(request: Request) -> Response:
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='delete_org_success',
             summary='Suppression réussie',
             value=None
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='has_child_organizations',
             summary='Organisations enfants présentes',
             value={
@@ -499,7 +499,7 @@ def update_organization(request: Request) -> Response:
                 'code': 'HAS_CHILDREN'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='not_owner',
             summary='Pas propriétaire',
             value={
@@ -755,7 +755,7 @@ def list_members(request: Request) -> Response:
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='add_member_success',
             summary='Membre ajouté avec succès',
             value={
@@ -763,7 +763,7 @@ def list_members(request: Request) -> Response:
                 'role_code': 'member'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='member_limit_exceeded',
             summary='Limite de membres dépassée',
             value={
@@ -771,7 +771,7 @@ def list_members(request: Request) -> Response:
                 'code': 'MEMBER_LIMIT_EXCEEDED'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='already_member',
             summary='Déjà membre',
             value={
@@ -779,7 +779,7 @@ def list_members(request: Request) -> Response:
                 'code': 'ALREADY_MEMBER'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='invalid_role',
             summary='Rôle invalide',
             value={
@@ -884,14 +884,14 @@ def add_member(request: Request) -> Response:
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='update_role_success',
             summary='Rôle mis à jour',
             value={
                 'role_code': 'admin'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='cannot_demote_owner',
             summary='Impossible de rétrograder owner',
             value={
@@ -899,7 +899,7 @@ def add_member(request: Request) -> Response:
                 'code': 'CANNOT_DEMOTE_OWNER'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='last_owner_error',
             summary='Dernier propriétaire',
             value={
@@ -997,12 +997,12 @@ def update_member_role(request: Request, user_id: int) -> Response:
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='remove_member_success',
             summary='Membre retiré avec succès',
             value=None
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='cannot_remove_owner',
             summary='Impossible de retirer owner',
             value={
@@ -1010,7 +1010,7 @@ def update_member_role(request: Request, user_id: int) -> Response:
                 'code': 'CANNOT_REMOVE_OWNER'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='last_owner_error',
             summary='Dernier propriétaire',
             value={
@@ -1018,7 +1018,7 @@ def update_member_role(request: Request, user_id: int) -> Response:
                 'code': 'LAST_OWNER_REQUIRED'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='self_removal',
             summary='Auto-suppression',
             value={
@@ -1101,7 +1101,7 @@ def remove_member(request: Request, user_id: int) -> Response:
         }
     },
     examples=[
-        OpenApiExample(
+        OpenApiExample(request_only=True, 
             name='invite_success',
             summary='Invitation envoyée',
             value={
@@ -1110,7 +1110,7 @@ def remove_member(request: Request, user_id: int) -> Response:
                 'expires_in_days': 7
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='already_member',
             summary='Déjà membre',
             value={
@@ -1118,7 +1118,7 @@ def remove_member(request: Request, user_id: int) -> Response:
                 'code': 'ALREADY_MEMBER'
             }
         ),
-        OpenApiExample(
+        OpenApiExample(response_only=True, 
             name='invitation_exists',
             summary='Invitation existante',
             value={

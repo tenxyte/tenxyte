@@ -1,35 +1,54 @@
 # Tenxyte AIRS (AI Responsibility & Security)
 
-Tenxyte AIRS est une suite exhaustive de responsabilit, scurit et garde-fous pour les agents IA intgrs. Elle traite des dfis majeurs poss par les modles LLMs et l'agentique dans les environnements de production (ex: EchoLeak, Shadow Escape).
+## Table of Contents
 
-## Fonctionnalits Cls
+- [Tenxyte AIRS (AI Responsibility & Security)](#tenxyte-airs-ai-responsibility-security)
+  - [Key Features](#key-features)
+    - [1. Core Agentic Parity (AgentToken)](#1-core-agentic-parity-agenttoken)
+    - [2. Circuit Breaker & Rate Limiting](#2-circuit-breaker-rate-limiting)
+    - [3. Human in the Loop (HITL)](#3-human-in-the-loop-hitl)
+    - [4. Guardrails: PII Redaction & Budget](#4-guardrails-pii-redaction-budget)
+    - [5. Forensic Audit](#5-forensic-audit)
+  - [Configuration](#configuration)
 
-### 1. Parit Agentique de Base (AgentToken)
-Le concept de l'`AgentToken` encapsule les informations scuritaires d'un agent.
-- **Dlgation scurise**: un agent emprunte les permissions d'un utilisateur sans manipuler ses identifiants.
-- **RBAC Strict**: un double contrle de permission est exerc ; l'agent doit tre autoris, et l'utilisateur dlgateur doit lui-mme dtenir les droits sous-jacents.
+---
+
+Tenxyte AIRS is a comprehensive suite of responsibility, security, and safeguards for integrated AI agents. It addresses major challenges posed by LLMs and agentic models in production environments (e.g., EchoLeak, Shadow Escape).
+
+## Key Features
+
+### 1. Core Agentic Parity (AgentToken)
+The `AgentToken` concept encapsulates an agent's security information.
+- **Secure Delegation**: An agent borrows a user's permissions without handling their credentials.
+- **Strict RBAC**: Double permission check; the agent must be authorized, and the delegating user must also hold the underlying rights.
 
 ### 2. Circuit Breaker & Rate Limiting
-Un pare-feu autonome pour empcher un drapage (boucle infinie, exfiltration) :
-- Dsactivation automatique lors de requtes anormales (fentre glissante).
-- Un *Dead Man's Switch* requiert des *heartbeats* priodiques pour prouver que le conteneur de contrle est intact. Sinon, suspension automatique.
+An autonomous firewall to prevent runaway behavior (infinite loops, exfiltration):
+- **Automatic Disabling**: Triggers on abnormal requests (sliding window).
+- **Dead Man's Switch**: Requires periodic heartbeats to prove the control container is intact. Otherwise, automatic suspension.
 
 ### 3. Human in the Loop (HITL)
-Des dcorateurs (`@require_agent_clearance`) dtournent les requtes de l'agent si une confirmation humaine est ncessaire, retournant `202 Accepted` et mettant en attente l'excution jusqu' l'approbation du workflow.
-- **Liste Globale**: Actions configurables (`TENXYTE_AIRS_CONFIRMATION_REQUIRED`) qui passeront toujours par HITL.
+Decorators like `@require_agent_clearance` redirect agent requests if human confirmation is needed, returning `202 Accepted` and pausing execution until the workflow is approved.
+- **Global List**: Configurable actions (`TENXYTE_AIRS_CONFIRMATION_REQUIRED`) that will always go through HITL.
 
-### 4. Guardrails : PII Redaction & Budget
-- **PII RedactionMiddleware**: Intercepte automatiquement et anonymise les PII (`***REDACTED***`) dans la rponse JSON pour un requrant agent, empchant l'ingestion de ces donnes par un LLM limit.
-- **Budget Tracking**: Suivi prcis du cot LLM (`POST /ai/tokens/{id}/report-usage/`) limitant financiellement l'impact d'un agent.
+### 4. Guardrails: PII Redaction & Budget
+- **PII RedactionMiddleware**: Automatically intercepts and anonymizes PII (`***REDACTED***`) in JSON responses for agent requesters, preventing LLMs from ingesting sensitive data.
+- **Budget Tracking**: Precise LLM cost tracking (`POST /ai/tokens/{id}/report-usage/`) to limit an agent's financial impact.
 
-### 5. Audit Forensique
-- **Traabilit via X-Prompt-Trace-ID**: Liaison dans l'`AuditLog` pour cartographier prcisment "Quel prompt a rsult par quelle action backend".
+### 5. Forensic Audit
+- **Traceability via X-Prompt-Trace-ID**: Linked in the `AuditLog` to precisely map "Which prompt resulted in which backend action".
 
 ## Configuration
 
-Paramtres activables via `src/tenxyte/conf.py` :
-- `TENXYTE_AIRS_ENABLED` (Dfaut : `True`)
-- `TENXYTE_AIRS_CIRCUIT_BREAKER_ENABLED` (Dfaut : `True`)
-- `TENXYTE_AIRS_CONFIRMATION_REQUIRED` (Tableau d'extensions HITL, ex: `['users.delete']`)
-- `TENXYTE_AIRS_REDACT_PII` (Dfaut : `False`)
-- `TENXYTE_AIRS_BUDGET_TRACKING_ENABLED` (Dfaut : `False`)
+Settings available to be defined in your Django `settings.py` (defaults managed via `src/tenxyte/conf/airs.py`):
+- `TENXYTE_AIRS_ENABLED` (Default: `True`)
+- `TENXYTE_AIRS_TOKEN_MAX_LIFETIME` (Default: `86400`)
+- `TENXYTE_AIRS_DEFAULT_EXPIRY` (Default: `3600`)
+- `TENXYTE_AIRS_REQUIRE_EXPLICIT_PERMISSIONS` (Default: `True`)
+- `TENXYTE_AIRS_CIRCUIT_BREAKER_ENABLED` (Default: `True`)
+- `TENXYTE_AIRS_DEFAULT_MAX_RPM` (Default: `60`)
+- `TENXYTE_AIRS_DEFAULT_MAX_TOTAL` (Default: `1000`)
+- `TENXYTE_AIRS_DEFAULT_MAX_FAILURES` (Default: `10`)
+- `TENXYTE_AIRS_CONFIRMATION_REQUIRED` (Array of permission codes, e.g., `['users.delete']`)
+- `TENXYTE_AIRS_REDACT_PII` (Default: `False`)
+- `TENXYTE_AIRS_BUDGET_TRACKING_ENABLED` (Default: `False`)

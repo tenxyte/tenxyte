@@ -66,7 +66,7 @@ class RequestOTPView(APIView):
                     'otp_type': 'phone_verification'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='no_email_error',
                 summary='Aucune adresse email',
                 value={
@@ -74,7 +74,7 @@ class RequestOTPView(APIView):
                     'code': 'NO_EMAIL'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='otp_rate_limited',
                 summary='Limite OTP dépassée',
                 value={
@@ -160,14 +160,14 @@ class VerifyEmailOTPView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='verify_email_success',
                 summary='Vérification email réussie',
                 value={
                     'code': '123456'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='invalid_otp_code',
                 summary='Code OTP invalide',
                 value={
@@ -176,7 +176,7 @@ class VerifyEmailOTPView(APIView):
                     'code': 'INVALID_OTP'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='otp_expired',
                 summary='Code OTP expiré',
                 value={
@@ -185,7 +185,7 @@ class VerifyEmailOTPView(APIView):
                     'code': 'OTP_EXPIRED'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='max_attempts_reached',
                 summary='Maximum de tentatives atteint',
                 value={
@@ -262,14 +262,14 @@ class VerifyPhoneOTPView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='verify_phone_success',
                 summary='Vérification téléphone réussie',
                 value={
                     'code': '123456'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='invalid_phone_otp',
                 summary='Code OTP téléphone invalide',
                 value={
@@ -278,7 +278,7 @@ class VerifyPhoneOTPView(APIView):
                     'code': 'INVALID_OTP'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='phone_not_verified',
                 summary='Téléphone non vérifié',
                 value={
@@ -287,7 +287,7 @@ class VerifyPhoneOTPView(APIView):
                     'code': 'PHONE_NOT_VERIFIED'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='otp_window_expired',
                 summary='Fenêtre de vérification expirée',
                 value={

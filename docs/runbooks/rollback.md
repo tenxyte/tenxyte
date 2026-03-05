@@ -1,34 +1,34 @@
-# RUNBOOK : Rollback du module d'authentification
+# RUNBOOK: Authentication Module Rollback
 
-**Objectif :** Restaurer le service dans une version stable en moins de 15 minutes en cas de déploiement cassé.
+**Objective:** Restore the service to a stable version in less than 15 minutes in case of a broken deployment.
 
-## 1. Préparation (Identification du problème)
-- [ ] Constater l'erreur (Health checks `/health` échouant consécutivement en production, pics rapides d'erreurs 5xx sur `/auth/login`).
-- [ ] Identifier la dernière version fonctionnelle connue (Hash du commit récent).
+## 1. Preparation (Problem Identification)
+- [ ] Observe the error (Consecutive failing health checks `/health` in production, rapid spikes of 5xx errors on `/auth/login`).
+- [ ] Identify the last known working version (Commit hash).
 
-## 2. Exécution du Rollback (Kubernetes / Docker)
+## 2. Rollback Execution (Kubernetes / Docker)
 
 ### Via Kubernetes
 ```bash
-# Identifier l'historique de déploiement
+# Identify deployment history
 kubectl rollout history deployment/auth-service --namespace=production
 
-# Restaurer la révision précédente (n-1)
+# Restore previous revision (n-1)
 kubectl rollout undo deployment/auth-service --namespace=production
 ```
 
 ### Via Docker Compose
 ```bash
-# Modifier le tag YAML de l'image (dans docker-compose.yml) vers l'ancienne version
+# Modify the YAML image tag (in docker-compose.yml) to the previous version
 docker-compose up -d --build
 ```
 
-## 3. Vérifications (Post-rollback)
-- [ ] Vérifier que les Pods K8s (ou conteneurs Docker) redémarrent et arrivent en statut 'Running'.
-- [ ] Appeler le endpoint de health check manuellement (`curl -sf https://api.example.com/health`).
-- [ ] Confirmer via les logs l'absence d'erreurs.
-- [ ] Valider avec un smoke test de login basique que l'authentification est revenue à la normale.
+## 3. Verifications (Post-rollback)
+- [ ] Verify that K8s Pods (or Docker containers) restart and reach 'Running' status.
+- [ ] Manually call the health check endpoint (`curl -sf https://api.example.com/health`).
+- [ ] Confirm the absence of errors via logs.
+- [ ] Validate with a basic login smoke test that authentication has returned to normal.
 
-## 4. Investigations
-- [ ] Extraire les logs ayant mené au crash (avant nettoyage).
-- [ ] Créer un ticket incident prioritaire pour fixer la "nouvelle" version instable.
+## 4. Investigation
+- [ ] Extract the logs that led to the crash (before cleanup).
+- [ ] Create a high-priority incident ticket to fix the "new" unstable version.

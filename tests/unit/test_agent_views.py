@@ -247,12 +247,15 @@ class TestAgentViews:
             mock_request.application = None
             mock_request.user = user
             mock_request.data = data
-            
+            # Provide an empty headers dict so request.headers.get('X-Org-Slug')
+            # returns None instead of a truthy MagicMock object
+            mock_request.headers = {}
+
             # Create a view instance and call post directly
             from tenxyte.views.agent_views import AgentTokenListCreateView
             view = AgentTokenListCreateView()
             view.request = mock_request
-            
+
             response = view.post(mock_request)
             assert response.status_code == 201
 

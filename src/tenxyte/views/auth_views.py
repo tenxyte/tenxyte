@@ -39,8 +39,13 @@ class RegisterView(APIView):
                 'properties': {
                     'message': {'type': 'string'},
                     'user': {'$ref': '#/components/schemas/User'},
-                    'requires_otp': {'type': 'boolean'},
-                    'otp_id': {'type': 'string', 'nullable': True}
+                    'verification_required': {
+                        'type': 'object',
+                        'properties': {
+                            'email': {'type': 'boolean'},
+                            'phone': {'type': 'boolean'}
+                        }
+                    }
                 }
             },
             400: {
@@ -64,13 +69,29 @@ class RegisterView(APIView):
                 name='register_success',
                 summary='Inscription réussie',
                 value={
-                    'email': 'user@example.com',
-                    'password': 'SecureP@ss123!',
-                    'first_name': 'John',
-                    'last_name': 'Doe'
+                    'message': 'Registration successful',
+                    'user': {
+                        'id': 'uuid-string',
+                        'email': 'user@example.com',
+                        'phone_country_code': '+1',
+                        'phone_number': '5551234567',
+                        'first_name': 'John',
+                        'last_name': 'Doe',
+                        'is_email_verified': False,
+                        'is_phone_verified': False,
+                        'is_2fa_enabled': False,
+                        'roles': [],
+                        'permissions': [],
+                        'created_at': '2023-10-01T12:00:00Z',
+                        'last_login': None
+                    },
+                    'verification_required': {
+                        'email': True,
+                        'phone': False
+                    }
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='breach_password',
                 summary='Mot de passe trouvé dans une fuite',
                 value={
@@ -251,7 +272,7 @@ class LoginEmailView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='login_success',
                 summary='Connexion réussie',
                 value={
@@ -259,7 +280,7 @@ class LoginEmailView(APIView):
                     'password': 'SecureP@ss123!'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='login_with_2fa',
                 summary='Connexion avec 2FA',
                 value={
@@ -268,7 +289,7 @@ class LoginEmailView(APIView):
                     'totp_code': '123456'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='session_limit_exceeded',
                 summary='Limite de session dépassée',
                 value={
@@ -277,7 +298,7 @@ class LoginEmailView(APIView):
                     'code': 'SESSION_LIMIT_EXCEEDED'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='account_locked',
                 summary='Compte verrouillé',
                 value={
@@ -396,7 +417,7 @@ class LoginPhoneView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='login_phone_success',
                 summary='Connexion par téléphone réussie',
                 value={
@@ -405,7 +426,7 @@ class LoginPhoneView(APIView):
                     'password': 'SecureP@ss123!'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='login_phone_with_2fa',
                 summary='Connexion par téléphone avec 2FA',
                 value={
@@ -532,14 +553,14 @@ class RefreshTokenView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='refresh_success',
                 summary='Rafraîchissement réussi',
                 value={
                     'refresh_token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='refresh_expired',
                 summary='Refresh token expiré',
                 value={
@@ -548,7 +569,7 @@ class RefreshTokenView(APIView):
                     'code': 'REFRESH_EXPIRED'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='refresh_blacklisted',
                 summary='Refresh token blacklisté',
                 value={
@@ -624,7 +645,7 @@ class LogoutView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='logout_success',
                 summary='Déconnexion réussie',
                 value={
@@ -694,7 +715,7 @@ class LogoutAllView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='logout_all_success',
                 summary='Déconnexion de tous les appareils réussie',
                 value={

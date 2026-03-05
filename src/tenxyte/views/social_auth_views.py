@@ -114,7 +114,7 @@ class SocialAuthView(APIView):
                     'id_token': 'eyJhbGciOiJSUzI1NiIsImtpZCI6...'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='provider_not_supported',
                 summary='Provider non supporté',
                 value={
@@ -123,7 +123,7 @@ class SocialAuthView(APIView):
                     'supported_providers': ['google', 'github', 'microsoft', 'facebook']
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='missing_redirect_uri',
                 summary='Redirect URI manquant',
                 value={
@@ -229,93 +229,84 @@ class SocialAuthCallbackView(APIView):
             "Endpoint de callback pour le flow OAuth2 authorization code. "
             "Reçoit le code d'autorisation du provider et le redirect_uri. "
             "Échange le code contre des tokens et authentifie l'utilisateur. "
-            "Retourne les tokens JWT ou une erreur. "
-            "Peut rediriger vers l'application cliente avec les tokens."
+            "Retourne les tokens JWT ou redirige vers l'application cliente."
         ),
         parameters=[
-            {
-                'name': 'provider',
-                'in': 'path',
-                'required': True,
-                'type': 'string',
-                'enum': ['google', 'github', 'microsoft', 'facebook'],
-                'description': 'Provider OAuth2'
-            },
-            {
-                'name': 'code',
-                'in': 'query',
-                'required': True,
-                'type': 'string',
-                'description': 'Authorization code du provider'
-            },
-            {
-                'name': 'state',
-                'in': 'query',
-                'required': False,
-                'type': 'string',
-                'description': 'Parameter CSRF/state pour sécurité'
-            },
-            {
-                'name': 'redirect_uri',
-                'in': 'query',
-                'required': True,
-                'type': 'string',
-                'description': 'URI de redirection originale'
-            }
+            OpenApiParameter(
+                name='provider',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                required=True,
+                enum=['google', 'github', 'microsoft', 'facebook'],
+                description='Provider OAuth2'
+            ),
+            OpenApiParameter(
+                name='code',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description='Authorization code du provider'
+            ),
+            OpenApiParameter(
+                name='state',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description='Parameter CSRF/state pour sécurité'
+            ),
+            OpenApiParameter(
+                name='redirect_uri',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description='URI de redirection originale'
+            ),
         ],
         responses={
-            200: {
-                'type': 'object',
-                'properties': {
-                    'access': {'type': 'string'},
-                    'refresh': {'type': 'string'},
-                    'user': {'$ref': '#/components/schemas/User'},
-                    'provider': {'type': 'string'},
-                    'is_new_user': {'type': 'boolean'}
+            200: inline_serializer(
+                name='SocialCallbackResponse',
+                fields={
+                    'access': serializers.CharField(),
+                    'refresh': serializers.CharField(),
+                    'provider': serializers.CharField(),
+                    'is_new_user': serializers.BooleanField(),
                 }
-            },
-            302: {
-                'description': 'Redirection vers application cliente avec tokens',
-                'headers': {
-                    'Location': {
-                        'description': 'URL de redirection avec tokens en paramètres',
-                        'schema': {'type': 'string'}
-                    }
+            ),
+            302: inline_serializer(
+                name='SocialCallbackRedirect',
+                fields={
+                    'location': serializers.CharField(
+                        help_text='URL de redirection avec tokens en paramètres query'
+                    ),
                 }
-            },
-            400: {
-                'type': 'object',
-                'properties': {
-                    'error': {'type': 'string'},
-                    'code': {'type': 'string'}
+            ),
+            400: inline_serializer(
+                name='SocialCallbackError',
+                fields={
+                    'error': serializers.CharField(),
+                    'code': serializers.CharField(),
                 }
-            },
-            401: {
-                'type': 'object',
-                'properties': {
-                    'error': {'type': 'string'},
-                    'code': {'type': 'string'}
+            ),
+            401: inline_serializer(
+                name='SocialCallbackUnauthorized',
+                fields={
+                    'error': serializers.CharField(),
+                    'code': serializers.CharField(),
                 }
-            }
+            ),
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='callback_success',
                 summary='Callback réussi',
                 value={
                     'access': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
                     'refresh': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
-                    'user': {
-                        'id': 42,
-                        'email': 'user@example.com',
-                        'first_name': 'John',
-                        'last_name': 'Doe'
-                    },
                     'provider': 'google',
                     'is_new_user': False
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='callback_invalid_code',
                 summary='Code invalide',
                 value={

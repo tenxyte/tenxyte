@@ -91,12 +91,12 @@ class WebAuthnRegisterBeginView(APIView):
         },
         request=None,
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='register_begin_success',
                 summary='Début enregistrement réussi',
                 value={}
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='webauthn_disabled',
                 summary='WebAuthn désactivé',
                 value={
@@ -160,7 +160,7 @@ class WebAuthnRegisterCompleteView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='register_complete_success',
                 summary='Enregistrement réussi',
                 value={
@@ -169,7 +169,7 @@ class WebAuthnRegisterCompleteView(APIView):
                     'device_name': 'iPhone 14'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='credential_already_exists',
                 summary='Credential déjà existante',
                 value={
@@ -267,7 +267,7 @@ class WebAuthnAuthenticateBeginView(APIView):
                 summary='Auth resident key',
                 value={}
             ),
-            OpenApiExample(
+            OpenApiExample(request_only=True, 
                 name='auth_begin_user_specific',
                 summary='Auth utilisateur spécifique',
                 value={
@@ -339,7 +339,7 @@ class WebAuthnAuthenticateCompleteView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='auth_complete_success',
                 summary='Authentification réussie',
                 value={
@@ -347,7 +347,7 @@ class WebAuthnAuthenticateCompleteView(APIView):
                     'credential': {'id': 'credentialId', 'rawId': 'rawId', 'response': {}}
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='counter_replay_attack',
                 summary='Attaque replay détectée',
                 value={

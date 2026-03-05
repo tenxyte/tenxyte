@@ -1,28 +1,28 @@
-# RUNBOOK : Compromission Suspectée du Module Auth
+# RUNBOOK: Suspected Auth Module Compromise
 
-**Niveau :** CRITIQUE — RÉPONSE IMMÉDIATE
+**Level:** CRITICAL — IMMEDIATE RESPONSE
 
-## 1. Détection & Confinement (T+0)
-- [ ] Confirmer l'anomalie via les métriques (Prometheus/Grafana) et logs JSON structurés.
-- [ ] Alerter les membres de l'équipe sécurité (ex. sur un canal dédié Slack/Teams).
-- [ ] Bloquer les adresses IP suspectes au niveau WAF / Pare-feu.
-- [ ] (Optionnel) Basculer l'API d'authentification en mode maintenance (Code 503).
+## 1. Detection & Containment (T+0)
+- [ ] Confirm the anomaly via metrics (Prometheus/Grafana) and structured JSON logs.
+- [ ] Alert security team members (e.g., on a dedicated Slack/Teams channel).
+- [ ] Block suspicious IP addresses at the WAF / Firewall level.
+- [ ] (Optional) Switch the authentication API to maintenance mode (503 Code).
 
-## 2. Évaluation (T+15m)
-- [ ] Identifier la source et l'heure du premier événement (Vecteur d'attaque).
-- [ ] Identifier les comptes, clés JWT ou données potentiellement compromises.
-- [ ] Évaluer l'opportunité de déclencher un shutdown partiel.
+## 2. Assessment (T+15m)
+- [ ] Identify the source and time of the first event (Attack Vector).
+- [ ] Identify potentially compromised accounts, JWT keys, or data.
+- [ ] Evaluate the need to trigger a partial shutdown.
 
-## 3. Remédiation (T+30m)
-- [ ] Effectuer une rotation immédiate de tous les secrets compromis (JWT private keys, Database).
-- [ ] Invalider la session de l'ensemble des utilisateurs actifs (Clear JWT Refresh Tokens).
-- [ ] Appliquer le correctif de code si possible.
-- [ ] Effectuer une restauration depuis la dernière sauvegarde saine si la base de données a été altérée.
+## 3. Remediation (T+30m)
+- [ ] Immediately rotate all compromised secrets (JWT private keys, Database).
+- [ ] Invalidate all active user sessions (Clear JWT Refresh Tokens).
+- [ ] Apply code fix if possible.
+- [ ] Restore from the last known healthy backup if the database has been tampered with.
 
-## 4. Communication & Résilience (T+2h)
-- [ ] Informer les clients impactés (dans le cadre de la réglementation RGPD, sous 72h max).
-- [ ] Rédiger et envoyer un rapport d'étape à la direction.
+## 4. Communication & Resilience (T+2h)
+- [ ] Inform impacted customers (under GDPR regulations, within 72 hours max).
+- [ ] Draft and send a status report to management.
 
 ## 5. Post-mortem
-- [ ] Organiser un Post-Mortem sous 5 jours ouvrés avec toutes les parties prenantes.
-- [ ] Mettre à jour les scripts de détection et ce runbook.
+- [ ] Organize a Post-Mortem within 5 business days with all stakeholders.
+- [ ] Update detection scripts and this runbook.

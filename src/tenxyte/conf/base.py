@@ -23,6 +23,9 @@ class BaseSettingsMixin:
 
         # 2. Preset du mode actif
         mode = getattr(settings, 'TENXYTE_SHORTCUT_SECURE_MODE', None)
+        # Auto-activate development preset in DEBUG mode (zero-config DX)
+        if mode is None and getattr(settings, 'DEBUG', False):
+            mode = 'development'
         if mode is not None:
             if mode not in VALID_SECURE_MODES:
                 import warnings

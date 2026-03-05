@@ -108,6 +108,7 @@ class DocumentationSiteGenerator:
             '    </div></div>',
             '    <button class="btn-icon" id="themeToggle" aria-label="Basculer le thème">',
             '      <span aria-hidden="true">🌙</span></button>',
+            '    <a href="https://github.com/tenxyte/tenxyte" class="btn-cta" target="_blank" rel="noopener" aria-label="GitHub">GitHub</a>',
             '  </div></header>',
             f'  <main id="main" role="main">{body}</main>',
             '  <footer class="footer" role="contentinfo"><div class="footer__inner">',
@@ -159,9 +160,73 @@ class DocumentationSiteGenerator:
             for i, (tid, _, content) in enumerate(tabs))
         return f'<div class="tabs" role="tablist">{btns}</div>{panels}'
  
+    def _resolve_ref(self, ref_str: str) -> Dict:
+        parts = ref_str.replace("#/", "").split("/")
+        res = self.schema
+        for p in parts:
+            res = res.get(p, {})
+        return res
+
+    def _resolve_schema(self, schema: Any, seen: set = None) -> Any:
+        if seen is None:
+            seen = set()
+        if not isinstance(schema, dict):
+            return schema
+        if "$ref" in schema:
+            ref_path = schema["$ref"]
+            if ref_path in seen:
+                return {} 
+            seen.add(ref_path)
+            return self._resolve_schema(self._resolve_ref(ref_path), seen)
+        
+        resolved = {}
+        for k, v in schema.items():
+            if isinstance(v, dict):
+                resolved[k] = self._resolve_schema(v, seen.copy())
+            elif isinstance(v, list):
+                resolved[k] = [self._resolve_schema(item, seen.copy()) for item in v]
+            else:
+                resolved[k] = v
+        return resolved
+
+    def _generate_mock_from_schema(self, schema: Any, seen: set = None) -> Any:
+        if seen is None:
+            seen = set()
+        if not isinstance(schema, dict):
+            return schema
+            
+        if "$ref" in schema:
+            ref_path = schema["$ref"]
+            if ref_path in seen:
+                return {}
+            seen.add(ref_path)
+            return self._generate_mock_from_schema(self._resolve_ref(ref_path), seen)
+            
+        schema_type = schema.get("type", "object")
+        if schema_type == "object":
+            props = schema.get("properties", {})
+            return {k: self._generate_mock_from_schema(v, seen.copy()) for k, v in props.items()}
+        elif schema_type == "array":
+            items = schema.get("items", {})
+            return [self._generate_mock_from_schema(items, seen.copy())]
+        elif schema_type == "string":
+            if schema.get("format") == "date-time":
+                return "2023-01-01T00:00:00Z"
+            if schema.get("example"):
+                return schema.get("example")
+            return "string"
+        elif schema_type == "integer":
+            return schema.get("example", 0)
+        elif schema_type == "number":
+            return schema.get("example", 0.0)
+        elif schema_type == "boolean":
+            return schema.get("example", True)
+        return {}
+
     def _params_table(self, params: List[Dict]) -> str:
         if not params:
             return ""
+        resolved_params = [self._resolve_schema(p) if "$ref" in p else p for p in params]
         rows = "".join(
             '<tr><td><code>{n}</code>{r}</td>'
             '<td><code class="type">{t}</code></td>'
@@ -171,7 +236,7 @@ class DocumentationSiteGenerator:
                 t=p.get("schema", {}).get("type", p.get("type", "string")),
                 loc=p.get("in", ""),
                 d=p.get("description", ""))
-            for p in params)
+            for p in resolved_params)
         return ('<div class="table-wrap"><table class="params-table" aria-label="Paramètres">'
                 '<thead><tr><th scope="col">Nom</th><th scope="col">Type</th>'
                 '<th scope="col">Emplacement</th><th scope="col">Description</th></tr></thead>'
@@ -198,7 +263,13 @@ class DocumentationSiteGenerator:
         ex = ct_spec.get("examples", {})
         if ex:
             return next(iter(ex.values()), {}).get("value")
-        return ct_spec.get("example")
+        if "example" in ct_spec:
+            return ct_spec["example"]
+        
+        schema = ct_spec.get("schema")
+        if schema:
+            return self._generate_mock_from_schema(schema)
+        return None
  
     @staticmethod
     def _slug(text: str) -> str:
@@ -338,6 +409,7 @@ class DocumentationSiteGenerator:
             ("multi",  "Multi-tenant",        self._ex_multitenant()),
             ("errors", "Gestion des erreurs", self._ex_errors()),
             ("twofa",  "2FA",                 self._ex_2fa()),
+            ("orgs",   "Organisations",       self._ex_organizations()),
         ]
         sections = "".join(
             self._section(label, self._tab_group(tid, [
@@ -364,6 +436,33 @@ class DocumentationSiteGenerator:
             '  -H "Authorization: Bearer <token>" \\\n'
             "  -d '{\"code\":\"123456\"}'",
             "Configuration 2FA")
+        social_c = self._code_block(
+            "bash",
+            'curl -X POST .../social/google/ \\\n'
+            '  -H "Content-Type: application/json" \\\n'
+            "  -d '{\"id_token\":\"<google_id_token>\"}'\n\n"
+            '# Or initiate OAuth flow:',
+            "Authentification sociale")
+        magic_c = self._code_block(
+            "bash",
+            'curl -X POST .../magic-link/request/ \\\n'
+            '  -H "Content-Type: application/json" \\\n'
+            "  -d '{\"email\":\"user@example.com\"}'\n\n"
+            'curl -X POST .../magic-link/verify/ \\\n'
+            "  -d '{\"token\":\"<token_from_email>\"}'\n",
+            "Magic Link")
+        webauthn_c = self._code_block(
+            "bash",
+            '# 1. Register a passkey\n'
+            'curl -X POST .../webauthn/register/begin/ -H "Authorization: Bearer <token>"\n\n'
+            '# 2. Complete registration with browser response\n'
+            'curl -X POST .../webauthn/register/complete/ \\\n'
+            '  -H "Authorization: Bearer <token>" \\\n'
+            "  -d '{...credential_response...}'\n\n"
+            '# 3. Authenticate with passkey\n'
+            'curl -X POST .../webauthn/authenticate/begin/\n'
+            'curl -X POST .../webauthn/authenticate/complete/ -d \'...resp...\'',
+            "WebAuthn / Passkeys")
         org_c = self._code_block(
             "bash",
             'curl .../organizations/members/ \\\n'
@@ -383,6 +482,18 @@ class DocumentationSiteGenerator:
                 "Authentification à deux facteurs (2FA)",
                 self._alert("info", "Activez la 2FA pour renforcer la sécurité.") + tfa_c,
                 "twofa"),
+            self._section(
+                "Authentification sociale (OAuth)",
+                self._alert("info", "Supporte Google OAuth2 via id_token ou flux de redirection.") + social_c,
+                "social"),
+            self._section(
+                "Magic Link — Connexion sans mot de passe",
+                '<p>Envoyez un lien de connexion par email — aucun mot de passe requis.</p>' + magic_c,
+                "magic-link"),
+            self._section(
+                "WebAuthn / Passkeys (FIDO2)",
+                self._alert("success", "Standard le plus sécurisé — résistant au phishing.") + webauthn_c,
+                "webauthn"),
             self._section(
                 "Multi-tenant — En-tête X-Org-Slug",
                 f'<p>Ajoutez <code>X-Org-Slug</code> pour le contexte organisation.</p>{org_c}',
@@ -499,6 +610,36 @@ class DocumentationSiteGenerator:
             "  -d '{\"code\":\"123456\"}'")
         return py, js, curl
  
+    def _ex_organizations(self) -> Tuple[str, str, str]:
+        py = (
+            "import requests\n\n"
+            'headers = {"Authorization": "Bearer <token>"}\n'
+            '# Create an organisation\n'
+            'org = requests.post(".../organizations/", headers=headers,\n'
+            '    json={"name": "Acme Corp", "slug": "acme-corp"}).json()\n\n'
+            '# Invite a member\n'
+            'requests.post(".../organizations/members/add/", headers=headers,\n'
+            '    json={"email": "colleague@example.com", "role": "member"})')
+        js = (
+            'const org = await fetch("/api/v1/auth/organizations/", {\n'
+            '  method: "POST",\n'
+            '  headers: { Authorization: "Bearer <token>", "Content-Type": "application/json" },\n'
+            '  body: JSON.stringify({ name: "Acme Corp", slug: "acme-corp" }),\n'
+            '}).then(r => r.json());\n\n'
+            '// Get org tree\n'
+            'const tree = await fetch("/api/v1/auth/organizations/tree/", {\n'
+            '  headers: { Authorization: "Bearer <token>", "X-Org-Slug": "acme-corp" },\n'
+            '}).then(r => r.json());\nconsole.log(tree);')
+        curl = (
+            'curl -X POST .../organizations/ \\\n'
+            '  -H "Authorization: Bearer <token>" \\\n'
+            '  -H "Content-Type: application/json" \\\n'
+            "  -d '{\"name\":\"Acme Corp\",\"slug\":\"acme-corp\"}' \n\n"
+            'curl .../organizations/tree/ \\\n'
+            '  -H "Authorization: Bearer <token>" \\\n'
+            '  -H "X-Org-Slug: acme-corp"')
+        return py, js, curl
+ 
     # ── Categorize paths ───────────────────────────────────────────────
     def _categorize(self, paths: Dict) -> Dict:
         order = ["Authentification", "Utilisateur", "Organisations",
@@ -543,170 +684,143 @@ class DocumentationSiteGenerator:
  
     # ── CSS ────────────────────────────────────────────────────────────
     def _css(self) -> str:
-        tokens = self.spec.get("tokens", {})
-        primary = tokens.get("color", {}).get("primary", "#2563eb")
+        # ── Read all design tokens from DESIGN_SPEC.json ──────────────────
+        t        = self.spec.get("tokens", {})
+        color    = t.get("color", {})
+        brand    = color.get("brand", {})
+        neutral  = color.get("neutral", {})
+        semantic = color.get("semantic", {})
+        method   = color.get("method", {})
+        surface  = color.get("surface", {})
+        code_c   = color.get("code", {})
+        text_c   = color.get("text", {})
+        border_c = color.get("border", {})
+        font     = t.get("typography", {}).get("font", {})
+        radius   = t.get("radius", {})
+        shadow   = t.get("shadow", {})
+        trans    = t.get("transition", {})
+        layout   = t.get("layout", {})
+        dark     = self.spec.get("generation", {}).get("dark_mode", {})
+
+        # ── Resolve token values with spec-compliant fallbacks ─────────────
+        primary       = brand.get("primary",        "#6366f1")
+        primary_hover = brand.get("primary-hover",  "#4f46e5")
+        primary_sub   = brand.get("primary-subtle", "#eef2ff")
+        surf          = surface.get("raised",   neutral.get("50",  "#f8fafc"))
+        overlay       = surface.get("overlay",  neutral.get("100", "#f1f5f9"))
+        txt           = text_c.get("primary",   neutral.get("900", "#0f172a"))
+        txt_sec       = text_c.get("secondary", neutral.get("600", "#475569"))
+        muted         = text_c.get("muted",     neutral.get("400", "#94a3b8"))
+        link          = text_c.get("link", primary)
+        border        = border_c.get("default", neutral.get("200", "#e2e8f0"))
+        border_sub    = border_c.get("subtle",  neutral.get("100", "#f1f5f9"))
+        code_bg       = code_c.get("bg",   "#0f172a")
+        code_txt      = code_c.get("text", "#e2e8f0")
+        code_kw       = code_c.get("keyword", "#a78bfa")
+        code_str      = code_c.get("string",  "#34d399")
+        success       = semantic.get("success", "#10b981")
+        warning       = semantic.get("warning", "#f59e0b")
+        error         = semantic.get("error",   "#ef4444")
+        info          = semantic.get("info",    "#3b82f6")
+        c_get         = method.get("GET",    "#10b981")
+        c_post        = method.get("POST",   primary)
+        c_put         = method.get("PUT",    "#f59e0b")
+        c_patch       = method.get("PATCH",  "#f97316")
+        c_delete      = method.get("DELETE", "#ef4444")
+        f_sans        = font.get("sans", "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif")
+        f_mono        = font.get("mono", "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace")
+        r_sm          = radius.get("sm",   "0.375rem")
+        r_md          = radius.get("md",   "0.5rem")
+        r_lg          = radius.get("lg",   "0.75rem")
+        r_full        = radius.get("full", "9999px")
+        sh_sm         = shadow.get("sm", "0 1px 2px 0 rgb(0 0 0 / 0.05)")
+        sh_md         = shadow.get("md", "0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05)")
+        sh_xl         = shadow.get("xl", "0 20px 25px -5px rgb(0 0 0 / 0.07), 0 8px 10px -6px rgb(0 0 0 / 0.05)")
+        tr_fast       = trans.get("fast",   "150ms ease")
+        tr_normal     = trans.get("normal", "250ms ease")
+        nav_h         = layout.get("nav-height",    "64px")
+        sidebar_w     = layout.get("sidebar-width", "280px")
+        page_max      = layout.get("page-max",      "1440px")
+        # Dark mode overrides
+        dk_bg      = dark.get("surface.page",    "#0f172a")
+        dk_surf    = dark.get("surface.raised",  "#1e293b")
+        dk_overlay = dark.get("surface.overlay", "#334155")
+        dk_txt     = dark.get("text.primary",    "#f1f5f9")
+        dk_muted   = dark.get("text.secondary",  "#94a3b8")
+        dk_border  = dark.get("border.default",  "#334155")
+
         return f"""/* Tenxyte API Docs — generated from DESIGN_SPEC.json */
 :root {{
   --c-primary:      {primary};
-  --c-primary-h:    color-mix(in srgb, {primary} 80%, #000);
+  --c-primary-h:    {primary_hover};
+  --c-primary-sub:  {primary_sub};
   --c-bg:           #ffffff;
-  --c-surface:      #f8fafc;
-  --c-border:       #e2e8f0;
-  --c-text:         #0f172a;
-  --c-muted:        #64748b;
-  --c-code-bg:      #f1f5f9;
-  --c-success:      #10b981;
-  --c-warning:      #f59e0b;
-  --c-error:        #ef4444;
-  --c-info:         #3b82f6;
-  --c-get:          #10b981;
-  --c-post:         #3b82f6;
-  --c-put:          #f59e0b;
-  --c-patch:        #8b5cf6;
-  --c-delete:       #ef4444;
-  --font-sans:      'Inter', system-ui, sans-serif;
-  --font-mono:      'JetBrains Mono', 'Fira Code', monospace;
-  --radius:         8px;
-  --radius-sm:      4px;
-  --shadow:         0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
-  --shadow-md:      0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
-  --nav-h:          60px;
-  --sidebar-w:      240px;
-  --container:      1200px;
-  --transition:     .2s ease;
+  --c-surface:      {surf};
+  --c-overlay:      {overlay};
+  --c-border:       {border};
+  --c-border-sub:   {border_sub};
+  --c-text:         {txt};
+  --c-text-sec:     {txt_sec};
+  --c-muted:        {muted};
+  --c-link:         {link};
+  --c-code-bg:      {code_bg};
+  --c-code-text:    {code_txt};
+  --c-code-kw:      {code_kw};
+  --c-code-str:     {code_str};
+  --c-success:      {success};
+  --c-warning:      {warning};
+  --c-error:        {error};
+  --c-info:         {info};
+  --c-get:          {c_get};
+  --c-post:         {c_post};
+  --c-put:          {c_put};
+  --c-patch:        {c_patch};
+  --c-delete:       {c_delete};
+  --font-sans:      {f_sans};
+  --font-mono:      {f_mono};
+  --radius-sm:      {r_sm};
+  --radius:         {r_md};
+  --radius-lg:      {r_lg};
+  --radius-full:    {r_full};
+  --shadow:         {sh_sm};
+  --shadow-md:      {sh_md};
+  --shadow-xl:      {sh_xl};
+  --nav-h:          {nav_h};
+  --sidebar-w:      {sidebar_w};
+  --container:      {page_max};
+  --transition:     {tr_fast};
+  --transition-n:   {tr_normal};
 }}
- 
+
+/* Dark mode — CSS-first via prefers-color-scheme (spec requirement) */
+@media (prefers-color-scheme: dark) {{
+  :root {{
+    --c-bg:       {dk_bg};
+    --c-surface:  {dk_surf};
+    --c-overlay:  {dk_overlay};
+    --c-border:   {dk_border};
+    --c-text:     {dk_txt};
+    --c-muted:    {dk_muted};
+    --c-code-bg:  #0d1117;
+  }}
+}}
+/* Dark mode — manual toggle overrides prefers-color-scheme */
 [data-theme="dark"] {{
-  --c-bg:       #0f172a;
-  --c-surface:  #1e293b;
-  --c-border:   #334155;
-  --c-text:     #f1f5f9;
-  --c-muted:    #94a3b8;
+  --c-bg:       {dk_bg};
+  --c-surface:  {dk_surf};
+  --c-overlay:  {dk_overlay};
+  --c-border:   {dk_border};
+  --c-text:     {dk_txt};
+  --c-muted:    {dk_muted};
   --c-code-bg:  #0d1117;
 }}
-
-[data-theme="dark"] .nav {{
-  background: rgba(15, 23, 42, 0.95);
-}}
-
-[data-theme="dark"] .endpoint__header {{
-  background: #1e293b;
-  color: #f1f5f9;
-}}
-
-[data-theme="dark"] .endpoint__header:hover,
-[data-theme="dark"] .endpoint__header[aria-expanded="true"] {{
-  background: #263348;
-}}
-
-[data-theme="dark"] .endpoint__path,
-[data-theme="dark"] .endpoint__summary {{
-  color: #e2e8f0;
-}}
-
-[data-theme="dark"] .code-block__header {{
-  background: #161f2e;
-}}
-
-[data-theme="dark"] .code-block__pre {{
-  background: #0d1117;
-  color: #e2e8f0;
-}}
-
-[data-theme="dark"] .params-table th {{
-  background: #1e293b;
-  color: #f1f5f9;
-}}
-
-[data-theme="dark"] .params-table td {{
-  color: #e2e8f0;
-}}
-
-[data-theme="dark"] .card {{
-  background: #1e293b;
-  color: #f1f5f9;
-}}
-
-[data-theme="dark"] .card__body {{
-  color: #94a3b8;
-}}
-
-[data-theme="dark"] .stat {{
-  background: #1e293b;
-}}
-
-[data-theme="dark"] .search__input {{
-  background: #1e293b;
-  color: #f1f5f9;
-  border-color: #334155;
-}}
-
-[data-theme="dark"] .search__results {{
-  background: #1e293b;
-  border-color: #334155;
-}}
-
-[data-theme="dark"] .search__result {{
-  color: #e2e8f0;
-}}
-
-[data-theme="dark"] .search__result:hover {{
-  background: #263348;
-}}
-
-[data-theme="dark"] .sidebar {{
-  background: #0f172a;
-}}
-
-[data-theme="dark"] .tabs__btn {{
-  color: #94a3b8;
-}}
-
-[data-theme="dark"] .tabs__btn:hover {{
-  color: #f1f5f9;
-}}
-
-[data-theme="dark"] .tag {{
-  background: #263348;
-  border-color: #334155;
-  color: #94a3b8;
-}}
-
-[data-theme="dark"] .alert--info {{
-  background: rgba(59, 130, 246, 0.15);
-}}
-
-[data-theme="dark"] .alert--success {{
-  background: rgba(16, 185, 129, 0.15);
-}}
-
-[data-theme="dark"] .alert--warning {{
-  background: rgba(245, 158, 11, 0.15);
-}}
-
-[data-theme="dark"] .alert--error {{
-  background: rgba(239, 68, 68, 0.15);
-}}
-
-[data-theme="dark"] .section__title {{
-  color: #f1f5f9;
-  border-bottom-color: #334155;
-}}
-
-[data-theme="dark"] .page-title {{
-  color: #f1f5f9;
-}}
-
-[data-theme="dark"] .api-category__title {{
-  color: #f1f5f9;
-}}
-
-[data-theme="dark"] .op__desc {{
-  color: #94a3b8;
-}}
-
-[data-theme="dark"] .footer {{
-  background: #0a1120;
+[data-theme="light"] {{
+  --c-bg:       #ffffff;
+  --c-surface:  {surf};
+  --c-border:   {border};
+  --c-text:     {txt};
+  --c-muted:    {muted};
+  --c-code-bg:  {code_bg};
 }}
  
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
@@ -828,6 +942,14 @@ nav[aria-label="Navigation principale"] {{
 .btn--secondary:hover {{ background: rgba(255,255,255,.25); }}
 .btn--ghost {{ background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.4); }}
 .btn--ghost:hover {{ background: rgba(255,255,255,.1); }}
+.btn-cta {{
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .4rem 1rem; border-radius: var(--radius-sm);
+  background: var(--c-primary); color: #fff;
+  text-decoration: none; font-size: .85rem; font-weight: 600;
+  transition: background var(--transition); flex-shrink: 0;
+}}
+.btn-cta:hover {{ background: var(--c-primary-h); }}
  
 /* ── Container ── */
 .container {{ max-width: var(--container); margin: 0 auto; padding: 2rem 1.5rem; }}
@@ -899,6 +1021,7 @@ nav[aria-label="Navigation principale"] {{
 .code-block__pre {{
   margin: 0; padding: 1rem 1.25rem; overflow-x: auto;
   background: var(--c-code-bg);
+  color: var(--c-code-text);
   font-family: var(--font-mono); font-size: .85rem; line-height: 1.6;
 }}
  

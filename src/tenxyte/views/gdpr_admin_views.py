@@ -118,7 +118,7 @@ class DeletionRequestListView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='pending_requests',
                 summary='Demandes en attente',
                 value={
@@ -268,7 +268,7 @@ class ProcessDeletionView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='process_success',
                 summary='Suppression traitée',
                 value={
@@ -276,7 +276,7 @@ class ProcessDeletionView(APIView):
                     'admin_notes': 'Processed per user request - GDPR compliance'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='confirmation_required',
                 summary='Confirmation requise',
                 value={
@@ -284,7 +284,7 @@ class ProcessDeletionView(APIView):
                     'code': 'CONFIRMATION_REQUIRED'
                 }
             ),
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='request_not_confirmed',
                 summary='Demande non confirmée',
                 value={
@@ -380,7 +380,7 @@ class ProcessExpiredDeletionsView(APIView):
             }
         },
         examples=[
-            OpenApiExample(
+            OpenApiExample(response_only=True, 
                 name='batch_success',
                 summary='Traitement batch réussi',
                 value=None

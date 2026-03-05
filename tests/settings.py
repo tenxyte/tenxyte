@@ -88,6 +88,11 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
+# DRF Spectacular
+SPECTACULAR_SETTINGS = {
+    'SECURITY': [{'jwtAuth': []}]
+}
+
 # Logging
 LOGGING = {
     'version': 1,
