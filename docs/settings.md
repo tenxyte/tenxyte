@@ -1,5 +1,28 @@
 # Settings Reference
 
+**Table of Contents**
+- [Settings Priority](#settings-priority)
+- [Shortcut Secure Mode](#shortcut-secure-mode) (1)
+- [Core Settings](#core-settings) (6)
+- [JWT](#jwt) (9)
+- [Two-Factor Authentication (TOTP)](#two-factor-authentication-totp) (3)
+- [OTP (Email / SMS Verification)](#otp-email--sms-verification) (4)
+- [Password Policy](#password-policy) (9)
+- [Rate Limiting & Account Lockout](#rate-limiting--account-lockout) (5)
+- [Session & Device Limits](#session--device-limits) (6)
+- [Multi-Application](#multi-application) (3)
+- [CORS](#cors) (8)
+- [Security Headers](#security-headers) (2)
+- [Social Login (OAuth2)](#social-login-oauth2) (11)
+- [WebAuthn / Passkeys (FIDO2)](#webauthn--passkeys-fido2) (4)
+- [Breach Password Check (HaveIBeenPwned)](#breach-password-check-haveibeenpwned) (2)
+- [Magic Link (Passwordless)](#magic-link-passwordless) (3)
+- [SMS Backends](#sms-backends) (9)
+- [Email Backends](#email-backends) (3)
+- [Audit Logging](#audit-logging) (4)
+- [Organizations (B2B)](#organizations-b2b) (8)
+- [Swappable Models](#swappable-models) (4)
+
 All Tenxyte settings are prefixed with `TENXYTE_` and have sensible defaults.
 Override them in your Django `settings.py`.
 
@@ -12,18 +35,18 @@ Override them in your Django `settings.py`.
 **Priority order:** explicit `TENXYTE_*` in `settings.py` > preset > default
 
 ```python
-TENXYTE_SHORTCUT_SECURE_MODE = 'medium'  # 'starter' | 'medium' | 'robust'
+TENXYTE_SHORTCUT_SECURE_MODE = 'medium'  # 'development' | 'medium' | 'robust'
 ```
 
 | Mode | Target use case |
 |---|---|
-| `starter` | Prototypes, local dev, internal tools |
+| `development` | Prototypes, local dev, internal tools |
 | `medium` | Public SaaS, B2C apps, startups |
 | `robust` | Fintech, healthcare, B2B, GDPR-strict |
 
 ### Preset values
 
-| Setting | `starter` | `medium` | `robust` |
+| Setting | `development` | `medium` | `robust` |
 |---|---|---|---|
 | `TENXYTE_JWT_ACCESS_TOKEN_LIFETIME` | `3600` (1h) | `900` (15min) | `300` (5min) |
 | `TENXYTE_JWT_REFRESH_TOKEN_LIFETIME` | `2592000` (30d) | `604800` (7d) | `86400` (1d) |
@@ -42,7 +65,7 @@ TENXYTE_SHORTCUT_SECURE_MODE = 'medium'  # 'starter' | 'medium' | 'robust'
 | `TENXYTE_DEVICE_LIMIT_ACTION` | — | — | `'deny'` |
 | `TENXYTE_SESSION_LIMIT_ENABLED` | `False` | `True` | `True` |
 | `TENXYTE_DEFAULT_MAX_SESSIONS` | — | — | `1` |
-| `TENXYTE_CORS_ALLOW_ALL_ORIGINS` | `True` | `False` | `False` |
+| `TENXYTE_CORS_ALLOW_ALL_ORIGINS` | `False` | `False` | `False` |
 | `TENXYTE_SECURITY_HEADERS_ENABLED` | `False` | `True` | `True` |
 
 > Settings marked `—` are not set by the preset and fall back to their individual defaults.
@@ -56,12 +79,27 @@ TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 600  # 10min instead of 5min
 
 ---
 
+## Core Settings
+
+| Setting | Default | Description |
+|---|---|---|
+| `TENXYTE_BASE_URL` | `'http://127.0.0.1:8000'` | Base URL of the API. |
+| `TENXYTE_API_VERSION` | `1` | API version number. |
+| `TENXYTE_API_PREFIX` | `'/api/v1'` | Global API URL prefix. |
+| `TENXYTE_TRUSTED_PROXIES` | `[]` | List of trusted proxy IPs/CIDRs for `X-Forwarded-For` validation. |
+| `TENXYTE_NUM_PROXIES` | `0` | Number of upstream trusted proxies (e.g., Cloudflare + Nginx = 2). |
+| `TENXYTE_VERBOSE_ERRORS` | `False` | Display full error details (e.g., exact missing role). Disable in production. |
+
+---
+
 ## JWT
 
 | Setting | Default | Description |
 |---|---|---|
-| `TENXYTE_JWT_SECRET_KEY` | `SECRET_KEY` | Secret key for signing JWTs. Defaults to Django's `SECRET_KEY`. |
+| `TENXYTE_JWT_SECRET_KEY` | `None` (Required) | Dedicated secret key for signing JWTs. Must be set explicitly in production. In `DEBUG` mode, an ephemeral key is auto-generated. |
 | `TENXYTE_JWT_ALGORITHM` | `'HS256'` | JWT signing algorithm. |
+| `TENXYTE_JWT_PRIVATE_KEY` | `None` | RSA/ECDSA private key for signing JWTs (required for RS/PS/ES algorithms). |
+| `TENXYTE_JWT_PUBLIC_KEY` | `None` | RSA/ECDSA public key for verifying JWTs (required for RS/PS/ES algorithms). |
 | `TENXYTE_JWT_ACCESS_TOKEN_LIFETIME` | `3600` | Access token lifetime in seconds (1 hour). |
 | `TENXYTE_JWT_REFRESH_TOKEN_LIFETIME` | `604800` | Refresh token lifetime in seconds (7 days). |
 | `TENXYTE_JWT_AUTH_ENABLED` | `True` | Enable/disable JWT authentication. |
@@ -97,6 +135,7 @@ TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 600  # 10min instead of 5min
 |---|---|---|
 | `TENXYTE_PASSWORD_MIN_LENGTH` | `8` | Minimum password length. |
 | `TENXYTE_PASSWORD_MAX_LENGTH` | `128` | Maximum password length. |
+| `TENXYTE_BCRYPT_ROUNDS` | `12` | Work factor for bcrypt hashing. |
 | `TENXYTE_PASSWORD_REQUIRE_UPPERCASE` | `True` | Require at least one uppercase letter. |
 | `TENXYTE_PASSWORD_REQUIRE_LOWERCASE` | `True` | Require at least one lowercase letter. |
 | `TENXYTE_PASSWORD_REQUIRE_DIGIT` | `True` | Require at least one digit. |
@@ -169,7 +208,7 @@ Per-user overrides: set `user.max_sessions` or `user.max_devices` to override th
 
 | Setting | Default | Description |
 |---|---|---|
-| `TENXYTE_CORS_ENABLED` | `False` | Enable built-in CORS middleware. |
+| `TENXYTE_CORS_ENABLED` | `True` | Enable built-in CORS middleware. |
 | `TENXYTE_CORS_ALLOW_ALL_ORIGINS` | `False` | Allow all origins (unsafe in production). |
 | `TENXYTE_CORS_ALLOWED_ORIGINS` | `[]` | List of allowed origins. |
 | `TENXYTE_CORS_ALLOW_CREDENTIALS` | `True` | Allow credentials (cookies, Authorization). |
@@ -193,9 +232,14 @@ Default headers:
 ```python
 {
     'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
+    'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+    'Cross-Origin-Resource-Policy': 'same-origin',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 }
 ```
 
@@ -206,6 +250,8 @@ Default headers:
 | Setting | Default | Description |
 |---|---|---|
 | `TENXYTE_SOCIAL_PROVIDERS` | `['google', 'github', 'microsoft', 'facebook']` | Enabled OAuth2 providers. |
+| `TENXYTE_SOCIAL_AUTO_MERGE_ACCOUNTS` | `False` | Automatically merge social login with existing email account. |
+| `TENXYTE_SOCIAL_REQUIRE_VERIFIED_EMAIL` | `True` | Reject social login if the email is not verified by the provider. |
 | `GOOGLE_CLIENT_ID` | `''` | Google OAuth Client ID. |
 | `GOOGLE_CLIENT_SECRET` | `''` | Google OAuth Client Secret. |
 | `GITHUB_CLIENT_ID` | `''` | GitHub OAuth App Client ID. |
@@ -294,6 +340,9 @@ Available email backends:
 | Setting | Default | Description |
 |---|---|---|
 | `TENXYTE_AUDIT_LOGGING_ENABLED` | `True` | Enable audit log recording. |
+| `TENXYTE_AUDIT_LOG_RETENTION_DAYS` | `90` | Days to retain audit logs before auto-purge (0 = infinite). |
+| `TENXYTE_PURGE_IP_ON_DELETION` | `False` | Purge IP from logs when an account is deleted. |
+| `TENXYTE_AGENT_ACTION_RETENTION_DAYS` | `7` | Retention days for pending Agent actions (HITL). |
 
 ---
 
@@ -302,6 +351,7 @@ Available email backends:
 | Setting | Default | Description |
 |---|---|---|
 | `TENXYTE_ORGANIZATIONS_ENABLED` | `False` | Enable the Organizations feature (opt-in). |
+| `TENXYTE_CREATE_DEFAULT_ORGANIZATION` | `True` | Create a default organization for new users. |
 | `TENXYTE_ORG_ROLE_INHERITANCE` | `True` | Roles propagate down the org hierarchy. |
 | `TENXYTE_ORG_MAX_DEPTH` | `5` | Maximum organization hierarchy depth. |
 | `TENXYTE_ORG_MAX_MEMBERS` | `0` | Max members per org (0 = unlimited). |
