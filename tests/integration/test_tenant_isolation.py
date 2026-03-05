@@ -118,7 +118,7 @@ class TestTenantModelSave:
         
         class DummyModel1(BaseTenantModel):
             class Meta:
-                app_label = 'tenxyte'
+                app_label = 'dummy_tests'
                 managed = False
                 
         # Test assign org1
@@ -138,7 +138,7 @@ class TestTenantModelSave:
         
         class DummyModel2(BaseTenantModel):
             class Meta:
-                app_label = 'tenxyte'
+                app_label = 'dummy_tests'
                 managed = False
                 
         set_current_organization(None)

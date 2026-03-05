@@ -1,7 +1,7 @@
 """
 Configuration settings pour Tenxyte (Module factorisé).
 """
-from django.conf import settings
+
 from .base import BaseSettingsMixin
 from .jwt import JwtSettingsMixin
 from .auth import AuthSettingsMixin
@@ -10,7 +10,8 @@ from .social import SocialSettingsMixin
 from .communication import CommunicationSettingsMixin
 from .modules import ModulesSettingsMixin
 from .airs import AirsSettingsMixin
-from .presets import SECURE_MODE_PRESETS, VALID_SECURE_MODES
+from .presets import SECURE_MODE_PRESETS as SECURE_MODE_PRESETS, VALID_SECURE_MODES as VALID_SECURE_MODES
+
 
 class TenxyteSettings(
     BaseSettingsMixin,

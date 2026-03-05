@@ -1,6 +1,7 @@
 """
 Service Magic Link pour l'authentification sans mot de passe.
 """
+
 import logging
 from typing import Optional, Tuple, Dict, Any
 
@@ -30,9 +31,9 @@ class MagicLinkService:
         email: str,
         application: Optional[Application] = None,
         ip_address: str = None,
-        device_info: str = '',
-        app_name: str = 'Tenxyte',
-        validation_url: str = None
+        device_info: str = "",
+        app_name: str = "Tenxyte",
+        validation_url: str = None,
     ) -> Tuple[bool, str]:
         """
         Génère un magic link et l'envoie par email.
@@ -41,21 +42,17 @@ class MagicLinkService:
             (success: bool, error: str)
         """
         if not auth_settings.MAGIC_LINK_ENABLED:
-            return False, 'Magic link authentication is not enabled'
+            return False, "Magic link authentication is not enabled"
 
         try:
             user = User.objects.get(email__iexact=email, is_active=True)
         except User.DoesNotExist:
             # Ne pas révéler si l'email existe ou non (sécurité)
             logger.info(f"Magic link requested for unknown email: {email}")
-            return True, ''
+            return True, ""
 
         # Invalider les anciens tokens non utilisés de cet utilisateur
-        MagicLinkToken.objects.filter(
-            user=user,
-            is_used=False,
-            application=application
-        ).update(is_used=True)
+        MagicLinkToken.objects.filter(user=user, is_used=False, application=application).update(is_used=True)
 
         # Générer le nouveau token
         expiry_minutes = auth_settings.MAGIC_LINK_EXPIRY_MINUTES
@@ -64,31 +61,27 @@ class MagicLinkService:
             application=application,
             ip_address=ip_address,
             user_agent=device_info,
-            expiry_minutes=expiry_minutes
+            expiry_minutes=expiry_minutes,
         )
 
         # Envoyer l'email
         sent = self.email_service.send_magic_link_email(
             to_email=user.email,
             token=raw_token,
-            first_name=getattr(user, 'first_name', ''),
+            first_name=getattr(user, "first_name", ""),
             expiry_minutes=expiry_minutes,
             app_name=app_name,
-            validation_url=validation_url
+            validation_url=validation_url,
         )
 
         if not sent:
             logger.error(f"Failed to send magic link email to {user.email}")
-            return False, 'Failed to send magic link email'
+            return False, "Failed to send magic link email"
 
-        return True, ''
+        return True, ""
 
     def verify_magic_link(
-        self,
-        token: str,
-        application: Optional[Application] = None,
-        ip_address: str = None,
-        device_info: str = ''
+        self, token: str, application: Optional[Application] = None, ip_address: str = None, device_info: str = ""
     ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
         """
         Valide un magic link et retourne des tokens JWT si valide.
@@ -97,19 +90,23 @@ class MagicLinkService:
             (success: bool, data: dict | None, error: str)
         """
         if not auth_settings.MAGIC_LINK_ENABLED:
-            return False, None, 'Magic link authentication is not enabled'
+            return False, None, "Magic link authentication is not enabled"
 
         token_instance = MagicLinkToken.get_valid(token, ip_address=ip_address, user_agent=device_info)
         if not token_instance:
-            return False, None, 'Invalid or expired magic link. Note: Magic links must be opened on the same device that requested them.'
+            return (
+                False,
+                None,
+                "Invalid or expired magic link. Note: Magic links must be opened on the same device that requested them.",
+            )
 
         user = token_instance.user
 
         if not user.is_active:
-            return False, None, 'Account is disabled'
+            return False, None, "Account is disabled"
 
         if user.is_account_locked():
-            return False, None, 'Account is locked'
+            return False, None, "Account is locked"
 
         # Consommer le token (single-use)
         token_instance.consume()
@@ -119,18 +116,16 @@ class MagicLinkService:
             user=user,
             application=application or token_instance.application,
             ip_address=ip_address,
-            device_info=device_info
+            device_info=device_info,
         )
 
         # Sérialiser les données de l'utilisateur
         from ..serializers.auth_serializers import UserSerializer
+
         user_serializer = UserSerializer(user)
         user_data = user_serializer.data
 
         # Combiner les tokens JWT et les données utilisateur
-        response_data = {
-            **jwt_data,  # access, refresh, etc.
-            'user': user_data
-        }
+        response_data = {**jwt_data, "user": user_data}  # access, refresh, etc.
 
-        return True, response_data, ''
+        return True, response_data, ""

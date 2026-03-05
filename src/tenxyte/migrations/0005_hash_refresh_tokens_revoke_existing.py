@@ -20,15 +20,12 @@ Impact:
 """
 
 from django.db import migrations
-from django.utils import timezone
 
 
 def revoke_all_plaintext_tokens(apps, schema_editor):
     """Révoque tous les tokens existants (stockés en clair, incompatibles avec le nouveau schéma SHA-256)."""
-    RefreshToken = apps.get_model('tenxyte', 'RefreshToken')
-    count = RefreshToken.objects.filter(is_revoked=False).update(
-        is_revoked=True
-    )
+    RefreshToken = apps.get_model("tenxyte", "RefreshToken")
+    count = RefreshToken.objects.filter(is_revoked=False).update(is_revoked=True)
     if count > 0:
         print(f"\n  ⚠️  [R1 Audit] {count} refresh token(s) révoqué(s) (migration vers SHA-256).")
         print("  ⚠️  Les utilisateurs doivent se reconnecter.\n")
@@ -42,20 +39,19 @@ def noop(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tenxyte', '0004_auditlog_prompt_trace_id_alter_auditlog_action'),
+        ("tenxyte", "0004_auditlog_prompt_trace_id_alter_auditlog_action"),
     ]
 
     operations = [
         # Révoquer tous les tokens existants (données incompatibles avec SHA-256)
         migrations.RunPython(revoke_all_plaintext_tokens, reverse_code=noop),
-
         # Mettre à jour le help_text du champ token (changement de métadonnées uniquement)
         migrations.AlterField(
-            model_name='refreshtoken',
-            name='token',
-            field=__import__('django.db.models', fromlist=['CharField']).CharField(
+            model_name="refreshtoken",
+            name="token",
+            field=__import__("django.db.models", fromlist=["CharField"]).CharField(
                 db_index=True,
-                help_text='SHA-256 hash of the raw refresh token. Never store the raw value.',
+                help_text="SHA-256 hash of the raw refresh token. Never store the raw value.",
                 max_length=191,
                 unique=True,
             ),

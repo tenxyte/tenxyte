@@ -10,6 +10,7 @@ References:
 - https://haveibeenpwned.com/API/v3#PwnedPasswords
 - https://www.troyhunt.com/ive-just-launched-pwned-passwords-version-2/
 """
+
 import hashlib
 import logging
 from typing import Tuple
@@ -20,7 +21,7 @@ from ..conf import auth_settings
 
 logger = logging.getLogger(__name__)
 
-HIBP_API_URL = 'https://api.pwnedpasswords.com/range/{prefix}'
+HIBP_API_URL = "https://api.pwnedpasswords.com/range/{prefix}"
 HIBP_TIMEOUT = 3  # seconds
 
 
@@ -51,15 +52,13 @@ class BreachCheckService:
         if not auth_settings.BREACH_CHECK_ENABLED:
             return False, 0
 
-        sha1_hash = hashlib.sha1(password.encode('utf-8')).hexdigest().upper()
+        sha1_hash = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
         prefix = sha1_hash[:5]
         suffix = sha1_hash[5:]
 
         try:
             response = requests.get(
-                HIBP_API_URL.format(prefix=prefix),
-                headers={'Add-Padding': 'true'},
-                timeout=HIBP_TIMEOUT
+                HIBP_API_URL.format(prefix=prefix), headers={"Add-Padding": "true"}, timeout=HIBP_TIMEOUT
             )
             response.raise_for_status()
         except requests.Timeout:
@@ -71,9 +70,9 @@ class BreachCheckService:
 
         # Parse response: each line is "SUFFIX:COUNT"
         for line in response.text.splitlines():
-            if ':' not in line:
+            if ":" not in line:
                 continue
-            line_suffix, _, count_str = line.partition(':')
+            line_suffix, _, count_str = line.partition(":")
             if line_suffix.upper() == suffix:
                 count = int(count_str.strip())
                 return True, count
@@ -93,22 +92,21 @@ class BreachCheckService:
             - error: Message d'erreur si compromis
         """
         if not auth_settings.BREACH_CHECK_ENABLED:
-            return True, ''
+            return True, ""
 
         is_pwned, count = self.is_pwned(password)
 
         if not is_pwned:
-            return True, ''
+            return True, ""
 
         if auth_settings.BREACH_CHECK_REJECT:
             return False, (
-                f'This password has appeared in {count:,} data breaches. '
-                'Please choose a different password.'
+                f"This password has appeared in {count:,} data breaches. " "Please choose a different password."
             )
 
         # Warn mode: return ok=True but log the warning
         logger.warning(f"User chose a pwned password (seen {count} times) — warning mode only")
-        return True, ''
+        return True, ""
 
 
 breach_check_service = BreachCheckService()

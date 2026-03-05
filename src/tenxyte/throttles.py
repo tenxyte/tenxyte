@@ -8,7 +8,7 @@ Protege contre:
 - Abus d'OTP
 """
 
-from rest_framework.throttling import AnonRateThrottle, UserRateThrottle, SimpleRateThrottle
+from rest_framework.throttling import SimpleRateThrottle
 from django.core.cache import cache
 
 
@@ -28,14 +28,16 @@ class LoginThrottle(IPBasedThrottle):
     5 tentatives par minute
     20 tentatives par heure
     """
-    scope = 'login'
-    rate = '5/min'
+
+    scope = "login"
+    rate = "5/min"
 
 
 class LoginHourlyThrottle(IPBasedThrottle):
     """Rate limit horaire pour login."""
-    scope = 'login_hourly'
-    rate = '20/hour'
+
+    scope = "login_hourly"
+    rate = "20/hour"
 
 
 class RegisterThrottle(IPBasedThrottle):
@@ -46,14 +48,16 @@ class RegisterThrottle(IPBasedThrottle):
     3 inscriptions par heure par IP
     10 inscriptions par jour par IP
     """
-    scope = 'register'
-    rate = '3/hour'
+
+    scope = "register"
+    rate = "3/hour"
 
 
 class RegisterDailyThrottle(IPBasedThrottle):
     """Rate limit journalier pour inscription."""
-    scope = 'register_daily'
-    rate = '10/day'
+
+    scope = "register_daily"
+    rate = "10/day"
 
 
 class PasswordResetThrottle(IPBasedThrottle):
@@ -63,14 +67,16 @@ class PasswordResetThrottle(IPBasedThrottle):
     3 demandes par heure
     10 demandes par jour
     """
-    scope = 'password_reset'
-    rate = '3/hour'
+
+    scope = "password_reset"
+    rate = "3/hour"
 
 
 class PasswordResetDailyThrottle(IPBasedThrottle):
     """Rate limit journalier pour password reset."""
-    scope = 'password_reset_daily'
-    rate = '10/day'
+
+    scope = "password_reset_daily"
+    rate = "10/day"
 
 
 class OTPRequestThrottle(IPBasedThrottle):
@@ -79,8 +85,9 @@ class OTPRequestThrottle(IPBasedThrottle):
 
     5 demandes par heure
     """
-    scope = 'otp_request'
-    rate = '5/hour'
+
+    scope = "otp_request"
+    rate = "5/hour"
 
 
 class OTPVerifyThrottle(IPBasedThrottle):
@@ -90,8 +97,9 @@ class OTPVerifyThrottle(IPBasedThrottle):
 
     5 tentatives par 10 minutes
     """
-    scope = 'otp_verify'
-    rate = '5/min'
+
+    scope = "otp_verify"
+    rate = "5/min"
 
 
 class RefreshTokenThrottle(IPBasedThrottle):
@@ -101,9 +109,9 @@ class RefreshTokenThrottle(IPBasedThrottle):
 
     30 par minute
     """
-    scope = 'refresh'
-    rate = '30/min'
 
+    scope = "refresh"
+    rate = "30/min"
 
 
 class MagicLinkRequestThrottle(IPBasedThrottle):
@@ -113,8 +121,9 @@ class MagicLinkRequestThrottle(IPBasedThrottle):
 
     3 demandes par heure par IP
     """
-    scope = 'magic_link_request'
-    rate = '3/hour'
+
+    scope = "magic_link_request"
+    rate = "3/hour"
 
 
 class MagicLinkVerifyThrottle(IPBasedThrottle):
@@ -124,18 +133,21 @@ class MagicLinkVerifyThrottle(IPBasedThrottle):
 
     10 tentatives par minute par IP
     """
-    scope = 'magic_link_verify'
-    rate = '10/min'
+
+    scope = "magic_link_verify"
+    rate = "10/min"
 
 
 # ============== Throttle avec blocage progressif ==============
+
 
 class ProgressiveLoginThrottle(SimpleRateThrottle):
     """
     Throttle progressif pour login.
     Augmente le temps de blocage apres chaque echec.
     """
-    scope = 'progressive_login'
+
+    scope = "progressive_login"
 
     def get_cache_key(self, request, view):
         ip = get_client_ip(request)
@@ -143,7 +155,7 @@ class ProgressiveLoginThrottle(SimpleRateThrottle):
 
     def get_rate(self):
         """Rate dynamique basee sur le nombre d'echecs."""
-        return '5/min'  # Base rate
+        return "5/min"  # Base rate
 
     def throttle_failure(self):
         """Appele quand la requete est throttlee."""
@@ -156,7 +168,7 @@ class ProgressiveLoginThrottle(SimpleRateThrottle):
         cache_key = f"login_failures_{ip}"
         failures = cache.get(cache_key, 0)
         # Augmente le temps de cache exponentiellement
-        timeout = min(60 * (2 ** failures), 3600)  # Max 1 heure
+        timeout = min(60 * (2**failures), 3600)  # Max 1 heure
         cache.set(cache_key, failures + 1, timeout)
 
     @classmethod
@@ -168,6 +180,7 @@ class ProgressiveLoginThrottle(SimpleRateThrottle):
 
 
 # ============== Simple Throttle Rules ==============
+
 
 class SimpleThrottleRule(SimpleRateThrottle):
     """
@@ -186,7 +199,8 @@ class SimpleThrottleRule(SimpleRateThrottle):
     '{API_PREFIX}/products/', '{API_PREFIX}/products/123/', etc.
     Pour un match exact, terminer par '$': '{API_PREFIX}/health/$'
     """
-    scope = 'simple_rule'
+
+    scope = "simple_rule"
 
     def __init__(self):
         # Ne pas appeler super().__init__() qui tente de resoudre le rate via scope
@@ -197,7 +211,8 @@ class SimpleThrottleRule(SimpleRateThrottle):
     def _get_rules(self):
         """Recupere les regles depuis les settings."""
         from django.conf import settings
-        return getattr(settings, 'TENXYTE_SIMPLE_THROTTLE_RULES', {})
+
+        return getattr(settings, "TENXYTE_SIMPLE_THROTTLE_RULES", {})
 
     def _match_path(self, request_path):
         """
@@ -213,9 +228,9 @@ class SimpleThrottleRule(SimpleRateThrottle):
         sorted_rules = sorted(rules.items(), key=lambda x: len(x[0]), reverse=True)
 
         for pattern, rate in sorted_rules:
-            if pattern.endswith('$'):
+            if pattern.endswith("$"):
                 # Match exact (sans le $)
-                if request_path == pattern[:-1] or request_path == pattern[:-1].rstrip('/'):
+                if request_path == pattern[:-1] or request_path == pattern[:-1].rstrip("/"):
                     return pattern, rate
             else:
                 # Match par prefix
@@ -234,14 +249,14 @@ class SimpleThrottleRule(SimpleRateThrottle):
         self.num_requests, self.duration = self.parse_rate(rate)
 
         # Cle de cache basee sur IP + pattern
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0].strip()
+            ip = x_forwarded_for.split(",")[0].strip()
         else:
-            ip = request.META.get('REMOTE_ADDR')
+            ip = request.META.get("REMOTE_ADDR")
 
         # Nettoyer le pattern pour la cle de cache
-        safe_pattern = pattern.replace('/', '_').strip('_$')
+        safe_pattern = pattern.replace("/", "_").strip("_$")
         return f"throttle_simple_{safe_pattern}_{ip}"
 
     def allow_request(self, request, view):
@@ -257,6 +272,7 @@ class SimpleThrottleRule(SimpleRateThrottle):
 
 # ============== Helpers ==============
 
+
 def get_client_ip(request) -> str:
     """Récupère l'adresse IP réelle du client.
 
@@ -269,18 +285,20 @@ def get_client_ip(request) -> str:
         IP client sous forme de string.
     """
     from .conf import auth_settings
-    num_proxies = getattr(auth_settings, 'NUM_PROXIES', 0)
-    trusted = getattr(auth_settings, 'TRUSTED_PROXIES', [])
 
-    remote_addr = request.META.get('REMOTE_ADDR', '')
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    num_proxies = getattr(auth_settings, "NUM_PROXIES", 0)
+    trusted = getattr(auth_settings, "TRUSTED_PROXIES", [])
+
+    remote_addr = request.META.get("REMOTE_ADDR", "")
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
 
     if x_forwarded_for and num_proxies > 0:
         # Validate that REMOTE_ADDR is in TRUSTED_PROXIES
         # SECURITY VULN-003: If TRUSTED_PROXIES is empty, always reject X-Forwarded-For to prevent spoofing
         if not trusted:
             import logging
-            logging.getLogger('tenxyte.security').warning(
+
+            logging.getLogger("tenxyte.security").warning(
                 "X-Forwarded-For header rejected: TENXYTE_TRUSTED_PROXIES is empty but TENXYTE_NUM_PROXIES > 0. "
                 "Configure trusted proxies to enable secure IP resolution behind a reverse proxy."
             )
@@ -288,6 +306,7 @@ def get_client_ip(request) -> str:
 
         is_trusted = False
         import ipaddress
+
         try:
             remote_ip = ipaddress.ip_address(remote_addr)
             for trusted_entry in trusted:
@@ -300,10 +319,11 @@ def get_client_ip(request) -> str:
                     continue
         except ValueError:
             pass
-                
+
         if not is_trusted:
             import logging
-            logging.getLogger('tenxyte.security').warning(
+
+            logging.getLogger("tenxyte.security").warning(
                 "X-Forwarded-For header rejected: REMOTE_ADDR %s is not in TRUSTED_PROXIES.", remote_addr
             )
             return remote_addr
@@ -312,10 +332,10 @@ def get_client_ip(request) -> str:
         # X-Forwarded-For est une liste : client, proxy1, proxy2...
         # L'IP la plus sûre (insérée par le premier proxy sous notre contrôle)
         # est à l'index -num_proxies.
-        proxies = [ip.strip() for ip in x_forwarded_for.split(',')]
+        proxies = [ip.strip() for ip in x_forwarded_for.split(",")]
         if len(proxies) >= num_proxies:
             return proxies[-num_proxies]
         else:
-            return proxies[0] # Fallback to the first if there are fewer proxies than num_proxies
-            
-    return remote_addr or '127.0.0.1'
+            return proxies[0]  # Fallback to the first if there are fewer proxies than num_proxies
+
+    return remote_addr or "127.0.0.1"

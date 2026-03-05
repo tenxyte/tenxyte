@@ -5,76 +5,76 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 from drf_spectacular.types import OpenApiTypes
 from rest_framework import serializers
 
-from ..serializers import (
-    ApplicationSerializer, ApplicationCreateSerializer, ApplicationUpdateSerializer
-)
+from ..serializers import ApplicationSerializer, ApplicationCreateSerializer, ApplicationUpdateSerializer
 from ..models import get_application_model
 from ..decorators import require_permission
 from ..pagination import TenxytePagination
 from ..filters import apply_application_filters
+
 Application = get_application_model()
 
 
 @extend_schema_view(
     get=extend_schema(
-        tags=['Applications'],
+        tags=["Applications"],
         summary="Lister les applications",
         description="Retourne la liste paginée de toutes les applications enregistrées.",
         parameters=[
-            OpenApiParameter('search', str, description='Recherche dans name et description'),
-            OpenApiParameter('is_active', bool, description='Filtrer par statut actif'),
-            OpenApiParameter('ordering', str, description='Tri: name, is_active, created_at, updated_at'),
-            OpenApiParameter('page', int, description='Numéro de page'),
-            OpenApiParameter('page_size', int, description='Éléments par page (max 100)'),
+            OpenApiParameter("search", str, description="Recherche dans name et description"),
+            OpenApiParameter("is_active", bool, description="Filtrer par statut actif"),
+            OpenApiParameter("ordering", str, description="Tri: name, is_active, created_at, updated_at"),
+            OpenApiParameter("page", int, description="Numéro de page"),
+            OpenApiParameter("page_size", int, description="Éléments par page (max 100)"),
         ],
-        responses={200: ApplicationSerializer(many=True)}
+        responses={200: ApplicationSerializer(many=True)},
     ),
     post=extend_schema(
-        tags=['Applications'],
+        tags=["Applications"],
         summary="Créer une application",
         description="Crée une nouvelle application et retourne les credentials. "
-                    "**Attention:** le secret n'est affiché qu'une seule fois à la création. "
-                    "Stockez-le sécuritairement. Les secrets peuvent être régénérés via "
-                    "l'endpoint dédié. L'application est inactive par défaut.",
+        "**Attention:** le secret n'est affiché qu'une seule fois à la création. "
+        "Stockez-le sécuritairement. Les secrets peuvent être régénérés via "
+        "l'endpoint dédié. L'application est inactive par défaut.",
         request=ApplicationCreateSerializer,
         responses={
             201: {
-                'type': 'object',
-                'properties': {
-                    'id': {'type': 'integer'},
-                    'name': {'type': 'string'},
-                    'description': {'type': 'string'},
-                    'client_id': {'type': 'string'},
-                    'client_secret': {'type': 'string'},
-                    'is_active': {'type': 'boolean'},
-                    'created_at': {'type': 'string', 'format': 'date-time'},
-                    'secret_rotation_warning': {
-                        'type': 'string',
-                        'description': 'Avertissement sur la sauvegarde du secret'
-                    }
-                }
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "description": {"type": "string"},
+                    "client_id": {"type": "string"},
+                    "client_secret": {"type": "string"},
+                    "is_active": {"type": "boolean"},
+                    "created_at": {"type": "string", "format": "date-time"},
+                    "secret_rotation_warning": {
+                        "type": "string",
+                        "description": "Avertissement sur la sauvegarde du secret",
+                    },
+                },
             }
         },
         examples=[
-            OpenApiExample(response_only=True, 
-                name='create_app_success',
-                summary='Application créée avec secret',
+            OpenApiExample(
+                response_only=True,
+                name="create_app_success",
+                summary="Application créée avec secret",
                 value={
-                    'name': 'Mobile App v2',
-                    'description': 'Application mobile iOS/Android',
-                    'redirect_uris': ['myapp://callback', 'https://app.example.com/auth']
-                }
+                    "name": "Mobile App v2",
+                    "description": "Application mobile iOS/Android",
+                    "redirect_uris": ["myapp://callback", "https://app.example.com/auth"],
+                },
             ),
             OpenApiExample(
-                name='secret_warning',
-                summary='Avertissement secret',
+                name="secret_warning",
+                summary="Avertissement secret",
                 value={
-                    'client_secret': 'sk_live_1234567890abcdef...',
-                    'secret_rotation_warning': 'Save this secret securely. It will not be shown again.'
-                }
-            )
-        ]
-    )
+                    "client_secret": "sk_live_1234567890abcdef...",
+                    "secret_rotation_warning": "Save this secret securely. It will not be shown again.",
+                },
+            ),
+        ],
+    ),
 )
 class ApplicationListView(APIView):
     """
@@ -84,9 +84,10 @@ class ApplicationListView(APIView):
     POST {API_PREFIX}/auth/applications/
     Crée une nouvelle application
     """
+
     pagination_class = TenxytePagination
 
-    @require_permission('applications.view')
+    @require_permission("applications.view")
     def get(self, request):
         queryset = Application.objects.all()
         queryset = apply_application_filters(queryset, request)
@@ -100,163 +101,138 @@ class ApplicationListView(APIView):
         serializer = ApplicationSerializer(queryset, many=True)
         return Response(serializer.data)
 
-    @require_permission('applications.create')
+    @require_permission("applications.create")
     def post(self, request):
         serializer = ApplicationCreateSerializer(data=request.data)
         if not serializer.is_valid():
-            return Response({
-                'error': 'Validation error',
-                'details': serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Validation error", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         app, raw_secret = Application.create_application(
-            name=serializer.validated_data['name'],
-            description=serializer.validated_data.get('description', '')
+            name=serializer.validated_data["name"], description=serializer.validated_data.get("description", "")
         )
 
-        return Response({
-            'message': 'Application created successfully',
-            'application': ApplicationSerializer(app).data,
-            'credentials': {
-                'access_key': app.access_key,
-                'access_secret': raw_secret
+        return Response(
+            {
+                "message": "Application created successfully",
+                "application": ApplicationSerializer(app).data,
+                "credentials": {"access_key": app.access_key, "access_secret": raw_secret},
+                "warning": "Save the access_secret now! It will never be shown again.",
             },
-            'warning': 'Save the access_secret now! It will never be shown again.'
-        }, status=status.HTTP_201_CREATED)
+            status=status.HTTP_201_CREATED,
+        )
 
 
 @extend_schema_view(
     get=extend_schema(
-        tags=['Applications'],
+        tags=["Applications"],
         summary="Détails d'une application",
         description="Récupère les informations d'une application par son ID. "
-                    "Inclut les statistiques d'utilisation et le statut actif. "
-                    "Le secret n'est jamais affiché pour des raisons de sécurité.",
+        "Inclut les statistiques d'utilisation et le statut actif. "
+        "Le secret n'est jamais affiché pour des raisons de sécurité.",
         responses={
             200: {
-                'type': 'object',
-                'properties': {
-                    'id': {'type': 'integer'},
-                    'name': {'type': 'string'},
-                    'description': {'type': 'string'},
-                    'access_key': {'type': 'string'},
-                    'is_active': {'type': 'boolean'},
-                    'created_at': {'type': 'string', 'format': 'date-time'},
-                    'updated_at': {'type': 'string', 'format': 'date-time'},
-                    'last_used_at': {'type': 'string', 'format': 'date-time', 'nullable': True},
-                    'usage_stats': {
-                        'type': 'object',
-                        'properties': {
-                            'total_requests': {'type': 'integer'},
-                            'requests_this_month': {'type': 'integer'},
-                            'last_request': {'type': 'string', 'format': 'date-time', 'nullable': True}
-                        }
-                    }
-                }
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "description": {"type": "string"},
+                    "access_key": {"type": "string"},
+                    "is_active": {"type": "boolean"},
+                    "created_at": {"type": "string", "format": "date-time"},
+                    "updated_at": {"type": "string", "format": "date-time"},
+                    "last_used_at": {"type": "string", "format": "date-time", "nullable": True},
+                    "usage_stats": {
+                        "type": "object",
+                        "properties": {
+                            "total_requests": {"type": "integer"},
+                            "requests_this_month": {"type": "integer"},
+                            "last_request": {"type": "string", "format": "date-time", "nullable": True},
+                        },
+                    },
+                },
             },
-            404: {
-                'type': 'object',
-                'properties': {
-                    'error': {'type': 'string'},
-                    'code': {'type': 'string'}
-                }
-            }
-        }
+            404: {"type": "object", "properties": {"error": {"type": "string"}, "code": {"type": "string"}}},
+        },
     ),
     put=extend_schema(
-        tags=['Applications'],
+        tags=["Applications"],
         summary="Modifier une application",
         description="Met à jour les informations d'une application. "
-                    "Tous les champs fournis remplaceront les valeurs existantes. "
-                    "Le secret ne peut pas être modifié (utilisez l'endpoint de régénération).",
+        "Tous les champs fournis remplaceront les valeurs existantes. "
+        "Le secret ne peut pas être modifié (utilisez l'endpoint de régénération).",
         request=ApplicationUpdateSerializer,
         responses={200: ApplicationSerializer, 400: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
         examples=[
             OpenApiExample(
-                name='update_app',
-                summary='Mise à jour complète',
-                description='Met à jour le nom, la description et le statut.',
+                name="update_app",
+                summary="Mise à jour complète",
+                description="Met à jour le nom, la description et le statut.",
                 request_only=True,
                 value={
-                    'name': 'Production External API',
-                    'description': 'Handles all incoming requests from the new frontend v3',
-                    'is_active': True
-                }
+                    "name": "Production External API",
+                    "description": "Handles all incoming requests from the new frontend v3",
+                    "is_active": True,
+                },
             ),
             OpenApiExample(
-                name='update_success',
-                summary='Mise à jour réussie',
+                name="update_success",
+                summary="Mise à jour réussie",
                 response_only=True,
-                status_codes=['200'],
+                status_codes=["200"],
                 value={
-                    'id': 10,
-                    'name': 'Production External API',
-                    'description': 'Handles all incoming requests from the new frontend v3',
-                    'client_id': 'app_abc123...',
-                    'is_active': True,
-                    'created_at': '2024-01-01T10:00:00Z',
-                    'updated_at': '2024-01-20T14:30:00Z'
-                }
+                    "id": 10,
+                    "name": "Production External API",
+                    "description": "Handles all incoming requests from the new frontend v3",
+                    "client_id": "app_abc123...",
+                    "is_active": True,
+                    "created_at": "2024-01-01T10:00:00Z",
+                    "updated_at": "2024-01-20T14:30:00Z",
+                },
             ),
             OpenApiExample(
-                name='app_not_found',
-                summary='Application introuvable',
+                name="app_not_found",
+                summary="Application introuvable",
                 response_only=True,
-                status_codes=['404'],
-                value={
-                    'error': 'Application not found',
-                    'code': 'NOT_FOUND'
-                }
-            )
-        ]
+                status_codes=["404"],
+                value={"error": "Application not found", "code": "NOT_FOUND"},
+            ),
+        ],
     ),
     patch=extend_schema(
-        tags=['Applications'],
+        tags=["Applications"],
         summary="Basculer le statut actif",
         description="Active ou désactive une application. "
-                    "Une application désactivée ne peut plus faire d'appels API. "
-                    "Utile pour la maintenance ou en cas de compromission.",
+        "Une application désactivée ne peut plus faire d'appels API. "
+        "Utile pour la maintenance ou en cas de compromission.",
         request=inline_serializer(
-            name='ToggleApplicationStatus',
-            fields={
-                'is_active': serializers.BooleanField(help_text='Nouveau statut actif de l\'application')
-            }
+            name="ToggleApplicationStatus",
+            fields={"is_active": serializers.BooleanField(help_text="Nouveau statut actif de l'application")},
         ),
         responses={
             200: {
-                'type': 'object',
-                'properties': {
-                    'id': {'type': 'integer'},
-                    'name': {'type': 'string'},
-                    'is_active': {'type': 'boolean'},
-                    'updated_at': {'type': 'string', 'format': 'date-time'},
-                    'message': {'type': 'string'}
-                }
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "name": {"type": "string"},
+                    "is_active": {"type": "boolean"},
+                    "updated_at": {"type": "string", "format": "date-time"},
+                    "message": {"type": "string"},
+                },
             }
         },
         examples=[
-            OpenApiExample(
-                name='deactivate_app',
-                summary='Désactiver application',
-                value={
-                    'is_active': False
-                }
-            ),
-            OpenApiExample(
-                name='activate_app',
-                summary='Activer application',
-                value={
-                    'is_active': True
-                }
-            )
-        ]
+            OpenApiExample(name="deactivate_app", summary="Désactiver application", value={"is_active": False}),
+            OpenApiExample(name="activate_app", summary="Activer application", value={"is_active": True}),
+        ],
     ),
     delete=extend_schema(
-        tags=['Applications'],
+        tags=["Applications"],
         summary="Supprimer une application",
         description="Supprime définitivement une application.",
-        responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
-    )
+        responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
+    ),
 )
 class ApplicationDetailView(APIView):
     """
@@ -270,33 +246,26 @@ class ApplicationDetailView(APIView):
     Supprime une application
     """
 
-    @require_permission('applications.view')
+    @require_permission("applications.view")
     def get(self, request, app_id):
         try:
             app = Application.objects.get(id=app_id)
             return Response(ApplicationSerializer(app).data)
         except Application.DoesNotExist:
-            return Response({
-                'error': 'Application not found',
-                'code': 'NOT_FOUND'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Application not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
-    @require_permission('applications.update')
+    @require_permission("applications.update")
     def put(self, request, app_id):
         try:
             app = Application.objects.get(id=app_id)
         except Application.DoesNotExist:
-            return Response({
-                'error': 'Application not found',
-                'code': 'NOT_FOUND'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Application not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = ApplicationUpdateSerializer(data=request.data)
         if not serializer.is_valid():
-            return Response({
-                'error': 'Validation error',
-                'details': serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Validation error", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Mise à jour des champs
         for field, value in serializer.validated_data.items():
@@ -305,45 +274,35 @@ class ApplicationDetailView(APIView):
 
         return Response(ApplicationSerializer(app).data)
 
-    @require_permission('applications.update')
+    @require_permission("applications.update")
     def patch(self, request, app_id):
         try:
             app = Application.objects.get(id=app_id)
         except Application.DoesNotExist:
-            return Response({
-                'error': 'Application not found',
-                'code': 'NOT_FOUND'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Application not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
-        is_active = request.data.get('is_active')
+        is_active = request.data.get("is_active")
         if is_active is not None:
             app.is_active = bool(is_active)
             app.save()
-            action = 'activated' if is_active else 'deactivated'
-            return Response({
-                'message': f'Application {action} successfully',
-                'application': ApplicationSerializer(app).data
-            })
+            action = "activated" if is_active else "deactivated"
+            return Response(
+                {"message": f"Application {action} successfully", "application": ApplicationSerializer(app).data}
+            )
 
-        return Response({
-            'error': 'No valid fields provided',
-            'code': 'INVALID_FIELDS'
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"error": "No valid fields provided", "code": "INVALID_FIELDS"}, status=status.HTTP_400_BAD_REQUEST
+        )
 
-    @require_permission('applications.delete')
+    @require_permission("applications.delete")
     def delete(self, request, app_id):
         try:
             app = Application.objects.get(id=app_id)
             app_name = app.name
             app.delete()
-            return Response({
-                'message': f'Application "{app_name}" deleted successfully'
-            })
+            return Response({"message": f'Application "{app_name}" deleted successfully'})
         except Application.DoesNotExist:
-            return Response({
-                'error': 'Application not found',
-                'code': 'NOT_FOUND'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Application not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class ApplicationRegenerateView(APIView):
@@ -353,91 +312,69 @@ class ApplicationRegenerateView(APIView):
     """
 
     @extend_schema(
-        tags=['Applications'],
+        tags=["Applications"],
         summary="Régénérer les credentials",
         description="Régénère l'access_key et l'access_secret d'une application. "
-                    "**Attention:** les anciens credentials seront immédiatement invalidés. "
-                    "Le nouveau secret n'est affiché qu'une seule fois. "
-                    "Action irréversible nécessitant confirmation.",
+        "**Attention:** les anciens credentials seront immédiatement invalidés. "
+        "Le nouveau secret n'est affiché qu'une seule fois. "
+        "Action irréversible nécessitant confirmation.",
         request=inline_serializer(
-            name='RegenerateApplicationCredentials',
-            fields={
-                'confirmation': serializers.CharField(help_text='Texte de confirmation "REGENERATE"')
-            }
+            name="RegenerateApplicationCredentials",
+            fields={"confirmation": serializers.CharField(help_text='Texte de confirmation "REGENERATE"')},
         ),
         responses={
             200: {
-                'type': 'object',
-                'properties': {
-                    'message': {'type': 'string'},
-                    'application': {'type': 'object'},
-                    'credentials': {
-                        'type': 'object',
-                        'properties': {
-                            'access_key': {'type': 'string'},
-                            'access_secret': {'type': 'string'}
-                        }
+                "type": "object",
+                "properties": {
+                    "message": {"type": "string"},
+                    "application": {"type": "object"},
+                    "credentials": {
+                        "type": "object",
+                        "properties": {"access_key": {"type": "string"}, "access_secret": {"type": "string"}},
                     },
-                    'warning': {'type': 'string'},
-                    'old_credentials_invalidated': {'type': 'boolean'}
-                }
+                    "warning": {"type": "string"},
+                    "old_credentials_invalidated": {"type": "boolean"},
+                },
             },
-            400: {
-                'type': 'object',
-                'properties': {
-                    'error': {'type': 'string'},
-                    'code': {'type': 'string'}
-                }
-            },
-            404: {
-                'type': 'object',
-                'properties': {
-                    'error': {'type': 'string'},
-                    'code': {'type': 'string'}
-                }
-            }
+            400: {"type": "object", "properties": {"error": {"type": "string"}, "code": {"type": "string"}}},
+            404: {"type": "object", "properties": {"error": {"type": "string"}, "code": {"type": "string"}}},
         },
         examples=[
-            OpenApiExample(response_only=True, 
-                name='regenerate_success',
-                summary='Credentials régénérés',
-                value={
-                    'confirmation': 'REGENERATE'
-                }
+            OpenApiExample(
+                response_only=True,
+                name="regenerate_success",
+                summary="Credentials régénérés",
+                value={"confirmation": "REGENERATE"},
             ),
-            OpenApiExample(response_only=True, 
-                name='confirmation_required',
-                summary='Confirmation requise',
-                value={
-                    'error': 'Confirmation required',
-                    'code': 'CONFIRMATION_REQUIRED'
-                }
-            )
-        ]
+            OpenApiExample(
+                response_only=True,
+                name="confirmation_required",
+                summary="Confirmation requise",
+                value={"error": "Confirmation required", "code": "CONFIRMATION_REQUIRED"},
+            ),
+        ],
     )
-    @require_permission('applications.regenerate')
+    @require_permission("applications.regenerate")
     def post(self, request, app_id):
-        confirmation = request.data.get('confirmation')
-        if confirmation != 'REGENERATE':
-            return Response({
-                'error': 'Confirmation required',
-                'code': 'CONFIRMATION_REQUIRED'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        confirmation = request.data.get("confirmation")
+        if confirmation != "REGENERATE":
+            return Response(
+                {"error": "Confirmation required", "code": "CONFIRMATION_REQUIRED"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             app = Application.objects.get(id=app_id)
         except Application.DoesNotExist:
-            return Response({
-                'error': 'Application not found',
-                'code': 'NOT_FOUND'
-            }, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Application not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
         credentials = app.regenerate_credentials()
 
-        return Response({
-            'message': 'Credentials regenerated successfully',
-            'application': ApplicationSerializer(app).data,
-            'credentials': credentials,
-            'warning': 'Save the access_secret now! It will never be shown again.',
-            'old_credentials_invalidated': True
-        })
+        return Response(
+            {
+                "message": "Credentials regenerated successfully",
+                "application": ApplicationSerializer(app).data,
+                "credentials": credentials,
+                "warning": "Save the access_secret now! It will never be shown again.",
+                "old_credentials_invalidated": True,
+            }
+        )

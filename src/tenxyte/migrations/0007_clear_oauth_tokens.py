@@ -21,13 +21,11 @@ from django.db import migrations, models
 
 def clear_oauth_tokens(apps, schema_editor):
     """Efface tous les tokens OAuth stockés en clair."""
-    SocialConnection = apps.get_model('tenxyte', 'SocialConnection')
-    count = SocialConnection.objects.exclude(
-        access_token='', refresh_token=''
-    ).count()
+    SocialConnection = apps.get_model("tenxyte", "SocialConnection")
+    count = SocialConnection.objects.exclude(access_token="", refresh_token="").count()
 
     if count > 0:
-        SocialConnection.objects.update(access_token='', refresh_token='')
+        SocialConnection.objects.update(access_token="", refresh_token="")
         print(f"\n  ⚠️  [R10 Audit] {count} connexion(s) sociale(s) : tokens OAuth effacés.")
         print("  ℹ️  Les utilisateurs restent connectés via leurs JWT Tenxyte.\n")
 
@@ -39,30 +37,25 @@ def noop(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tenxyte', '0006_encrypt_totp_secret'),
+        ("tenxyte", "0006_encrypt_totp_secret"),
     ]
 
     operations = [
         # Effacer les tokens OAuth existants
         migrations.RunPython(clear_oauth_tokens, reverse_code=noop),
-
         # Mettre à jour les help_text des champs
         migrations.AlterField(
-            model_name='socialconnection',
-            name='access_token',
+            model_name="socialconnection",
+            name="access_token",
             field=models.TextField(
-                blank=True,
-                default='',
-                help_text='Not stored for security (R10 audit). Always empty.'
+                blank=True, default="", help_text="Not stored for security (R10 audit). Always empty."
             ),
         ),
         migrations.AlterField(
-            model_name='socialconnection',
-            name='refresh_token',
+            model_name="socialconnection",
+            name="refresh_token",
             field=models.TextField(
-                blank=True,
-                default='',
-                help_text='Not stored for security (R10 audit). Always empty.'
+                blank=True, default="", help_text="Not stored for security (R10 audit). Always empty."
             ),
         ),
     ]

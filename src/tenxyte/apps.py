@@ -5,9 +5,10 @@ class TenxyteConfig(AppConfig):
     """
     Configuration de l'application Tenxyte.
     """
-    name = 'tenxyte'
-    verbose_name = 'Tenxyte Authentication'
-    default_auto_field = 'django.db.models.BigAutoField'
+
+    name = "tenxyte"
+    verbose_name = "Tenxyte Authentication"
+    default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self):
         """
@@ -34,37 +35,36 @@ class TenxyteConfig(AppConfig):
         from django.conf import settings
         from .conf import auth_settings
         import warnings
-        
+
         if not settings.DEBUG:
             from django.core.exceptions import ImproperlyConfigured
-            
+
             if not auth_settings.JWT_AUTH_ENABLED:
                 raise ImproperlyConfigured(
-                    "TENXYTE_JWT_AUTH_ENABLED=False is forbidden in production. "
-                    "Set DEBUG=True to use this flag."
+                    "TENXYTE_JWT_AUTH_ENABLED=False is forbidden in production. " "Set DEBUG=True to use this flag."
                 )
-            
-            if not getattr(auth_settings, 'APPLICATION_AUTH_ENABLED', True):
+
+            if not getattr(auth_settings, "APPLICATION_AUTH_ENABLED", True):
                 raise ImproperlyConfigured(
                     "TENXYTE_APPLICATION_AUTH_ENABLED=False is forbidden in production. "
                     "Set DEBUG=True to use this flag."
                 )
 
-            if auth_settings.CORS_ALLOW_ALL_ORIGINS and getattr(settings, 'CORS_ALLOW_CREDENTIALS', False):
+            if auth_settings.CORS_ALLOW_ALL_ORIGINS and getattr(settings, "CORS_ALLOW_CREDENTIALS", False):
                 raise ImproperlyConfigured(
                     "TENXYTE_CORS_ALLOW_ALL_ORIGINS=True combined with CORS_ALLOW_CREDENTIALS=True "
                     "is extremely dangerous in production."
                 )
-                
+
             # F-17 Security Checks
-            if not getattr(settings, 'SECURE_SSL_REDIRECT', False):
+            if not getattr(settings, "SECURE_SSL_REDIRECT", False):
                 warnings.warn(
-                    "SECURE_SSL_REDIRECT is False in production. "
-                    "Auth tokens should only be transmitted over HTTPS.",
-                    RuntimeWarning, stacklevel=2
+                    "SECURE_SSL_REDIRECT is False in production. " "Auth tokens should only be transmitted over HTTPS.",
+                    RuntimeWarning,
+                    stacklevel=2,
                 )
-                
-            if auth_settings.CORS_ENABLED and '*' in auth_settings.CORS_ALLOWED_ORIGINS:
+
+            if auth_settings.CORS_ENABLED and "*" in auth_settings.CORS_ALLOWED_ORIGINS:
                 raise ImproperlyConfigured(
                     "Wildcard '*' in TENXYTE_CORS_ALLOWED_ORIGINS is forbidden in production. "
                     "Specify exact allowed origins."
@@ -72,8 +72,7 @@ class TenxyteConfig(AppConfig):
         else:
             if not auth_settings.JWT_AUTH_ENABLED:
                 warnings.warn(
-                    "JWT authentication is DISABLED. This is a critical security risk.",
-                    RuntimeWarning, stacklevel=2
+                    "JWT authentication is DISABLED. This is a critical security risk.", RuntimeWarning, stacklevel=2
                 )
 
     def _check_production_cache(self):
@@ -94,6 +93,7 @@ class TenxyteConfig(AppConfig):
 
             if isinstance(cache, LocMemCache):
                 import warnings
+
                 warnings.warn(
                     "Tenxyte: LocMemCache detected with rate limiting enabled in production (DEBUG=False). "
                     "Rate limits are per-worker and ineffective in multi-process deployments (Gunicorn, uWSGI). "
@@ -104,4 +104,3 @@ class TenxyteConfig(AppConfig):
                 )
         except Exception:
             pass  # Ne jamais bloquer le démarrage
-

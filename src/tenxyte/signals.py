@@ -31,7 +31,7 @@ from django.conf import settings
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver, Signal
 
-logger = logging.getLogger('tenxyte.signals')
+logger = logging.getLogger("tenxyte.signals")
 
 
 # ============================================================================
@@ -67,14 +67,16 @@ Arguments: agent_token (AgentToken), reason (str)
 # Helpers internes
 # ============================================================================
 
+
 def _get_user_model_label():
     """Retourne le label du modèle User configuré."""
-    return getattr(settings, 'AUTH_USER_MODEL', 'tenxyte.User')
+    return getattr(settings, "AUTH_USER_MODEL", "tenxyte.User")
 
 
 # ============================================================================
 # Handlers internes
 # ============================================================================
+
 
 @receiver(pre_delete)
 def audit_user_deletion(sender, instance, **kwargs):
@@ -94,15 +96,16 @@ def audit_user_deletion(sender, instance, **kwargs):
         return
 
     from .models import AuditLog
+
     AuditLog.log(
-        action='account_deleted',
+        action="account_deleted",
         user=None,
         details={
-            'deleted_user_id': str(instance.pk),
-            'deleted_user_email': getattr(instance, 'email', ''),
-        }
+            "deleted_user_id": str(instance.pk),
+            "deleted_user_email": getattr(instance, "email", ""),
+        },
     )
-    logger.info("User %s (%s) deleted", instance.pk, getattr(instance, 'email', ''))
+    logger.info("User %s (%s) deleted", instance.pk, getattr(instance, "email", ""))
 
 
 @receiver(post_save)
@@ -123,25 +126,18 @@ def log_account_locked(sender, instance, **kwargs):
     if not auth_settings.AUDIT_LOGGING_ENABLED:
         return
 
-    if not hasattr(instance, 'is_locked'):
+    if not hasattr(instance, "is_locked"):
         return
 
     # Seulement si le compte vient d'être verrouillé (pas à la création)
-    if not kwargs.get('created', False) and instance.is_locked:
+    if not kwargs.get("created", False) and instance.is_locked:
         # Vérifier que c'est bien un changement (pas juste un save normal)
-        if kwargs.get('update_fields') and 'is_locked' not in kwargs['update_fields']:
+        if kwargs.get("update_fields") and "is_locked" not in kwargs["update_fields"]:
             return
 
         from .models import AuditLog
-        AuditLog.log(
-            action='account_locked',
-            user=instance,
-            details={'reason': 'too_many_failed_attempts'}
-        )
+
+        AuditLog.log(action="account_locked", user=instance, details={"reason": "too_many_failed_attempts"})
 
         # Émettre le signal public pour les intégrateurs (R14)
-        account_locked.send(
-            sender=sender,
-            user=instance,
-            reason='too_many_failed_attempts'
-        )
+        account_locked.send(sender=sender, user=instance, reason="too_many_failed_attempts")

@@ -1,0 +1,105 @@
+F401 `django.conf.settings` imported but unused
+ --> src\tenxyte\conf\__init__.py:4:25
+  |
+2 | Configuration settings pour Tenxyte (Module factorisé).
+3 | """
+4 | from django.conf import settings
+  |                         ^^^^^^^^
+5 | from .base import BaseSettingsMixin
+6 | from .jwt import JwtSettingsMixin
+  |
+help: Remove unused import: `django.conf.settings`
+
+F401 `.presets.SECURE_MODE_PRESETS` imported but unused; consider removing, adding to `__all__`, or using a redundant alias
+  --> src\tenxyte\conf\__init__.py:13:22
+   |
+11 | from .modules import ModulesSettingsMixin
+12 | from .airs import AirsSettingsMixin
+13 | from .presets import SECURE_MODE_PRESETS, VALID_SECURE_MODES
+   |                      ^^^^^^^^^^^^^^^^^^^
+14 |
+15 | class TenxyteSettings(
+   |
+help: Use an explicit re-export: `SECURE_MODE_PRESETS as SECURE_MODE_PRESETS`
+
+F401 `.presets.VALID_SECURE_MODES` imported but unused; consider removing, adding to `__all__`, or using a redundant alias
+  --> src\tenxyte\conf\__init__.py:13:43
+   |
+11 | from .modules import ModulesSettingsMixin
+12 | from .airs import AirsSettingsMixin
+13 | from .presets import SECURE_MODE_PRESETS, VALID_SECURE_MODES
+   |                                           ^^^^^^^^^^^^^^^^^^
+14 |
+15 | class TenxyteSettings(
+   |
+help: Use an explicit re-export: `VALID_SECURE_MODES as VALID_SECURE_MODES`
+
+E402 Module level import not at top of file
+   --> src\tenxyte\models\security.py:309:1
+    |
+307 | # =============================================================================
+308 |
+309 | from django.db.models.signals import post_save
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+310 | from django.dispatch import receiver
+    |
+
+E402 Module level import not at top of file
+   --> src\tenxyte\models\security.py:310:1
+    |
+309 | from django.db.models.signals import post_save
+310 | from django.dispatch import receiver
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+311 |
+312 | @receiver(post_save, sender=AuditLog)
+    |
+
+F841 Local variable `domain` is assigned to but never used
+   --> src\tenxyte\services\email_service.py:457:13
+    |
+455 |         try:
+456 |             site = get_current_site(None)
+457 |             domain = f"https://{site.domain}" if site.domain else "https://yourapp.com"
+    |             ^^^^^^
+458 |             base_url = auth_settings.BASE_URL
+459 |             api_prefix = auth_settings.API_PREFIX
+    |
+help: Remove assignment to unused variable `domain`
+
+F841 Local variable `domain` is assigned to but never used
+   --> src\tenxyte\services\email_service.py:502:13
+    |
+500 |         try:
+501 |             site = get_current_site(None)
+502 |             domain = f"https://{site.domain}" if site.domain else "https://yourapp.com"
+    |             ^^^^^^
+503 |             
+504 |             from ..conf import auth_settings
+    |
+help: Remove assignment to unused variable `domain`
+
+E402 Module level import not at top of file
+   --> src\tenxyte\urls.py:177:1
+    |
+175 | # =============================================
+176 |
+177 | from .conf import org_settings
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+178 |
+179 | if org_settings.ORGANIZATIONS_ENABLED:
+    |
+
+F841 Local variable `state` is assigned to but never used
+   --> src\tenxyte\views\social_auth_views.py:335:9
+    |
+333 |         code = request.GET.get('code')
+334 |         redirect_uri = request.GET.get('redirect_uri')
+335 |         state = request.GET.get('state')
+    |         ^^^^^
+336 |         
+337 |         if not code:
+    |
+help: Remove assignment to unused variable `state`
+
+Found 9 errors.
+No fixes available (3 hidden fixes can be enabled with the `--unsafe-fixes` option).

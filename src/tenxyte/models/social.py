@@ -4,6 +4,7 @@ Tenxyte Models - Social Login connections.
 Contains:
 - SocialConnection: Links a user to a social OAuth provider account
 """
+
 from django.db import models
 from django.conf import settings
 
@@ -17,20 +18,21 @@ class SocialConnection(models.Model):
     Un utilisateur peut avoir plusieurs connexions sociales (Google, GitHub, etc.)
     mais une seule par provider.
     """
+
     PROVIDER_CHOICES = [
-        ('google', 'Google'),
-        ('github', 'GitHub'),
-        ('microsoft', 'Microsoft'),
-        ('facebook', 'Facebook'),
-        ('apple', 'Apple'),
+        ("google", "Google"),
+        ("github", "GitHub"),
+        ("microsoft", "Microsoft"),
+        ("facebook", "Facebook"),
+        ("apple", "Apple"),
     ]
 
     id = AutoFieldClass(primary_key=True)
 
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL if hasattr(settings, 'AUTH_USER_MODEL') else 'tenxyte.User',
+        settings.AUTH_USER_MODEL if hasattr(settings, "AUTH_USER_MODEL") else "tenxyte.User",
         on_delete=models.CASCADE,
-        related_name='social_connections'
+        related_name="social_connections",
     )
     provider = models.CharField(max_length=32, choices=PROVIDER_CHOICES, db_index=True)
     provider_user_id = models.CharField(max_length=191, db_index=True)
@@ -43,21 +45,17 @@ class SocialConnection(models.Model):
     # If your application requires re-using the access token after login, implement
     # encrypted storage (django-cryptography) or token refresh on each API call instead.
     access_token = models.TextField(
-        blank=True,
-        default='',
-        help_text="Not stored for security (R10 audit). Always empty."
+        blank=True, default="", help_text="Not stored for security (R10 audit). Always empty."
     )
     refresh_token = models.TextField(
-        blank=True,
-        default='',
-        help_text="Not stored for security (R10 audit). Always empty."
+        blank=True, default="", help_text="Not stored for security (R10 audit). Always empty."
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'social_connections'
-        unique_together = [('provider', 'provider_user_id')]
+        db_table = "social_connections"
+        unique_together = [("provider", "provider_user_id")]
 
     def __str__(self):
         return f"{self.user} — {self.provider}:{self.provider_user_id}"
@@ -68,12 +66,12 @@ class SocialConnection(models.Model):
         user,
         provider: str,
         provider_user_id: str,
-        email: str = '',
-        first_name: str = '',
-        last_name: str = '',
-        avatar_url: str = '',
-        access_token: str = '',   # Ignoré — non stocké (R10)
-        refresh_token: str = '',  # Ignoré — non stocké (R10)
+        email: str = "",
+        first_name: str = "",
+        last_name: str = "",
+        avatar_url: str = "",
+        access_token: str = "",  # Ignoré — non stocké (R10)
+        refresh_token: str = "",  # Ignoré — non stocké (R10)
     ):
         """
         Crée ou met à jour une connexion sociale pour un utilisateur.
@@ -87,13 +85,13 @@ class SocialConnection(models.Model):
             provider=provider,
             provider_user_id=provider_user_id,
             defaults={
-                'user': user,
-                'email': email,
-                'first_name': first_name,
-                'last_name': last_name,
-                'avatar_url': avatar_url,
-                'access_token': '',   # R10: jamais persisté
-                'refresh_token': '', # R10: jamais persisté
-            }
+                "user": user,
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name,
+                "avatar_url": avatar_url,
+                "access_token": "",  # R10: jamais persisté
+                "refresh_token": "",  # R10: jamais persisté
+            },
         )
         return connection, created

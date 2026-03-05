@@ -1,5 +1,6 @@
 from django.conf import settings
 
+
 class CommunicationSettingsMixin:
 
     @property
@@ -11,17 +12,17 @@ class CommunicationSettingsMixin:
         - 'tenxyte.backends.sms.NGHBackend'
         - 'tenxyte.backends.sms.ConsoleBackend' (défaut, pour dev)
         """
-        return self._get('SMS_BACKEND', 'tenxyte.backends.sms.ConsoleBackend')
+        return self._get("SMS_BACKEND", "tenxyte.backends.sms.ConsoleBackend")
 
     @property
     def SMS_ENABLED(self):
         """Activer l'envoi réel de SMS."""
-        return self._get('SMS_ENABLED', False)
+        return self._get("SMS_ENABLED", False)
 
     @property
     def SMS_DEBUG(self):
         """Mode debug SMS (log au lieu d'envoyer)."""
-        return self._get('SMS_DEBUG', True)
+        return self._get("SMS_DEBUG", True)
 
     # =============================================
     # Email Backend
@@ -42,7 +43,7 @@ class CommunicationSettingsMixin:
             # ou avec django-anymail:
             EMAIL_BACKEND = 'anymail.backends.sendgrid.EmailBackend'
         """
-        return self._get('EMAIL_BACKEND', 'tenxyte.backends.email.DjangoBackend')
+        return self._get("EMAIL_BACKEND", "tenxyte.backends.email.DjangoBackend")
 
     # =============================================
     # Password Validation
@@ -51,17 +52,17 @@ class CommunicationSettingsMixin:
     @property
     def TWILIO_ACCOUNT_SID(self):
         """Twilio Account SID."""
-        return getattr(settings, 'TWILIO_ACCOUNT_SID', '')
+        return getattr(settings, "TWILIO_ACCOUNT_SID", "")
 
     @property
     def TWILIO_AUTH_TOKEN(self):
         """Twilio Auth Token."""
-        return getattr(settings, 'TWILIO_AUTH_TOKEN', '')
+        return getattr(settings, "TWILIO_AUTH_TOKEN", "")
 
     @property
     def TWILIO_PHONE_NUMBER(self):
         """Twilio Phone Number (format: +1234567890)."""
-        return getattr(settings, 'TWILIO_PHONE_NUMBER', '')
+        return getattr(settings, "TWILIO_PHONE_NUMBER", "")
 
     # =============================================
     # NGH Corp Settings (si backend NGH) — toujours manuels
@@ -70,17 +71,17 @@ class CommunicationSettingsMixin:
     @property
     def NGH_API_KEY(self):
         """NGH Corp API Key."""
-        return getattr(settings, 'NGH_API_KEY', '')
+        return getattr(settings, "NGH_API_KEY", "")
 
     @property
     def NGH_API_SECRET(self):
         """NGH Corp API Secret."""
-        return getattr(settings, 'NGH_API_SECRET', '')
+        return getattr(settings, "NGH_API_SECRET", "")
 
     @property
     def NGH_SENDER_ID(self):
         """NGH Corp Sender ID affiché comme expéditeur du SMS."""
-        return getattr(settings, 'NGH_SENDER_ID', '')
+        return getattr(settings, "NGH_SENDER_ID", "")
 
     # =============================================
     # SendGrid Settings (si backend SendGrid) — toujours manuels
@@ -89,14 +90,13 @@ class CommunicationSettingsMixin:
     @property
     def SENDGRID_API_KEY(self):
         """SendGrid API Key."""
-        return getattr(settings, 'SENDGRID_API_KEY', '')
+        return getattr(settings, "SENDGRID_API_KEY", "")
 
     @property
     def SENDGRID_FROM_EMAIL(self):
         """SendGrid email expéditeur."""
-        return getattr(settings, 'SENDGRID_FROM_EMAIL', 'noreply@example.com')
+        return getattr(settings, "SENDGRID_FROM_EMAIL", "noreply@example.com")
 
     # =============================================
     # CORS Settings
     # =============================================
-

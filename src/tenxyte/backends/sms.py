@@ -4,7 +4,6 @@ Backends SMS pour l'envoi de codes OTP.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +58,7 @@ class TwilioBackend(BaseSMSBackend):
 
         if not all([self.account_sid, self.auth_token, self.from_number]):
             logger.warning(
-                "[Twilio] Credentials not configured. "
-                "Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER"
+                "[Twilio] Credentials not configured. " "Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER"
             )
 
     def send_sms(self, phone_number: str, message: str) -> bool:
@@ -75,11 +73,7 @@ class TwilioBackend(BaseSMSBackend):
 
             client = Client(self.account_sid, self.auth_token)
 
-            result = client.messages.create(
-                body=message,
-                from_=self.from_number,
-                to=phone_number
-            )
+            result = client.messages.create(body=message, from_=self.from_number, to=phone_number)
 
             logger.info(f"[Twilio] SMS sent to {phone_number} | SID: {result.sid}")
             return True
@@ -113,10 +107,7 @@ class NGHBackend(BaseSMSBackend):
         self.sender_id = auth_settings.NGH_SENDER_ID
 
         if not all([self.api_key, self.api_secret, self.sender_id]):
-            logger.warning(
-                "[NGH] Credentials not configured. "
-                "Set NGH_API_KEY, NGH_API_SECRET, NGH_SENDER_ID"
-            )
+            logger.warning("[NGH] Credentials not configured. " "Set NGH_API_KEY, NGH_API_SECRET, NGH_SENDER_ID")
 
     def send_sms(self, phone_number: str, message: str) -> bool:
         """Envoie le SMS via l'API NGH Corp."""
@@ -129,13 +120,15 @@ class NGHBackend(BaseSMSBackend):
             import http.client
 
             conn = http.client.HTTPSConnection("extranet.nghcorp.net")
-            payload = json.dumps({
-                "from": self.sender_id,
-                "to": phone_number,
-                "text": message,
-                "api_key": self.api_key,
-                "api_secret": self.api_secret,
-            })
+            payload = json.dumps(
+                {
+                    "from": self.sender_id,
+                    "to": phone_number,
+                    "text": message,
+                    "api_key": self.api_key,
+                    "api_secret": self.api_secret,
+                }
+            )
             headers = {"Content-Type": "application/json"}
 
             conn.request("POST", "/api/send-sms", payload, headers)
@@ -150,10 +143,7 @@ class NGHBackend(BaseSMSBackend):
                 )
                 return True
             else:
-                logger.error(
-                    f"[NGH] Failed to send SMS: "
-                    f"{data.get('status')} - {data.get('status_desc')}"
-                )
+                logger.error(f"[NGH] Failed to send SMS: " f"{data.get('status')} - {data.get('status_desc')}")
                 return False
 
         except Exception as e:

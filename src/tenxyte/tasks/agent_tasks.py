@@ -6,13 +6,16 @@ from datetime import timedelta
 try:
     from celery import shared_task
 except ImportError:
+
     def shared_task(func):
         return func
+
 
 from tenxyte.models.agent import AgentToken
 from tenxyte.services.agent_service import AgentTokenService
 
 logger = logging.getLogger(__name__)
+
 
 @shared_task
 def check_agent_heartbeats():
@@ -22,12 +25,9 @@ def check_agent_heartbeats():
     """
     service = AgentTokenService()
     now = timezone.now()
-    
-    stale_tokens = AgentToken.objects.filter(
-        status=AgentToken.Status.ACTIVE,
-        heartbeat_required_every__isnull=False
-    )
-    
+
+    stale_tokens = AgentToken.objects.filter(status=AgentToken.Status.ACTIVE, heartbeat_required_every__isnull=False)
+
     suspended_count = 0
     for token in stale_tokens:
         if not token.last_heartbeat_at:
@@ -35,12 +35,12 @@ def check_agent_heartbeats():
             age = now - token.created_at
         else:
             age = now - token.last_heartbeat_at
-            
+
         if age > timedelta(seconds=token.heartbeat_required_every):
             service.suspend(token, reason=AgentToken.SuspendedReason.HEARTBEAT_MISSING)
             suspended_count += 1
-            
+
     if suspended_count > 0:
         logger.warning(f"Suspended {suspended_count} AgentTokens due to missing heartbeats.")
-        
+
     return suspended_count

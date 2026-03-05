@@ -21,8 +21,7 @@ class TestAutoDevPreset:
         obj = TestSettings()
         # Use SimpleNamespace to properly simulate missing attributes
         mock_settings = SimpleNamespace(DEBUG=True)
-        with patch('tenxyte.conf.base.settings', mock_settings), \
-             patch('tenxyte.conf.presets.settings', mock_settings):
+        with patch('tenxyte.conf.base.settings', mock_settings):
             # Development preset has PASSWORD_HISTORY_ENABLED=False
             result = obj._get('PASSWORD_HISTORY_ENABLED', True)
             assert result is False  # Development preset value, not default True
@@ -37,8 +36,7 @@ class TestAutoDevPreset:
 
         obj = TestSettings()
         mock_settings = SimpleNamespace(DEBUG=False)
-        with patch('tenxyte.conf.base.settings', mock_settings), \
-             patch('tenxyte.conf.presets.settings', mock_settings):
+        with patch('tenxyte.conf.base.settings', mock_settings):
             # Should use default value True, not development preset value False
             result = obj._get('PASSWORD_HISTORY_ENABLED', True)
             assert result is True
@@ -53,8 +51,7 @@ class TestAutoDevPreset:
 
         obj = TestSettings()
         mock_settings = SimpleNamespace(DEBUG=True, TENXYTE_SHORTCUT_SECURE_MODE='medium')
-        with patch('tenxyte.conf.base.settings', mock_settings), \
-             patch('tenxyte.conf.presets.settings', mock_settings):
+        with patch('tenxyte.conf.base.settings', mock_settings):
             # Medium preset has PASSWORD_HISTORY_ENABLED=True
             result = obj._get('PASSWORD_HISTORY_ENABLED', False)
             assert result is True
@@ -69,8 +66,7 @@ class TestAutoDevPreset:
 
         obj = TestSettings()
         mock_settings = SimpleNamespace(DEBUG=True, TENXYTE_PASSWORD_HISTORY_ENABLED=True)
-        with patch('tenxyte.conf.base.settings', mock_settings), \
-             patch('tenxyte.conf.presets.settings', mock_settings):
+        with patch('tenxyte.conf.base.settings', mock_settings):
             result = obj._get('PASSWORD_HISTORY_ENABLED', False)
             assert result is True  # Explicit setting wins
 
@@ -131,8 +127,7 @@ class TestAutoDevPreset:
             DEBUG=False,
             TENXYTE_SHORTCUT_SECURE_MODE='nonexistent'
         )
-        with patch('tenxyte.conf.base.settings', mock_settings), \
-             patch('tenxyte.conf.presets.settings', mock_settings):
+        with patch('tenxyte.conf.base.settings', mock_settings):
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter('always')
                 result = obj._get('PASSWORD_HISTORY_ENABLED', True)

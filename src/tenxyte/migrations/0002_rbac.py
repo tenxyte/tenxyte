@@ -106,9 +106,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="user",
             name="direct_permissions",
-            field=models.ManyToManyField(
-                blank=True, related_name="users_direct", to=settings.TENXYTE_PERMISSION_MODEL
-            ),
+            field=models.ManyToManyField(blank=True, related_name="users_direct", to=settings.TENXYTE_PERMISSION_MODEL),
         ),
         migrations.AddField(
             model_name="user",
