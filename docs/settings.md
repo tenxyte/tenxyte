@@ -164,7 +164,7 @@ TENXYTE_SIMPLE_THROTTLE_RULES = {
     '/api/v1/products/': '100/hour',
     '/api/v1/search/': '30/min',
     '/api/v1/upload/': '5/hour',
-    '/api/v1/health/$': '1000/min',  # $ = exact match
+    '/api/v1/health/$': '1000/min',  # with $ = exact match
 }
 ```
 
