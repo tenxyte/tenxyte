@@ -80,7 +80,58 @@ class TestUserModel:
         user.roles.add(role)
 
         assert role in user.roles.all()
+        assert role in user.roles.all()
         assert user.roles.count() == 1
+
+    @pytest.mark.django_db
+    def test_user_rbac_extensions(self, user):
+        user.is_superuser = True
+        assert user.has_module_perms("any_app") is True
+        assert user.is_anonymous is False
+
+        role1 = Role.objects.create(code="r1", name="R1")
+        role2 = Role.objects.create(code="r2", name="R2")
+        user.roles.add(role1, role2)
+
+        assert user.has_role("r1") is True
+        assert user.has_any_role(["r1", "invalid"]) is True
+        assert user.has_all_roles(["r1", "r2"]) is True
+        assert user.has_all_roles(["r1", "r3"]) is False
+        
+        # remove_role coverage
+        assert user.remove_role("r1") is True
+        assert user.remove_role("missing") is False
+
+        # assign_default_role
+        role_def = Role.objects.create(code="def", name="Def", is_default=True)
+        user.assign_default_role()
+        assert user.has_role("def") is True
+
+    @pytest.mark.django_db
+    def test_user_soft_delete_extensions(self, user):
+        assert user.is_account_deleted() is False
+        user.soft_delete()
+        assert user.is_account_deleted() is True
+        # already deleted
+        assert user.soft_delete() is False
+
+    @pytest.mark.django_db
+    def test_user_opt_out_orgs(self, user):
+        from django.test import override_settings
+        with override_settings(TENXYTE_ORGANIZATIONS_ENABLED=False):
+            assert user.get_organizations() == []
+            assert user.get_org_membership(None) is None
+            assert user.has_org_role(None, "admin") is False
+            assert user.has_org_permission(None, "perm") is False
+            assert user.is_org_member(None) is False
+
+    @pytest.mark.django_db
+    def test_abstract_role_has_permission(self):
+        role = Role.objects.create(code="test", name="Test")
+        perm = Permission.objects.create(code="docs.read", name="Read docs")
+        role.permissions.add(perm)
+        assert role.has_permission("docs.read") is True
+        assert role.has_permission("docs.write") is False
 
 
 class TestApplicationModel:

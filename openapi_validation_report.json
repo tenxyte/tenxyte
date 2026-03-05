@@ -1,87 +1,30 @@
 {
   "summary": {
-    "total_issues": 14,
+    "total_issues": 0,
     "critical_issues": 0,
     "warnings": 0,
-    "info": 14,
-    "quality_score": 86.0,
+    "info": 0,
+    "quality_score": 100.0,
     "performance_issues": 0
   },
   "statistics": {
-    "total_paths": 80,
-    "total_operations": 99,
-    "total_examples": 255,
-    "schema_size_bytes": 183711,
+    "total_paths": 90,
+    "total_operations": 110,
+    "total_examples": 283,
+    "schema_size_bytes": 213318,
     "security_coverage": 100.0,
-    "org_header_operations": 13
+    "org_header_operations": 16
   },
-  "issues": [
-    {
-      "severity": "info",
-      "message": "Missing examples for PATCH /api/v1/auth/admin/users/{user_id}/"
-    },
-    {
-      "severity": "info",
-      "message": "Missing examples for POST /api/v1/auth/admin/users/{user_id}/ban/"
-    },
-    {
-      "severity": "info",
-      "message": "Missing examples for POST /api/v1/auth/admin/users/{user_id}/lock/"
-    },
-    {
-      "severity": "info",
-      "message": "Missing examples for PUT /api/v1/auth/applications/{app_id}/"
-    },
-    {
-      "severity": "info",
-      "message": "Missing examples for POST /api/v1/auth/google/"
-    },
-    {
-      "severity": "info",
-      "message": "Missing examples for POST /api/v1/auth/password/strength/"
-    },
-    {
-      "severity": "info",
-      "message": "Missing examples for POST /api/v1/auth/permissions/"
-    },
-    {
-      "severity": "info",
-      "message": "Missing examples for PUT /api/v1/auth/permissions/{permission_id}/"
-    },
-    {
-      "severity": "info",
-      "message": "Missing examples for POST /api/v1/auth/roles/"
-    },
-    {
-      "severity": "info",
-      "message": "Missing examples for PUT /api/v1/auth/roles/{role_id}/"
-    },
-    {
-      "severity": "info",
-      "message": "Missing examples for POST /api/v1/auth/roles/{role_id}/permissions/"
-    },
-    {
-      "severity": "info",
-      "message": "Missing examples for POST /api/v1/auth/users/{user_id}/permissions/"
-    },
-    {
-      "severity": "info",
-      "message": "Missing examples for POST /api/v1/auth/users/{user_id}/roles/"
-    },
-    {
-      "severity": "info",
-      "message": "No global security requirements defined"
-    }
-  ],
+  "issues": [],
   "performance_issues": [],
   "duplicates": {},
   "recommendations": [
-    "Excellent! OpenAPI specification is production-ready"
+    "Refactor duplicate schemas to reduce specification size"
   ],
   "schema_info": {
     "version": "3.0.3",
-    "title": "",
-    "paths_count": 80,
+    "title": "Tenxyte API",
+    "paths_count": 90,
     "components_count": 2
   }
 }

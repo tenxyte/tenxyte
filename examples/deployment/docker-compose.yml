@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  auth-service:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env.production # (Rappel: Ne jamais commiter ce fichier)
+    networks:
+      - internal_net
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tenxyte_db
+      POSTGRES_USER: ${DB_USER:-tenxyte}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - internal_net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-tenxyte}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    networks:
+      - internal_net
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  internal_net:
+    internal: true # Empêche l'exposition directe sur l'hôte
+
+volumes:
+  db_data:

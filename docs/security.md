@@ -2,6 +2,19 @@
 
 Tenxyte provides multiple layers of security out of the box.
 
+## Table of Contents
+- [Rate Limiting](#rate-limiting)
+- [Account Lockout](#account-lockout)
+- [Two-Factor Authentication (2FA / TOTP)](#two-factor-authentication-2fa--totp)
+- [JWT Token Security](#jwt-token-security)
+- [Session & Device Limits](#session--device-limits)
+- [Password Security](#password-security)
+- [Security Headers](#security-headers)
+- [CORS](#cors)
+- [Audit Logging](#audit-logging)
+- [OTP Verification](#otp-verification)
+- [Production Checklist](#production-checklist)
+
 ---
 
 ## Rate Limiting
@@ -141,12 +154,15 @@ TENXYTE_REFRESH_TOKEN_ROTATION = True
 
 ### Short-Lived Access Tokens
 
-Keep access tokens short-lived and rely on refresh tokens for session persistence:
+Keep access tokens short-lived and rely on refresh tokens for session persistence. By default, access tokens last 1 hour, but it is highly recommended to shorten this in production:
 
 ```python
-TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 900    # 15 minutes (recommended)
-TENXYTE_JWT_REFRESH_TOKEN_LIFETIME = 604800  # 7 days
+# Default values
+TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 3600    # 1 hour
+TENXYTE_JWT_REFRESH_TOKEN_LIFETIME = 604800 # 7 days
 ```
+
+*(Note: The `standard` preset configures access tokens to 15 minutes).*
 
 ---
 
@@ -154,11 +170,11 @@ TENXYTE_JWT_REFRESH_TOKEN_LIFETIME = 604800  # 7 days
 
 ### Session Limits
 
-Limit how many concurrent sessions a user can have:
+Limit how many concurrent sessions a user can have by rejecting or overriding logins. By default, Tenxyte restricts users to 1 session:
 
 ```python
 TENXYTE_SESSION_LIMIT_ENABLED = True
-TENXYTE_DEFAULT_MAX_SESSIONS = 3
+TENXYTE_DEFAULT_MAX_SESSIONS = 1 # Overriden by the standard preset to 3
 TENXYTE_DEFAULT_SESSION_LIMIT_ACTION = 'revoke_oldest'  # or 'deny'
 ```
 
@@ -170,11 +186,11 @@ Per-user override: set `user.max_sessions = 5` to override the default for that 
 
 ### Device Limits
 
-Limit how many unique devices a user can use:
+Limit how many unique devices a user can use by tracking structured device origins. By default, Tenxyte restricts users to 1 device:
 
 ```python
 TENXYTE_DEVICE_LIMIT_ENABLED = True
-TENXYTE_DEFAULT_MAX_DEVICES = 2
+TENXYTE_DEFAULT_MAX_DEVICES = 1 # Overriden by the standard preset to 5, high-security to 2
 TENXYTE_DEVICE_LIMIT_ACTION = 'deny'  # or 'revoke_oldest'
 ```
 
@@ -226,17 +242,20 @@ POST /api/v1/auth/password/strength/
 
 ## Security Headers
 
-Add security headers to all responses:
+Add security headers to all responses. By default, Tenxyte provides a highly restrictive set of headers, but they are disabled (`False`) by default unless you use a secure preset or manually enable them:
 
 ```python
-TENXYTE_SECURITY_HEADERS_ENABLED = True
+TENXYTE_SECURITY_HEADERS_ENABLED = False # Set to True to enable
 TENXYTE_SECURITY_HEADERS = {
     'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
+    'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-    'Content-Security-Policy': "default-src 'self'",
+    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+    'Cross-Origin-Resource-Policy': 'same-origin',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 }
 ```
 
@@ -281,21 +300,33 @@ All security-relevant events are automatically logged to the `AuditLog` model:
 | `login_failed` | Failed login attempt |
 | `logout` | User logout |
 | `logout_all` | Logout from all devices |
-| `register` | New user registration |
+| `token_refresh` | Access token refreshed |
 | `password_change` | Password changed |
-| `password_reset` | Password reset |
+| `password_reset_request` | Password reset requested |
+| `password_reset_complete` | Password reset completed |
 | `2fa_enabled` | 2FA activated |
 | `2fa_disabled` | 2FA deactivated |
-| `token_refresh` | Access token refreshed |
+| `2fa_backup_used` | 2FA Backup Code Used |
+| `account_created` | Account Created |
 | `account_locked` | Account locked after failures |
+| `account_unlocked` | Account Unlocked |
+| `email_verified` | Email Verified |
+| `phone_verified` | Phone Verified |
+| `role_assigned` | Role Assigned |
+| `role_removed` | Role Removed |
+| `permission_changed`| Permission Changed |
+| `app_created` | Application Created |
+| `app_credentials_regenerated` | Application Credentials Regenerated |
+| `account_deleted` | Account Deleted |
+| `suspicious_activity` | Suspicious Activity Detected |
 | `session_limit_exceeded` | Session limit hit |
 | `device_limit_exceeded` | Device limit hit |
-| `new_device_login` | Login from unrecognized device |
-| `data_exported` | GDPR data export |
+| `new_device_detected` | Login from unrecognized device |
+| `agent_action` | Agent Action Executed |
 
 Query audit logs:
 ```bash
-GET /api/v1/auth/admin/audit-logs/?action=login_failed&from=2026-01-01
+GET /api/v1/auth/admin/audit-logs/?action=login_failed&date_from=2026-01-01
 ```
 
 ---

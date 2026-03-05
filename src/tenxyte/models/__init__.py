@@ -82,52 +82,66 @@ from .organization import (
     OrganizationInvitation,
 )
 
+# Agent models
+from .agent import (
+    AgentToken,
+    AgentPendingAction,
+)
+
+# Multi-Tenancy Base Model
+from .tenant import BaseTenantModel
+
 __all__ = [
     # Base
-    '_get_auto_field_class',
-    'AutoFieldClass',
-    'get_user_model',
-    'get_role_model',
-    'get_permission_model',
-    'get_application_model',
-    'get_organization_model',
-    'get_organization_role_model',
-    'get_organization_membership_model',
+    "_get_auto_field_class",
+    "AutoFieldClass",
+    "get_user_model",
+    "get_role_model",
+    "get_permission_model",
+    "get_application_model",
+    "get_organization_model",
+    "get_organization_role_model",
+    "get_organization_membership_model",
     # Auth
-    'UserManager',
-    'AbstractPermission',
-    'AbstractRole',
-    'AbstractUser',
-    'Permission',
-    'Role',
-    'User',
+    "UserManager",
+    "AbstractPermission",
+    "AbstractRole",
+    "AbstractUser",
+    "Permission",
+    "Role",
+    "User",
     # Application
-    'AbstractApplication',
-    'Application',
+    "AbstractApplication",
+    "Application",
     # Operational
-    'OTPCode',
-    'RefreshToken',
-    'LoginAttempt',
+    "OTPCode",
+    "RefreshToken",
+    "LoginAttempt",
     # Security
-    'BlacklistedToken',
-    'AuditLog',
-    'PasswordHistory',
+    "BlacklistedToken",
+    "AuditLog",
+    "PasswordHistory",
     # GDPR
-    'AccountDeletionRequest',
+    "AccountDeletionRequest",
     # Magic Link
-    'MagicLinkToken',
+    "MagicLinkToken",
     # Social Login
-    'SocialConnection',
+    "SocialConnection",
     # WebAuthn
-    'WebAuthnCredential',
-    'WebAuthnChallenge',
+    "WebAuthnCredential",
+    "WebAuthnChallenge",
     # Organization
-    'AbstractOrganization',
-    'AbstractOrganizationRole',
-    'AbstractOrganizationMembership',
-    'AbstractOrganizationInvitation',
-    'Organization',
-    'OrganizationRole',
-    'OrganizationMembership',
-    'OrganizationInvitation',
+    "AbstractOrganization",
+    "AbstractOrganizationRole",
+    "AbstractOrganizationMembership",
+    "AbstractOrganizationInvitation",
+    "Organization",
+    "OrganizationRole",
+    "OrganizationMembership",
+    "OrganizationInvitation",
+    # Agent
+    "AgentToken",
+    "AgentPendingAction",
+    # Tenant
+    "BaseTenantModel",
 ]

@@ -112,6 +112,24 @@ class TestMeView:
         assert resp.data["user"]["first_name"] == "Updated"
 
     @pytest.mark.django_db
+    def test_patch_profile_resets_verification_on_contact_change(self):
+        # VULN-005 Mitigation Check
+        app = _app("MeView5")
+        user = _user("me5@test.com")
+        user.is_email_verified = True
+        user.is_phone_verified = True
+        user.save()
+
+        resp = _authed_patch(MeView, "/auth/me/", user, app,
+                             data={"email": "new_email@test.com", "phone_number": "699999999"})
+
+        assert resp.status_code == 200
+        user.refresh_from_db()
+        assert user.is_email_verified is False
+        assert user.is_phone_verified is False
+        assert user.email == "new_email@test.com"
+
+    @pytest.mark.django_db
     def test_patch_profile_invalid_data_returns_400(self):
         app = _app("MeView3")
         user = _user("me3@test.com")
@@ -290,7 +308,7 @@ class TestUserDetailView:
         assert target.is_deleted is True
 
     @pytest.mark.django_db
-    def test_delete_already_deleted_returns_400(self):
+    def test_delete_already_deleted_returns_404(self):
         app = _app("UserDetail6")
         admin = _user("userdetail_admin6@test.com", "users.delete")
         target = _user("userdetail_target6@test.com")
@@ -299,7 +317,7 @@ class TestUserDetailView:
         resp = _authed_delete(UserDetailView, f"/auth/admin/users/{target.id}/",
                               admin, app, user_id=str(target.id))
 
-        assert resp.status_code == 400
+        assert resp.status_code == 404
 
     @pytest.mark.django_db
     def test_get_user_without_permission_returns_403(self):

@@ -40,7 +40,7 @@ class BaseEmailBackend(ABC):
         subject: str,
         message: str,
         html_message: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Envoie un email.
@@ -69,7 +69,7 @@ class ConsoleBackend(BaseEmailBackend):
         subject: str,
         message: str,
         html_message: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Affiche l'email dans la console."""
         logger.info(f"[Email Console] To: {to_email}")
@@ -100,16 +100,15 @@ class DjangoBackend(BaseEmailBackend):
         subject: str,
         message: str,
         html_message: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """Envoie l'email via Django mail."""
         try:
             from django.core.mail import EmailMultiAlternatives
             from django.conf import settings
             from django.template import Template, Context
-            from django.template.loader import render_to_string
 
-            from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@example.com')
+            from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@example.com")
 
             # Render templates if context provided
             if context:
@@ -128,12 +127,7 @@ class DjangoBackend(BaseEmailBackend):
                         pass
 
             # Create email
-            email = EmailMultiAlternatives(
-                subject=subject,
-                body=message,
-                from_email=from_email,
-                to=[to_email]
-            )
+            email = EmailMultiAlternatives(subject=subject, body=message, from_email=from_email, to=[to_email])
 
             # Attach HTML version if provided
             if html_message:
@@ -156,11 +150,7 @@ class TemplateEmailBackend(DjangoBackend):
     """
 
     def send_template_email(
-        self,
-        to_email: str,
-        subject: str,
-        template_name: str,
-        context: Optional[Dict[str, Any]] = None
+        self, to_email: str, subject: str, template_name: str, context: Optional[Dict[str, Any]] = None
     ) -> bool:
         """
         Envoie un email en utilisant un template Django.
@@ -182,12 +172,7 @@ class TemplateEmailBackend(DjangoBackend):
             html_message = render_to_string(template_name, context)
             text_message = strip_tags(html_message)
 
-            return self.send_email(
-                to_email=to_email,
-                subject=subject,
-                message=text_message,
-                html_message=html_message
-            )
+            return self.send_email(to_email=to_email, subject=subject, message=text_message, html_message=html_message)
 
         except Exception as e:
             logger.error(f"[Template Email] Error: {e}")
@@ -210,13 +195,16 @@ class SendGridBackend(BaseEmailBackend):
         self.from_email = auth_settings.SENDGRID_FROM_EMAIL
 
         if not self.api_key:
-            logger.warning(
-                "[SendGrid] API key not configured. "
-                "Set SENDGRID_API_KEY in settings."
-            )
+            logger.warning("[SendGrid] API key not configured. " "Set SENDGRID_API_KEY in settings.")
 
-    def send_email(self, to_email: str, subject: str, message: str,
-                   html_message: Optional[str] = None, context: Optional[Dict[str, Any]] = None) -> bool:
+    def send_email(
+        self,
+        to_email: str,
+        subject: str,
+        message: str,
+        html_message: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> bool:
         """Envoie l'email via SendGrid."""
         if not self.api_key:
             logger.error("[SendGrid] Missing API key")
@@ -231,7 +219,7 @@ class SendGridBackend(BaseEmailBackend):
                 to_emails=to_email,
                 subject=subject,
                 plain_text_content=message,
-                html_content=html_message or None
+                html_content=html_message or None,
             )
 
             sg = SendGridAPIClient(self.api_key)

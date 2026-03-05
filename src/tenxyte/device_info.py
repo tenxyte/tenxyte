@@ -17,40 +17,41 @@ Catégories supportées (v1):
     - runtime : runtime/client (runtime, rtv)
     - tz      : timezone
 """
+
 import re
 import logging
 
-logger = logging.getLogger('tenxyte')
+logger = logging.getLogger("tenxyte")
 
-CURRENT_VERSION = '1'
+CURRENT_VERSION = "1"
 
-VALID_DEVICE_TYPES = {'desktop', 'mobile', 'tablet', 'server', 'bot', 'api-client'}
-VALID_ARCHITECTURES = {'x64', 'arm64', 'arm', 'x86'}
+VALID_DEVICE_TYPES = {"desktop", "mobile", "tablet", "server", "bot", "api-client"}
+VALID_ARCHITECTURES = {"x64", "arm64", "arm", "x86"}
 
 # Catégories et leurs sous-clés autorisées
 CATEGORY_KEYS = {
-    'v': {'v'},
-    'os': {'os', 'osv'},
-    'device': {'device'},
-    'arch': {'arch'},
-    'app': {'app', 'appv'},
-    'runtime': {'runtime', 'rtv'},
-    'tz': {'tz'},
+    "v": {"v"},
+    "os": {"os", "osv"},
+    "device": {"device"},
+    "arch": {"arch"},
+    "app": {"app", "appv"},
+    "runtime": {"runtime", "rtv"},
+    "tz": {"tz"},
 }
 
 # Clé principale de chaque catégorie (utilisée pour identifier la catégorie)
 CATEGORY_PRIMARY = {
-    'v': 'v',
-    'os': 'os',
-    'device': 'device',
-    'arch': 'arch',
-    'app': 'app',
-    'runtime': 'runtime',
-    'tz': 'tz',
+    "v": "v",
+    "os": "os",
+    "device": "device",
+    "arch": "arch",
+    "app": "app",
+    "runtime": "runtime",
+    "tz": "tz",
 }
 
 # Regex pour valider les valeurs (pas de caractères spéciaux du format)
-VALUE_PATTERN = re.compile(r'^[a-zA-Z0-9._\-/: ]+$')
+VALUE_PATTERN = re.compile(r"^[a-zA-Z0-9._\-/: ]+$")
 
 
 def build_device_info(
@@ -63,7 +64,7 @@ def build_device_info(
     runtime: str = None,
     runtime_version: str = None,
     timezone: str = None,
-    version: str = CURRENT_VERSION
+    version: str = CURRENT_VERSION,
 ) -> str:
     """
     Construit une string device_info au format v1.
@@ -89,40 +90,40 @@ def build_device_info(
         ...     timezone='Africa/Porto-Novo')
         'v=1|os=windows;osv=11|device=desktop|arch=x64|app=tenxyte;appv=1.4.2|runtime=chrome;rtv=122|tz=Africa/Porto-Novo'
     """
-    parts = [f'v={version}']
+    parts = [f"v={version}"]
 
     if os:
-        os_part = f'os={os}'
+        os_part = f"os={os}"
         if os_version:
-            os_part += f';osv={os_version}'
+            os_part += f";osv={os_version}"
         parts.append(os_part)
 
     if device:
         if device.lower() not in VALID_DEVICE_TYPES:
             logger.warning(f"[DeviceInfo] Unknown device type: {device}")
-        parts.append(f'device={device.lower()}')
+        parts.append(f"device={device.lower()}")
 
     if arch:
         if arch.lower() not in VALID_ARCHITECTURES:
             logger.warning(f"[DeviceInfo] Unknown architecture: {arch}")
-        parts.append(f'arch={arch.lower()}')
+        parts.append(f"arch={arch.lower()}")
 
     if app:
-        app_part = f'app={app}'
+        app_part = f"app={app}"
         if app_version:
-            app_part += f';appv={app_version}'
+            app_part += f";appv={app_version}"
         parts.append(app_part)
 
     if runtime:
-        rt_part = f'runtime={runtime}'
+        rt_part = f"runtime={runtime}"
         if runtime_version:
-            rt_part += f';rtv={runtime_version}'
+            rt_part += f";rtv={runtime_version}"
         parts.append(rt_part)
 
     if timezone:
-        parts.append(f'tz={timezone}')
+        parts.append(f"tz={timezone}")
 
-    return '|'.join(parts)
+    return "|".join(parts)
 
 
 def parse_device_info(device_info: str) -> dict:
@@ -146,14 +147,14 @@ def parse_device_info(device_info: str) -> dict:
         return {}
 
     result = {}
-    categories = device_info.split('|')
+    categories = device_info.split("|")
 
     for category in categories:
-        pairs = category.split(';')
+        pairs = category.split(";")
         for pair in pairs:
-            if '=' not in pair:
+            if "=" not in pair:
                 continue
-            key, _, value = pair.partition('=')
+            key, _, value = pair.partition("=")
             key = key.strip()
             value = value.strip()
             if key and value:
@@ -186,16 +187,20 @@ def validate_device_info(device_info: str) -> tuple:
 
     parsed = parse_device_info(device_info)
 
-    if 'v' not in parsed:
-        errors.append('Missing version field (v=1)')
-    elif parsed['v'] != CURRENT_VERSION:
+    if "v" not in parsed:
+        errors.append("Missing version field (v=1)")
+    elif parsed["v"] != CURRENT_VERSION:
         errors.append(f"Unsupported version: {parsed['v']} (expected {CURRENT_VERSION})")
 
-    if 'device' in parsed and parsed['device'] not in VALID_DEVICE_TYPES:
-        errors.append(f"Invalid device type: {parsed['device']}. Must be one of: {', '.join(sorted(VALID_DEVICE_TYPES))}")
+    if "device" in parsed and parsed["device"] not in VALID_DEVICE_TYPES:
+        errors.append(
+            f"Invalid device type: {parsed['device']}. Must be one of: {', '.join(sorted(VALID_DEVICE_TYPES))}"
+        )
 
-    if 'arch' in parsed and parsed['arch'] not in VALID_ARCHITECTURES:
-        errors.append(f"Invalid architecture: {parsed['arch']}. Must be one of: {', '.join(sorted(VALID_ARCHITECTURES))}")
+    if "arch" in parsed and parsed["arch"] not in VALID_ARCHITECTURES:
+        errors.append(
+            f"Invalid architecture: {parsed['arch']}. Must be one of: {', '.join(sorted(VALID_ARCHITECTURES))}"
+        )
 
     # Vérifier les valeurs pour les caractères interdits
     for key, value in parsed.items():
@@ -225,36 +230,36 @@ def get_device_summary(device_info: str) -> str:
     parsed = parse_device_info(device_info)
 
     if not parsed:
-        return 'Unknown device'
+        return "Unknown device"
 
     parts = []
 
     # Device type
-    if 'device' in parsed:
-        parts.append(parsed['device'])
+    if "device" in parsed:
+        parts.append(parsed["device"])
 
     # OS
-    if 'os' in parsed:
-        os_str = parsed['os']
-        if 'osv' in parsed:
+    if "os" in parsed:
+        os_str = parsed["os"]
+        if "osv" in parsed:
             os_str += f" {parsed['osv']}"
         parts.append(os_str)
 
     # Runtime
-    if 'runtime' in parsed:
-        rt_str = parsed['runtime']
-        if 'rtv' in parsed:
+    if "runtime" in parsed:
+        rt_str = parsed["runtime"]
+        if "rtv" in parsed:
             rt_str += f" {parsed['rtv']}"
         parts.append(rt_str)
 
     # App
-    if 'app' in parsed and not parts:
-        app_str = parsed['app']
-        if 'appv' in parsed:
+    if "app" in parsed and not parts:
+        app_str = parsed["app"]
+        if "appv" in parsed:
             app_str += f" {parsed['appv']}"
         parts.append(app_str)
 
-    return ' — '.join(parts) if parts else 'Unknown device'
+    return " — ".join(parts) if parts else "Unknown device"
 
 
 def devices_match(device_info_a: str, device_info_b: str) -> bool:
@@ -286,7 +291,7 @@ def devices_match(device_info_a: str, device_info_b: str) -> bool:
     b = parse_device_info(device_info_b)
 
     # Clés d'identité du device (sans versions)
-    identity_keys = ['os', 'device', 'arch', 'app', 'runtime']
+    identity_keys = ["os", "device", "arch", "app", "runtime"]
 
     return all(a.get(k) == b.get(k) for k in identity_keys)
 
@@ -309,7 +314,7 @@ def build_device_info_from_user_agent(user_agent: str) -> str:
         'v=1|os=windows;osv=10.0|device=desktop|arch=x64|runtime=chrome;rtv=122'
     """
     if not user_agent or not user_agent.strip():
-        return ''
+        return ""
 
     ua = user_agent
 
@@ -317,102 +322,102 @@ def build_device_info_from_user_agent(user_agent: str) -> str:
     os_name = None
     os_version = None
 
-    if 'Windows' in ua:
-        os_name = 'windows'
-        m = re.search(r'Windows NT ([\d.]+)', ua)
+    if "Windows" in ua:
+        os_name = "windows"
+        m = re.search(r"Windows NT ([\d.]+)", ua)
         if m:
             os_version = m.group(1)
-    elif 'Android' in ua:
-        os_name = 'android'
-        m = re.search(r'Android ([\d.]+)', ua)
+    elif "Android" in ua:
+        os_name = "android"
+        m = re.search(r"Android ([\d.]+)", ua)
         if m:
             os_version = m.group(1)
-    elif 'iPhone' in ua or 'iPad' in ua or 'iPod' in ua:
-        os_name = 'ios'
-        m = re.search(r'OS ([\d_]+)', ua)
+    elif "iPhone" in ua or "iPad" in ua or "iPod" in ua:
+        os_name = "ios"
+        m = re.search(r"OS ([\d_]+)", ua)
         if m:
-            os_version = m.group(1).replace('_', '.')
-    elif 'Mac OS X' in ua:
-        os_name = 'macos'
-        m = re.search(r'Mac OS X ([\d_.]+)', ua)
+            os_version = m.group(1).replace("_", ".")
+    elif "Mac OS X" in ua:
+        os_name = "macos"
+        m = re.search(r"Mac OS X ([\d_.]+)", ua)
         if m:
-            os_version = m.group(1).replace('_', '.')
-    elif 'Linux' in ua:
-        os_name = 'linux'
-    elif 'CrOS' in ua:
-        os_name = 'chromeos'
+            os_version = m.group(1).replace("_", ".")
+    elif "Linux" in ua:
+        os_name = "linux"
+    elif "CrOS" in ua:
+        os_name = "chromeos"
 
     # Device type detection
-    device = 'desktop'
-    if re.search(r'iPad|Android(?!.*Mobile)|Tablet', ua, re.I):
-        device = 'tablet'
-    elif re.search(r'Mobile|iPhone|iPod|Android.*Mobile|webOS|BlackBerry|IEMobile|Opera Mini', ua, re.I):
-        device = 'mobile'
-    elif re.search(r'bot|crawl|spider|slurp', ua, re.I):
-        device = 'bot'
+    device = "desktop"
+    if re.search(r"iPad|Android(?!.*Mobile)|Tablet", ua, re.I):
+        device = "tablet"
+    elif re.search(r"Mobile|iPhone|iPod|Android.*Mobile|webOS|BlackBerry|IEMobile|Opera Mini", ua, re.I):
+        device = "mobile"
+    elif re.search(r"bot|crawl|spider|slurp", ua, re.I):
+        device = "bot"
 
     # Architecture detection
     arch = None
-    if re.search(r'x86_64|x86-64|Win64|x64|amd64|AMD64', ua):
-        arch = 'x64'
-    elif re.search(r'aarch64|ARM64', ua):
-        arch = 'arm64'
-    elif re.search(r'arm|ARM', ua):
-        arch = 'arm'
-    elif re.search(r'i[3-6]86|WOW64', ua):
-        arch = 'x86'
+    if re.search(r"x86_64|x86-64|Win64|x64|amd64|AMD64", ua):
+        arch = "x64"
+    elif re.search(r"aarch64|ARM64", ua):
+        arch = "arm64"
+    elif re.search(r"arm|ARM", ua):
+        arch = "arm"
+    elif re.search(r"i[3-6]86|WOW64", ua):
+        arch = "x86"
 
     # Runtime detection
     runtime = None
     runtime_version = None
 
-    if 'PostmanRuntime' in ua:
-        runtime = 'postman'
-        m = re.search(r'PostmanRuntime/([\d.]+)', ua)
+    if "PostmanRuntime" in ua:
+        runtime = "postman"
+        m = re.search(r"PostmanRuntime/([\d.]+)", ua)
         if m:
             runtime_version = m.group(1)
-        device = 'api-client'
-    elif ua.startswith('curl/'):
-        runtime = 'curl'
-        m = re.search(r'curl/([\d.]+)', ua)
+        device = "api-client"
+    elif ua.startswith("curl/"):
+        runtime = "curl"
+        m = re.search(r"curl/([\d.]+)", ua)
         if m:
             runtime_version = m.group(1)
-        device = 'api-client'
-    elif 'insomnia' in ua.lower():
-        runtime = 'insomnia'
-        m = re.search(r'insomnia/([\d.]+)', ua, re.I)
+        device = "api-client"
+    elif "insomnia" in ua.lower():
+        runtime = "insomnia"
+        m = re.search(r"insomnia/([\d.]+)", ua, re.I)
         if m:
             runtime_version = m.group(1)
-        device = 'api-client'
-    elif 'httpie' in ua.lower():
-        runtime = 'httpie'
-        m = re.search(r'HTTPie/([\d.]+)', ua, re.I)
+        device = "api-client"
+    elif "httpie" in ua.lower():
+        runtime = "httpie"
+        m = re.search(r"HTTPie/([\d.]+)", ua, re.I)
         if m:
             runtime_version = m.group(1)
-        device = 'api-client'
-    elif 'Edg/' in ua:
-        runtime = 'edge'
-        m = re.search(r'Edg/([\d]+)', ua)
+        device = "api-client"
+    elif "Edg/" in ua:
+        runtime = "edge"
+        m = re.search(r"Edg/([\d]+)", ua)
         if m:
             runtime_version = m.group(1)
-    elif 'OPR/' in ua:
-        runtime = 'opera'
-        m = re.search(r'OPR/([\d]+)', ua)
+    elif "OPR/" in ua:
+        runtime = "opera"
+        m = re.search(r"OPR/([\d]+)", ua)
         if m:
             runtime_version = m.group(1)
-    elif 'Chrome/' in ua and 'Chromium' not in ua:
-        runtime = 'chrome'
-        m = re.search(r'Chrome/([\d]+)', ua)
+    elif "Chrome/" in ua and "Chromium" not in ua:
+        runtime = "chrome"
+        m = re.search(r"Chrome/([\d]+)", ua)
         if m:
             runtime_version = m.group(1)
-    elif 'Safari/' in ua and 'Chrome' not in ua:
-        runtime = 'safari'
-        m = re.search(r'Version/([\d.]+)', ua)
+    elif "Safari/" in ua and "Chrome" not in ua:
+        runtime = "safari"
+        m = re.search(r"Version/([\d.]+)", ua)
         if m:
             runtime_version = m.group(1)
-    elif 'Firefox/' in ua:
-        runtime = 'firefox'
-        m = re.search(r'Firefox/([\d]+)', ua)
+    elif "Firefox/" in ua:
+        runtime = "firefox"
+        m = re.search(r"Firefox/([\d]+)", ua)
         if m:
             runtime_version = m.group(1)
 

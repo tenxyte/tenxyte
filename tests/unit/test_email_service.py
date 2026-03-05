@@ -87,7 +87,7 @@ def test_send_account_deletion_confirmation_failure(user):
             user=user, ip_address="1.2.3.4", user_agent="test"
         )
     
-    with patch('django.contrib.sites.shortcuts.get_current_site', side_effect=Exception("Failed to get site")):
+    with patch.object(service, '_send_template_email', return_value=False):
         result = service.send_account_deletion_confirmation(req)
         
     assert result is False

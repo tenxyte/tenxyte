@@ -75,3 +75,34 @@ class TestOrganizationModels:
         assert get_organization_model() == Organization
         assert get_organization_role_model() == OrganizationRole
         assert get_organization_membership_model() == OrganizationMembership
+
+    def test_user_is_org_owner_admin(self):
+        from django.test import override_settings
+        with override_settings(TENXYTE_ORGANIZATIONS_ENABLED=True, TENXYTE_ORG_ROLE_INHERITANCE=True):
+            # The user in setup is 'admin' of org_child
+            assert self.user.is_org_admin(self.org_child) is True
+            assert self.user.is_org_owner(self.org_child) is False
+            
+            # Grand child inheritance
+            assert self.user.is_org_admin(self.org_grandchild) is True
+
+            # Parent doesn't inherit up
+            assert self.user.is_org_admin(self.org_root) is False
+            
+            # Give owner directly to root
+            role_owner = OrganizationRole.objects.create(code="owner", name="Owner")
+            OrganizationMembership.objects.create(user=self.user, organization=self.org_root, role=role_owner)
+            
+            assert self.user.is_org_owner(self.org_root) is True
+            # Owner isn't inherited directly by the is_org_owner method (check_inheritance=False)
+            assert self.user.is_org_owner(self.org_child) is False
+
+    def test_has_org_permission_inheritance(self):
+        from django.test import override_settings
+        with override_settings(TENXYTE_ORGANIZATIONS_ENABLED=True, TENXYTE_ORG_ROLE_INHERITANCE=True):
+            # User has admin on org_child with 'org.test' perm
+            # Therefore they should have 'org.test' on org_grandchild
+            assert self.user.has_org_permission(self.org_grandchild, "org.test", check_inheritance=True) is True
+            
+            # They don't have it on root
+            assert self.user.has_org_permission(self.org_root, "org.test", check_inheritance=True) is False

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Accueil — Tenxyte API</title>
-  <meta name="description" content="Documentation API Tenxyte">
+  <meta name="description" content="Complete Django authentication package — JWT, RBAC, 2FA (TOTP), Magic Links, Passkeys (WebAuthn), Social Login, Organizations B2B.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,15 +24,16 @@
     </div></div>
     <button class="btn-icon" id="themeToggle" aria-label="Basculer le thème">
       <span aria-hidden="true">🌙</span></button>
+    <a href="https://github.com/tenxyte/tenxyte" class="btn-cta" target="_blank" rel="noopener" aria-label="GitHub">GitHub</a>
   </div></header>
-  <main id="main" role="main"><div class="hero"><div class="hero__inner"><span class="hero__badge">v0.0.0</span><h1 class="hero__title"></h1><p class="hero__subtitle">Documentation API complète.</p><div class="hero__actions"><a href="api-reference.html" class="btn btn--primary">Référence API</a><a href="examples.html" class="btn btn--secondary">Exemples</a><a href="authentication.html" class="btn btn--ghost">Authentification</a></div></div></div><div class="container"><div class="stats-bar" aria-label="Statistiques API"><div class="stat"><span class="stat__value">80</span><span class="stat__label">Endpoints</span></div><div class="stat"><span class="stat__value">64</span><span class="stat__label">Schémas</span></div><div class="stat"><span class="stat__value">8</span><span class="stat__label">Méthodes d'auth</span></div><div class="stat"><span class="stat__value">100%</span><span class="stat__label">Couverture</span></div></div><section class="section" id="features"><h2 class="section__title">Fonctionnalités</h2><div class="cards-grid"><div class="card"><div class="card__icon" aria-hidden="true">🔐</div><h3 class="card__title">Authentification avancée</h3><p class="card__body">JWT, 2FA TOTP, Magic Links, WebAuthn, Social OAuth</p></div><div class="card"><div class="card__icon" aria-hidden="true">🏢</div><h3 class="card__title">Multi-tenant</h3><p class="card__body">Organisations hiérarchiques, RBAC, rôles par organisation</p></div><div class="card"><div class="card__icon" aria-hidden="true">🛡️</div><h3 class="card__title">Sécurité & RGPD</h3><p class="card__body">Conformité RGPD, gestion des appareils, audit complet</p></div><div class="card"><div class="card__icon" aria-hidden="true">📊</div><h3 class="card__title">Dashboard admin</h3><p class="card__body">Statistiques temps réel, métriques de sécurité</p></div></div></section><section class="section" id="quickstart"><h2 class="section__title">Démarrage rapide</h2><div class="code-block" role="region" aria-label="Code Démarrage rapide — cURL"><div class="code-block__header"><span class="code-block__lang">Démarrage rapide — cURL</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-bash">curl -X POST .../api/v1/auth/login/email/ \
+  <main id="main" role="main"><div class="hero"><div class="hero__inner"><span class="hero__badge">v0.9.1</span><h1 class="hero__title">Tenxyte API</h1><p class="hero__subtitle">Complete Django authentication package — JWT, RBAC, 2FA (TOTP), Magic Links, Passkeys (WebAuthn), Social Login, Organizations B2B.</p><div class="hero__actions"><a href="api-reference.html" class="btn btn--primary">Référence API</a><a href="examples.html" class="btn btn--secondary">Exemples</a><a href="authentication.html" class="btn btn--ghost">Authentification</a></div></div></div><div class="container"><div class="stats-bar" aria-label="Statistiques API"><div class="stat"><span class="stat__value">90</span><span class="stat__label">Endpoints</span></div><div class="stat"><span class="stat__value">80</span><span class="stat__label">Schémas</span></div><div class="stat"><span class="stat__value">8</span><span class="stat__label">Méthodes d'auth</span></div><div class="stat"><span class="stat__value">100%</span><span class="stat__label">Couverture</span></div></div><section class="section" id="features"><h2 class="section__title">Fonctionnalités</h2><div class="cards-grid"><div class="card"><div class="card__icon" aria-hidden="true">🔐</div><h3 class="card__title">Authentification avancée</h3><p class="card__body">JWT, 2FA TOTP, Magic Links, WebAuthn, Social OAuth</p></div><div class="card"><div class="card__icon" aria-hidden="true">🏢</div><h3 class="card__title">Multi-tenant</h3><p class="card__body">Organisations hiérarchiques, RBAC, rôles par organisation</p></div><div class="card"><div class="card__icon" aria-hidden="true">🛡️</div><h3 class="card__title">Sécurité & RGPD</h3><p class="card__body">Conformité RGPD, gestion des appareils, audit complet</p></div><div class="card"><div class="card__icon" aria-hidden="true">📊</div><h3 class="card__title">Dashboard admin</h3><p class="card__body">Statistiques temps réel, métriques de sécurité</p></div></div></section><section class="section" id="quickstart"><h2 class="section__title">Démarrage rapide</h2><div class="code-block" role="region" aria-label="Code Démarrage rapide — cURL"><div class="code-block__header"><span class="code-block__lang">Démarrage rapide — cURL</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-bash">curl -X POST .../api/v1/auth/login/email/ \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"motdepasse"}'
 
 curl .../api/v1/auth/me/ \
   -H "Authorization: Bearer &lt;access_token&gt;"</code></pre></div></section><div class="alert alert--info" role="alert"><span aria-hidden="true">ℹ️</span> Documentation interactive : <a href="http://localhost:8000/api/docs/">Swagger UI</a> · <a href="http://localhost:8000/api/redoc/">ReDoc</a></div></div></main>
   <footer class="footer" role="contentinfo"><div class="footer__inner">
-    <p>© 2025 Tenxyte API · v0.0.0</p>
+    <p>© 2025 Tenxyte API · v0.9.1</p>
     <nav aria-label="Liens utiles">
       <a href="http://localhost:8000/api/docs/" target="_blank" rel="noopener">Swagger UI</a>
       <a href="http://localhost:8000/api/redoc/" target="_blank" rel="noopener">ReDoc</a>
@@ -158,7 +159,7 @@ curl .../api/v1/auth/me/ \
     {
       "title": "Modifier un utilisateur (admin)",
       "url": "api-reference.html#op-admin-users-partial-update",
-      "content": "Met à jour les informations d'un utilisateur. Réservé aux admins."
+      "content": "Met à jour partiellement les informations d'un utilisateur. Tous les champs sont optionnels. Réservé aux admins (permission users.update). Supporte la désactivation de compte, la promotion staff/superuser, et la limite de sessions/appareils."
     },
     {
       "title": "Supprimer un utilisateur (soft delete)",
@@ -168,12 +169,12 @@ curl .../api/v1/auth/me/ \
     {
       "title": "Bannir un utilisateur",
       "url": "api-reference.html#op-admin-users-ban-create",
-      "content": "Bannit un utilisateur de manière permanente. Nécessite la permission users.ban."
+      "content": "Bannit un utilisateur de manière permanente. Désactive le compte (is_active=False). Nécessite la permission users.ban. La raison est stockée dans le journal d'audit."
     },
     {
       "title": "Verrouiller un compte",
       "url": "api-reference.html#op-admin-users-lock-create",
-      "content": "Verrouille temporairement un compte utilisateur."
+      "content": "Verrouille temporairement un compte utilisateur. La durée est configurable (défaut: 30 min, max: 30 jours). Nécessite la permission users.lock. La raison est stockée dans le journal d'audit."
     },
     {
       "title": "Débannir un utilisateur",
@@ -184,6 +185,61 @@ curl .../api/v1/auth/me/ \
       "title": "Déverrouiller un compte",
       "url": "api-reference.html#op-admin-users-unlock-create",
       "content": "Déverrouille un compte utilisateur."
+    },
+    {
+      "title": "Liste les actions en attente de validation HITL",
+      "url": "api-reference.html#op-ai-pending-actions-list",
+      "content": "Retourne les AgentPendingActions non-confirmées et non-expirées des agents de l'utilisateur. HITL = Human-In-The-Loop. Si X-Org-Slug est fourni, filtre les actions relatives aux tokens de cette organisation."
+    },
+    {
+      "title": "Confirme une action agent en attente (HITL)",
+      "url": "api-reference.html#op-ai-pending-actions-confirm-create",
+      "content": "Approuve une action agent en attente via son confirmation_token. Le token est reçu par l'humain (email, webhook, etc.) lorsque l'agent demande une validation. Une fois confirmé, l'agent peut poursuivre l'action."
+    },
+    {
+      "title": "Refuse une action agent en attente (HITL)",
+      "url": "api-reference.html#op-ai-pending-actions-deny-create",
+      "content": "Refuse une action agent en attente via son confirmation_token. Le token est reçu par l'humain lorsque l'agent demande une validation. Une fois refusée, l'agent est notifié que l'action est bloquée."
+    },
+    {
+      "title": "Liste les tokens agent de l'utilisateur",
+      "url": "api-reference.html#op-ai-tokens-list",
+      "content": "Retourne tous les AgentTokens créés par l'utilisateur authentifié. Si X-Org-Slug est fourni, filtre les tokens liés à cette organisation."
+    },
+    {
+      "title": "Crée un nouveau token agent (AIRS)",
+      "url": "api-reference.html#op-ai-tokens-create",
+      "content": "Crée un AgentToken avec des permissions limitées pour un agent IA. Le token utilise le scheme AgentBearer pour s'identifier. Nécessite que AIRS_ENABLED soit True dans la configuration. Le contexte organisationnel peut être fourni via le header X-Org-Slug ou via le champ 'organization' dans le corps de la requête."
+    },
+    {
+      "title": "Détails d'un token agent",
+      "url": "api-reference.html#op-ai-tokens-retrieve",
+      "content": "Retourne les détails d'un AgentToken appartenant à l'utilisateur."
+    },
+    {
+      "title": "Heartbeat d'un token agent",
+      "url": "api-reference.html#op-ai-tokens-heartbeat-create",
+      "content": "Signal de vie envoyé par l'agent. Utilise le scheme `AgentBearer <token>` dans l'en-tête Authorization. Renouvelle le dead man's switch si configuré."
+    },
+    {
+      "title": "Rapporte l'usage d'un token agent (coûts LLM)",
+      "url": "api-reference.html#op-ai-tokens-report-usage-create",
+      "content": "Rapporte la consommation LLM d'une session agent. Utilise AgentBearer dans Authorization. Si le budget est dépassé, le token est suspendu automatiquement."
+    },
+    {
+      "title": "Révoque un token agent",
+      "url": "api-reference.html#op-ai-tokens-revoke-create",
+      "content": "Révoque immédiatement un AgentToken. Le token ne pourra plus être utilisé."
+    },
+    {
+      "title": "Suspend un token agent",
+      "url": "api-reference.html#op-ai-tokens-suspend-create",
+      "content": "Suspend temporairement un AgentToken (raison: MANUAL)."
+    },
+    {
+      "title": "Révoque tous les tokens agent (coupe-circuit)",
+      "url": "api-reference.html#op-ai-tokens-revoke-all-create",
+      "content": "Révoque immédiatement TOUS les AgentTokens actifs de l'utilisateur. Action de coupe-circuit d'urgence."
     },
     {
       "title": "Lister les applications",
@@ -203,7 +259,7 @@ curl .../api/v1/auth/me/ \
     {
       "title": "Modifier une application",
       "url": "api-reference.html#op-applications-update",
-      "content": "Met à jour les informations d'une application. Le secret ne peut pas être modifié (utilisez l'endpoint de régénération)."
+      "content": "Met à jour les informations d'une application. Tous les champs fournis remplaceront les valeurs existantes. Le secret ne peut pas être modifié (utilisez l'endpoint de régénération)."
     },
     {
       "title": "Basculer le statut actif",
@@ -259,11 +315,6 @@ curl .../api/v1/auth/me/ \
       "title": "Exporter mes données",
       "url": "api-reference.html#op-export-user-data-create",
       "content": "Exporte toutes les données personnelles de l'utilisateur conformément au droit à la portabilité du RGPD. Nécessite le mot de passe actuel pour des raisons de sécurité."
-    },
-    {
-      "title": "Authentification Google OAuth",
-      "url": "api-reference.html#op-google-create",
-      "content": "Authentifie un utilisateur via Google OAuth. Accepte id_token, access_token ou code."
     },
     {
       "title": "Connexion par email",
@@ -408,7 +459,7 @@ curl .../api/v1/auth/me/ \
     {
       "title": "Verifier la force d'un mot de passe",
       "url": "api-reference.html#op-password-strength-create",
-      "content": "Retourne le score et la force d'un mot de passe sans l'enregistrer."
+      "content": "Retourne le score et la force d'un mot de passe sans l'enregistrer. Utile pour fournir un retour en temps réel dans l'interface utilisateur. L'email (optionnel) permet de vérifier si le mot de passe contient une partie de l'email."
     },
     {
       "title": "Lister les permissions",
@@ -418,7 +469,7 @@ curl .../api/v1/auth/me/ \
     {
       "title": "Créer une permission",
       "url": "api-reference.html#op-permissions-create",
-      "content": "Crée une nouvelle permission."
+      "content": "Crée une nouvelle permission. Le code doit être unique et structuré (ex: `users.view`). Peut être rattaché à une permission parente via `parent_code`."
     },
     {
       "title": "Détails d'une permission",
@@ -428,7 +479,7 @@ curl .../api/v1/auth/me/ \
     {
       "title": "Modifier une permission",
       "url": "api-reference.html#op-permissions-update",
-      "content": "Met à jour les informations d'une permission."
+      "content": "Met à jour les informations d'une permission. Seuls le nom et la description sont généralement modifiés, le code servant d'identifiant technique immuable."
     },
     {
       "title": "Supprimer une permission",
@@ -458,7 +509,7 @@ curl .../api/v1/auth/me/ \
     {
       "title": "Créer un rôle",
       "url": "api-reference.html#op-roles-create",
-      "content": "Crée un nouveau rôle avec les permissions spécifiées."
+      "content": "Crée un nouveau rôle. Vous pouvez assigner des permissions immédiatement via la liste `permission_codes`."
     },
     {
       "title": "Détails d'un rôle",
@@ -468,7 +519,7 @@ curl .../api/v1/auth/me/ \
     {
       "title": "Modifier un rôle",
       "url": "api-reference.html#op-roles-update",
-      "content": "Met à jour les informations d'un rôle."
+      "content": "Met à jour les informations d'un rôle. Vous pouvez modifier le nom, la description, le statut par défaut, et remplacer toutes les permissions assignées via `permission_codes`."
     },
     {
       "title": "Supprimer un rôle",
@@ -483,7 +534,7 @@ curl .../api/v1/auth/me/ \
     {
       "title": "Ajouter des permissions à un rôle",
       "url": "api-reference.html#op-roles-permissions-create",
-      "content": "Ajoute une ou plusieurs permissions à un rôle existant."
+      "content": "Ajoute une ou plusieurs permissions à un rôle existant. Seuls les codes de permissions sont requis."
     },
     {
       "title": "Retirer des permissions d'un rôle",
@@ -494,6 +545,11 @@ curl .../api/v1/auth/me/ \
       "title": "Authentification sociale OAuth2",
       "url": "api-reference.html#op-social-create",
       "content": "Authentifie un utilisateur via un provider OAuth2 (google, github, microsoft, facebook). Accepte un access_token, un authorization code, ou un id_token (Google uniquement). Crée automatiquement un compte si l'utilisateur n'existe pas encore. Device fingerprinting automatique via User-Agent. Rate limiting appliqué par provider (10 requêtes/heure)."
+    },
+    {
+      "title": "Callback OAuth2",
+      "url": "api-reference.html#op-social-callback-retrieve",
+      "content": "Endpoint de callback pour le flow OAuth2 authorization code. Reçoit le code d'autorisation du provider et le redirect_uri. Échange le code contre des tokens et authentifie l'utilisateur. Retourne les tokens JWT ou redirige vers l'application cliente."
     },
     {
       "title": "Lister les permissions directes d'un utilisateur",
@@ -518,7 +574,7 @@ curl .../api/v1/auth/me/ \
     {
       "title": "Assigner un rôle",
       "url": "api-reference.html#op-users-roles-create",
-      "content": "Ajoute un rôle à un utilisateur."
+      "content": "Ajoute un rôle à un utilisateur à l'aide de son `role_code` (ex: `admin`, `tech_support`)."
     },
     {
       "title": "Retirer un rôle",

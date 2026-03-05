@@ -8,12 +8,16 @@ This script validates the generated OpenAPI specification for:
 3. Missing examples
 4. Performance issues
 5. OpenAPI 3.0 compliance
+
+Usage:
+    python scripts/validate_openapi_spec.py              # reads existing schema
+    python scripts/validate_openapi_spec.py --regenerate # regenerates from Django
 """
 
 import os
 import sys
 import json
-import yaml
+import argparse
 from pathlib import Path
 from typing import Dict, List, Set, Tuple, Any
 from collections import defaultdict
@@ -24,22 +28,25 @@ sys.path.insert(0, str(project_root / 'src'))
 sys.path.insert(0, str(project_root))
 
 try:
+    import yaml
+except ImportError:
+    yaml = None  # PyYAML is optional
+
+_django_available = False
+try:
     import django
     from django.conf import settings
-    from django.urls import reverse
     from django.test import Client
-    
-    # Configure Django settings
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.settings')
     django.setup()
-    
-    from drf_spectacular.openapi import AutoSchema
     from drf_spectacular.generators import SchemaGenerator
     from drf_spectacular.validation import validate_schema
-    
+    _django_available = True
 except ImportError as e:
-    print(f"⚠️  Django/DRF Spectacular not available: {e}")
-    print("Running in validation-only mode...")
+    print(f"[!] Django/DRF Spectacular not available: {e}")
+    print("    Running in read-only validation mode...")
+    validate_schema = None
+    SchemaGenerator = None
 
 
 class OpenAPIValidator:
@@ -52,12 +59,12 @@ class OpenAPIValidator:
         self.performance_issues = []
         self.duplicates = defaultdict(list)
         
-    def validate_all(self) -> Dict:
+    def validate_all(self, regenerate: bool = False) -> Dict:
         """Run all validation checks and return comprehensive report."""
-        print("🔍 Starting OpenAPI specification validation...")
-        
-        # Generate schema if possible
-        schema = self.generate_schema()
+        print("[*] Starting OpenAPI specification validation...")
+
+        # Load (or regenerate) schema
+        schema = self.generate_schema(regenerate=regenerate)
         if not schema:
             return self.generate_empty_report()
         
@@ -75,24 +82,47 @@ class OpenAPIValidator:
         
         return report
     
-    def generate_schema(self) -> Dict:
-        """Generate OpenAPI schema from Django project."""
+    def generate_schema(self, regenerate: bool = False) -> Dict:
+        """Load schema from file, optionally regenerating from Django."""
+        # Priority order: optimized > base > regenerate
+        schema_candidates = [
+            self.project_root / 'openapi_schema_optimized.json',
+            self.project_root / 'openapi_schema.json',
+        ]
+
+        if not regenerate:
+            for schema_file in schema_candidates:
+                if schema_file.exists():
+                    try:
+                        print(f"[*] Loading schema from: {schema_file.name}")
+                        with open(schema_file, 'r', encoding='utf-8') as f:
+                            schema = json.load(f)
+                        print(f"[+] Schema loaded: {len(schema.get('paths', {}))} paths")
+                        return schema
+                    except Exception as e:
+                        print(f"[!] Failed to load {schema_file.name}: {e}")
+
+        # Regenerate (only when explicitly requested or no file found)
+        if not _django_available or SchemaGenerator is None:
+            print("[!] Cannot regenerate schema — Django not available")
+            self.add_issue('error', 'Schema file not found and Django not available for regeneration')
+            return {}
+
         try:
-            print("📋 Generating OpenAPI schema...")
-            generator = SchemaGenerator(title='Tenxyte API', description='Enhanced DRF Spectacular Documentation')
+            print("[*] Regenerating OpenAPI schema via drf-spectacular...")
+            from django.conf import settings as django_settings
+            spectacular = getattr(django_settings, 'SPECTACULAR_SETTINGS', {})
+            generator = SchemaGenerator(
+                title=spectacular.get('TITLE', 'Tenxyte API'),
+                version=spectacular.get('VERSION', '0.9.1'),
+                urlconf='tests.urls',
+            )
             schema = generator.get_schema(None, public=True)
-            
-            # Save schema for inspection
-            schema_file = self.project_root / 'openapi_schema.json'
-            with open(schema_file, 'w', encoding='utf-8') as f:
-                json.dump(schema, f, indent=2, default=str)
-            print(f"💾 Schema saved to: {schema_file}")
-            
+            print(f"[+] Regenerated: {len(schema.get('paths', {}))} paths")
             return schema
-            
         except Exception as e:
-            print(f"❌ Failed to generate schema: {e}")
-            self.add_issue('error', f"Schema generation failed: {e}")
+            print(f"[!] Failed to regenerate schema: {e}")
+            self.add_issue('error', f'Schema generation failed: {e}')
             return {}
     
     def validate_schema_structure(self, schema: Dict):
@@ -299,23 +329,27 @@ class OpenAPIValidator:
                     find_and_check_examples(operation, f"{method.upper()} {path}")
     
     def validate_openapi_compliance(self, schema: Dict):
-        """Validate OpenAPI 3.0 compliance."""
-        print("📜 Validating OpenAPI compliance...")
-        
-        # Check OpenAPI version
+        """Validate OpenAPI 3.x compliance."""
+        print("[*] Validating OpenAPI compliance...")
+
         if 'openapi' not in schema:
-            self.add_issue('error', "Missing OpenAPI version")
+            self.add_issue('error', 'Missing OpenAPI version field')
         else:
             version = schema['openapi']
-            if not version.startswith('3.0'):
-                self.add_issue('warning', f"Non-OpenAPI 3.0 version: {version}")
-        
+            major, minor = version.split('.')[:2]
+            if int(major) < 3:
+                self.add_issue('warning', f'Old OpenAPI version: {version} (3.0+ recommended)')
+            # 3.0.x and 3.1.x are both valid — no warning needed
+
         # Validate against DRF Spectacular validator if available
-        try:
-            validate_schema(schema)
-            print("✅ DRF Spectacular validation passed")
-        except Exception as e:
-            self.add_issue('error', f"DRF Spectacular validation failed: {e}")
+        if validate_schema is not None:
+            try:
+                validate_schema(schema)
+                print('[+] DRF Spectacular validation passed')
+            except Exception as e:
+                self.add_issue('error', f'DRF Spectacular validation failed: {e}')
+        else:
+            print('[!] DRF Spectacular not available — skipping deep validation')
     
     def check_security_documentation(self, schema: Dict):
         """Check security documentation completeness."""
@@ -559,16 +593,28 @@ def save_report(report: Dict, output_path: str):
 
 def main():
     """Main validation script."""
+    # Fix Unicode output on Windows (cp1252 console crashes on emoji)
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
+    parser = argparse.ArgumentParser(description='Validate OpenAPI specification')
+    parser.add_argument('--regenerate', action='store_true',
+                        help='Regenerate schema from Django instead of reading saved file')
+    parser.add_argument('--output', default=str(project_root / 'openapi_validation_report.json'),
+                        help='Output path for validation report JSON')
+    args = parser.parse_args()
+
     validator = OpenAPIValidator()
-    report = validator.validate_all()
-    
+    report = validator.validate_all(regenerate=args.regenerate)
+
     # Print report
     print_report(report)
-    
+
     # Save report
-    output_path = project_root / 'openapi_validation_report.json'
-    save_report(report, output_path)
-    
+    save_report(report, args.output)
+
     # Exit with appropriate code
     if report['summary']['critical_issues'] > 0:
         sys.exit(1)
