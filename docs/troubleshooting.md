@@ -92,10 +92,7 @@ Also ensure the server clock is synchronised (NTP).
 }
 ```
 
-If the user has lost access to their authenticator app, use a backup code or the admin unlock endpoint:
-```bash
-POST /api/v1/auth/admin/users/<id>/disable-2fa/
-```
+If the user has lost access to their authenticator app, they must use a backup code.
 
 ---
 
@@ -150,7 +147,7 @@ curl -H "X-Org-Slug: acme-corp" http://localhost:8000/api/v1/auth/organizations/
 
 ---
 
-### `403 NOT_ORG_MEMBER`
+### `403 ORG_MEMBERSHIP_REQUIRED`
 
 **Cause:** The authenticated user is not a member of the organization specified in `X-Org-Slug`.
 
@@ -197,7 +194,7 @@ POST /api/v1/auth/2fa/backup-codes/
 
 ### Google OAuth: `invalid_grant` or redirect loop
 
-**Cause:** `TENXYTE_GOOGLE_CLIENT_ID` / `TENXYTE_GOOGLE_CLIENT_SECRET` are incorrect, or the redirect URI registered in Google Console does not match.
+**Cause:** `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` are incorrect, or the redirect URI registered in Google Console does not match.
 
 **Fix:**
 1. Verify credentials in Google Cloud Console → APIs & Services → Credentials
@@ -212,7 +209,7 @@ POST /api/v1/auth/2fa/backup-codes/
 
 ### `InvalidStateError` during registration
 
-**Cause:** The WebAuthn challenge has expired (default: 60 seconds) or was already consumed.
+**Cause:** The WebAuthn challenge has expired (default: 300 seconds) or was already consumed.
 
 **Fix:** Re-initiate the registration flow:
 ```bash

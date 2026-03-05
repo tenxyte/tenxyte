@@ -71,18 +71,21 @@ class TOTPService:
         """
         return pyotp.TOTP(secret)
 
-    def verify_code(self, user: User, code: str, valid_window: int = 1) -> bool:
+    def verify_code(self, user: User, code: str, valid_window: int = None) -> bool:
         """
         Vérifie un code TOTP avec protection anti-replay.
 
         Args:
             user: L'utilisateur
             code: Le code à 6 chiffres entré par l'utilisateur
-            valid_window: Nombre de périodes de 30s acceptées avant/après (défaut: 1)
+            valid_window: Nombre de périodes de 30s acceptées avant/après. Si non spécifié, utilise TENXYTE_TOTP_VALID_WINDOW.
 
         Returns:
             True si le code est valide ET n'a pas été rejoué dans sa fenêtre de validité.
         """
+        if valid_window is None:
+            valid_window = auth_settings.TOTP_VALID_WINDOW
+            
         secret = self._get_decrypted_secret(user)
         if not secret or not code:
             return False
