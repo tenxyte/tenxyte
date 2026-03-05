@@ -163,6 +163,22 @@ class TestListOrganizationsView:
 
         assert response.status_code == 401
 
+    @pytest.mark.django_db
+    def test_list_unpaginated(self):
+        from tenxyte.views.organization_views import list_organizations
+        app = _app("ListOrgAppUP")
+        user = _user("list_org_up@test.com", app)
+        org, _ = _setup_org(user, app)
+
+        req = _authed_request("get", "/organizations/list/", user, app)
+        
+        from unittest import mock
+        with mock.patch('tenxyte.pagination.TenxytePagination.paginate_queryset', return_value=None):
+            response = list_organizations(req)
+        
+        assert response.status_code == 200
+        assert isinstance(response.data, list)
+
 
 # ---------------------------------------------------------------------------
 # get_organization
@@ -290,6 +306,22 @@ class TestDeleteOrganizationView:
 
         assert response.status_code == 403
 
+    @pytest.mark.django_db
+    def test_delete_fails_with_children_returns_400(self):
+        from tenxyte.views.organization_views import delete_organization
+        app = _app("DeleteOrgChildApp")
+        user = _user("del_parent@test.com", app)
+        org, service = _setup_org(user, app)
+        
+        # Add a child org
+        service.create_organization(name="Child", created_by=user, parent_id=org.id)
+
+        req = _authed_request("delete", "/organizations/delete/", user, app, org=org)
+        response = delete_organization(req)
+
+        assert response.status_code == 400
+        assert "child" in response.data["error"].lower()
+
 
 # ---------------------------------------------------------------------------
 # get_organization_tree
@@ -342,6 +374,22 @@ class TestListMembersView:
         response = list_members(req)
 
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_list_members_unpaginated(self):
+        from tenxyte.views.organization_views import list_members
+        app = _app("ListMembersUPApp")
+        user = _user("list_members_up@test.com", app)
+        org, _ = _setup_org(user, app)
+
+        req = _authed_request("get", "/organizations/members/", user, app, org=org)
+        
+        from unittest import mock
+        with mock.patch('tenxyte.pagination.TenxytePagination.paginate_queryset', return_value=None):
+            response = list_members(req)
+
+        assert response.status_code == 200
+        assert isinstance(response.data, list)
 
 
 # ---------------------------------------------------------------------------
@@ -452,6 +500,22 @@ class TestUpdateMemberRoleView:
 
         assert response.status_code == 400
 
+    @pytest.mark.django_db
+    def test_update_role_owner_fails_returns_400(self):
+        from tenxyte.views.organization_views import update_member_role
+        app = _app("UpdateRoleOwnerApp")
+        owner = _user("ur_owner2@test.com", app)
+        org, service = _setup_org(owner, app)
+
+        req = _authed_request(
+            "patch", f"/organizations/members/{owner.id}/", owner, app,
+            data={"role_code": "member"}, org=org
+        )
+        response = update_member_role(req, user_id=owner.id)
+
+        assert response.status_code == 400
+        assert "owner" in response.data["error"].lower()
+
 
 # ---------------------------------------------------------------------------
 # remove_member
@@ -489,6 +553,21 @@ class TestRemoveMemberView:
         response = remove_member(req, user_id=99999)
 
         assert response.status_code == 404
+
+    @pytest.mark.django_db
+    def test_remove_owner_fails_returns_400(self):
+        from tenxyte.views.organization_views import remove_member
+        app = _app("RemoveOwnerNFApp")
+        owner = _user("rm_owner_nf@test.com", app)
+        org, _ = _setup_org(owner, app)
+
+        req = _authed_request(
+            "delete", f"/organizations/members/{owner.id}/remove/", owner, app, org=org
+        )
+        response = remove_member(req, user_id=owner.id)
+
+        assert response.status_code == 400
+        assert "owner" in response.data["error"].lower()
 
 
 # ---------------------------------------------------------------------------
@@ -542,6 +621,24 @@ class TestInviteMemberView:
         response = invite_member(req)
 
         assert response.status_code == 403
+
+    @pytest.mark.django_db
+    def test_invite_existing_member_returns_400(self):
+        from tenxyte.views.organization_views import invite_member
+        app = _app("InviteExistApp")
+        owner = _user("inv_exist_owner@test.com", app)
+        member = _user("inv_exist_member@test.com", app)
+        org, service = _setup_org(owner, app)
+        service.add_member(org, member, "member", owner)
+
+        req = _authed_request(
+            "post", "/organizations/invitations/", owner, app,
+            data={"email": member.email, "role_code": "member"}, org=org
+        )
+        response = invite_member(req)
+
+        assert response.status_code == 400
+        assert "already a member" in response.data["error"].lower()
 
 
 # ---------------------------------------------------------------------------

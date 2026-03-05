@@ -198,11 +198,11 @@ class TestConfirmDeletion:
             success, data, error = service.confirm_deletion(token="some-token")
 
         assert success is False
-        assert error == "Error confirming deletion request: DB Error"
+        assert error == "An unexpected error occurred while confirming the deletion request."
         from tenxyte.models import AuditLog
         log = AuditLog.objects.filter(action='deletion_confirmation_error').first()
         assert log is not None
-        assert log.details['error'] == "DB Error"
+        assert log.details['error'] == "Internal server error"
 
 
 class TestCancelDeletion:
@@ -751,3 +751,143 @@ class TestExportUserDataView:
         response = export_user_data(req)
 
         assert response.status_code in (401, 403)
+
+
+class TestGetClientIp:
+
+    def test_get_client_ip_no_x_forwarded_for(self):
+        """Test _get_client_ip when no X-Forwarded-For header is present."""
+        from tenxyte.views.account_deletion_views import _get_client_ip
+        factory = APIRequestFactory()
+        req = factory.get("/", REMOTE_ADDR="192.168.1.100")
+        
+        ip = _get_client_ip(req)
+        assert ip == "192.168.1.100"
+
+    def test_get_client_ip_no_x_forwarded_for_no_remote_addr(self):
+        """Test _get_client_ip when no headers are present."""
+        from tenxyte.views.account_deletion_views import _get_client_ip
+        factory = APIRequestFactory()
+        req = factory.get("/")
+        
+        ip = _get_client_ip(req)
+        assert ip == "127.0.0.1"
+
+    def test_get_client_ip_x_forwarded_for_no_trusted_proxies(self):
+        """Test _get_client_ip with X-Forwarded-For but no trusted proxies configured (covers line 564)."""
+        from tenxyte.views.account_deletion_views import _get_client_ip
+        factory = APIRequestFactory()
+        req = factory.get("/", 
+                         HTTP_X_FORWARDED_FOR="203.0.113.1, 192.168.1.100",
+                         REMOTE_ADDR="192.168.1.100")
+        
+        with patch("tenxyte.conf.auth_settings") as mock_settings:
+            mock_settings.TRUSTED_PROXIES = None  # No trusted proxies
+            
+            ip = _get_client_ip(req)
+            assert ip == "203.0.113.1"  # First IP in X-Forwarded-For
+
+    def test_get_client_ip_x_forwarded_for_empty_trusted_proxies(self):
+        """Test _get_client_ip with X-Forwarded-For but empty trusted proxies list."""
+        from tenxyte.views.account_deletion_views import _get_client_ip
+        factory = APIRequestFactory()
+        req = factory.get("/", 
+                         HTTP_X_FORWARDED_FOR="203.0.113.1, 192.168.1.100",
+                         REMOTE_ADDR="192.168.1.100")
+        
+        with patch("tenxyte.conf.auth_settings") as mock_settings:
+            mock_settings.TRUSTED_PROXIES = []  # Empty trusted proxies
+            
+            ip = _get_client_ip(req)
+            assert ip == "203.0.113.1"  # First IP in X-Forwarded-For
+
+    def test_get_client_ip_x_forwarded_for_with_valid_trusted_proxy(self):
+        """Test _get_client_ip with valid trusted proxy (covers lines 567-574)."""
+        from tenxyte.views.account_deletion_views import _get_client_ip
+        factory = APIRequestFactory()
+        req = factory.get("/", 
+                         HTTP_X_FORWARDED_FOR="203.0.113.1, 192.168.1.100",
+                         REMOTE_ADDR="192.168.1.100")
+        
+        with patch("tenxyte.conf.auth_settings") as mock_settings:
+            mock_settings.TRUSTED_PROXIES = ["192.168.1.0/24"]  # Trusted proxy network
+            
+            ip = _get_client_ip(req)
+            assert ip == "203.0.113.1"  # First IP in X-Forwarded-For
+
+    def test_get_client_ip_x_forwarded_for_with_invalid_trusted_proxy(self):
+        """Test _get_client_ip with X-Forwarded-For but untrusted remote IP (covers lines 575-581)."""
+        from tenxyte.views.account_deletion_views import _get_client_ip
+        factory = APIRequestFactory()
+        req = factory.get("/", 
+                         HTTP_X_FORWARDED_FOR="203.0.113.1, 192.168.1.100",
+                         REMOTE_ADDR="203.0.113.200")  # Not in trusted network
+        
+        with patch("tenxyte.conf.auth_settings") as mock_settings:
+            mock_settings.TRUSTED_PROXIES = ["192.168.1.0/24"]  # Trusted proxy network
+            
+            # Use patch for logging at module level where it's actually used
+            with patch("logging.getLogger") as mock_get_logger:
+                mock_logger = MagicMock()
+                mock_get_logger.return_value = mock_logger
+                
+                ip = _get_client_ip(req)
+                assert ip == "203.0.113.200"  # Falls back to REMOTE_ADDR
+                
+                # Verify security warning was logged
+                mock_get_logger.assert_called_once_with('tenxyte.security')
+                mock_logger.warning.assert_called_once_with(
+                    "X-Forwarded-For header rejected: REMOTE_ADDR %s is not in TRUSTED_PROXIES.", 
+                    "203.0.113.200"
+                )
+
+    def test_get_client_ip_x_forwarded_for_invalid_remote_ip(self):
+        """Test _get_client_ip with invalid remote IP address (covers lines 577-578)."""
+        from tenxyte.views.account_deletion_views import _get_client_ip
+        factory = APIRequestFactory()
+        req = factory.get("/", 
+                         HTTP_X_FORWARDED_FOR="203.0.113.1, 192.168.1.100",
+                         REMOTE_ADDR="invalid-ip-address")
+        
+        with patch("tenxyte.conf.auth_settings") as mock_settings:
+            mock_settings.TRUSTED_PROXIES = ["192.168.1.0/24"]
+            
+            # Use patch for logging at module level where it's actually used
+            with patch("logging.getLogger") as mock_get_logger:
+                mock_logger = MagicMock()
+                mock_get_logger.return_value = mock_logger
+                
+                ip = _get_client_ip(req)
+                assert ip == "invalid-ip-address"  # Falls back to REMOTE_ADDR
+                
+                # Verify security warning was logged
+                mock_get_logger.assert_called_once_with('tenxyte.security')
+                mock_logger.warning.assert_called_once()
+
+    def test_get_client_ip_x_forwarded_for_invalid_trusted_entry(self):
+        """Test _get_client_ip with invalid trusted proxy entry (covers lines 575-576)."""
+        from tenxyte.views.account_deletion_views import _get_client_ip
+        factory = APIRequestFactory()
+        req = factory.get("/", 
+                         HTTP_X_FORWARDED_FOR="203.0.113.1, 192.168.1.100",
+                         REMOTE_ADDR="192.168.1.100")
+        
+        with patch("tenxyte.conf.auth_settings") as mock_settings:
+            mock_settings.TRUSTED_PROXIES = ["invalid-network-entry", "192.168.1.0/24"]  # Mix of invalid and valid
+            
+            ip = _get_client_ip(req)
+            assert ip == "203.0.113.1"  # Should work with valid entry
+
+    def test_get_client_ip_x_forwarded_for_multiple_trusted_entries(self):
+        """Test _get_client_ip with multiple trusted proxy networks."""
+        from tenxyte.views.account_deletion_views import _get_client_ip
+        factory = APIRequestFactory()
+        req = factory.get("/", 
+                         HTTP_X_FORWARDED_FOR="203.0.113.1, 10.0.0.1, 192.168.1.100",
+                         REMOTE_ADDR="10.0.0.1")
+        
+        with patch("tenxyte.conf.auth_settings") as mock_settings:
+            mock_settings.TRUSTED_PROXIES = ["192.168.1.0/24", "10.0.0.0/8"]  # Multiple trusted networks
+            
+            ip = _get_client_ip(req)
+            assert ip == "203.0.113.1"  # First IP in X-Forwarded-For

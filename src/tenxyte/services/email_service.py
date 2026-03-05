@@ -48,7 +48,7 @@ class EmailService:
         subject: str,
         message: str,
         html_message: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Envoie un email simple.
@@ -64,20 +64,16 @@ class EmailService:
             True si l'envoi a réussi
         """
         return self.backend.send_email(
-            to_email=to_email,
-            subject=subject,
-            message=message,
-            html_message=html_message,
-            context=context
+            to_email=to_email, subject=subject, message=message, html_message=html_message, context=context
         )
 
     def send_otp_email(
         self,
         to_email: str,
         code: str,
-        otp_type: str = 'verification',
+        otp_type: str = "verification",
         validity_minutes: int = 15,
-        app_name: str = 'Tenxyte'
+        app_name: str = "Tenxyte",
     ) -> bool:
         """
         Envoie un code OTP par email.
@@ -93,13 +89,13 @@ class EmailService:
             True si l'envoi a réussi
         """
         subjects = {
-            'verification': f'{app_name} - Code de vérification',
-            'email_verification': f'{app_name} - Vérifiez votre email',
-            'password_reset': f'{app_name} - Réinitialisation du mot de passe',
-            'login': f'{app_name} - Code de connexion',
+            "verification": f"{app_name} - Code de vérification",
+            "email_verification": f"{app_name} - Vérifiez votre email",
+            "password_reset": f"{app_name} - Réinitialisation du mot de passe",
+            "login": f"{app_name} - Code de connexion",
         }
 
-        subject = subjects.get(otp_type, f'{app_name} - Votre code')
+        subject = subjects.get(otp_type, f"{app_name} - Votre code")
 
         message = f"""
 Bonjour,
@@ -144,19 +140,9 @@ L'équipe {app_name}
 </html>
 """
 
-        return self.send_email(
-            to_email=to_email,
-            subject=subject,
-            message=message.strip(),
-            html_message=html_message
-        )
+        return self.send_email(to_email=to_email, subject=subject, message=message.strip(), html_message=html_message)
 
-    def send_welcome_email(
-        self,
-        to_email: str,
-        first_name: str = '',
-        app_name: str = 'Tenxyte'
-    ) -> bool:
+    def send_welcome_email(self, to_email: str, first_name: str = "", app_name: str = "Tenxyte") -> bool:
         """
         Envoie un email de bienvenue.
 
@@ -205,19 +191,9 @@ L'équipe {app_name}
 </html>
 """
 
-        return self.send_email(
-            to_email=to_email,
-            subject=subject,
-            message=message.strip(),
-            html_message=html_message
-        )
+        return self.send_email(to_email=to_email, subject=subject, message=message.strip(), html_message=html_message)
 
-    def send_password_changed_email(
-        self,
-        to_email: str,
-        first_name: str = '',
-        app_name: str = 'Tenxyte'
-    ) -> bool:
+    def send_password_changed_email(self, to_email: str, first_name: str = "", app_name: str = "Tenxyte") -> bool:
         """
         Envoie une notification de changement de mot de passe.
 
@@ -271,20 +247,15 @@ L'équipe {app_name}
 </html>
 """
 
-        return self.send_email(
-            to_email=to_email,
-            subject=subject,
-            message=message.strip(),
-            html_message=html_message
-        )
+        return self.send_email(to_email=to_email, subject=subject, message=message.strip(), html_message=html_message)
 
     def send_security_alert_email(
         self,
         to_email: str,
         alert_type: str,
         details: Dict[str, Any] = None,
-        first_name: str = '',
-        app_name: str = 'Tenxyte'
+        first_name: str = "",
+        app_name: str = "Tenxyte",
     ) -> bool:
         """
         Envoie une alerte de sécurité.
@@ -303,31 +274,34 @@ L'équipe {app_name}
         details = details or {}
 
         alerts = {
-            'new_login': {
-                'subject': f"{app_name} - Nouvelle connexion détectée",
-                'message': "Une nouvelle connexion a été détectée sur votre compte."
+            "new_login": {
+                "subject": f"{app_name} - Nouvelle connexion détectée",
+                "message": "Une nouvelle connexion a été détectée sur votre compte.",
             },
-            'session_revoked': {
-                'subject': f"{app_name} - Session révoquée",
-                'message': "Une session a été révoquée sur votre compte."
+            "session_revoked": {
+                "subject": f"{app_name} - Session révoquée",
+                "message": "Une session a été révoquée sur votre compte.",
             },
-            'account_locked': {
-                'subject': f"{app_name} - Compte verrouillé",
-                'message': "Votre compte a été temporairement verrouillé suite à plusieurs tentatives de connexion échouées."
+            "account_locked": {
+                "subject": f"{app_name} - Compte verrouillé",
+                "message": "Votre compte a été temporairement verrouillé suite à plusieurs tentatives de connexion échouées.",
             },
-            'device_limit': {
-                'subject': f"{app_name} - Limite d'appareils atteinte",
-                'message': "Vous avez atteint la limite d'appareils autorisés."
-            }
+            "device_limit": {
+                "subject": f"{app_name} - Limite d'appareils atteinte",
+                "message": "Vous avez atteint la limite d'appareils autorisés.",
+            },
         }
 
-        alert = alerts.get(alert_type, {
-            'subject': f"{app_name} - Alerte de sécurité",
-            'message': "Une activité inhabituelle a été détectée sur votre compte."
-        })
+        alert = alerts.get(
+            alert_type,
+            {
+                "subject": f"{app_name} - Alerte de sécurité",
+                "message": "Une activité inhabituelle a été détectée sur votre compte.",
+            },
+        )
 
-        ip_info = f"\nAdresse IP: {details.get('ip', 'Inconnue')}" if 'ip' in details else ""
-        device_info = f"\nAppareil: {details.get('device', 'Inconnu')}" if 'device' in details else ""
+        ip_info = f"\nAdresse IP: {details.get('ip', 'Inconnue')}" if "ip" in details else ""
+        device_info = f"\nAppareil: {details.get('device', 'Inconnu')}" if "device" in details else ""
 
         message = f"""
 {greeting},
@@ -341,20 +315,16 @@ Cordialement,
 L'équipe {app_name}
 """
 
-        return self.send_email(
-            to_email=to_email,
-            subject=alert['subject'],
-            message=message.strip()
-        )
-    
+        return self.send_email(to_email=to_email, subject=alert["subject"], message=message.strip())
+
     def send_magic_link_email(
         self,
         to_email: str,
         token: str,
-        first_name: str = '',
+        first_name: str = "",
         expiry_minutes: int = 15,
-        app_name: str = 'Tenxyte',
-        validation_url: str = None
+        app_name: str = "Tenxyte",
+        validation_url: str = None,
     ) -> bool:
         """
         Envoie un magic link par email.
@@ -369,10 +339,7 @@ L'équipe {app_name}
         Returns:
             True si l'envoi a réussi
         """
-        from django.conf import settings as django_settings
 
-        from ..conf import auth_settings
-        
         greeting = f"Bonjour {first_name}" if first_name else "Bonjour"
 
         verify_url = f"{validation_url}?token={token}"
@@ -433,245 +400,234 @@ L'équipe {app_name}
 </html>
 """
 
-        return self.send_email(
-            to_email=to_email,
-            subject=subject,
-            message=message.strip(),
-            html_message=html_message
-        )
+        return self.send_email(to_email=to_email, subject=subject, message=message.strip(), html_message=html_message)
 
     def send_account_deletion_confirmation(self, deletion_request) -> bool:
         """
         Envoyer l'email de confirmation de demande de suppression.
-        
+
         Args:
             deletion_request: L'objet AccountDeletionRequest
-            
+
         Returns:
             True si envoyé avec succès
         """
-        from django.urls import reverse
-        from django.contrib.sites.shortcuts import get_current_site
-        
+
         from ..conf import auth_settings
-        
+
         try:
-            site = get_current_site(None)
-            domain = f"https://{site.domain}" if site.domain else "https://yourapp.com"
+
             base_url = auth_settings.BASE_URL
             api_prefix = auth_settings.API_PREFIX
-            
+
             confirmation_url = f"{base_url}{api_prefix}/auth/confirm-account-deletion/"
             confirmation_url_with_token = f"{confirmation_url}?token={deletion_request.confirmation_token}"
-            
+
             context = {
-                'user': deletion_request.user,
-                'confirmation_url': confirmation_url_with_token,
-                'grace_period_days': getattr(settings, 'TENXYTE_ACCOUNT_DELETION_GRACE_PERIOD_DAYS', 30),
-                'ip_address': deletion_request.ip_address,
-                'site_name': getattr(settings, 'SITE_NAME', 'Tenxyte'),
-                'requested_at': deletion_request.requested_at,
-                'reason': deletion_request.reason
+                "user": deletion_request.user,
+                "confirmation_url": confirmation_url_with_token,
+                "grace_period_days": getattr(settings, "TENXYTE_ACCOUNT_DELETION_GRACE_PERIOD_DAYS", 30),
+                "ip_address": deletion_request.ip_address,
+                "site_name": getattr(settings, "SITE_NAME", "Tenxyte"),
+                "requested_at": deletion_request.requested_at,
+                "reason": deletion_request.reason,
             }
-            
-            subject = f"Action requise : Confirmez votre demande de suppression de compte"
-            
+
+            subject = "Action requise : Confirmez votre demande de suppression de compte"
+
             return self._send_template_email(
                 to_email=deletion_request.user.email,
                 subject=subject,
-                template_name='emails/account_deletion_confirmation.html',
-                context=context
+                template_name="emails/account_deletion_confirmation.html",
+                context=context,
             )
-            
+
         except Exception as e:
             logger.error(f"Error sending account deletion confirmation: {e}")
             return False
-    
+
     def send_account_deletion_confirmed(self, deletion_request) -> bool:
         """
         Envoyer l'email de confirmation de période de grâce.
-        
+
         Args:
             deletion_request: L'objet AccountDeletionRequest
-            
+
         Returns:
             True si envoyé avec succès
         """
-        from django.urls import reverse
-        from django.contrib.sites.shortcuts import get_current_site
         from django.utils import timezone
-        
+
         try:
-            site = get_current_site(None)
-            domain = f"https://{site.domain}" if site.domain else "https://yourapp.com"
-            
+
             from ..conf import auth_settings
+
             base_url = auth_settings.BASE_URL
             api_prefix = auth_settings.API_PREFIX
-            
+
             # URL d'annulation (à implémenter dans les vues)
             cancel_url = f"{base_url}{api_prefix}/auth/cancel-account-deletion/"
-            
+
             days_remaining = 0
             if deletion_request.grace_period_ends_at:
                 days_remaining = (deletion_request.grace_period_ends_at - timezone.now()).days
-            
+
             context = {
-                'user': deletion_request.user,
-                'cancel_url': cancel_url,
-                'days_remaining': max(0, days_remaining),
-                'grace_period_ends_at': deletion_request.grace_period_ends_at,
-                'requested_at': deletion_request.requested_at,
-                'reason': deletion_request.reason,
-                'ip_address': deletion_request.ip_address,
-                'site_name': getattr(settings, 'SITE_NAME', 'Tenxyte'),
-                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@example.com')
+                "user": deletion_request.user,
+                "cancel_url": cancel_url,
+                "days_remaining": max(0, days_remaining),
+                "grace_period_ends_at": deletion_request.grace_period_ends_at,
+                "requested_at": deletion_request.requested_at,
+                "reason": deletion_request.reason,
+                "ip_address": deletion_request.ip_address,
+                "site_name": getattr(settings, "SITE_NAME", "Tenxyte"),
+                "support_email": getattr(settings, "SUPPORT_EMAIL", "support@example.com"),
             }
-            
-            subject = f"Votre demande de suppression de compte est confirmée"
-            
+
+            subject = "Votre demande de suppression de compte est confirmée"
+
             return self._send_template_email(
                 to_email=deletion_request.user.email,
                 subject=subject,
-                template_name='emails/account_deletion_confirmed.html',
-                context=context
+                template_name="emails/account_deletion_confirmed.html",
+                context=context,
             )
-            
+
         except Exception as e:
             logger.error(f"Error sending account deletion confirmed: {e}")
             return False
-    
+
     def send_account_deletion_completed(self, deletion_request) -> bool:
         """
         Envoyer l'email de notification de suppression effectuée.
-        
+
         Args:
             deletion_request: L'objet AccountDeletionRequest
-            
+
         Returns:
             True si envoyé avec succès
         """
         try:
             context = {
-                'user_email': deletion_request.user.email,
-                'requested_at': deletion_request.requested_at,
-                'confirmed_at': deletion_request.confirmed_at,
-                'completed_at': deletion_request.completed_at,
-                'processed_by': str(deletion_request.processed_by) if deletion_request.processed_by else 'System',
-                'reason': deletion_request.reason,
-                'anonymization_token': deletion_request.user.anonymization_token,
-                'site_name': getattr(settings, 'SITE_NAME', 'Tenxyte'),
-                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@example.com')
+                "user_email": deletion_request.user.email,
+                "requested_at": deletion_request.requested_at,
+                "confirmed_at": deletion_request.confirmed_at,
+                "completed_at": deletion_request.completed_at,
+                "processed_by": str(deletion_request.processed_by) if deletion_request.processed_by else "System",
+                "reason": deletion_request.reason,
+                "anonymization_token": deletion_request.user.anonymization_token,
+                "site_name": getattr(settings, "SITE_NAME", "Tenxyte"),
+                "support_email": getattr(settings, "SUPPORT_EMAIL", "support@example.com"),
             }
-            
-            subject = f"Votre compte a été supprimé"
-            
+
+            subject = "Votre compte a été supprimé"
+
             return self._send_template_email(
                 to_email=deletion_request.user.email,
                 subject=subject,
-                template_name='emails/account_deletion_completed.html',
-                context=context
+                template_name="emails/account_deletion_completed.html",
+                context=context,
             )
-            
+
         except Exception as e:
             logger.error(f"Error sending account deletion completed: {e}")
             return False
-    
+
     def send_deletion_request_rejected(self, deletion_request) -> bool:
         """
         Envoyer l'email de rejet de demande de suppression.
-        
+
         Args:
             deletion_request: L'objet AccountDeletionRequest
-            
+
         Returns:
             True si envoyé avec succès
         """
         from django.contrib.sites.shortcuts import get_current_site
-        
+
         try:
             site = get_current_site(None)
             base_url = f"https://{site.domain}" if site.domain else "https://yourapp.com"
             login_url = f"{base_url}/login/"
-            
+
             context = {
-                'user': deletion_request.user,
-                'login_url': login_url,
-                'requested_at': deletion_request.requested_at,
-                'reason': deletion_request.reason,
-                'admin_notes': deletion_request.admin_notes,
-                'site_name': getattr(settings, 'SITE_NAME', 'Tenxyte'),
-                'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@example.com')
+                "user": deletion_request.user,
+                "login_url": login_url,
+                "requested_at": deletion_request.requested_at,
+                "reason": deletion_request.reason,
+                "admin_notes": deletion_request.admin_notes,
+                "site_name": getattr(settings, "SITE_NAME", "Tenxyte"),
+                "support_email": getattr(settings, "SUPPORT_EMAIL", "support@example.com"),
             }
-            
-            subject = f"Votre demande de suppression de compte a été rejetée"
-            
+
+            subject = "Votre demande de suppression de compte a été rejetée"
+
             return self._send_template_email(
                 to_email=deletion_request.user.email,
                 subject=subject,
-                template_name='emails/account_deletion_rejected.html',
-                context=context
+                template_name="emails/account_deletion_rejected.html",
+                context=context,
             )
-            
+
         except Exception as e:
             logger.error(f"Error sending deletion request rejected: {e}")
             return False
-    
+
     def _send_template_email(self, to_email: str, subject: str, template_name: str, context: Dict[str, Any]) -> bool:
         """
         Envoyer un email à partir d'un template HTML.
-        
+
         Args:
             to_email: Email du destinataire
             subject: Sujet de l'email
             template_name: Nom du template
             context: Contexte pour le template
-            
+
         Returns:
             True si envoyé avec succès
         """
         from django.template.loader import render_to_string
         from django.core.mail import EmailMultiAlternatives
-        
+
         try:
             # Rendre le template HTML
             html_content = render_to_string(template_name, context)
-            
+
             # Créer l'email
             email = EmailMultiAlternatives(
                 subject=subject,
                 body=self._generate_text_alternative(html_content),
-                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@tenxyte.com'),
-                to=[to_email]
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@tenxyte.com"),
+                to=[to_email],
             )
-            
+
             # Ajouter la version HTML
             email.attach_alternative(html_content, "text/html")
-            
+
             # Envoyer
             email.send()
-            
+
             logger.info(f"Template email sent successfully to {to_email}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Error sending template email to {to_email}: {e}")
             return False
-    
+
     def _generate_text_alternative(self, html_content: str) -> str:
         """
         Générer une version texte alternative à partir du HTML.
-        
+
         Args:
             html_content: Contenu HTML
-            
+
         Returns:
             Version texte
         """
         import re
-        
+
         # Supprimer les balises HTML et convertir en texte
-        text = re.sub(r'<[^>]+>', '', html_content)
-        text = re.sub(r'\s+', ' ', text).strip()
-        
+        text = re.sub(r"<[^>]+>", "", html_content)
+        text = re.sub(r"\s+", " ", text).strip()
+
         return text

@@ -1,0 +1,2167 @@
+{
+  "ActionEnum": {
+    "enum": [
+      "login",
+      "login_failed",
+      "logout",
+      "logout_all",
+      "token_refresh",
+      "password_change",
+      "password_reset_request",
+      "password_reset_complete",
+      "2fa_enabled",
+      "2fa_disabled",
+      "2fa_backup_used",
+      "account_created",
+      "account_locked",
+      "account_unlocked",
+      "email_verified",
+      "phone_verified",
+      "role_assigned",
+      "role_removed",
+      "permission_changed",
+      "app_created",
+      "app_credentials_regenerated",
+      "account_deleted",
+      "suspicious_activity",
+      "session_limit_exceeded",
+      "device_limit_exceeded",
+      "new_device_detected",
+      "agent_action"
+    ],
+    "type": "string",
+    "description": "* `login` - Login\n* `login_failed` - Login Failed\n* `logout` - Logout\n* `logout_all` - Logout All Devices\n* `token_refresh` - Token Refresh\n* `password_change` - Password Changed\n* `password_reset_request` - Password Reset Requested\n* `password_reset_complete` - Password Reset Completed\n* `2fa_enabled` - 2FA Enabled\n* `2fa_disabled` - 2FA Disabled\n* `2fa_backup_used` - 2FA Backup Code Used\n* `account_created` - Account Created\n* `account_locked` - Account Locked\n* `account_unlocked` - Account..."
+  },
+  "AddOrganizationMemberRequestRequest": {
+    "type": "object",
+    "properties": {
+      "user_id": {
+        "type": "integer"
+      },
+      "role_code": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "role_code",
+      "user_id"
+    ]
+  },
+  "AdminUserDetail": {
+    "type": "object",
+    "description": "Full serializer for admin user detail view.",
+    "properties": {
+      "id": {
+        "type": "string",
+        "readOnly": true
+      },
+      "email": {
+        "type": "string",
+        "format": "email",
+        "nullable": true,
+        "maxLength": 191
+      },
+      "phone_country_code": {
+        "type": "string",
+        "nullable": true,
+        "maxLength": 5
+      },
+      "phone_number": {
+        "type": "string",
+        "nullable": true,
+        "maxLength": 20
+      },
+      "first_name": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "last_name": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "is_active": {
+        "type": "boolean"
+      },
+      "is_locked": {
+        "type": "boolean"
+      },
+      "locked_until": {
+        "type": "string",
+        "format": "date-time",
+        "nullable": true
+      },
+      "is_banned": {
+        "type": "boolean"
+      },
+      "is_deleted": {
+        "type": "boolean"
+      },
+      "deleted_at": {
+        "type": "string",
+        "format": "date-time",
+        "nullable": true
+      },
+      "is_email_verified": {
+        "type": "boolean"
+      },
+      "is_phone_verified": {
+        "type": "boolean"
+      },
+      "is_2fa_enabled": {
+        "type": "boolean"
+      },
+      "is_staff": {
+        "type": "boolean"
+      },
+      "is_superuser": {
+        "type": "boolean"
+      },
+      "max_sessions": {
+        "type": "integer",
+        "maximum": 9223372036854775807,
+        "minimum": 0,
+        "format": "int64"
+      },
+      "max_devices": {
+        "type": "integer",
+        "maximum": 9223372036854775807,
+        "minimum": 0,
+        "format": "int64"
+      },
+      "roles": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "readOnly": true
+      },
+      "permissions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "readOnly": true
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      },
+      "last_login": {
+        "type": "string",
+        "format": "date-time",
+        "nullable": true
+      }
+    },
+    "required": [
+      "created_at",
+      "id",
+      "permissions",
+      "roles",
+      "updated_at"
+    ]
+  },
+  "AdminUserList": {
+    "type": "object",
+    "description": "Lightweight serializer for admin user listing.",
+    "properties": {
+      "id": {
+        "type": "string",
+        "readOnly": true
+      },
+      "email": {
+        "type": "string",
+        "format": "email",
+        "nullable": true,
+        "maxLength": 191
+      },
+      "first_name": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "last_name": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "is_active": {
+        "type": "boolean"
+      },
+      "is_locked": {
+        "type": "boolean"
+      },
+      "is_banned": {
+        "type": "boolean"
+      },
+      "is_deleted": {
+        "type": "boolean"
+      },
+      "is_email_verified": {
+        "type": "boolean"
+      },
+      "is_phone_verified": {
+        "type": "boolean"
+      },
+      "is_2fa_enabled": {
+        "type": "boolean"
+      },
+      "roles": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "readOnly": true
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      },
+      "last_login": {
+        "type": "string",
+        "format": "date-time",
+        "nullable": true
+      }
+    },
+    "required": [
+      "created_at",
+      "id",
+      "roles"
+    ]
+  },
+  "AgentConfirmRequestRequest": {
+    "type": "object",
+    "properties": {
+      "token": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "token"
+    ]
+  },
+  "AgentErrorResponse": {
+    "type": "object",
+    "properties": {
+      "error": {
+        "type": "string"
+      },
+      "code": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "error"
+    ]
+  },
+  "AgentPendingActionList": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "integer"
+      },
+      "agent_id": {
+        "type": "string"
+      },
+      "permission": {
+        "type": "string"
+      },
+      "endpoint": {
+        "type": "string"
+      },
+      "payload": {
+        "type": "object",
+        "additionalProperties": {},
+        "nullable": true
+      },
+      "confirmation_token": {
+        "type": "string"
+      },
+      "expires_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time"
+      }
+    },
+    "required": [
+      "agent_id",
+      "confirmation_token",
+      "created_at",
+      "endpoint",
+      "expires_at",
+      "id",
+      "payload",
+      "permission"
+    ]
+  },
+  "AgentReportUsageBudget": {
+    "type": "object",
+    "properties": {
+      "error": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "error",
+      "status"
+    ]
+  },
+  "AgentReportUsageRequestRequest": {
+    "type": "object",
+    "properties": {
+      "cost_usd": {
+        "type": "number",
+        "format": "double"
+      },
+      "prompt_tokens": {
+        "type": "integer"
+      },
+      "completion_tokens": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "completion_tokens",
+      "cost_usd",
+      "prompt_tokens"
+    ]
+  },
+  "AgentRevokeAllOk": {
+    "type": "object",
+    "properties": {
+      "status": {
+        "type": "string"
+      },
+      "count": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "count",
+      "status"
+    ]
+  },
+  "AgentSuccessResponse": {
+    "type": "object",
+    "properties": {
+      "status": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "status"
+    ]
+  },
+  "AgentTokenCreateRequestRequest": {
+    "type": "object",
+    "properties": {
+      "agent_id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "expires_in": {
+        "type": "integer"
+      },
+      "permissions": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "organization": {
+        "type": "string",
+        "minLength": 1
+      },
+      "budget_limit_usd": {
+        "type": "number",
+        "format": "double"
+      },
+      "circuit_breaker": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "dead_mans_switch": {
+        "type": "object",
+        "additionalProperties": {}
+      }
+    },
+    "required": [
+      "agent_id"
+    ]
+  },
+  "AgentTokenCreated": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "integer"
+      },
+      "token": {
+        "type": "string"
+      },
+      "agent_id": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string"
+      },
+      "expires_at": {
+        "type": "string",
+        "format": "date-time"
+      }
+    },
+    "required": [
+      "agent_id",
+      "expires_at",
+      "id",
+      "status",
+      "token"
+    ]
+  },
+  "AgentTokenDetail": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "integer"
+      },
+      "agent_id": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string"
+      },
+      "expires_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "organization": {
+        "type": "string",
+        "nullable": true
+      },
+      "current_request_count": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "agent_id",
+      "created_at",
+      "current_request_count",
+      "expires_at",
+      "id",
+      "organization",
+      "status"
+    ]
+  },
+  "AgentTokenList": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "integer"
+      },
+      "agent_id": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string"
+      },
+      "expires_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "organization": {
+        "type": "string",
+        "nullable": true
+      },
+      "current_request_count": {
+        "type": "integer"
+      }
+    },
+    "required": [
+      "agent_id",
+      "created_at",
+      "current_request_count",
+      "expires_at",
+      "id",
+      "organization",
+      "status"
+    ]
+  },
+  "Application": {
+    "type": "object",
+    "description": "Serializer pour afficher les applications (sans le secret)",
+    "properties": {
+      "id": {
+        "type": "string",
+        "readOnly": true
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "description": {
+        "type": "string"
+      },
+      "access_key": {
+        "type": "string",
+        "readOnly": true
+      },
+      "is_active": {
+        "type": "boolean"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      }
+    },
+    "required": [
+      "access_key",
+      "created_at",
+      "id",
+      "name",
+      "updated_at"
+    ]
+  },
+  "ApplicationCreateRequest": {
+    "type": "object",
+    "description": "Serializer pour cr\u00e9er une application",
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "description": {
+        "type": "string",
+        "default": ""
+      }
+    },
+    "required": [
+      "name"
+    ]
+  },
+  "ApplicationUpdateRequest": {
+    "type": "object",
+    "description": "Serializer pour mettre \u00e0 jour une application",
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "description": {
+        "type": "string"
+      },
+      "is_active": {
+        "type": "boolean"
+      }
+    }
+  },
+  "AssignRoleRequest": {
+    "type": "object",
+    "properties": {
+      "role_code": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "role_code"
+    ]
+  },
+  "AuditLog": {
+    "type": "object",
+    "description": "Serializer for audit log entries.",
+    "properties": {
+      "id": {
+        "type": "string",
+        "readOnly": true
+      },
+      "user": {
+        "type": "integer",
+        "nullable": true
+      },
+      "user_email": {
+        "type": "string",
+        "readOnly": true
+      },
+      "action": {
+        "$ref": "#/components/schemas/ActionEnum"
+      },
+      "ip_address": {
+        "type": "string",
+        "nullable": true
+      },
+      "user_agent": {
+        "type": "string",
+        "maxLength": 500
+      },
+      "application": {
+        "type": "integer",
+        "nullable": true
+      },
+      "application_name": {
+        "type": "string",
+        "readOnly": true
+      },
+      "details": {},
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      }
+    },
+    "required": [
+      "action",
+      "application_name",
+      "created_at",
+      "id",
+      "user_email"
+    ]
+  },
+  "BanUserRequest": {
+    "type": "object",
+    "description": "Serializer for banning a user.",
+    "properties": {
+      "reason": {
+        "type": "string",
+        "minLength": 1,
+        "default": "",
+        "maxLength": 500
+      }
+    }
+  },
+  "BlacklistedToken": {
+    "type": "object",
+    "description": "Serializer for blacklisted JWT tokens.",
+    "properties": {
+      "id": {
+        "type": "string",
+        "readOnly": true
+      },
+      "token_jti": {
+        "type": "string",
+        "maxLength": 191
+      },
+      "user": {
+        "type": "integer",
+        "nullable": true
+      },
+      "user_email": {
+        "type": "string",
+        "readOnly": true
+      },
+      "blacklisted_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      },
+      "expires_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "reason": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "is_expired": {
+        "type": "string",
+        "readOnly": true
+      }
+    },
+    "required": [
+      "blacklisted_at",
+      "expires_at",
+      "id",
+      "is_expired",
+      "token_jti",
+      "user_email"
+    ]
+  },
+  "CancelAccountDeletionRequest": {
+    "type": "object",
+    "properties": {
+      "password": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "password"
+    ]
+  },
+  "ChangePasswordRequest": {
+    "type": "object",
+    "properties": {
+      "current_password": {
+        "type": "string",
+        "writeOnly": true,
+        "minLength": 1
+      },
+      "new_password": {
+        "type": "string",
+        "writeOnly": true,
+        "minLength": 8
+      }
+    },
+    "required": [
+      "current_password",
+      "new_password"
+    ]
+  },
+  "CreateOrganizationRequestRequest": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1
+      },
+      "slug": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "parent_id": {
+        "type": "integer",
+        "nullable": true
+      },
+      "metadata": {
+        "type": "object",
+        "additionalProperties": {},
+        "nullable": true
+      },
+      "max_members": {
+        "type": "integer",
+        "default": 0
+      }
+    },
+    "required": [
+      "name"
+    ]
+  },
+  "DeletionRequest": {
+    "type": "object",
+    "description": "Serializer for admin deletion request listing/detail.",
+    "properties": {
+      "id": {
+        "type": "string",
+        "readOnly": true
+      },
+      "user": {
+        "type": "integer"
+      },
+      "user_email": {
+        "type": "string",
+        "readOnly": true
+      },
+      "status": {
+        "$ref": "#/components/schemas/StatusEnum"
+      },
+      "requested_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      },
+      "confirmed_at": {
+        "type": "string",
+        "format": "date-time",
+        "nullable": true
+      },
+      "grace_period_ends_at": {
+        "type": "string",
+        "format": "date-time",
+        "nullable": true
+      },
+      "completed_at": {
+        "type": "string",
+        "format": "date-time",
+        "nullable": true
+      },
+      "ip_address": {
+        "type": "string",
+        "nullable": true
+      },
+      "reason": {
+        "type": "string"
+      },
+      "admin_notes": {
+        "type": "string"
+      },
+      "processed_by": {
+        "type": "integer",
+        "nullable": true
+      },
+      "processed_by_email": {
+        "type": "string",
+        "readOnly": true
+      },
+      "is_grace_period_expired": {
+        "type": "string",
+        "readOnly": true
+      }
+    },
+    "required": [
+      "id",
+      "is_grace_period_expired",
+      "processed_by_email",
+      "requested_at",
+      "user",
+      "user_email"
+    ]
+  },
+  "ExportUserDataRequest": {
+    "type": "object",
+    "properties": {
+      "password": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "password"
+    ]
+  },
+  "InviteOrganizationMemberRequestRequest": {
+    "type": "object",
+    "properties": {
+      "email": {
+        "type": "string",
+        "format": "email",
+        "minLength": 1
+      },
+      "role_code": {
+        "type": "string",
+        "minLength": 1
+      },
+      "expires_in_days": {
+        "type": "integer",
+        "maximum": 30,
+        "minimum": 1,
+        "default": 7
+      }
+    },
+    "required": [
+      "email",
+      "role_code"
+    ]
+  },
+  "LockUserRequest": {
+    "type": "object",
+    "description": "Serializer for locking a user account.",
+    "properties": {
+      "duration_minutes": {
+        "type": "integer",
+        "maximum": 43200,
+        "minimum": 1,
+        "default": 30
+      },
+      "reason": {
+        "type": "string",
+        "minLength": 1,
+        "default": "",
+        "maxLength": 500
+      }
+    }
+  },
+  "LoginAttempt": {
+    "type": "object",
+    "description": "Serializer for login attempt records.",
+    "properties": {
+      "id": {
+        "type": "string",
+        "readOnly": true
+      },
+      "identifier": {
+        "type": "string",
+        "maxLength": 191
+      },
+      "ip_address": {
+        "type": "string"
+      },
+      "application": {
+        "type": "integer",
+        "nullable": true
+      },
+      "success": {
+        "type": "boolean"
+      },
+      "failure_reason": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      }
+    },
+    "required": [
+      "created_at",
+      "id",
+      "identifier",
+      "ip_address"
+    ]
+  },
+  "LoginEmailRequest": {
+    "type": "object",
+    "properties": {
+      "email": {
+        "type": "string",
+        "format": "email",
+        "minLength": 1
+      },
+      "password": {
+        "type": "string",
+        "writeOnly": true,
+        "minLength": 1
+      },
+      "totp_code": {
+        "type": "string",
+        "maxLength": 10
+      },
+      "device_info": {
+        "type": "string",
+        "default": "",
+        "maxLength": 255
+      }
+    },
+    "required": [
+      "email",
+      "password"
+    ]
+  },
+  "LoginPhoneRequest": {
+    "type": "object",
+    "properties": {
+      "phone_country_code": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 5
+      },
+      "phone_number": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 20
+      },
+      "password": {
+        "type": "string",
+        "writeOnly": true,
+        "minLength": 1
+      },
+      "totp_code": {
+        "type": "string",
+        "maxLength": 10
+      },
+      "device_info": {
+        "type": "string",
+        "default": "",
+        "maxLength": 255
+      }
+    },
+    "required": [
+      "password",
+      "phone_country_code",
+      "phone_number"
+    ]
+  },
+  "MagicLinkRequestRequest": {
+    "type": "object",
+    "properties": {
+      "email": {
+        "type": "string",
+        "format": "email",
+        "minLength": 1
+      },
+      "validation_url": {
+        "type": "string",
+        "format": "uri",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "email",
+      "validation_url"
+    ]
+  },
+  "ManageRolePermissionsRequest": {
+    "type": "object",
+    "properties": {
+      "permission_codes": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        },
+        "minItems": 1
+      }
+    },
+    "required": [
+      "permission_codes"
+    ]
+  },
+  "OtpTypeEnum": {
+    "enum": [
+      "email",
+      "phone"
+    ],
+    "type": "string",
+    "description": "* `email` - email\n* `phone` - phone"
+  },
+  "PaginatedAdminUserListList": {
+    "type": "object",
+    "required": [
+      "count",
+      "results"
+    ],
+    "properties": {
+      "count": {
+        "type": "integer"
+      },
+      "page": {
+        "type": "integer"
+      },
+      "page_size": {
+        "type": "integer"
+      },
+      "total_pages": {
+        "type": "integer"
+      },
+      "next": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "previous": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "results": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AdminUserList"
+        }
+      }
+    }
+  },
+  "PaginatedApplicationList": {
+    "type": "object",
+    "required": [
+      "count",
+      "results"
+    ],
+    "properties": {
+      "count": {
+        "type": "integer"
+      },
+      "page": {
+        "type": "integer"
+      },
+      "page_size": {
+        "type": "integer"
+      },
+      "total_pages": {
+        "type": "integer"
+      },
+      "next": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "previous": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "results": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Application"
+        }
+      }
+    }
+  },
+  "PaginatedAuditLogList": {
+    "type": "object",
+    "required": [
+      "count",
+      "results"
+    ],
+    "properties": {
+      "count": {
+        "type": "integer"
+      },
+      "page": {
+        "type": "integer"
+      },
+      "page_size": {
+        "type": "integer"
+      },
+      "total_pages": {
+        "type": "integer"
+      },
+      "next": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "previous": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "results": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AuditLog"
+        }
+      }
+    }
+  },
+  "PaginatedBlacklistedTokenList": {
+    "type": "object",
+    "required": [
+      "count",
+      "results"
+    ],
+    "properties": {
+      "count": {
+        "type": "integer"
+      },
+      "page": {
+        "type": "integer"
+      },
+      "page_size": {
+        "type": "integer"
+      },
+      "total_pages": {
+        "type": "integer"
+      },
+      "next": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "previous": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "results": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/BlacklistedToken"
+        }
+      }
+    }
+  },
+  "PaginatedLoginAttemptList": {
+    "type": "object",
+    "required": [
+      "count",
+      "results"
+    ],
+    "properties": {
+      "count": {
+        "type": "integer"
+      },
+      "page": {
+        "type": "integer"
+      },
+      "page_size": {
+        "type": "integer"
+      },
+      "total_pages": {
+        "type": "integer"
+      },
+      "next": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "previous": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "results": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/LoginAttempt"
+        }
+      }
+    }
+  },
+  "PaginatedPermissionList": {
+    "type": "object",
+    "required": [
+      "count",
+      "results"
+    ],
+    "properties": {
+      "count": {
+        "type": "integer"
+      },
+      "page": {
+        "type": "integer"
+      },
+      "page_size": {
+        "type": "integer"
+      },
+      "total_pages": {
+        "type": "integer"
+      },
+      "next": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "previous": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "results": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Permission"
+        }
+      }
+    }
+  },
+  "PaginatedRefreshTokenAdminList": {
+    "type": "object",
+    "required": [
+      "count",
+      "results"
+    ],
+    "properties": {
+      "count": {
+        "type": "integer"
+      },
+      "page": {
+        "type": "integer"
+      },
+      "page_size": {
+        "type": "integer"
+      },
+      "total_pages": {
+        "type": "integer"
+      },
+      "next": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "previous": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "results": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/RefreshTokenAdmin"
+        }
+      }
+    }
+  },
+  "PaginatedRoleListList": {
+    "type": "object",
+    "required": [
+      "count",
+      "results"
+    ],
+    "properties": {
+      "count": {
+        "type": "integer"
+      },
+      "page": {
+        "type": "integer"
+      },
+      "page_size": {
+        "type": "integer"
+      },
+      "total_pages": {
+        "type": "integer"
+      },
+      "next": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "previous": {
+        "type": "string",
+        "nullable": true,
+        "format": "uri"
+      },
+      "results": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/RoleList"
+        }
+      }
+    }
+  },
+  "PasswordResetConfirmRequest": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "minLength": 6,
+        "maxLength": 6
+      },
+      "new_password": {
+        "type": "string",
+        "minLength": 8
+      }
+    },
+    "required": [
+      "code",
+      "new_password"
+    ]
+  },
+  "PasswordResetRequestRequest": {
+    "type": "object",
+    "properties": {
+      "email": {
+        "type": "string",
+        "format": "email",
+        "minLength": 1
+      },
+      "phone_country_code": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 5
+      },
+      "phone_number": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 20
+      }
+    }
+  },
+  "PasswordStrengthRequestRequest": {
+    "type": "object",
+    "properties": {
+      "password": {
+        "type": "string",
+        "minLength": 1
+      },
+      "email": {
+        "type": "string",
+        "format": "email"
+      }
+    },
+    "required": [
+      "password"
+    ]
+  },
+  "PatchedAdminUserUpdateRequest": {
+    "type": "object",
+    "description": "Serializer for admin user updates (partial).",
+    "properties": {
+      "first_name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "last_name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "is_active": {
+        "type": "boolean"
+      },
+      "is_staff": {
+        "type": "boolean"
+      },
+      "is_superuser": {
+        "type": "boolean"
+      },
+      "max_sessions": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "max_devices": {
+        "type": "integer",
+        "minimum": 0
+      }
+    }
+  },
+  "PatchedToggleApplicationStatusRequest": {
+    "type": "object",
+    "properties": {
+      "is_active": {
+        "type": "boolean"
+      }
+    }
+  },
+  "PatchedUpdateOrganizationMemberRoleRequestRequest": {
+    "type": "object",
+    "properties": {
+      "role_code": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "PatchedUpdateOrganizationRequestRequest": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "slug": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "parent_id": {
+        "type": "integer",
+        "nullable": true
+      },
+      "metadata": {
+        "type": "object",
+        "additionalProperties": {},
+        "nullable": true
+      },
+      "max_members": {
+        "type": "integer",
+        "nullable": true
+      },
+      "is_active": {
+        "type": "boolean",
+        "nullable": true
+      }
+    }
+  },
+  "PatchedUpdateProfileRequestRequest": {
+    "type": "object",
+    "properties": {
+      "first_name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 30
+      },
+      "last_name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 30
+      },
+      "username": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 20
+      },
+      "phone": {
+        "type": "string",
+        "minLength": 1
+      },
+      "bio": {
+        "type": "string",
+        "maxLength": 500
+      },
+      "timezone": {
+        "type": "string",
+        "minLength": 1
+      },
+      "language": {
+        "type": "string",
+        "minLength": 1
+      },
+      "custom_fields": {
+        "type": "object",
+        "additionalProperties": {}
+      }
+    }
+  },
+  "Permission": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "readOnly": true
+      },
+      "code": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "description": {
+        "type": "string"
+      },
+      "parent": {
+        "type": "object",
+        "additionalProperties": {},
+        "nullable": true,
+        "readOnly": true
+      },
+      "children": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": {}
+        },
+        "readOnly": true
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      }
+    },
+    "required": [
+      "children",
+      "code",
+      "created_at",
+      "id",
+      "name",
+      "parent"
+    ]
+  },
+  "PermissionRequest": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "description": {
+        "type": "string"
+      },
+      "parent_code": {
+        "type": "string",
+        "writeOnly": true,
+        "nullable": true,
+        "minLength": 1
+      }
+    },
+    "required": [
+      "code",
+      "name"
+    ]
+  },
+  "ProcessDeletionRequestRequest": {
+    "type": "object",
+    "properties": {
+      "confirmation": {
+        "type": "string",
+        "minLength": 1
+      },
+      "admin_notes": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "confirmation"
+    ]
+  },
+  "RefreshTokenAdmin": {
+    "type": "object",
+    "description": "Serializer for refresh tokens (admin view, token value hidden).",
+    "properties": {
+      "id": {
+        "type": "string",
+        "readOnly": true
+      },
+      "user": {
+        "type": "integer"
+      },
+      "user_email": {
+        "type": "string",
+        "readOnly": true
+      },
+      "application": {
+        "type": "integer"
+      },
+      "application_name": {
+        "type": "string",
+        "readOnly": true
+      },
+      "device_info": {
+        "type": "string",
+        "maxLength": 255
+      },
+      "ip_address": {
+        "type": "string",
+        "nullable": true
+      },
+      "is_revoked": {
+        "type": "boolean"
+      },
+      "is_expired": {
+        "type": "string",
+        "readOnly": true
+      },
+      "expires_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      },
+      "last_used_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      }
+    },
+    "required": [
+      "application",
+      "application_name",
+      "created_at",
+      "expires_at",
+      "id",
+      "is_expired",
+      "last_used_at",
+      "user",
+      "user_email"
+    ]
+  },
+  "RefreshTokenRequest": {
+    "type": "object",
+    "properties": {
+      "refresh_token": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "refresh_token"
+    ]
+  },
+  "RegenerateApplicationCredentialsRequest": {
+    "type": "object",
+    "properties": {
+      "confirmation": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "confirmation"
+    ]
+  },
+  "RegisterRequest": {
+    "type": "object",
+    "properties": {
+      "email": {
+        "type": "string",
+        "format": "email",
+        "nullable": true,
+        "minLength": 1
+      },
+      "phone_country_code": {
+        "type": "string",
+        "nullable": true,
+        "minLength": 1,
+        "maxLength": 5
+      },
+      "phone_number": {
+        "type": "string",
+        "nullable": true,
+        "minLength": 1,
+        "maxLength": 20
+      },
+      "password": {
+        "type": "string",
+        "writeOnly": true,
+        "minLength": 8
+      },
+      "first_name": {
+        "type": "string",
+        "minLength": 1,
+        "default": "",
+        "maxLength": 100
+      },
+      "last_name": {
+        "type": "string",
+        "minLength": 1,
+        "default": "",
+        "maxLength": 100
+      },
+      "login": {
+        "type": "boolean",
+        "default": false
+      },
+      "device_info": {
+        "type": "string",
+        "default": "",
+        "maxLength": 255
+      }
+    },
+    "required": [
+      "password"
+    ]
+  },
+  "RequestAccountDeletionRequest": {
+    "type": "object",
+    "properties": {
+      "password": {
+        "type": "string",
+        "minLength": 1
+      },
+      "otp_code": {
+        "type": "string"
+      },
+      "reason": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "password"
+    ]
+  },
+  "RequestOTPRequest": {
+    "type": "object",
+    "properties": {
+      "otp_type": {
+        "$ref": "#/components/schemas/OtpTypeEnum"
+      }
+    },
+    "required": [
+      "otp_type"
+    ]
+  },
+  "Role": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "readOnly": true
+      },
+      "code": {
+        "type": "string",
+        "maxLength": 50
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "description": {
+        "type": "string"
+      },
+      "permissions": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/Permission"
+        },
+        "readOnly": true
+      },
+      "is_default": {
+        "type": "boolean"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "date-time",
+        "readOnly": true
+      }
+    },
+    "required": [
+      "code",
+      "created_at",
+      "id",
+      "name",
+      "permissions",
+      "updated_at"
+    ]
+  },
+  "RoleList": {
+    "type": "object",
+    "description": "Version all\u00e9g\u00e9e pour les listes",
+    "properties": {
+      "id": {
+        "type": "string",
+        "readOnly": true
+      },
+      "code": {
+        "type": "string",
+        "maxLength": 50
+      },
+      "name": {
+        "type": "string",
+        "maxLength": 100
+      },
+      "is_default": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "code",
+      "id",
+      "name"
+    ]
+  },
+  "RoleRequest": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 50
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "description": {
+        "type": "string"
+      },
+      "permission_codes": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writeOnly": true
+      },
+      "is_default": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "code",
+      "name"
+    ]
+  },
+  "SocialAuthRequestRequest": {
+    "type": "object",
+    "properties": {
+      "access_token": {
+        "type": "string",
+        "minLength": 1
+      },
+      "code": {
+        "type": "string",
+        "minLength": 1
+      },
+      "redirect_uri": {
+        "type": "string"
+      },
+      "id_token": {
+        "type": "string"
+      },
+      "device_info": {
+        "type": "string"
+      }
+    }
+  },
+  "SocialCallbackError": {
+    "type": "object",
+    "properties": {
+      "error": {
+        "type": "string"
+      },
+      "code": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "code",
+      "error"
+    ]
+  },
+  "SocialCallbackRedirect": {
+    "type": "object",
+    "properties": {
+      "location": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "location"
+    ]
+  },
+  "SocialCallbackResponse": {
+    "type": "object",
+    "properties": {
+      "access": {
+        "type": "string"
+      },
+      "refresh": {
+        "type": "string"
+      },
+      "provider": {
+        "type": "string"
+      },
+      "is_new_user": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "access",
+      "is_new_user",
+      "provider",
+      "refresh"
+    ]
+  },
+  "SocialCallbackUnauthorized": {
+    "type": "object",
+    "properties": {
+      "error": {
+        "type": "string"
+      },
+      "code": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "code",
+      "error"
+    ]
+  },
+  "StatusEnum": {
+    "enum": [
+      "pending",
+      "confirmation_sent",
+      "confirmed",
+      "completed",
+      "cancelled"
+    ],
+    "type": "string",
+    "description": "* `pending` - Pending\n* `confirmation_sent` - Confirmation Sent\n* `confirmed` - Confirmed\n* `completed` - Completed\n* `cancelled` - Cancelled"
+  },
+  "TokenRequestRequest": {
+    "type": "object",
+    "properties": {
+      "token": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "token"
+    ]
+  },
+  "TwoFactorBackupCodesRequestRequest": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "code"
+    ]
+  },
+  "TwoFactorConfirmRequestRequest": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "code"
+    ]
+  },
+  "TwoFactorDisableRequestRequest": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "minLength": 1
+      },
+      "password": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "code",
+      "password"
+    ]
+  },
+  "VerifyOTPRequest": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "minLength": 6,
+        "maxLength": 6
+      }
+    },
+    "required": [
+      "code"
+    ]
+  },
+  "WebAuthnAuthenticateBeginRequestRequest": {
+    "type": "object",
+    "properties": {
+      "email": {
+        "type": "string",
+        "format": "email",
+        "minLength": 1
+      }
+    }
+  },
+  "WebAuthnAuthenticateCompleteRequestRequest": {
+    "type": "object",
+    "properties": {
+      "challenge_id": {
+        "type": "integer"
+      },
+      "credential": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "device_info": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "challenge_id",
+      "credential"
+    ]
+  },
+  "WebAuthnRegisterCompleteRequestRequest": {
+    "type": "object",
+    "properties": {
+      "challenge_id": {
+        "type": "integer"
+      },
+      "credential": {
+        "type": "object",
+        "additionalProperties": {}
+      },
+      "device_name": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "challenge_id",
+      "credential"
+    ]
+  },
+  "StandardErrorResponse": {
+    "type": "object",
+    "description": "Standard error response format",
+    "properties": {
+      "error": {
+        "type": "string",
+        "description": "Error message"
+      },
+      "code": {
+        "type": "string",
+        "description": "Machine-readable error code"
+      },
+      "details": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object"
+          }
+        ],
+        "description": "Additional error details"
+      },
+      "retry_after": {
+        "type": "integer",
+        "description": "Seconds to wait before retry",
+        "nullable": true
+      }
+    },
+    "required": [
+      "error"
+    ],
+    "x-cache-hint": "reference",
+    "x-cache-ttl": 86400
+  },
+  "PaginatedResponse": {
+    "type": "object",
+    "description": "Standard paginated response format",
+    "properties": {
+      "count": {
+        "type": "integer",
+        "description": "Total number of items"
+      },
+      "next": {
+        "type": "string",
+        "description": "URL of next page",
+        "nullable": true
+      },
+      "previous": {
+        "type": "string",
+        "description": "URL of previous page",
+        "nullable": true
+      },
+      "results": {
+        "type": "array",
+        "description": "Array of results"
+      }
+    },
+    "required": [
+      "count",
+      "results"
+    ],
+    "x-cache-hint": "reference",
+    "x-cache-ttl": 86400
+  },
+  "SuccessResponse": {
+    "type": "object",
+    "description": "Standard success response format",
+    "properties": {
+      "message": {
+        "type": "string",
+        "description": "Success message"
+      },
+      "data": {
+        "description": "Response data"
+      }
+    },
+    "required": [
+      "message"
+    ],
+    "x-cache-hint": "reference",
+    "x-cache-ttl": 86400
+  }
+}

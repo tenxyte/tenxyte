@@ -66,6 +66,9 @@ dependencies = [
     "qrcode[pil]>=8.0",
     "google-auth>=2.20",
     "google-auth-oauthlib>=1.0",
+    "django-cryptography>=1.1",  # R2 — chiffrement totp_secret
+    "Pillow>=10.3.0",           # R3 — sécurité (CVE)
+    "requests>=2.31.0",         # R7 — CVE-2023-32681
 ]
 
 [project.optional-dependencies]
@@ -92,6 +95,11 @@ mysql = [
     "mysqlclient>=2.2",
 ]
 
+# R4 — WebAuthn/FIDO2 (optionnel, contrainte de version explicite)
+webauthn = [
+    "py_webauthn>=2.0.0",
+]
+
 # Tout inclure
 all = [
     "twilio>=9.0",
@@ -99,6 +107,7 @@ all = [
     "django-mongodb-backend>=5.0",
     "psycopg2-binary>=2.9",
     "mysqlclient>=2.2",
+    "py_webauthn>=2.0.0",
 ]
 
 # Dépendances de développement
@@ -106,6 +115,7 @@ dev = [
     "pytest>=7.0",
     "pytest-django>=4.5",
     "pytest-cov>=4.0",
+    "pytest-asyncio>=0.21",
     "black>=23.0",
     "ruff>=0.1",
     "mypy>=1.0",
@@ -127,7 +137,7 @@ pythonpath = ["."]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--cov=tenxyte --cov-report=html --cov-report=term --cov-fail-under=60 --reuse-db --create-db"
+addopts = "--cov=tenxyte --cov-report=html --cov-report=term --cov-fail-under=90 --reuse-db --create-db"  # R13 — seuil aligné sur la réalité (98% actuel)
 
 [tool.black]
 line-length = 120

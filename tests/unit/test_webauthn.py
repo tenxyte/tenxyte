@@ -445,7 +445,7 @@ class TestWebAuthnService:
         with patch('tenxyte.services.webauthn_service._get_webauthn', return_value=mock_webauthn):
             success, data, error = service.begin_authentication(user)
         assert success is False
-        assert 'auth err' in error
+        assert error == 'An unexpected error occurred during WebAuthn authentication.'
 
     @override_settings(TENXYTE_WEBAUTHN_ENABLED=False)
     def test_complete_authentication_disabled(self):

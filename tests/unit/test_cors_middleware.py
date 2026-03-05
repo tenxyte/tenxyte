@@ -249,8 +249,9 @@ class TestSecurityHeadersEnabled:
 
         assert response['X-Content-Type-Options'] == 'nosniff'
         assert response['X-Frame-Options'] == 'DENY'
-        assert response['X-XSS-Protection'] == '1; mode=block'
         assert response['Referrer-Policy'] == 'strict-origin-when-cross-origin'
+        assert response['Strict-Transport-Security'] == 'max-age=31536000; includeSubDomains'
+        assert "default-src 'none'" in response['Content-Security-Policy']
 
     @override_settings(
         TENXYTE_SECURITY_HEADERS_ENABLED=True,
