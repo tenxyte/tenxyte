@@ -8,6 +8,7 @@ Runs makemigrations, migrate, seed, and creates a default Application — all in
 """
 from django.core.management.base import BaseCommand
 from django.core.management import call_command
+from django.db import connection
 
 
 class Command(BaseCommand):
@@ -46,7 +47,13 @@ class Command(BaseCommand):
         # Step 2: migrate
         self.stdout.write(self.style.NOTICE('Step 2/4: Applying migrations...'))
         try:
-            call_command('migrate', verbosity=0)
+            # SQLite cannot run schema changes while FK constraint checks are
+            # enabled inside transaction.atomic().  Disable them first.
+            if connection.vendor == 'sqlite':
+                with connection.constraint_checks_disabled():
+                    call_command('migrate', verbosity=0)
+            else:
+                call_command('migrate', verbosity=0)
             self.stdout.write(self.style.SUCCESS('  ✓ Database migrated'))
         except Exception as e:
             self.stderr.write(self.style.ERROR(f'  ✗ migrate failed: {e}'))

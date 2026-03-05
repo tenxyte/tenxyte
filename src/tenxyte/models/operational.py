@@ -72,8 +72,23 @@ class OTPCode(models.Model):
         if not self.is_valid():
             return False
 
+        # Atomically increment attempts only when the OTP is still valid.
+        # The WHERE clause enforces is_valid() constraints at the DB level so
+        # concurrent threads cannot all pass the Python-side check and then
+        # each record an attempt.
         from django.db.models import F
-        OTPCode.objects.filter(pk=self.pk).update(attempts=F('attempts') + 1)
+        updated = OTPCode.objects.filter(
+            pk=self.pk,
+            is_used=False,
+            attempts__lt=F('max_attempts'),
+            expires_at__gt=timezone.now(),
+        ).update(attempts=F('attempts') + 1)
+
+        if not updated:
+            # Another thread already exhausted attempts or the OTP expired.
+            self.refresh_from_db()
+            return False
+
         self.refresh_from_db(fields=['attempts'])
 
         import hmac
