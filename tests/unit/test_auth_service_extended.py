@@ -34,6 +34,8 @@ def _user(email, password="Pass123!"):
 
 
 def _refresh_token(user, app, expired=False, revoked=False):
+    # R1: RefreshToken.generate() returns instance with _raw_token attached
+    # (token field in DB is SHA-256 hash; _raw_token is needed to call services)
     rt = RefreshToken.generate(user=user, application=app, ip_address="1.2.3.4")
     if expired:
         rt.expires_at = timezone.now() - timedelta(days=1)
@@ -57,7 +59,8 @@ class TestLogout:
         rt = _refresh_token(user, app)
 
         service = AuthService()
-        result = service.logout(rt.token)
+        # R1: rt.token is the SHA-256 hash; must use _raw_token for service calls
+        result = service.logout(rt._raw_token)
 
         assert result is True
         rt.refresh_from_db()
@@ -76,8 +79,9 @@ class TestLogout:
         rt = _refresh_token(user, app)
 
         service = AuthService()
+        # R1: must use _raw_token since service looks up by raw value
         with patch.object(service.jwt_service, 'blacklist_token') as mock_bl:
-            service.logout(rt.token, access_token="fake.access.token")
+            service.logout(rt._raw_token, access_token="fake.access.token")
 
         mock_bl.assert_called_once_with("fake.access.token", user, 'logout')
 
@@ -88,8 +92,9 @@ class TestLogout:
         rt = _refresh_token(user, app)
 
         service = AuthService()
+        # R1: must use _raw_token since service looks up by raw value
         with patch.object(service.jwt_service, 'blacklist_token') as mock_bl:
-            service.logout(rt.token, access_token=None)
+            service.logout(rt._raw_token, access_token=None)
 
         mock_bl.assert_not_called()
 
@@ -165,7 +170,8 @@ class TestRefreshAccessToken:
         rt = _refresh_token(user, app)
 
         service = AuthService()
-        success, data, error = service.refresh_access_token(rt.token, app)
+        # R1: must use _raw_token since service looks up by raw value
+        success, data, error = service.refresh_access_token(rt._raw_token, app)
 
         assert success is True
         assert 'access_token' in data
@@ -188,7 +194,8 @@ class TestRefreshAccessToken:
         rt = _refresh_token(user, app, expired=True)
 
         service = AuthService()
-        success, data, error = service.refresh_access_token(rt.token, app)
+        # R1: must use _raw_token since service looks up by raw value
+        success, data, error = service.refresh_access_token(rt._raw_token, app)
 
         assert success is False
         assert 'expired' in error.lower() or 'revoked' in error.lower()
@@ -213,14 +220,16 @@ class TestRefreshAccessToken:
         old_token_str = rt.token
 
         service = AuthService()
-        success, data, error = service.refresh_access_token(rt.token, app)
+        # R1: capture raw before calling refresh (rotation will revoke old token)
+        raw_token_str = rt._raw_token
+        success, data, error = service.refresh_access_token(raw_token_str, app)
 
         assert success is True
         # Old token should be revoked
         rt.refresh_from_db()
         assert rt.is_revoked is True
-        # New refresh token should differ
-        assert data['refresh_token'] != old_token_str
+        # New refresh token should differ from the original raw token
+        assert data['refresh_token'] != raw_token_str
 
     @pytest.mark.django_db
     def test_refresh_wrong_application_returns_error(self):
@@ -230,7 +239,8 @@ class TestRefreshAccessToken:
         rt = _refresh_token(user, app1)
 
         service = AuthService()
-        success, data, error = service.refresh_access_token(rt.token, app2)
+        # R1: must use _raw_token since service looks up by raw value
+        success, data, error = service.refresh_access_token(rt._raw_token, app2)
 
         assert success is False
 
@@ -646,3 +656,44 @@ class TestGenerateTokensForUser:
         after_count = RefreshToken.objects.filter(user=user).count()
 
         assert after_count == before_count + 1
+
+# ===========================================================================
+# dummy hash / timing attack mitigation (VULN-001)
+# ===========================================================================
+
+class TestDummyHashTimingAttackMitigation:
+
+    @pytest.mark.django_db
+    def test_get_dummy_hash_generates_and_caches(self):
+        AuthService._DUMMY_HASH = None
+        hash1 = AuthService._get_dummy_hash()
+        assert hash1 is not None
+        assert hash1.startswith('$2')  # bcrypt prefix
+        
+        # Second call should return the exact same cached string
+        hash2 = AuthService._get_dummy_hash()
+        assert hash1 == hash2
+
+    @pytest.mark.django_db
+    def test_authenticate_by_email_uses_dummy_hash_when_user_not_found(self):
+        app = _app("DummyApp1")
+        service = AuthService()
+        
+        with patch('tenxyte.models.User.check_password') as mock_checkpw:
+            success, data, error = service.authenticate_by_email("nonexistent@test.com", "Pass123!", app, "1.2.3.4")
+        
+        assert success is False
+        assert error == 'Invalid credentials'
+        mock_checkpw.assert_called_once_with("Pass123!")
+
+    @pytest.mark.django_db
+    def test_authenticate_by_phone_uses_dummy_hash_when_user_not_found(self):
+        app = _app("DummyApp2")
+        service = AuthService()
+        
+        with patch('tenxyte.models.User.check_password') as mock_checkpw:
+            success, data, error = service.authenticate_by_phone("33", "600000000", "Pass123!", app, "1.2.3.4")
+        
+        assert success is False
+        assert error == 'Invalid credentials'
+        mock_checkpw.assert_called_once_with("Pass123!")

@@ -5,6 +5,7 @@ Contains:
 - AbstractApplication: Platform identification model (Web/Mobile/Desktop)
 - Application: Default concrete implementation (swappable)
 """
+
 import secrets
 import bcrypt
 import base64
@@ -12,10 +13,10 @@ from django.db import models
 
 from .base import AutoFieldClass
 
-
 # =============================================================================
 # ABSTRACT APPLICATION MODEL
 # =============================================================================
+
 
 class AbstractApplication(models.Model):
     """
@@ -32,9 +33,10 @@ class AbstractApplication(models.Model):
         # In settings.py:
         TENXYTE_APPLICATION_MODEL = 'myapp.CustomApplication'
     """
+
     id = AutoFieldClass(primary_key=True)
     name = models.CharField(max_length=100)
-    description = models.TextField(blank=True, default='')
+    description = models.TextField(blank=True, default="")
     access_key = models.CharField(max_length=64, unique=True, db_index=True)
     access_secret = models.CharField(max_length=128)
     is_active = models.BooleanField(default=True)
@@ -43,7 +45,7 @@ class AbstractApplication(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ['name']
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
@@ -51,15 +53,15 @@ class AbstractApplication(models.Model):
     @staticmethod
     def _hash_secret(raw_secret: str) -> str:
         """Hash le secret et encode en base64 pour éviter les problèmes avec MongoDB"""
-        hashed = bcrypt.hashpw(raw_secret.encode('utf-8'), bcrypt.gensalt())
-        return base64.b64encode(hashed).decode('utf-8')
+        hashed = bcrypt.hashpw(raw_secret.encode("utf-8"), bcrypt.gensalt())
+        return base64.b64encode(hashed).decode("utf-8")
 
     @staticmethod
     def _verify_hashed_secret(raw_secret: str, stored_secret: str) -> bool:
         """Vérifie le secret contre le hash stocké en base64"""
         try:
-            hashed = base64.b64decode(stored_secret.encode('utf-8'))
-            return bcrypt.checkpw(raw_secret.encode('utf-8'), hashed)
+            hashed = base64.b64decode(stored_secret.encode("utf-8"))
+            return bcrypt.checkpw(raw_secret.encode("utf-8"), hashed)
         except Exception:
             return False
 
@@ -80,24 +82,16 @@ class AbstractApplication(models.Model):
         self.access_secret = hashed_secret
         self.save()
 
-        return {
-            'access_key': self.access_key,
-            'access_secret': raw_secret
-        }
+        return {"access_key": self.access_key, "access_secret": raw_secret}
 
     @classmethod
-    def create_application(cls, name: str, description: str = ''):
+    def create_application(cls, name: str, description: str = ""):
         """
         Crée une nouvelle application et retourne l'instance + le secret brut
         """
         raw_secret = secrets.token_hex(32)
         hashed_secret = cls._hash_secret(raw_secret)
-        app = cls(
-            name=name,
-            description=description,
-            access_key=secrets.token_hex(32),
-            access_secret=hashed_secret
-        )
+        app = cls(name=name, description=description, access_key=secrets.token_hex(32), access_secret=hashed_secret)
         app.save()
         return app, raw_secret
 
@@ -106,6 +100,7 @@ class Application(AbstractApplication):
     """
     Default Application model. Can be replaced by setting TENXYTE_APPLICATION_MODEL.
     """
+
     class Meta(AbstractApplication.Meta):
-        db_table = 'applications'
-        swappable = 'TENXYTE_APPLICATION_MODEL'
+        db_table = "applications"
+        swappable = "TENXYTE_APPLICATION_MODEL"

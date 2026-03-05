@@ -35,22 +35,42 @@ class TestTOTPService:
         """Test de vérification d'un code valide."""
         totp_service = TOTPService()
         secret = totp_service.generate_secret()
+        user = type('MockUser', (object,), {'totp_secret': secret, 'id': 1})()
 
         # Générer un code valide
         totp = pyotp.TOTP(secret)
         valid_code = totp.now()
 
         # Vérifier le code
-        is_valid = totp_service.verify_code(secret, valid_code)
+        is_valid = totp_service.verify_code(user, valid_code)
 
         assert is_valid is True
+
+    from unittest.mock import patch
+    
+    @patch('django.core.cache.cache.get')
+    def test_verify_code_anti_replay(self, mock_cache_get):
+        """Test anti-replay (VULN-007)."""
+        totp_service = TOTPService()
+        secret = totp_service.generate_secret()
+        user = type('MockUser', (object,), {'totp_secret': secret, 'id': 1})()
+
+        totp = pyotp.TOTP(secret)
+        valid_code = totp.now()
+
+        # Simulate that code was already used
+        mock_cache_get.return_value = True
+
+        is_valid = totp_service.verify_code(user, valid_code)
+        assert is_valid is False
 
     def test_verify_code_invalid(self):
         """Test de vérification d'un code invalide."""
         totp_service = TOTPService()
         secret = totp_service.generate_secret()
+        user = type('MockUser', (object,), {'totp_secret': secret, 'id': 1})()
 
-        is_valid = totp_service.verify_code(secret, "000000")
+        is_valid = totp_service.verify_code(user, "000000")
 
         assert is_valid is False
 
@@ -58,16 +78,18 @@ class TestTOTPService:
         """Test avec code vide."""
         totp_service = TOTPService()
         secret = totp_service.generate_secret()
+        user = type('MockUser', (object,), {'totp_secret': secret, 'id': 1})()
 
-        is_valid = totp_service.verify_code(secret, "")
+        is_valid = totp_service.verify_code(user, "")
 
         assert is_valid is False
 
     def test_verify_code_no_secret(self):
         """Test avec secret vide."""
         totp_service = TOTPService()
+        user = type('MockUser', (object,), {'totp_secret': None, 'id': 1})()
 
-        is_valid = totp_service.verify_code("", "123456")
+        is_valid = totp_service.verify_code(user, "123456")
 
         assert is_valid is False
 
@@ -115,13 +137,13 @@ class TestTOTPService:
             assert '-' in code  # Format: xxxx-xxxx
             parts = code.split('-')
             assert len(parts) == 2
-            assert len(parts[0]) == 4
-            assert len(parts[1]) == 4
+            assert len(parts[0]) == 8
+            assert len(parts[1]) == 8
 
         # Vérifier que les codes sont hashés
         for hashed in hashed_codes:
             assert isinstance(hashed, str)
-            assert len(hashed) == 64  # SHA256 hex = 64 chars
+            assert len(hashed) > 60  # Django make_password generates longer hashes
             assert hashed not in plain_codes  # Pas de code en clair
 
     def test_backup_codes_uniqueness(self):
@@ -145,9 +167,10 @@ class TestTOTPService:
 
     def test_verify_code_exception(self):
         totp_service = TOTPService()
+        user = type('MockUser', (object,), {'totp_secret': 'secret', 'id': 1})()
         with pytest.MonkeyPatch().context() as m:
             m.setattr(totp_service, "get_totp", Exception("mocked exception"))
-            assert totp_service.verify_code("secret", "123456") is False
+            assert totp_service.verify_code(user, "123456") is False
 
     def test_verify_backup_code_no_codes(self):
         totp_service = TOTPService()

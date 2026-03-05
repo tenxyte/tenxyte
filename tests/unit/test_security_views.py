@@ -157,7 +157,7 @@ class TestAuditLogListView:
 
         req = _authed_request(
             "get", "/admin/audit-logs/", admin, app,
-            params={"date_from": "2020-01-01", "date_to": "2030-12-31"}
+            params={"date_from": "2020-01-01T00:00:00Z", "date_to": "2030-12-31T23:59:59Z"}
         )
         view = AuditLogListView.as_view()
         response = view(req)

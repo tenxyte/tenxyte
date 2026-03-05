@@ -34,7 +34,7 @@ def test_send_confirmation_email_failure(user):
         
         from tenxyte.models.security import AuditLog
         log = AuditLog.objects.get(action='deletion_confirmation_email_failed', user=user)
-        assert log.details['error'] == "Email failed"
+        assert log.details['error'] == "Internal server error"
 
 @pytest.mark.django_db
 def test_execute_deletion_not_confirmed(user):
@@ -67,7 +67,7 @@ def test_execute_deletion_success_email_failure(user):
             
             from tenxyte.models.security import AuditLog
             log = AuditLog.objects.get(action='deletion_completion_email_failed', user=user)
-            assert log.details['error'] == "Failed"
+            assert log.details['error'] == "Internal server error"
 
 @pytest.mark.django_db
 def test_execute_deletion_soft_delete_fails(user):

@@ -78,7 +78,8 @@ class TestJWTSecurity:
             'iat': datetime.now(dt_timezone.utc),
             'exp': datetime.now(dt_timezone.utc) + timedelta(hours=1),
         }
-        fake_token = jwt.encode(payload, 'wrong-secret-key', algorithm='HS256')
+        # Use a string that is at least 32 bytes long to avoid InsecureKeyLengthWarning (SHA256 requirement)
+        fake_token = jwt.encode(payload, 'wrong-secret-key-that-is-at-least-32-bytes-long-12345678', algorithm='HS256')
 
         app_api_client.credentials(
             HTTP_AUTHORIZATION=f"Bearer {fake_token}",
