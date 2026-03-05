@@ -1,0 +1,219 @@
+title = "gitleaks configuration"
+
+# ============================================================
+# JWT
+# ============================================================
+
+[[rules]]
+id = "jwt-secret"
+description = "JWT Secret Key"
+regex = '''(?i)jwt[_-]?secret[\s]*[=:]["'\s]*([A-Za-z0-9\-_]{20,})'''
+secretGroup = 1
+entropy = 3.5
+tags = ["key", "jwt"]
+
+[rules.allowlist]
+  regexes = [
+    '''(?i)(your[-_]?secret|changeme|placeholder|example|dummy|fake|test|xxx)''',
+  ]
+
+# ============================================================
+# Generic Secret / API Keys
+# ============================================================
+
+[[rules]]
+id = "api-key"
+description = "API Key"
+regex = '''(?i)api[_-]?key[\s]*[=:]["'\s]*([A-Za-z0-9\-_]{20,})'''
+secretGroup = 1
+entropy = 3.5
+tags = ["key", "api"]
+
+[rules.allowlist]
+  regexes = [
+    '''(?i)(your[-_]?api[-_]?key|changeme|placeholder|example|dummy|fake|test|xxx)''',
+  ]
+
+[[rules]]
+id = "secret-key"
+description = "Secret Key (generic)"
+regex = '''(?i)secret[_-]?key[\s]*[=:]["'\s]*([A-Za-z0-9\-_!@#$%^&*]{20,})'''
+secretGroup = 1
+entropy = 3.5
+tags = ["key", "secret"]
+
+[rules.allowlist]
+  regexes = [
+    '''(?i)(your[-_]?secret|changeme|placeholder|example|dummy|fake|test|xxx)''',
+  ]
+
+[[rules]]
+id = "access-secret"
+description = "Access Secret (ex: X-Access-Secret)"
+regex = '''(?i)access[_-]?secret[\s]*[=:]["'\s]*([A-Za-z0-9\-_]{20,})'''
+secretGroup = 1
+entropy = 3.5
+tags = ["key", "secret"]
+
+[rules.allowlist]
+  regexes = [
+    '''(?i)(your[-_]?secret|changeme|placeholder|example|dummy|fake|test|xxx)''',
+  ]
+
+# ============================================================
+# Passwords
+# ============================================================
+
+[[rules]]
+id = "password"
+description = "Hardcoded Password"
+regex = '''(?i)password[\s]*[=:]["'\s]*([^\s"']{8,})'''
+secretGroup = 1
+entropy = 3.0
+tags = ["password"]
+
+[rules.allowlist]
+  regexes = [
+    '''(?i)(your[-_]?password|changeme|placeholder|example|dummy|fake|test|SecureP@ss|<password>|\*{3,})''',
+  ]
+
+# ============================================================
+# Tokens
+# ============================================================
+
+[[rules]]
+id = "token"
+description = "Generic Token"
+regex = '''(?i)\btoken[\s]*[=:]["'\s]*([A-Za-z0-9\-_\.]{20,})'''
+secretGroup = 1
+entropy = 3.5
+tags = ["token"]
+
+[rules.allowlist]
+  regexes = [
+    '''(?i)(your[-_]?token|changeme|placeholder|example|dummy|fake|test|xxx)''',
+  ]
+
+[[rules]]
+id = "api-token"
+description = "API Token"
+regex = '''(?i)api[_-]?token[\s]*[=:]["'\s]*([A-Za-z0-9\-_]{20,})'''
+secretGroup = 1
+entropy = 3.5
+tags = ["token", "api"]
+
+[rules.allowlist]
+  regexes = [
+    '''(?i)(your[-_]?token|changeme|placeholder|example|dummy|fake|test|xxx)''',
+  ]
+
+[[rules]]
+id = "bearer-token"
+description = "Bearer Token in config or code"
+regex = '''(?i)Bearer\s+([A-Za-z0-9\-_\.]{30,})'''
+secretGroup = 1
+entropy = 3.5
+tags = ["token", "bearer"]
+
+[rules.allowlist]
+  regexes = [
+    '''(?i)(your[-_]?token|<token>|Bearer <jwt>|placeholder)''',
+  ]
+
+# ============================================================
+# Private Keys (PEM)
+# ============================================================
+
+[[rules]]
+id = "private-key-pem"
+description = "PEM Private Key"
+regex = '''-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'''
+tags = ["key", "pem", "crypto"]
+
+# ============================================================
+# Database Connection Strings
+# ============================================================
+
+[[rules]]
+id = "db-connection-string"
+description = "Database URL with credentials"
+regex = '''(?i)(postgresql|mysql|mongodb|redis|amqp):\/\/[^:]+:[^@\s]{4,}@'''
+tags = ["database", "credentials"]
+
+[rules.allowlist]
+  regexes = [
+    '''(?i)(localhost|127\.0\.0\.1|example\.com|<password>|changeme|user:password)''',
+  ]
+
+# ============================================================
+# Cloud Providers
+# ============================================================
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key ID"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+tags = ["key", "aws", "cloud"]
+
+[[rules]]
+id = "aws-secret-key"
+description = "AWS Secret Access Key"
+regex = '''(?i)aws[_-]?secret[_-]?access[_-]?key[\s]*[=:]["'\s]*([A-Za-z0-9\/+=]{40})'''
+secretGroup = 1
+tags = ["key", "aws", "cloud"]
+
+[[rules]]
+id = "gcp-api-key"
+description = "GCP API Key"
+regex = '''AIza[0-9A-Za-z\-_]{35}'''
+tags = ["key", "gcp", "cloud"]
+
+# ============================================================
+# Communication Services
+# ============================================================
+
+[[rules]]
+id = "twilio-account-sid"
+description = "Twilio Account SID"
+regex = '''AC[a-f0-9]{32}'''
+tags = ["token", "twilio"]
+
+[[rules]]
+id = "twilio-auth-token"
+description = "Twilio Auth Token"
+regex = '''(?i)twilio[_-]?auth[_-]?token[\s]*[=:]["'\s]*([a-f0-9]{32})'''
+secretGroup = 1
+tags = ["token", "twilio"]
+
+[[rules]]
+id = "sendgrid-api-key"
+description = "SendGrid API Key"
+regex = '''SG\.[A-Za-z0-9\-_]{22}\.[A-Za-z0-9\-_]{43}'''
+tags = ["key", "sendgrid", "email"]
+
+# ============================================================
+# Global allowlist
+# ============================================================
+
+[allowlist]
+description = "Ignore test files, virtualenvs, docs, and example configs."
+paths = [
+    '''tests/.*''',
+    '''\.venv/.*''',
+    '''venv/.*''',
+    '''.*\.log$''',
+    '''.*\.example$''',
+    '''.*\.sample$''',
+    '''.*\.template$''',
+    '''docs/.*''',
+    '''README.*''',
+    '''CHANGELOG.*''',
+    '''LICENSE.*''',
+]
+regexes = [
+    # Valeurs évidemment fictives
+    '''(?i)(your[-_]?secret|your[-_]?key|changeme|placeholder|example|dummy|fake|xxx|<[^>]+>|\*{3,})''',
+    # Commentaires Python/JS/TOML
+    '''^\s*#''',
+    '''^\s*//''',
+]
