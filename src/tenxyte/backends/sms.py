@@ -68,10 +68,10 @@ class TwilioBackend(BaseSMSBackend):
             return False
 
         try:
-            from twilio.rest import Client
+            import twilio.rest
             from twilio.base.exceptions import TwilioRestException
 
-            client = Client(self.account_sid, self.auth_token)
+            client = twilio.rest.Client(self.account_sid, self.auth_token)
 
             result = client.messages.create(body=message, from_=self.from_number, to=phone_number)
 

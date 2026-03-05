@@ -20,9 +20,17 @@ except ImportError:
     mock_exceptions = MagicMock()
     mock_exceptions.TwilioRestException = MockTwilioRestException
 
-    sys.modules['twilio'] = MagicMock()
-    sys.modules['twilio.rest'] = MagicMock()
-    sys.modules['twilio.base'] = MagicMock()
+    twilio_mock = MagicMock()
+    twilio_rest_mock = MagicMock()
+    twilio_base_mock = MagicMock()
+    
+    twilio_mock.rest = twilio_rest_mock
+    twilio_mock.base = twilio_base_mock
+    twilio_base_mock.exceptions = mock_exceptions
+
+    sys.modules['twilio'] = twilio_mock
+    sys.modules['twilio.rest'] = twilio_rest_mock
+    sys.modules['twilio.base'] = twilio_base_mock
     sys.modules['twilio.base.exceptions'] = mock_exceptions
 
 from tenxyte.backends.sms import (
