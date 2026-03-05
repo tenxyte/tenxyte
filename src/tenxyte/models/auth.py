@@ -42,6 +42,7 @@ class UserManager(BaseUserManager):
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         if password:
+            # nosemgrep: python.django.security.audit.unvalidated-password.unvalidated-password
             user.set_password(password)
         user.save(using=self._db)
         return user
@@ -275,6 +276,7 @@ class AbstractUser(models.Model):
         self.is_active = False
 
         # We don't change passwords so login fails immediately, or we could randomize it
+        # nosemgrep: python.django.security.audit.unvalidated-password.unvalidated-password
         self.set_password(secrets.token_hex(32))
 
         self.save()

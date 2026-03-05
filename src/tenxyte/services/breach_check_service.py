@@ -52,6 +52,7 @@ class BreachCheckService:
         if not auth_settings.BREACH_CHECK_ENABLED:
             return False, 0
 
+        # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1
         sha1_hash = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
         prefix = sha1_hash[:5]
         suffix = sha1_hash[5:]

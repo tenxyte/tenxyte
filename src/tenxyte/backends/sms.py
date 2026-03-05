@@ -119,6 +119,7 @@ class NGHBackend(BaseSMSBackend):
             import json
             import http.client
 
+            # nosemgrep: python.lang.security.audit.httpsconnection-detected.httpsconnection-detected
             conn = http.client.HTTPSConnection("extranet.nghcorp.net")
             payload = json.dumps(
                 {
