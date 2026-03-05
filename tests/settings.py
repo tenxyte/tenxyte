@@ -24,11 +24,27 @@ INSTALLED_APPS = [
 # Custom User Model
 AUTH_USER_MODEL = 'tenxyte.User'
 
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    }
+]
+
 MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'tenxyte.middleware.RequestIDMiddleware',
     'tenxyte.middleware.ApplicationAuthMiddleware',
 ]
 
@@ -60,12 +76,21 @@ TENXYTE_TOTP_ISSUER = "TestApp"
 TENXYTE_SMS_BACKEND = 'tenxyte.backends.sms.ConsoleBackend'
 TENXYTE_EMAIL_BACKEND = 'tenxyte.backends.email.ConsoleBackend'
 
+# R5 Audit: JWT secret key dédié (obligatoire en production)
+# Valeur de test uniquement — NE PAS UTILISER EN PRODUCTION
+TENXYTE_JWT_SECRET_KEY = 'test-jwt-secret-key-for-testing-only-not-for-production'
+
 # REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'tenxyte.authentication.JWTAuthentication',
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# DRF Spectacular
+SPECTACULAR_SETTINGS = {
+    'SECURITY': [{'jwtAuth': []}]
 }
 
 # Logging

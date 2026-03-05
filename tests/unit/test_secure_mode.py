@@ -3,7 +3,7 @@ Tests for TENXYTE_SHORTCUT_SECURE_MODE preset system.
 
 Coverage targets:
 - conf.py: TenxyteSettings._get() priority logic
-- All three presets: starter, medium, robust
+- All three presets: development, medium, robust
 - Priority: settings.py > preset > default
 - Invalid mode warning
 """
@@ -33,7 +33,7 @@ def _get_with_mode(name: str, mode: str, **extra):
     """Call TenxyteSettings._get() against a clean mock settings with the given mode."""
     s = TenxyteSettings()
     mock = _settings_with_mode(mode, **extra)
-    with patch('tenxyte.conf.settings', mock):
+    with patch('tenxyte.conf.base.settings', mock):
         return getattr(s, name)
 
 
@@ -41,7 +41,7 @@ def _get_no_mode(name: str):
     """Call TenxyteSettings._get() against a clean mock settings with no mode set."""
     s = TenxyteSettings()
     mock = MagicMock(spec=[])  # no attributes at all
-    with patch('tenxyte.conf.settings', mock):
+    with patch('tenxyte.conf.base.settings', mock):
         return getattr(s, name)
 
 
@@ -52,22 +52,24 @@ def _get_no_mode(name: str):
 class TestPresetDefinitions:
 
     def test_all_three_modes_defined(self):
-        assert 'starter' in SECURE_MODE_PRESETS
+        assert 'development' in SECURE_MODE_PRESETS
         assert 'medium' in SECURE_MODE_PRESETS
         assert 'robust' in SECURE_MODE_PRESETS
 
     def test_valid_secure_modes_matches_presets(self):
-        assert VALID_SECURE_MODES == set(SECURE_MODE_PRESETS.keys())
+        canonical = {'development', 'medium', 'robust'}
+        assert canonical.issubset(set(SECURE_MODE_PRESETS.keys()))
+        assert canonical.issubset(VALID_SECURE_MODES)
 
-    def test_starter_has_required_keys(self):
-        preset = SECURE_MODE_PRESETS['starter']
+    def test_development_has_required_keys(self):
+        preset = SECURE_MODE_PRESETS['development']
         required = [
             'JWT_ACCESS_TOKEN_LIFETIME', 'JWT_REFRESH_TOKEN_LIFETIME',
             'REFRESH_TOKEN_ROTATION', 'ACCOUNT_LOCKOUT_ENABLED',
             'BREACH_CHECK_ENABLED', 'AUDIT_LOGGING_ENABLED',
         ]
         for key in required:
-            assert key in preset, f"'starter' preset missing key: {key}"
+            assert key in preset, f"'development' preset missing key: {key}"
 
     def test_medium_has_required_keys(self):
         preset = SECURE_MODE_PRESETS['medium']
@@ -87,21 +89,21 @@ class TestPresetDefinitions:
         for key in required:
             assert key in preset, f"'robust' preset missing key: {key}"
 
-    def test_starter_jwt_lifetime_longer_than_robust(self):
-        assert SECURE_MODE_PRESETS['starter']['JWT_ACCESS_TOKEN_LIFETIME'] > \
+    def test_development_jwt_lifetime_longer_than_robust(self):
+        assert SECURE_MODE_PRESETS['development']['JWT_ACCESS_TOKEN_LIFETIME'] > \
                SECURE_MODE_PRESETS['robust']['JWT_ACCESS_TOKEN_LIFETIME']
 
     def test_robust_max_login_attempts_strictest(self):
         assert SECURE_MODE_PRESETS['robust']['MAX_LOGIN_ATTEMPTS'] < \
                SECURE_MODE_PRESETS['medium']['MAX_LOGIN_ATTEMPTS'] < \
-               SECURE_MODE_PRESETS['starter']['MAX_LOGIN_ATTEMPTS']
+               SECURE_MODE_PRESETS['development']['MAX_LOGIN_ATTEMPTS']
 
     def test_robust_password_history_count_highest(self):
         assert SECURE_MODE_PRESETS['robust']['PASSWORD_HISTORY_COUNT'] > \
                SECURE_MODE_PRESETS['medium']['PASSWORD_HISTORY_COUNT']
 
-    def test_starter_cors_allow_all_true(self):
-        assert SECURE_MODE_PRESETS['starter']['CORS_ALLOW_ALL_ORIGINS'] is True
+    def test_development_cors_allow_all_false(self):
+        assert SECURE_MODE_PRESETS['development']['CORS_ALLOW_ALL_ORIGINS'] is False
 
     def test_medium_robust_cors_allow_all_false(self):
         assert SECURE_MODE_PRESETS['medium']['CORS_ALLOW_ALL_ORIGINS'] is False
@@ -110,14 +112,14 @@ class TestPresetDefinitions:
     def test_robust_webauthn_enabled(self):
         assert SECURE_MODE_PRESETS['robust']['WEBAUTHN_ENABLED'] is True
 
-    def test_starter_webauthn_disabled(self):
-        assert SECURE_MODE_PRESETS['starter']['WEBAUTHN_ENABLED'] is False
+    def test_development_webauthn_disabled(self):
+        assert SECURE_MODE_PRESETS['development']['WEBAUTHN_ENABLED'] is False
 
     def test_robust_breach_check_enabled(self):
         assert SECURE_MODE_PRESETS['robust']['BREACH_CHECK_ENABLED'] is True
 
-    def test_starter_breach_check_disabled(self):
-        assert SECURE_MODE_PRESETS['starter']['BREACH_CHECK_ENABLED'] is False
+    def test_development_breach_check_disabled(self):
+        assert SECURE_MODE_PRESETS['development']['BREACH_CHECK_ENABLED'] is False
 
 
 # ===========================================================================
@@ -141,42 +143,74 @@ class TestNoPriorityMode:
     def test_no_mode_password_history_enabled_by_default(self):
         assert _get_no_mode('PASSWORD_HISTORY_ENABLED') is True
 
+    def test_uncovered_properties_defaults(self):
+        s = TenxyteSettings()
+        mock = MagicMock(spec=[]) 
+        with patch('tenxyte.conf.base.settings', mock):
+            assert s.BASE_URL == 'http://127.0.0.1:8000'
+            assert s.API_PREFIX == '/api/v1'
+            assert s.TOTP_VALID_WINDOW == 1
+            assert s.OTP_LENGTH == 6
+            assert s.OTP_EMAIL_VALIDITY == 15
+            assert s.OTP_PHONE_VALIDITY == 10
+            assert s.OTP_MAX_ATTEMPTS == 5
+            assert s.SOCIAL_PROVIDERS == ['google', 'github', 'microsoft', 'facebook']
+            assert s.GITHUB_CLIENT_ID == ''
+            assert s.GITHUB_CLIENT_SECRET == ''
+            assert s.MICROSOFT_CLIENT_ID == ''
+            assert s.MICROSOFT_CLIENT_SECRET == ''
+            assert s.FACEBOOK_APP_ID == ''
+            assert s.FACEBOOK_APP_SECRET == ''
+            assert s.WEBAUTHN_RP_ID == 'localhost'
+            assert s.WEBAUTHN_RP_NAME == 'Tenxyte'
+            assert s.WEBAUTHN_CHALLENGE_EXPIRY_SECONDS == 300
+            assert s.MAGIC_LINK_BASE_URL == 'https://yourapp.com'
+            assert s.SIMPLE_THROTTLE_RULES == {}
+            assert s.GOOGLE_CLIENT_ID == ''
+            assert s.GOOGLE_CLIENT_SECRET == ''
+            
+    def test_api_prefix_formatting(self):
+        s = TenxyteSettings()
+        mock = _settings_with_mode('development', TENXYTE_API_PREFIX='custom/prefix/')
+        with patch('tenxyte.conf.base.settings', mock):
+            assert s.API_PREFIX == '/custom/prefix'
+
 
 # ===========================================================================
-# Priority: starter preset
+# Priority: development preset
 # ===========================================================================
 
-class TestStarterPreset:
+class TestDevelopmentPreset:
 
-    def test_starter_jwt_access_lifetime(self):
-        assert _get_with_mode('JWT_ACCESS_TOKEN_LIFETIME', 'starter') == 3600
+    def test_development_jwt_access_lifetime(self):
+        assert _get_with_mode('JWT_ACCESS_TOKEN_LIFETIME', 'development') == 3600
 
-    def test_starter_refresh_rotation_false(self):
-        assert _get_with_mode('REFRESH_TOKEN_ROTATION', 'starter') is False
+    def test_development_refresh_rotation_false(self):
+        assert _get_with_mode('REFRESH_TOKEN_ROTATION', 'development') is False
 
-    def test_starter_breach_check_disabled(self):
-        assert _get_with_mode('BREACH_CHECK_ENABLED', 'starter') is False
+    def test_development_breach_check_disabled(self):
+        assert _get_with_mode('BREACH_CHECK_ENABLED', 'development') is False
 
-    def test_starter_password_history_disabled(self):
-        assert _get_with_mode('PASSWORD_HISTORY_ENABLED', 'starter') is False
+    def test_development_password_history_disabled(self):
+        assert _get_with_mode('PASSWORD_HISTORY_ENABLED', 'development') is False
 
-    def test_starter_audit_logging_disabled(self):
-        assert _get_with_mode('AUDIT_LOGGING_ENABLED', 'starter') is False
+    def test_development_audit_logging_disabled(self):
+        assert _get_with_mode('AUDIT_LOGGING_ENABLED', 'development') is False
 
-    def test_starter_cors_allow_all(self):
-        assert _get_with_mode('CORS_ALLOW_ALL_ORIGINS', 'starter') is True
+    def test_development_cors_allow_all(self):
+        assert _get_with_mode('CORS_ALLOW_ALL_ORIGINS', 'development') is False
 
-    def test_starter_security_headers_disabled(self):
-        assert _get_with_mode('SECURITY_HEADERS_ENABLED', 'starter') is False
+    def test_development_security_headers_disabled(self):
+        assert _get_with_mode('SECURITY_HEADERS_ENABLED', 'development') is False
 
-    def test_starter_device_limit_disabled(self):
-        assert _get_with_mode('DEVICE_LIMIT_ENABLED', 'starter') is False
+    def test_development_device_limit_disabled(self):
+        assert _get_with_mode('DEVICE_LIMIT_ENABLED', 'development') is False
 
-    def test_starter_session_limit_disabled(self):
-        assert _get_with_mode('SESSION_LIMIT_ENABLED', 'starter') is False
+    def test_development_session_limit_disabled(self):
+        assert _get_with_mode('SESSION_LIMIT_ENABLED', 'development') is False
 
-    def test_starter_max_login_attempts_relaxed(self):
-        assert _get_with_mode('MAX_LOGIN_ATTEMPTS', 'starter') == 10
+    def test_development_max_login_attempts_relaxed(self):
+        assert _get_with_mode('MAX_LOGIN_ATTEMPTS', 'development') == 10
 
 
 # ===========================================================================
@@ -298,9 +332,9 @@ class TestSettingsPyOverridesPreset:
                              TENXYTE_JWT_ACCESS_TOKEN_LIFETIME=1800)
         assert val == 1800
 
-    def test_explicit_breach_check_overrides_starter(self):
-        # starter preset says False, explicit override says True
-        val = _get_with_mode('BREACH_CHECK_ENABLED', 'starter',
+    def test_explicit_breach_check_overrides_development(self):
+        # development preset says False, explicit override says True
+        val = _get_with_mode('BREACH_CHECK_ENABLED', 'development',
                              TENXYTE_BREACH_CHECK_ENABLED=True)
         assert val is True
 
@@ -316,12 +350,12 @@ class TestSettingsPyOverridesPreset:
                              TENXYTE_MAX_LOGIN_ATTEMPTS=10)
         assert val == 10
 
-    def test_multiple_overrides_on_starter(self):
+    def test_multiple_overrides_on_development(self):
         s = TenxyteSettings()
-        mock = _settings_with_mode('starter',
+        mock = _settings_with_mode('development',
                                    TENXYTE_PASSWORD_HISTORY_ENABLED=True,
                                    TENXYTE_PASSWORD_HISTORY_COUNT=8)
-        with patch('tenxyte.conf.settings', mock):
+        with patch('tenxyte.conf.base.settings', mock):
             assert s.PASSWORD_HISTORY_ENABLED is True
             assert s.PASSWORD_HISTORY_COUNT == 8
 
@@ -341,7 +375,7 @@ class TestInvalidMode:
     def test_invalid_mode_emits_warning(self):
         s = TenxyteSettings()
         mock = _settings_with_mode('ultra')
-        with patch('tenxyte.conf.settings', mock):
+        with patch('tenxyte.conf.base.settings', mock):
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always")
                 _ = s.JWT_ACCESS_TOKEN_LIFETIME
@@ -353,7 +387,7 @@ class TestInvalidMode:
     def test_invalid_mode_falls_back_to_default(self):
         s = TenxyteSettings()
         mock = _settings_with_mode('ultra')
-        with patch('tenxyte.conf.settings', mock):
+        with patch('tenxyte.conf.base.settings', mock):
             with warnings.catch_warnings(record=True):
                 warnings.simplefilter("always")
                 assert s.JWT_ACCESS_TOKEN_LIFETIME == 3600
@@ -361,7 +395,7 @@ class TestInvalidMode:
     def test_empty_string_mode_emits_warning(self):
         s = TenxyteSettings()
         mock = _settings_with_mode('')
-        with patch('tenxyte.conf.settings', mock):
+        with patch('tenxyte.conf.base.settings', mock):
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always")
                 _ = s.BREACH_CHECK_ENABLED

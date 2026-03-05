@@ -8,28 +8,36 @@ Contains:
 - AbstractUser: Full-featured user model with RBAC + Organization support
 - Permission, Role, User: Default concrete implementations (swappable)
 """
+
 import bcrypt
 import secrets
 from django.contrib.auth.models import BaseUserManager
 from django.db import models
 from django.utils import timezone
-from django.conf import settings
 from datetime import timedelta
 
 from .base import AutoFieldClass
-
 
 # =============================================================================
 # MANAGERS
 # =============================================================================
 
+
 class UserManager(BaseUserManager):
     """Manager personnalisé pour le modèle User."""
+
+    def get_queryset(self):
+        """Par défaut, exclut les utilisateurs supprimés (soft delete)."""
+        return super().get_queryset().filter(is_deleted=False)
+
+    def all_with_deleted(self):
+        """Retourne tous les utilisateurs, y compris ceux supprimés."""
+        return super().get_queryset()
 
     def create_user(self, email=None, password=None, **extra_fields):
         """Crée et sauvegarde un utilisateur."""
         if not email:
-            raise ValueError('L\'email est requis')
+            raise ValueError("L'email est requis")
 
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
@@ -40,14 +48,15 @@ class UserManager(BaseUserManager):
 
     def create_superuser(self, email=None, password=None, **extra_fields):
         """Crée et sauvegarde un superutilisateur."""
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
         return self.create_user(email, password, **extra_fields)
 
 
 # =============================================================================
 # ABSTRACT MODELS - Extend these in your own app
 # =============================================================================
+
 
 class AbstractPermission(models.Model):
     """
@@ -64,22 +73,17 @@ class AbstractPermission(models.Model):
             class Meta(AbstractPermission.Meta):
                 db_table = 'custom_permissions'
     """
+
     id = AutoFieldClass(primary_key=True)
     code = models.CharField(max_length=100, unique=True, db_index=True)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
-    parent = models.ForeignKey(
-        'self',
-        null=True,
-        blank=True,
-        related_name='children',
-        on_delete=models.CASCADE
-    )
+    parent = models.ForeignKey("self", null=True, blank=True, related_name="children", on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         abstract = True
-        ordering = ['code']
+        ordering = ["code"]
 
     def __str__(self):
         return self.code
@@ -112,22 +116,19 @@ class AbstractRole(models.Model):
             class Meta(AbstractRole.Meta):
                 db_table = 'custom_roles'
     """
+
     id = AutoFieldClass(primary_key=True)
     code = models.CharField(max_length=50, unique=True, db_index=True)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
-    permissions = models.ManyToManyField(
-        'tenxyte.Permission',
-        related_name='roles',
-        blank=True
-    )
+    permissions = models.ManyToManyField("tenxyte.Permission", related_name="roles", blank=True)
     is_default = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         abstract = True
-        ordering = ['name']
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
@@ -157,6 +158,7 @@ class AbstractUser(models.Model):
         TENXYTE_USER_MODEL = 'myapp.CustomUser'
         AUTH_USER_MODEL = 'myapp.CustomUser'  # Also set this for Django
     """
+
     id = AutoFieldClass(primary_key=True)
 
     # Identifiants
@@ -175,23 +177,16 @@ class AbstractUser(models.Model):
     google_id = models.CharField(max_length=100, unique=True, null=True, blank=True, db_index=True)
 
     # Rôles et permissions
-    roles = models.ManyToManyField(
-        'tenxyte.Role',
-        related_name='users',
-        blank=True
-    )
-    direct_permissions = models.ManyToManyField(
-        'tenxyte.Permission',
-        related_name='users_direct',
-        blank=True
-    )
+    roles = models.ManyToManyField("tenxyte.Role", related_name="users", blank=True)
+    direct_permissions = models.ManyToManyField("tenxyte.Permission", related_name="users_direct", blank=True)
 
     # Vérification
     is_email_verified = models.BooleanField(default=False)
     is_phone_verified = models.BooleanField(default=False)
 
     # 2FA (TOTP)
-    totp_secret = models.CharField(max_length=32, null=True, blank=True)
+    # SECURITY (R2): totp_secret is encrypted at rest using cryptography.fernet in the service layer.
+    totp_secret = models.CharField(max_length=255, null=True, blank=True)
     is_2fa_enabled = models.BooleanField(default=False)
     backup_codes = models.JSONField(default=list, blank=True)
 
@@ -200,21 +195,19 @@ class AbstractUser(models.Model):
     is_locked = models.BooleanField(default=False)
     locked_until = models.DateTimeField(null=True, blank=True)
     is_banned = models.BooleanField(
-        default=False,
-        help_text="Permanent ban (manual admin action). Cannot be auto-lifted."
+        default=False, help_text="Permanent ban (manual admin action). Cannot be auto-lifted."
     )
-    
+
     # Soft delete (RGPD)
-    is_deleted = models.BooleanField(
-        default=False,
-        help_text="Soft delete for GDPR compliance. Account is anonymized but kept for audit."
-    )
+    is_deleted = models.BooleanField(default=False, db_index=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
-    anonymization_token = models.CharField(
-        max_length=64, 
-        null=True, 
-        blank=True,
-        help_text="Token used to identify anonymized accounts for audit purposes."
+    anonymization_token = models.CharField(max_length=100, null=True, blank=True, unique=True)
+
+    # --- GDPR / RGPD Compliance (Art. 18) ---
+    is_restricted = models.BooleanField(
+        default=False,
+        help_text="Marque le compte comme restreint (Art. 18 RGPD). "
+        "Limite le traitement des données sans suppression.",
     )
 
     # Django admin
@@ -223,13 +216,9 @@ class AbstractUser(models.Model):
 
     # Session management
     max_sessions = models.PositiveIntegerField(
-        default=1,
-        help_text="Maximum concurrent sessions allowed (0 = unlimited)"
+        default=1, help_text="Maximum concurrent sessions allowed (0 = unlimited)"
     )
-    max_devices = models.PositiveIntegerField(
-        default=1,
-        help_text="Maximum unique devices allowed (0 = unlimited)"
-    )
+    max_devices = models.PositiveIntegerField(default=1, help_text="Maximum unique devices allowed (0 = unlimited)")
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -242,12 +231,54 @@ class AbstractUser(models.Model):
     class Meta:
         abstract = True
         indexes = [
-            models.Index(fields=['phone_country_code', 'phone_number']),
+            models.Index(fields=["phone_country_code", "phone_number"]),
         ]
 
     # Configuration Django Auth
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
+
+    def save(self, *args, **kwargs):
+        if self.email:
+            from django.contrib.auth.models import BaseUserManager
+
+            self.email = BaseUserManager.normalize_email(self.email).lower()
+        super().save(*args, **kwargs)
+
+    def delete(self, using=None, keep_parents=False, hard=False):
+        """
+        Soft delete for GDPR compliance (Art. 17).
+        Anonymizes the user data and marks as deleted instead of hard removing.
+        Use hard=True for immediate permanent deletion.
+        """
+        if hard:
+            return super().delete(using=using, keep_parents=keep_parents)
+
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+
+        # Anonymize identifiers to prevent reuse conflicts and protect data
+        if self.email:
+            self.email = f"deleted_{self.id}_{self.deleted_at.timestamp()}@anonymized.local"
+
+        self.anonymization_token = secrets.token_hex(16)
+
+        # Clear sensitive data
+        self.first_name = "Deleted"
+        self.last_name = "User"
+        self.phone_number = None
+        self.phone_country_code = None
+        self.google_id = None
+        self.totp_secret = None
+        self.backup_codes = []
+
+        self.is_active = False
+
+        # We don't change passwords so login fails immediately, or we could randomize it
+        self.set_password(secrets.token_hex(32))
+
+        self.save()
+        return (1, {self._meta.label: 1})
 
     # Proprietes requises par Django/DRF pour l'authentification
     @property
@@ -269,16 +300,19 @@ class AbstractUser(models.Model):
         return self.is_superuser
 
     def set_password(self, raw_password: str):
+        from ..conf import auth_settings
+        import hashlib
+
+        pre_hash = hashlib.sha256(raw_password.encode("utf-8")).hexdigest()
         self.password = bcrypt.hashpw(
-            raw_password.encode('utf-8'),
-            bcrypt.gensalt()
-        ).decode('utf-8')
+            pre_hash.encode("utf-8"), bcrypt.gensalt(rounds=auth_settings.BCRYPT_ROUNDS)
+        ).decode("utf-8")
 
     def check_password(self, raw_password: str) -> bool:
-        return bcrypt.checkpw(
-            raw_password.encode('utf-8'),
-            self.password.encode('utf-8')
-        )
+        import hashlib
+
+        pre_hash = hashlib.sha256(raw_password.encode("utf-8")).hexdigest()
+        return bcrypt.checkpw(pre_hash.encode("utf-8"), self.password.encode("utf-8"))
 
     def lock_account(self, duration_minutes: int = 30):
         self.is_locked = True
@@ -311,33 +345,43 @@ class AbstractUser(models.Model):
         Soft delete the user account (GDPR compliance).
         Anonymizes PII data while keeping audit trail.
         """
+        from django.utils import timezone
+
         if self.is_deleted:
             return False  # Already deleted
-        
+
         if generate_token:
-            self.anonymization_token = secrets.token_urlsafe(48)
-        
+            self.anonymization_token = secrets.token_urlsafe(32)
+
         # Anonymize personal data
         self.email = f"deleted_{self.id}@deleted.local"
         self.first_name = ""
         self.last_name = ""
-        self.phone_country_code = None
-        self.phone_number = None
-        self.google_id = None
-        self.is_email_verified = False
-        self.is_phone_verified = False
-        self.is_2fa_enabled = False
-        self.totp_secret = None
-        self.backup_codes = []
-        
-        # Mark as deleted
+
         self.is_deleted = True
         self.deleted_at = timezone.now()
         self.is_active = False
-        self.is_staff = False
-        self.is_superuser = False
-        
-        self.save()
+
+        self.save(
+            update_fields=[
+                "is_deleted",
+                "deleted_at",
+                "is_active",
+                "anonymization_token",
+                "email",
+                "first_name",
+                "last_name",
+            ]
+        )
+
+        # Revoke all Refresh Tokens
+        try:
+            from .operational import RefreshToken
+
+            RefreshToken.objects.filter(user=self, is_revoked=False).update(is_revoked=True)
+        except Exception:
+            pass
+
         return True
 
     @property
@@ -352,180 +396,178 @@ class AbstractUser(models.Model):
     # =============================================
     # Organization Methods (Opt-in Feature)
     # =============================================
-    
+
     def get_organizations(self):
         """
         Get all organizations this user is an active member of.
-        
+
         Returns:
             QuerySet of Organizations
         """
         from ..conf import org_settings
+
         if not org_settings.ORGANIZATIONS_ENABLED:
             return []
-        
+
         from .base import get_organization_model
-        return get_organization_model().objects.filter(
-            memberships__user=self,
-            memberships__status='active'
-        ).distinct()
-    
+
+        return get_organization_model().objects.filter(memberships__user=self, memberships__status="active").distinct()
+
     def get_org_membership(self, organization):
         """
         Get the membership in a specific organization.
-        
+
         Args:
             organization: Organization instance
-            
+
         Returns:
             OrganizationMembership instance or None
         """
         from ..conf import org_settings
+
         if not org_settings.ORGANIZATIONS_ENABLED:
             return None
-        
+
         from .base import get_organization_membership_model
+
         OrganizationMembership = get_organization_membership_model()
         try:
-            return OrganizationMembership.objects.get(
-                user=self,
-                organization=organization
-            )
+            return OrganizationMembership.objects.get(user=self, organization=organization)
         except OrganizationMembership.DoesNotExist:
             return None
-    
+
     def get_org_role(self, organization):
         """
         Get the role of this user in an organization.
-        
+
         Args:
             organization: Organization instance
-            
+
         Returns:
             OrganizationRole instance or None
         """
         membership = self.get_org_membership(organization)
         return membership.role if membership else None
-    
+
     def has_org_role(self, organization, role_code, check_inheritance=True):
         """
         Check if user has a specific role in an organization.
-        
+
         Args:
             organization: Organization instance
             role_code: Role code (e.g., 'admin', 'owner')
             check_inheritance: Check parent organizations if enabled
-            
+
         Returns:
             Boolean
         """
         from ..conf import org_settings
+
         if not org_settings.ORGANIZATIONS_ENABLED:
             return False
-        
+
         # Check direct membership
         membership = self.get_org_membership(organization)
         if membership and membership.role.code == role_code and membership.is_active_membership():
             return True
-        
+
         # Check inheritance if enabled
         if check_inheritance and org_settings.ORG_ROLE_INHERITANCE:
             # Check if user has this role in any ancestor organization
             ancestors = organization.get_ancestors(include_self=False)
             from .base import get_organization_membership_model
+
             OrganizationMembership = get_organization_membership_model()
-            
+
             return OrganizationMembership.objects.filter(
-                user=self,
-                organization__in=ancestors,
-                role__code=role_code,
-                status='active'
+                user=self, organization__in=ancestors, role__code=role_code, status="active"
             ).exists()
-        
+
         return False
-    
+
     def has_org_permission(self, organization, permission_code, check_inheritance=True):
         """
         Check if user has a specific permission in an organization.
-        
+
         Args:
             organization: Organization instance
             permission_code: Permission code (e.g., 'org.members.invite')
             check_inheritance: Check parent organizations if enabled
-            
+
         Returns:
             Boolean
         """
         from ..conf import org_settings
+
         if not org_settings.ORGANIZATIONS_ENABLED:
             return False
-        
+
         # Check direct membership
         membership = self.get_org_membership(organization)
         if membership and membership.has_permission(permission_code) and membership.is_active_membership():
             return True
-        
+
         # Check inheritance if enabled
         if check_inheritance and org_settings.ORG_ROLE_INHERITANCE:
             ancestors = organization.get_ancestors(include_self=False)
             from .base import get_organization_membership_model
+
             OrganizationMembership = get_organization_membership_model()
-            
+
             for ancestor_membership in OrganizationMembership.objects.filter(
-                user=self,
-                organization__in=ancestors,
-                status='active'
+                user=self, organization__in=ancestors, status="active"
             ):
                 if ancestor_membership.has_permission(permission_code):
                     return True
-        
+
         return False
-    
+
     def is_org_member(self, organization):
         """
         Check if user is an active member of an organization.
-        
+
         Args:
             organization: Organization instance
-            
+
         Returns:
             Boolean
         """
         from ..conf import org_settings
+
         if not org_settings.ORGANIZATIONS_ENABLED:
             return False
-        
+
         membership = self.get_org_membership(organization)
         return membership is not None and membership.is_active_membership()
-    
+
     def is_org_owner(self, organization):
         """
         Check if user is the owner of an organization.
-        
+
         Args:
             organization: Organization instance
-            
+
         Returns:
             Boolean
         """
-        return self.has_org_role(organization, 'owner', check_inheritance=False)
-    
+        return self.has_org_role(organization, "owner", check_inheritance=False)
+
     def is_org_admin(self, organization):
         """
         Check if user is an admin of an organization.
-        
+
         Args:
             organization: Organization instance
-            
+
         Returns:
             Boolean
         """
-        return self.has_org_role(organization, 'admin', check_inheritance=True)
+        return self.has_org_role(organization, "admin", check_inheritance=True)
 
     # =============================================
     # RBAC Methods (Global)
     # =============================================
-    
+
     def has_role(self, role_code: str) -> bool:
         """Vérifie si l'utilisateur a un rôle spécifique"""
         return self.roles.filter(code=role_code).exists()
@@ -541,15 +583,14 @@ class AbstractUser(models.Model):
     def _get_effective_permission_codes(self) -> set:
         """Retourne l'ensemble des codes de permissions effectifs (rôles + directes + hiérarchie)."""
         from .base import get_permission_model
+
         Permission = get_permission_model()
         from django.db.models import Q
 
         # Permissions via rôles + permissions directes
-        user_perms = Permission.objects.filter(
-            Q(roles__users=self) | Q(users_direct=self)
-        ).distinct()
+        user_perms = Permission.objects.filter(Q(roles__users=self) | Q(users_direct=self)).distinct()
 
-        codes = set(user_perms.values_list('code', flat=True))
+        codes = set(user_perms.values_list("code", flat=True))
 
         # Ajouter les enfants des permissions parentes (hiérarchie)
         parent_perms = user_perms.filter(children__isnull=False).distinct()
@@ -562,14 +603,12 @@ class AbstractUser(models.Model):
     def has_permission(self, permission_code: str) -> bool:
         """Vérifie si l'utilisateur a une permission (via rôles, directe, ou hiérarchie)."""
         from .base import get_permission_model
+
         Permission = get_permission_model()
         from django.db.models import Q
 
         # Vérification directe (rôles + permissions directes)
-        if Permission.objects.filter(
-            Q(roles__users=self) | Q(users_direct=self),
-            code=permission_code
-        ).exists():
+        if Permission.objects.filter(Q(roles__users=self) | Q(users_direct=self), code=permission_code).exists():
             return True
 
         # Vérification hiérarchique : un ancêtre de cette permission est-il attribué ?
@@ -579,8 +618,7 @@ class AbstractUser(models.Model):
             if ancestors:
                 ancestor_codes = [a.code for a in ancestors]
                 return Permission.objects.filter(
-                    Q(roles__users=self) | Q(users_direct=self),
-                    code__in=ancestor_codes
+                    Q(roles__users=self) | Q(users_direct=self), code__in=ancestor_codes
                 ).exists()
         except Permission.DoesNotExist:
             pass
@@ -601,11 +639,12 @@ class AbstractUser(models.Model):
 
     def get_all_roles(self) -> list:
         """Retourne la liste de tous les rôles de l'utilisateur"""
-        return list(self.roles.values_list('code', flat=True))
+        return list(self.roles.values_list("code", flat=True))
 
     def assign_role(self, role_code: str) -> bool:
         """Attribue un rôle à l'utilisateur"""
         from .base import get_role_model
+
         Role = get_role_model()
         try:
             role = Role.objects.get(code=role_code)
@@ -617,6 +656,7 @@ class AbstractUser(models.Model):
     def remove_role(self, role_code: str) -> bool:
         """Retire un rôle à l'utilisateur"""
         from .base import get_role_model
+
         Role = get_role_model()
         try:
             role = Role.objects.get(code=role_code)
@@ -628,6 +668,7 @@ class AbstractUser(models.Model):
     def assign_default_role(self):
         """Attribue le rôle par défaut à l'utilisateur"""
         from .base import get_role_model
+
         Role = get_role_model()
         default_role = Role.get_default_role()
         if default_role:
@@ -638,22 +679,25 @@ class AbstractUser(models.Model):
 # CONCRETE MODELS - Default implementations (can be swapped)
 # =============================================================================
 
+
 class Permission(AbstractPermission):
     """
     Default Permission model. Can be replaced by setting TENXYTE_PERMISSION_MODEL.
     """
+
     class Meta(AbstractPermission.Meta):
-        db_table = 'permissions'
-        swappable = 'TENXYTE_PERMISSION_MODEL'
+        db_table = "permissions"
+        swappable = "TENXYTE_PERMISSION_MODEL"
 
 
 class Role(AbstractRole):
     """
     Default Role model. Can be replaced by setting TENXYTE_ROLE_MODEL.
     """
+
     class Meta(AbstractRole.Meta):
-        db_table = 'roles'
-        swappable = 'TENXYTE_ROLE_MODEL'
+        db_table = "roles"
+        swappable = "TENXYTE_ROLE_MODEL"
 
 
 class User(AbstractUser):
@@ -663,6 +707,7 @@ class User(AbstractUser):
     Note: You should also set AUTH_USER_MODEL in Django settings if you're
     extending this model.
     """
+
     class Meta(AbstractUser.Meta):
-        db_table = 'users'
-        swappable = 'TENXYTE_USER_MODEL'
+        db_table = "users"
+        swappable = "TENXYTE_USER_MODEL"

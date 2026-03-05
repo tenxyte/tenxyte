@@ -132,7 +132,7 @@ class TestApplyDateRange:
         user = _user("daterange@test.com")
         AuditLog.objects.create(user=user, action="test", ip_address="1.2.3.4", details={})
         qs = AuditLog.objects.all()
-        req = _mock_request(date_from="2000-01-01")
+        req = _mock_request(date_from="2000-01-01T00:00:00Z")
         result = apply_date_range(qs, req)
         assert result.count() >= 1
 
@@ -142,7 +142,7 @@ class TestApplyDateRange:
         user = _user("dateto@test.com")
         AuditLog.objects.create(user=user, action="test", ip_address="1.2.3.4", details={})
         qs = AuditLog.objects.all()
-        req = _mock_request(date_to="2099-12-31")
+        req = _mock_request(date_to="2099-12-31T23:59:59Z")
         result = apply_date_range(qs, req)
         assert result.count() >= 1
 

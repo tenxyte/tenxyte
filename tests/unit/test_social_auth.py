@@ -426,6 +426,7 @@ class TestSocialAuthService:
         assert error == ''
         assert User.objects.filter(email='github@example.com').exists()
 
+    @override_settings(TENXYTE_SOCIAL_AUTO_MERGE_ACCOUNTS=True)
     def test_authenticate_links_existing_user_by_email(self):
         app = _app("SocialSvcApp2")
         existing = _user("github@example.com")
@@ -499,6 +500,7 @@ class TestSocialAuthService:
             provider='microsoft', provider_user_id='ms_789'
         ).exists()
 
+    @override_settings(TENXYTE_SOCIAL_AUTO_MERGE_ACCOUNTS=True)
     def test_authenticate_multiple_providers_same_user(self):
         app = _app("SocialSvcApp7")
         service = SocialAuthService()

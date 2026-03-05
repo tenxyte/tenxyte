@@ -6,14 +6,15 @@ avec Google Authenticator, Authy, etc.
 """
 
 import base64
-import hashlib
 import secrets
 import logging
+import os
 from io import BytesIO
-from typing import Tuple, List, Optional
+from typing import Tuple, List
 
 import pyotp
 import qrcode
+from cryptography.fernet import Fernet
 
 from ..models import get_user_model
 from ..conf import auth_settings
@@ -28,6 +29,27 @@ class TOTPService:
     Service de gestion 2FA avec TOTP (Time-based One-Time Password).
     Compatible avec Google Authenticator, Authy, Microsoft Authenticator, etc.
     """
+
+    def __init__(self):
+        encryption_key = os.environ.get("TENXYTE_TOTP_ENCRYPTION_KEY")
+        if encryption_key:
+            self.totp_key = Fernet(encryption_key.encode("utf-8"))
+        else:
+            self.totp_key = None
+            logger.warning(
+                "TENXYTE_TOTP_ENCRYPTION_KEY not set. TOTP secrets will be stored in plaintext. This is insecure."
+            )
+
+    def _get_decrypted_secret(self, user) -> str:
+        if not user.totp_secret:
+            return None
+        if self.totp_key:
+            try:
+                return self.totp_key.decrypt(user.totp_secret.encode("utf-8")).decode("utf-8")
+            except Exception as e:
+                logger.error(f"[TOTP] Failed to decrypt TOTP secret for user {user.id}: {e}")
+                return None
+        return user.totp_secret
 
     @property
     def ISSUER_NAME(self):
@@ -51,24 +73,44 @@ class TOTPService:
         """
         return pyotp.TOTP(secret)
 
-    def verify_code(self, secret: str, code: str, valid_window: int = 1) -> bool:
+    def verify_code(self, user: User, code: str, valid_window: int = None) -> bool:
         """
-        Vérifie un code TOTP.
+        Vérifie un code TOTP avec protection anti-replay.
 
         Args:
-            secret: Le secret TOTP de l'utilisateur
+            user: L'utilisateur
             code: Le code à 6 chiffres entré par l'utilisateur
-            valid_window: Nombre de périodes de 30s acceptées avant/après (défaut: 1)
+            valid_window: Nombre de périodes de 30s acceptées avant/après. Si non spécifié, utilise TENXYTE_TOTP_VALID_WINDOW.
 
         Returns:
-            True si le code est valide
+            True si le code est valide ET n'a pas été rejoué dans sa fenêtre de validité.
         """
+        if valid_window is None:
+            valid_window = auth_settings.TOTP_VALID_WINDOW
+
+        secret = self._get_decrypted_secret(user)
         if not secret or not code:
             return False
 
         try:
+            from django.core.cache import cache
+
+            # Anti-replay check
+            cache_key = f"totp_used_{user.id}_{code}"
+            if cache.get(cache_key):
+                logger.warning(f"[TOTP] Replay attack prevented for user {user.id}")
+                return False
+
             totp = self.get_totp(secret)
-            return totp.verify(code, valid_window=valid_window)
+            is_valid = totp.verify(code, valid_window=valid_window)
+
+            if is_valid:
+                # Mark code as used for the duration of the window (+ extra margin)
+                # valid_window=1 means checking current, previous, and next 30s period.
+                # So the code could be valid for up to 90 seconds. We cache for 120s to be safe.
+                cache.set(cache_key, True, timeout=(valid_window * 30 * 2) + 60)
+
+            return is_valid
         except Exception as e:
             logger.error(f"[TOTP] Verification error: {e}")
             return False
@@ -102,10 +144,10 @@ class TOTPService:
         img = qr.make_image(fill_color="black", back_color="white")
 
         buffer = BytesIO()
-        img.save(buffer, format='PNG')
+        img.save(buffer, format="PNG")
         buffer.seek(0)
 
-        img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
         return f"data:image/png;base64,{img_base64}"
 
     def generate_backup_codes(self) -> Tuple[List[str], List[str]]:
@@ -117,17 +159,19 @@ class TOTPService:
             - codes_en_clair: à afficher à l'utilisateur UNE SEULE FOIS
             - codes_hashés: à stocker en base de données
         """
+        from django.contrib.auth.hashers import make_password
+
         plain_codes = []
         hashed_codes = []
 
         for _ in range(self.BACKUP_CODES_COUNT):
-            # Générer un code aléatoire (ex: "a1b2-c3d4")
-            code = secrets.token_hex(self.BACKUP_CODE_LENGTH // 2)
-            formatted_code = f"{code[:4]}-{code[4:]}"
+            # Générer un code aléatoire (64 bits, ex: "a1b2c3d4-e5f6g7h8")
+            code = secrets.token_hex(self.BACKUP_CODE_LENGTH)
+            formatted_code = f"{code[:8]}-{code[8:]}"
             plain_codes.append(formatted_code)
 
-            # Hasher le code pour stockage
-            hashed = hashlib.sha256(formatted_code.encode()).hexdigest()
+            # Hasher le code pour stockage (utilise bcrypt via le mot de passe Django par défaut)
+            hashed = make_password(formatted_code)
             hashed_codes.append(hashed)
 
         return plain_codes, hashed_codes
@@ -143,19 +187,36 @@ class TOTPService:
             return False
 
         # Normaliser le code (enlever espaces, tirets optionnels)
-        normalized = code.lower().replace(' ', '').replace('-', '')
-        if len(normalized) == 8:
+        normalized = code.lower().replace(" ", "").replace("-", "")
+        if len(normalized) == 16:
             # Reformater pour le hash
-            formatted = f"{normalized[:4]}-{normalized[4:]}"
+            formatted = f"{normalized[:8]}-{normalized[8:]}"
         else:
             formatted = code.lower()
 
-        code_hash = hashlib.sha256(formatted.encode()).hexdigest()
+        from django.contrib.auth.hashers import check_password
 
-        if code_hash in user.backup_codes:
+        matched_hash = None
+        for stored in user.backup_codes:
+            if check_password(formatted, stored):
+                matched_hash = stored
+                break
+
+        # Handle legacy SHA-256 backup codes for backward compatibility
+        if not matched_hash:
+            import hashlib
+            import hmac
+
+            legacy_hash = hashlib.sha256(formatted.encode()).hexdigest()
+            for stored in user.backup_codes:
+                if not stored.startswith(("pbkdf2_", "bcrypt", "argon2")) and hmac.compare_digest(legacy_hash, stored):
+                    matched_hash = stored
+                    break
+
+        if matched_hash:
             # Supprimer le code utilisé
-            user.backup_codes.remove(code_hash)
-            user.save(update_fields=['backup_codes'])
+            user.backup_codes.remove(matched_hash)
+            user.save(update_fields=["backup_codes"])
             logger.info(f"[TOTP] Backup code used for user {user.id}. {len(user.backup_codes)} remaining.")
             return True
 
@@ -172,8 +233,11 @@ class TOTPService:
         secret = self.generate_secret()
 
         # Stocker temporairement (pas encore activé)
-        user.totp_secret = secret
-        user.save(update_fields=['totp_secret'])
+        if self.totp_key:
+            user.totp_secret = self.totp_key.encrypt(secret.encode("utf-8")).decode("utf-8")
+        else:
+            user.totp_secret = secret
+        user.save(update_fields=["totp_secret"])
 
         # Générer le QR code
         email = user.email or f"user_{user.id}"
@@ -184,13 +248,13 @@ class TOTPService:
 
         # Stocker les codes hashés
         user.backup_codes = hashed_codes
-        user.save(update_fields=['backup_codes'])
+        user.save(update_fields=["backup_codes"])
 
         return {
-            'secret': secret,
-            'qr_code': qr_code,
-            'provisioning_uri': self.get_provisioning_uri(secret, email),
-            'backup_codes': plain_codes,
+            "secret": secret,
+            "qr_code": qr_code,
+            "provisioning_uri": self.get_provisioning_uri(secret, email),
+            "backup_codes": plain_codes,
         }
 
     def confirm_2fa(self, user: User, code: str) -> Tuple[bool, str]:
@@ -210,12 +274,12 @@ class TOTPService:
         if user.is_2fa_enabled:
             return False, "2FA is already enabled."
 
-        if not self.verify_code(user.totp_secret, code):
+        if not self.verify_code(user, code):
             return False, "Invalid code. Please try again."
 
         # Activer le 2FA
         user.is_2fa_enabled = True
-        user.save(update_fields=['is_2fa_enabled'])
+        user.save(update_fields=["is_2fa_enabled"])
 
         logger.info(f"[TOTP] 2FA enabled for user {user.id}")
         return True, ""
@@ -235,7 +299,7 @@ class TOTPService:
             return False, "2FA is not enabled."
 
         # Vérifier le code TOTP ou un code de secours
-        is_valid = self.verify_code(user.totp_secret, code)
+        is_valid = self.verify_code(user, code)
         if not is_valid:
             is_valid = self.verify_backup_code(user, code)
 
@@ -246,7 +310,7 @@ class TOTPService:
         user.is_2fa_enabled = False
         user.totp_secret = None
         user.backup_codes = []
-        user.save(update_fields=['is_2fa_enabled', 'totp_secret', 'backup_codes'])
+        user.save(update_fields=["is_2fa_enabled", "totp_secret", "backup_codes"])
 
         logger.info(f"[TOTP] 2FA disabled for user {user.id}")
         return True, ""
@@ -269,7 +333,7 @@ class TOTPService:
             return False, "2FA code required."
 
         # Essayer le code TOTP d'abord
-        if self.verify_code(user.totp_secret, code):
+        if self.verify_code(user, code):
             return True, ""
 
         # Sinon essayer un code de secours
@@ -289,13 +353,13 @@ class TOTPService:
             return False, [], "2FA is not enabled."
 
         # Vérifier le code TOTP
-        if not self.verify_code(user.totp_secret, code):
+        if not self.verify_code(user, code):
             return False, [], "Invalid code."
 
         # Générer de nouveaux codes
         plain_codes, hashed_codes = self.generate_backup_codes()
         user.backup_codes = hashed_codes
-        user.save(update_fields=['backup_codes'])
+        user.save(update_fields=["backup_codes"])
 
         logger.info(f"[TOTP] Backup codes regenerated for user {user.id}")
         return True, plain_codes, ""

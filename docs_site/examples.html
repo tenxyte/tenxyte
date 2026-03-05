@@ -24,6 +24,7 @@
     </div></div>
     <button class="btn-icon" id="themeToggle" aria-label="Basculer le thème">
       <span aria-hidden="true">🌙</span></button>
+    <a href="https://github.com/tenxyte/tenxyte" class="btn-cta" target="_blank" rel="noopener" aria-label="GitHub">GitHub</a>
   </div></header>
   <main id="main" role="main"><div class="container"><h1 class="page-title">Exemples de code</h1><section class="section"><h2 class="section__title">Authentification</h2><div class="tabs" role="tablist"><button class="tabs__btn tabs__btn--active" role="tab" aria-selected="true" aria-controls="tab-auth-py" id="btn-auth-py">Python</button><button class="tabs__btn" role="tab" aria-selected="false" aria-controls="tab-auth-js" id="btn-auth-js">JavaScript</button><button class="tabs__btn" role="tab" aria-selected="false" aria-controls="tab-auth-curl" id="btn-auth-curl">cURL</button></div><div class="tabs__panel tabs__panel--active" role="tabpanel" id="tab-auth-py" aria-labelledby="btn-auth-py"><div class="code-block" role="region" aria-label="Code Python"><div class="code-block__header"><span class="code-block__lang">Python</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-python">import requests
 
@@ -90,9 +91,35 @@ await fetch(".../2fa/confirm/", {
 
 curl -X POST .../2fa/confirm/ \
   -H "Authorization: Bearer &lt;token&gt;" \
-  -d '{"code":"123456"}'</code></pre></div></div></section></div></main>
+  -d '{"code":"123456"}'</code></pre></div></div></section><section class="section"><h2 class="section__title">Organisations</h2><div class="tabs" role="tablist"><button class="tabs__btn tabs__btn--active" role="tab" aria-selected="true" aria-controls="tab-orgs-py" id="btn-orgs-py">Python</button><button class="tabs__btn" role="tab" aria-selected="false" aria-controls="tab-orgs-js" id="btn-orgs-js">JavaScript</button><button class="tabs__btn" role="tab" aria-selected="false" aria-controls="tab-orgs-curl" id="btn-orgs-curl">cURL</button></div><div class="tabs__panel tabs__panel--active" role="tabpanel" id="tab-orgs-py" aria-labelledby="btn-orgs-py"><div class="code-block" role="region" aria-label="Code Python"><div class="code-block__header"><span class="code-block__lang">Python</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-python">import requests
+
+headers = {"Authorization": "Bearer &lt;token&gt;"}
+# Create an organisation
+org = requests.post(".../organizations/", headers=headers,
+    json={"name": "Acme Corp", "slug": "acme-corp"}).json()
+
+# Invite a member
+requests.post(".../organizations/members/add/", headers=headers,
+    json={"email": "colleague@example.com", "role": "member"})</code></pre></div></div><div class="tabs__panel" role="tabpanel" id="tab-orgs-js" aria-labelledby="btn-orgs-js" hidden><div class="code-block" role="region" aria-label="Code JavaScript"><div class="code-block__header"><span class="code-block__lang">JavaScript</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-javascript">const org = await fetch("/api/v1/auth/organizations/", {
+  method: "POST",
+  headers: { Authorization: "Bearer &lt;token&gt;", "Content-Type": "application/json" },
+  body: JSON.stringify({ name: "Acme Corp", slug: "acme-corp" }),
+}).then(r =&gt; r.json());
+
+// Get org tree
+const tree = await fetch("/api/v1/auth/organizations/tree/", {
+  headers: { Authorization: "Bearer &lt;token&gt;", "X-Org-Slug": "acme-corp" },
+}).then(r =&gt; r.json());
+console.log(tree);</code></pre></div></div><div class="tabs__panel" role="tabpanel" id="tab-orgs-curl" aria-labelledby="btn-orgs-curl" hidden><div class="code-block" role="region" aria-label="Code cURL"><div class="code-block__header"><span class="code-block__lang">cURL</span><button class="code-block__copy" aria-label="Copier" data-copy>Copier</button></div><pre class="code-block__pre"><code class="lang-bash">curl -X POST .../organizations/ \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Acme Corp","slug":"acme-corp"}' 
+
+curl .../organizations/tree/ \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -H "X-Org-Slug: acme-corp"</code></pre></div></div></section></div></main>
   <footer class="footer" role="contentinfo"><div class="footer__inner">
-    <p>© 2025 Tenxyte API · v0.0.0</p>
+    <p>© 2025 Tenxyte API · v0.9.1</p>
     <nav aria-label="Liens utiles">
       <a href="http://localhost:8000/api/docs/" target="_blank" rel="noopener">Swagger UI</a>
       <a href="http://localhost:8000/api/redoc/" target="_blank" rel="noopener">ReDoc</a>
@@ -218,7 +245,7 @@ curl -X POST .../2fa/confirm/ \
     {
       "title": "Modifier un utilisateur (admin)",
       "url": "api-reference.html#op-admin-users-partial-update",
-      "content": "Met à jour les informations d'un utilisateur. Réservé aux admins."
+      "content": "Met à jour partiellement les informations d'un utilisateur. Tous les champs sont optionnels. Réservé aux admins (permission users.update). Supporte la désactivation de compte, la promotion staff/superuser, et la limite de sessions/appareils."
     },
     {
       "title": "Supprimer un utilisateur (soft delete)",
@@ -228,12 +255,12 @@ curl -X POST .../2fa/confirm/ \
     {
       "title": "Bannir un utilisateur",
       "url": "api-reference.html#op-admin-users-ban-create",
-      "content": "Bannit un utilisateur de manière permanente. Nécessite la permission users.ban."
+      "content": "Bannit un utilisateur de manière permanente. Désactive le compte (is_active=False). Nécessite la permission users.ban. La raison est stockée dans le journal d'audit."
     },
     {
       "title": "Verrouiller un compte",
       "url": "api-reference.html#op-admin-users-lock-create",
-      "content": "Verrouille temporairement un compte utilisateur."
+      "content": "Verrouille temporairement un compte utilisateur. La durée est configurable (défaut: 30 min, max: 30 jours). Nécessite la permission users.lock. La raison est stockée dans le journal d'audit."
     },
     {
       "title": "Débannir un utilisateur",
@@ -244,6 +271,61 @@ curl -X POST .../2fa/confirm/ \
       "title": "Déverrouiller un compte",
       "url": "api-reference.html#op-admin-users-unlock-create",
       "content": "Déverrouille un compte utilisateur."
+    },
+    {
+      "title": "Liste les actions en attente de validation HITL",
+      "url": "api-reference.html#op-ai-pending-actions-list",
+      "content": "Retourne les AgentPendingActions non-confirmées et non-expirées des agents de l'utilisateur. HITL = Human-In-The-Loop. Si X-Org-Slug est fourni, filtre les actions relatives aux tokens de cette organisation."
+    },
+    {
+      "title": "Confirme une action agent en attente (HITL)",
+      "url": "api-reference.html#op-ai-pending-actions-confirm-create",
+      "content": "Approuve une action agent en attente via son confirmation_token. Le token est reçu par l'humain (email, webhook, etc.) lorsque l'agent demande une validation. Une fois confirmé, l'agent peut poursuivre l'action."
+    },
+    {
+      "title": "Refuse une action agent en attente (HITL)",
+      "url": "api-reference.html#op-ai-pending-actions-deny-create",
+      "content": "Refuse une action agent en attente via son confirmation_token. Le token est reçu par l'humain lorsque l'agent demande une validation. Une fois refusée, l'agent est notifié que l'action est bloquée."
+    },
+    {
+      "title": "Liste les tokens agent de l'utilisateur",
+      "url": "api-reference.html#op-ai-tokens-list",
+      "content": "Retourne tous les AgentTokens créés par l'utilisateur authentifié. Si X-Org-Slug est fourni, filtre les tokens liés à cette organisation."
+    },
+    {
+      "title": "Crée un nouveau token agent (AIRS)",
+      "url": "api-reference.html#op-ai-tokens-create",
+      "content": "Crée un AgentToken avec des permissions limitées pour un agent IA. Le token utilise le scheme AgentBearer pour s'identifier. Nécessite que AIRS_ENABLED soit True dans la configuration. Le contexte organisationnel peut être fourni via le header X-Org-Slug ou via le champ 'organization' dans le corps de la requête."
+    },
+    {
+      "title": "Détails d'un token agent",
+      "url": "api-reference.html#op-ai-tokens-retrieve",
+      "content": "Retourne les détails d'un AgentToken appartenant à l'utilisateur."
+    },
+    {
+      "title": "Heartbeat d'un token agent",
+      "url": "api-reference.html#op-ai-tokens-heartbeat-create",
+      "content": "Signal de vie envoyé par l'agent. Utilise le scheme `AgentBearer <token>` dans l'en-tête Authorization. Renouvelle le dead man's switch si configuré."
+    },
+    {
+      "title": "Rapporte l'usage d'un token agent (coûts LLM)",
+      "url": "api-reference.html#op-ai-tokens-report-usage-create",
+      "content": "Rapporte la consommation LLM d'une session agent. Utilise AgentBearer dans Authorization. Si le budget est dépassé, le token est suspendu automatiquement."
+    },
+    {
+      "title": "Révoque un token agent",
+      "url": "api-reference.html#op-ai-tokens-revoke-create",
+      "content": "Révoque immédiatement un AgentToken. Le token ne pourra plus être utilisé."
+    },
+    {
+      "title": "Suspend un token agent",
+      "url": "api-reference.html#op-ai-tokens-suspend-create",
+      "content": "Suspend temporairement un AgentToken (raison: MANUAL)."
+    },
+    {
+      "title": "Révoque tous les tokens agent (coupe-circuit)",
+      "url": "api-reference.html#op-ai-tokens-revoke-all-create",
+      "content": "Révoque immédiatement TOUS les AgentTokens actifs de l'utilisateur. Action de coupe-circuit d'urgence."
     },
     {
       "title": "Lister les applications",
@@ -263,7 +345,7 @@ curl -X POST .../2fa/confirm/ \
     {
       "title": "Modifier une application",
       "url": "api-reference.html#op-applications-update",
-      "content": "Met à jour les informations d'une application. Le secret ne peut pas être modifié (utilisez l'endpoint de régénération)."
+      "content": "Met à jour les informations d'une application. Tous les champs fournis remplaceront les valeurs existantes. Le secret ne peut pas être modifié (utilisez l'endpoint de régénération)."
     },
     {
       "title": "Basculer le statut actif",
@@ -319,11 +401,6 @@ curl -X POST .../2fa/confirm/ \
       "title": "Exporter mes données",
       "url": "api-reference.html#op-export-user-data-create",
       "content": "Exporte toutes les données personnelles de l'utilisateur conformément au droit à la portabilité du RGPD. Nécessite le mot de passe actuel pour des raisons de sécurité."
-    },
-    {
-      "title": "Authentification Google OAuth",
-      "url": "api-reference.html#op-google-create",
-      "content": "Authentifie un utilisateur via Google OAuth. Accepte id_token, access_token ou code."
     },
     {
       "title": "Connexion par email",
@@ -468,7 +545,7 @@ curl -X POST .../2fa/confirm/ \
     {
       "title": "Verifier la force d'un mot de passe",
       "url": "api-reference.html#op-password-strength-create",
-      "content": "Retourne le score et la force d'un mot de passe sans l'enregistrer."
+      "content": "Retourne le score et la force d'un mot de passe sans l'enregistrer. Utile pour fournir un retour en temps réel dans l'interface utilisateur. L'email (optionnel) permet de vérifier si le mot de passe contient une partie de l'email."
     },
     {
       "title": "Lister les permissions",
@@ -478,7 +555,7 @@ curl -X POST .../2fa/confirm/ \
     {
       "title": "Créer une permission",
       "url": "api-reference.html#op-permissions-create",
-      "content": "Crée une nouvelle permission."
+      "content": "Crée une nouvelle permission. Le code doit être unique et structuré (ex: `users.view`). Peut être rattaché à une permission parente via `parent_code`."
     },
     {
       "title": "Détails d'une permission",
@@ -488,7 +565,7 @@ curl -X POST .../2fa/confirm/ \
     {
       "title": "Modifier une permission",
       "url": "api-reference.html#op-permissions-update",
-      "content": "Met à jour les informations d'une permission."
+      "content": "Met à jour les informations d'une permission. Seuls le nom et la description sont généralement modifiés, le code servant d'identifiant technique immuable."
     },
     {
       "title": "Supprimer une permission",
@@ -518,7 +595,7 @@ curl -X POST .../2fa/confirm/ \
     {
       "title": "Créer un rôle",
       "url": "api-reference.html#op-roles-create",
-      "content": "Crée un nouveau rôle avec les permissions spécifiées."
+      "content": "Crée un nouveau rôle. Vous pouvez assigner des permissions immédiatement via la liste `permission_codes`."
     },
     {
       "title": "Détails d'un rôle",
@@ -528,7 +605,7 @@ curl -X POST .../2fa/confirm/ \
     {
       "title": "Modifier un rôle",
       "url": "api-reference.html#op-roles-update",
-      "content": "Met à jour les informations d'un rôle."
+      "content": "Met à jour les informations d'un rôle. Vous pouvez modifier le nom, la description, le statut par défaut, et remplacer toutes les permissions assignées via `permission_codes`."
     },
     {
       "title": "Supprimer un rôle",
@@ -543,7 +620,7 @@ curl -X POST .../2fa/confirm/ \
     {
       "title": "Ajouter des permissions à un rôle",
       "url": "api-reference.html#op-roles-permissions-create",
-      "content": "Ajoute une ou plusieurs permissions à un rôle existant."
+      "content": "Ajoute une ou plusieurs permissions à un rôle existant. Seuls les codes de permissions sont requis."
     },
     {
       "title": "Retirer des permissions d'un rôle",
@@ -554,6 +631,11 @@ curl -X POST .../2fa/confirm/ \
       "title": "Authentification sociale OAuth2",
       "url": "api-reference.html#op-social-create",
       "content": "Authentifie un utilisateur via un provider OAuth2 (google, github, microsoft, facebook). Accepte un access_token, un authorization code, ou un id_token (Google uniquement). Crée automatiquement un compte si l'utilisateur n'existe pas encore. Device fingerprinting automatique via User-Agent. Rate limiting appliqué par provider (10 requêtes/heure)."
+    },
+    {
+      "title": "Callback OAuth2",
+      "url": "api-reference.html#op-social-callback-retrieve",
+      "content": "Endpoint de callback pour le flow OAuth2 authorization code. Reçoit le code d'autorisation du provider et le redirect_uri. Échange le code contre des tokens et authentifie l'utilisateur. Retourne les tokens JWT ou redirige vers l'application cliente."
     },
     {
       "title": "Lister les permissions directes d'un utilisateur",
@@ -578,7 +660,7 @@ curl -X POST .../2fa/confirm/ \
     {
       "title": "Assigner un rôle",
       "url": "api-reference.html#op-users-roles-create",
-      "content": "Ajoute un rôle à un utilisateur."
+      "content": "Ajoute un rôle à un utilisateur à l'aide de son `role_code` (ex: `admin`, `tech_support`)."
     },
     {
       "title": "Retirer un rôle",
