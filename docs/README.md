@@ -2,6 +2,20 @@
 
 Welcome to the comprehensive documentation for the Tenxyte Django authentication package.
 
+## Table of Contents
+
+- [Documentation Structure](#-documentation-structure)
+- [Enhanced Features Overview](#-enhanced-features-overview)
+- [Documentation Quality Metrics](#-documentation-quality-metrics)
+- [Documentation Scripts](#️-documentation-scripts)
+- [Quick Start](#-quick-start)
+- [Documentation Access](#-documentation-access)
+- [Key Features Documentation](#-key-features-documentation)
+- [Testing Documentation](#-testing-documentation)
+- [Support and Contributing](#-support-and-contributing)
+- [Documentation Standards](#-documentation-standards)
+- [Summary](#-summary)
+
 ## 📚 Documentation Structure
 
 ### 📖 **Developer Guides**

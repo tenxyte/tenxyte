@@ -2,6 +2,17 @@
 
 This document describes the reusable schema components used throughout the Tenxyte API. These correspond to the `$ref` components in the OpenAPI specification (`openapi_schema.json`).
 
+## Table of Contents
+
+- [User](#user)
+- [TokenPair](#tokenpair)
+- [ErrorResponse](#errorresponse)
+- [PaginatedResponse](#paginatedresponse)
+- [Organization](#organization)
+- [AuditLog](#auditlog)
+- [Role](#role)
+- [DeviceInfo](#deviceinfo)
+
 ---
 
 ## User
