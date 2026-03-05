@@ -4,22 +4,26 @@ import sys
 from unittest.mock import patch, MagicMock
 from django.test import override_settings
 
-# Mock optionnels pour éviter ImportError avec @patch
-sys.modules['twilio'] = MagicMock()
-sys.modules['twilio.rest'] = MagicMock()
-sys.modules['twilio.base'] = MagicMock()
+try:
+    import twilio
+    import twilio.rest
+    import twilio.base.exceptions
+except ImportError:
+    class MockTwilioRestException(Exception):
+        def __init__(self, status, uri, msg=""):
+            super().__init__(msg)
+            self.status = status
+            self.uri = uri
+            self.msg = msg
+            self.code = 12345
 
-class MockTwilioRestException(Exception):
-    def __init__(self, status, uri, msg=""):
-        super().__init__(msg)
-        self.status = status
-        self.uri = uri
-        self.msg = msg
-        self.code = 12345
+    mock_exceptions = MagicMock()
+    mock_exceptions.TwilioRestException = MockTwilioRestException
 
-mock_exceptions = MagicMock()
-mock_exceptions.TwilioRestException = MockTwilioRestException
-sys.modules['twilio.base.exceptions'] = mock_exceptions
+    sys.modules['twilio'] = MagicMock()
+    sys.modules['twilio.rest'] = MagicMock()
+    sys.modules['twilio.base'] = MagicMock()
+    sys.modules['twilio.base.exceptions'] = mock_exceptions
 
 from tenxyte.backends.sms import (
     ConsoleBackend,
