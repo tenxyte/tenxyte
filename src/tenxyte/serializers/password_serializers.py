@@ -1,12 +1,14 @@
 """
 Password serializers - Password validation, reset, change.
 """
+
 from rest_framework import serializers
 from ..validators import validate_password
 
 
 class PasswordSerializer(serializers.Serializer):
     """Simple password validation serializer."""
+
     password = serializers.CharField(write_only=True, min_length=1)
 
 
@@ -16,8 +18,8 @@ class PasswordResetRequestSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=20, required=False)
 
     def validate(self, data):
-        if not data.get('email') and not (data.get('phone_country_code') and data.get('phone_number')):
-            raise serializers.ValidationError('Email or phone number is required')
+        if not data.get("email") and not (data.get("phone_country_code") and data.get("phone_number")):
+            raise serializers.ValidationError("Email or phone number is required")
         return data
 
 

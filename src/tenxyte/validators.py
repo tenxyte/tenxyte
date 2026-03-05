@@ -18,6 +18,7 @@ from .conf import auth_settings
 @dataclass
 class PasswordValidationResult:
     """Resultat de la validation d'un mot de passe."""
+
     is_valid: bool
     errors: List[str]
     score: int  # 0-100, force du mot de passe
@@ -37,35 +38,97 @@ class PasswordValidator:
 
     # Mots de passe courants a rejeter (top 100 + variations)
     COMMON_PASSWORDS = {
-        'password', 'password1', 'password123', 'password1234',
-        '123456', '1234567', '12345678', '123456789', '1234567890',
-        'qwerty', 'qwerty123', 'azerty', 'azerty123',
-        'abc123', 'abc1234', 'abcdef', 'abcd1234',
-        'admin', 'admin123', 'administrator', 'root', 'root123',
-        'user', 'user123', 'guest', 'guest123',
-        'login', 'login123', 'welcome', 'welcome1', 'welcome123',
-        'letmein', 'monkey', 'dragon', 'master', 'shadow',
-        'sunshine', 'princess', 'football', 'baseball', 'soccer',
-        'iloveyou', 'trustno1', 'superman', 'batman', 'starwars',
-        'passw0rd', 'p@ssword', 'p@ssw0rd', 'pass1234',
-        'test', 'test123', 'test1234', 'testing', 'demo', 'demo123',
-        'secret', 'secret123', 'private', 'access',
-        'changeme', 'temp', 'temp123', 'temporary',
-        'hello', 'hello123', 'bonjour', 'salut',
-        '111111', '000000', '666666', '888888', '999999',
-        'aaaaaa', 'qqqqqq', 'zzzzzz',
-        'motdepasse', 'soleil', 'amour', 'france',
+        "password",
+        "password1",
+        "password123",
+        "password1234",
+        "123456",
+        "1234567",
+        "12345678",
+        "123456789",
+        "1234567890",
+        "qwerty",
+        "qwerty123",
+        "azerty",
+        "azerty123",
+        "abc123",
+        "abc1234",
+        "abcdef",
+        "abcd1234",
+        "admin",
+        "admin123",
+        "administrator",
+        "root",
+        "root123",
+        "user",
+        "user123",
+        "guest",
+        "guest123",
+        "login",
+        "login123",
+        "welcome",
+        "welcome1",
+        "welcome123",
+        "letmein",
+        "monkey",
+        "dragon",
+        "master",
+        "shadow",
+        "sunshine",
+        "princess",
+        "football",
+        "baseball",
+        "soccer",
+        "iloveyou",
+        "trustno1",
+        "superman",
+        "batman",
+        "starwars",
+        "passw0rd",
+        "p@ssword",
+        "p@ssw0rd",
+        "pass1234",
+        "test",
+        "test123",
+        "test1234",
+        "testing",
+        "demo",
+        "demo123",
+        "secret",
+        "secret123",
+        "private",
+        "access",
+        "changeme",
+        "temp",
+        "temp123",
+        "temporary",
+        "hello",
+        "hello123",
+        "bonjour",
+        "salut",
+        "111111",
+        "000000",
+        "666666",
+        "888888",
+        "999999",
+        "aaaaaa",
+        "qqqqqq",
+        "zzzzzz",
+        "motdepasse",
+        "soleil",
+        "amour",
+        "france",
     }
 
     # Sequences a eviter
     SEQUENCES = [
-        '0123456789',
-        '9876543210',
-        'abcdefghijklmnopqrstuvwxyz',
-        'zyxwvutsrqponmlkjihgfedcba',
-        'azertyuiop',
-        'qwertyuiop',
-        'poiuytreza',
+        "0123456789",
+        "9876543210",
+        "abcdefghijklmnopqrstuvwxyz",
+        "zyxwvutsrqponmlkjihgfedcba",
+        "azertyuiop",
+        "qwertyuiop",
+        "poiuytreza",
     ]
 
     def __init__(
@@ -83,10 +146,16 @@ class PasswordValidator:
         # Utiliser conf.py comme valeurs par défaut
         self.min_length = min_length if min_length is not None else auth_settings.PASSWORD_MIN_LENGTH
         self.max_length = max_length if max_length is not None else auth_settings.PASSWORD_MAX_LENGTH
-        self.require_uppercase = require_uppercase if require_uppercase is not None else auth_settings.PASSWORD_REQUIRE_UPPERCASE
-        self.require_lowercase = require_lowercase if require_lowercase is not None else auth_settings.PASSWORD_REQUIRE_LOWERCASE
+        self.require_uppercase = (
+            require_uppercase if require_uppercase is not None else auth_settings.PASSWORD_REQUIRE_UPPERCASE
+        )
+        self.require_lowercase = (
+            require_lowercase if require_lowercase is not None else auth_settings.PASSWORD_REQUIRE_LOWERCASE
+        )
         self.require_digit = require_digit if require_digit is not None else auth_settings.PASSWORD_REQUIRE_DIGIT
-        self.require_special = require_special if require_special is not None else auth_settings.PASSWORD_REQUIRE_SPECIAL
+        self.require_special = (
+            require_special if require_special is not None else auth_settings.PASSWORD_REQUIRE_SPECIAL
+        )
         self.min_unique_chars = min_unique_chars
         self.check_common = check_common
         self.check_sequences = check_sequences
@@ -108,10 +177,7 @@ class PasswordValidator:
 
         if not password:
             return PasswordValidationResult(
-                is_valid=False,
-                errors=["Le mot de passe est requis"],
-                score=0,
-                strength='weak'
+                is_valid=False, errors=["Le mot de passe est requis"], score=0, strength="weak"
             )
 
         # === Longueur ===
@@ -128,9 +194,9 @@ class PasswordValidator:
             errors.append(f"Le mot de passe ne doit pas depasser {self.max_length} caracteres")
 
         # === Complexite ===
-        has_upper = bool(re.search(r'[A-Z]', password))
-        has_lower = bool(re.search(r'[a-z]', password))
-        has_digit = bool(re.search(r'[0-9]', password))
+        has_upper = bool(re.search(r"[A-Z]", password))
+        has_lower = bool(re.search(r"[a-z]", password))
+        has_digit = bool(re.search(r"[0-9]", password))
         has_special = bool(re.search(r'[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?`~]', password))
 
         if self.require_uppercase and not has_upper:
@@ -173,7 +239,7 @@ class PasswordValidator:
             for seq in self.SEQUENCES:
                 # Chercher des sequences de 4+ caracteres
                 for i in range(len(seq) - 3):
-                    if seq[i:i+4] in password_lower:
+                    if seq[i : i + 4] in password_lower:
                         errors.append("Le mot de passe contient une sequence previsible (ex: 1234, abcd)")
                         score = max(0, score - 20)
                         break
@@ -183,7 +249,7 @@ class PasswordValidator:
 
         # === Inclusion email/username ===
         if email:
-            email_local = email.split('@')[0].lower()
+            email_local = email.split("@")[0].lower()
             if len(email_local) >= 3 and email_local in password.lower():
                 errors.append("Le mot de passe ne doit pas contenir votre adresse email")
                 score = max(0, score - 15)
@@ -194,7 +260,7 @@ class PasswordValidator:
                 score = max(0, score - 15)
 
         # === Repetitions ===
-        if re.search(r'(.)\1{3,}', password):
+        if re.search(r"(.)\1{3,}", password):
             errors.append("Le mot de passe ne doit pas contenir plus de 3 caracteres identiques consecutifs")
             score = max(0, score - 10)
 
@@ -203,22 +269,17 @@ class PasswordValidator:
 
         # Determiner la force
         if score < 30:
-            strength = 'weak'
+            strength = "weak"
         elif score < 50:
-            strength = 'fair'
+            strength = "fair"
         elif score < 70:
-            strength = 'good'
+            strength = "good"
         elif score < 90:
-            strength = 'strong'
+            strength = "strong"
         else:
-            strength = 'excellent'
+            strength = "excellent"
 
-        return PasswordValidationResult(
-            is_valid=len(errors) == 0,
-            errors=errors,
-            score=score,
-            strength=strength
-        )
+        return PasswordValidationResult(is_valid=len(errors) == 0, errors=errors, score=score, strength=strength)
 
     def get_requirements(self) -> List[str]:
         """Retourne la liste des exigences pour affichage."""
@@ -244,11 +305,7 @@ class PasswordValidator:
 password_validator = PasswordValidator()
 
 
-def validate_password(
-    password: str,
-    email: str = None,
-    username: str = None
-) -> Tuple[bool, List[str]]:
+def validate_password(password: str, email: str = None, username: str = None) -> Tuple[bool, List[str]]:
     """
     Fonction helper pour valider un mot de passe.
 
@@ -267,8 +324,4 @@ def get_password_strength(password: str) -> dict:
         Dict avec score (0-100) et strength (weak/fair/good/strong/excellent)
     """
     result = password_validator.validate(password)
-    return {
-        'score': result.score,
-        'strength': result.strength,
-        'is_valid': result.is_valid
-    }
+    return {"score": result.score, "strength": result.strength, "is_valid": result.is_valid}

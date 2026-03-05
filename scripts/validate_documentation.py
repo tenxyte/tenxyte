@@ -8,7 +8,11 @@ This script validates the completeness and quality of API documentation:
 3. Generates coverage reports
 4. Identifies missing error scenarios
 5. Tests multi-tenant documentation
+
+Usage:
+    python scripts/validate_documentation.py
 """
+import io
 
 import os
 import sys
@@ -33,26 +37,37 @@ from src.tenxyte.docs.schemas import (
 
 class DocumentationValidator:
     """Validates API documentation completeness and quality."""
-    
+
     def __init__(self):
         self.project_root = Path(__file__).parent.parent
-        self.views_dir = self.project_root / 'src' / 'tenxyte' / 'views'
-        self.issues = []
-        self.stats = defaultdict(int)
+        self.views_dir   = self.project_root / 'src' / 'tenxyte' / 'views'
+        self.schema_file = (
+            self.project_root / 'openapi_schema_optimized.json'
+            if (self.project_root / 'openapi_schema_optimized.json').exists()
+            else self.project_root / 'openapi_schema.json'
+        )
+        self.issues  = []
+        self.stats   = defaultdict(int)
         self.coverage = {
             'endpoints': set(),
             'examples': set(),
             'error_codes': set(),
             'success_scenarios': set()
         }
+        # Real denominators read from actual schema
+        self._real_endpoint_count   = 0
+        self._expected_example_count = 0
     
     def validate_all(self) -> Dict:
         """Run all validation checks and return report."""
-        print("🔍 Starting documentation validation...")
-        
+        print("[*] Starting documentation validation...")
+
+        # Load real endpoint count from saved schema (for accurate coverage %)
+        self._load_schema_denominators()
+
         # Scan all view files
         view_files = self.scan_view_files()
-        print(f"📁 Found {len(view_files)} view files")
+        print(f"[+] Found {len(view_files)} view files")
         
         # Validate each file
         for view_file in view_files:
@@ -72,6 +87,21 @@ class DocumentationValidator:
         
         return report
     
+    def _load_schema_denominators(self):
+        """Load real endpoint/example counts from the saved schema."""
+        if self.schema_file.exists():
+            try:
+                with open(self.schema_file, 'r', encoding='utf-8') as f:
+                    schema = json.load(f)
+                paths = schema.get('paths', {})
+                self._real_endpoint_count = len(paths)
+                # Count extend_schema decorators via src/
+                print(f"[+] Schema loaded: {self._real_endpoint_count} real endpoints")
+            except Exception as e:
+                print(f"[!] Could not load schema: {e}")
+        else:
+            print("[!] No schema file found — run generate_openapi_schema.py first")
+
     def scan_view_files(self) -> List[Path]:
         """Scan for all Python view files."""
         view_files = []
@@ -115,22 +145,24 @@ class DocumentationValidator:
         """Extract API endpoints from AST."""
         for node in ast.walk(tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                # Check if it's a view method (has HTTP methods)
                 if hasattr(node, 'decorator_list'):
                     for decorator in node.decorator_list:
                         if isinstance(decorator, ast.Name) and decorator.id == 'api_view':
-                            # Extract HTTP methods
-                            for arg in decorator.args if hasattr(decorator, 'args') else []:
+                            for arg in (decorator.args if hasattr(decorator, 'args') else []):
                                 if isinstance(arg, ast.List):
                                     for elt in arg.elts:
-                                        if isinstance(elt, ast.Str):
+                                        # ast.Str removed in Python 3.12 — use ast.Constant
+                                        if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                                            endpoint = f"{elt.value.upper()} {node.name}"
+                                            self.coverage['endpoints'].add(endpoint)
+                                        elif isinstance(elt, ast.Str):  # py < 3.8 fallback
                                             endpoint = f"{elt.s.upper()} {node.name}"
                                             self.coverage['endpoints'].add(endpoint)
-            
+
             # Check for class-based views
             elif isinstance(node, ast.ClassDef):
                 for method in node.body:
-                    if isinstance(method, ast.FunctionDef):
+                    if isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)):
                         if method.name in ['get', 'post', 'put', 'patch', 'delete']:
                             endpoint = f"{method.name.upper()} /{file_path.stem}/"
                             self.coverage['endpoints'].add(endpoint)
@@ -218,15 +250,16 @@ class DocumentationValidator:
     
     def generate_report(self) -> Dict:
         """Generate comprehensive validation report."""
-        print("📊 Generating validation report...")
-        
-        # Calculate coverage percentages
-        total_expected_endpoints = 50  # Estimated based on project size
+        print("[*] Generating validation report...")
+
+        # Use real endpoint count from schema, fallback to scanned count
+        total_expected_endpoints = self._real_endpoint_count or max(len(self.coverage['endpoints']), 1)
         endpoint_coverage = len(self.coverage['endpoints']) / total_expected_endpoints * 100
-        
-        total_expected_examples = 20  # Estimated
+
+        # Use actual @extend_schema count as the baseline for examples
+        total_expected_examples = max(self.stats.get('extend_schema_decorators', 0), 1)
         example_coverage = len(self.coverage['examples']) / total_expected_examples * 100
-        
+
         total_expected_error_codes = 8
         error_coverage = len(self.coverage['error_codes']) / total_expected_error_codes * 100
         
@@ -352,16 +385,24 @@ def save_report(report: Dict, output_path: str):
 
 def main():
     """Main validation script."""
+    # Fix Unicode output on Windows (cp1252 console crashes on emoji)
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
+    project_root = Path(__file__).parent.parent
+
     validator = DocumentationValidator()
     report = validator.validate_all()
-    
+
     # Print report
     print_report(report)
-    
+
     # Save report
     output_path = project_root / 'documentation_validation_report.json'
     save_report(report, output_path)
-    
+
     # Exit with appropriate code
     if report['summary']['critical_issues'] > 0:
         sys.exit(1)

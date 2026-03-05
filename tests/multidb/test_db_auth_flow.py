@@ -201,7 +201,7 @@ class TestTOTPMultiDB:
         # Vérifier un code valide
         totp = pyotp.TOTP(secret)
         valid_code = totp.now()
-        assert totp_service.verify_code(secret, valid_code) is True
+        assert totp_service.verify_code(user, valid_code) is True
 
         # Activer 2FA
         user.is_2fa_enabled = True

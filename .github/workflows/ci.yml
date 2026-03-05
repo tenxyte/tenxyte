@@ -48,12 +48,11 @@ jobs:
         run: |
           pytest tests/unit/ --cov=tenxyte --cov-report=xml --cov-report=term -q
 
-      - name: Upload coverage to Codecov
-        if: matrix.python-version == '3.12' && matrix.django-version == '5.1'
-        uses: codecov/codecov-action@v4
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
         with:
-          file: ./coverage.xml
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   lint:
     name: Lint

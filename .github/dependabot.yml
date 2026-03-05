@@ -1,0 +1,38 @@
+# Dependabot configuration
+# R12 Audit: Automated dependency updates for vulnerability management
+
+version: 2
+updates:
+  # Python dependencies (pip)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Africa/Porto-Novo"
+    # Group security patches together for quick review
+    groups:
+      security-patches:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
+    # Notify on all vulnerabilities
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Africa/Porto-Novo"
+    labels:
+      - "dependencies"
+      - "ci-cd"

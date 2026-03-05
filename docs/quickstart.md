@@ -1,4 +1,18 @@
-# Quickstart — Tenxyte Auth in 5 Minutes
+# Quickstart — Tenxyte in 2 minutes
+
+## Table of Contents
+
+- [Install](#1-install)
+- [Configure](#2-configure-settingspy)
+- [Bootstrap](#3-bootstrap)
+- [Ready!](#-ready)
+- [Login & Use JWT](#4-login--use-your-jwt)
+- [Production](#production)
+- [Manual Configuration](#manual-configuration-alternative)
+- [MongoDB](#mongodb)
+- [Next Steps](#next-steps)
+
+---
 
 ## 1. Install
 
@@ -6,189 +20,174 @@
 pip install tenxyte
 ```
 
-## 2. Add to `INSTALLED_APPS`
+## 2. Configure `settings.py`
 
 ```python
-INSTALLED_APPS = [
-    ...
-    'tenxyte',
-]
+# settings.py — add these 2 lines
+import tenxyte
+tenxyte.setup()  # auto-configures INSTALLED_APPS, AUTH_USER_MODEL, REST_FRAMEWORK, MIDDLEWARE
 ```
 
-## 3. Add Middleware
-
-```python
-MIDDLEWARE = [
-    ...
-    'tenxyte.middleware.ApplicationAuthMiddleware',  # Validates X-Access-Key / X-Access-Secret
-    'tenxyte.middleware.SecurityHeadersMiddleware',  # Optional: security headers
-]
-```
-
-## 4. Add URLs
+Then add the URLs:
 
 ```python
 # urls.py
 from django.urls import path, include
+from tenxyte.conf import auth_settings
+
+api_prefix = auth_settings.API_PREFIX.strip('/')
 
 urlpatterns = [
-    ...
-    path('api/auth/', include('tenxyte.urls', namespace='authentication')),
+    path('admin/', admin.site.urls),
+    path(f'{api_prefix}/auth/', include('tenxyte.urls')),
 ]
 ```
 
-## 5. Run Migrations
-
-Tenxyte does not ship a pre-built initial migration. Generate and apply migrations from your project:
+## 3. Bootstrap
 
 ```bash
-python manage.py makemigrations
-python manage.py migrate
+python manage.py tenxyte_quickstart
 ```
 
-## 6. Create Your First Application
+This single command executes:
+- `makemigrations` + `migrate`
+- Seed roles and permissions (4 roles, 41 permissions)
+- Create a default Application (credentials displayed)
 
-```python
-from tenxyte.models import Application
+**Options:**
 
-app, secret = Application.create_application(name="My Web App")
-print(f"Access Key:    {app.access_key}")
-print(f"Access Secret: {secret}")  # Save this — shown only once
-```
+| Flag | Description |
+|---|---|
+| `--no-seed` | Skip seeding roles and permissions |
+| `--no-app` | Skip creating the default Application |
+| `--app-name "My App"` | Custom name for the default Application |
 
-## 7. Make Your First Request
+## ✅ Ready!
 
-All API requests require the application credentials in headers:
+In `DEBUG=True` mode (zero-config), the `development` preset is automatically activated:
+- No need for `TENXYTE_JWT_SECRET_KEY` (auto-generated ephemeral key)
+- Application credentials (`X-Access-Key` / `X-Access-Secret`) are **required** — use the credentials displayed by `tenxyte_quickstart`
+- Rate limiting, lockout, and basic security enabled
+
+> **Note:** The Access Secret is bcrypt-hashed and shown **only once** during bootstrap.
+> If lost, regenerate credentials via `POST /api/v1/auth/applications/{id}/regenerate/`.
 
 ```bash
-# Register a user
+# Register your first user — use the credentials from tenxyte_quickstart
 curl -X POST http://localhost:8000/api/v1/auth/register/ \
   -H "Content-Type: application/json" \
   -H "X-Access-Key: <your-access-key>" \
   -H "X-Access-Secret: <your-access-secret>" \
-  -d '{
-    "email": "user@example.com",
-    "password": "SecurePass123!",
-    "first_name": "John",
-    "last_name": "Doe"
-  }'
+  -d '{"email": "user@example.com", "password": "SecureP@ss1!", "first_name": "John", "last_name": "Doe"}'
+```
 
+## 4. Login & Use Your JWT
+
+```bash
 # Login
 curl -X POST http://localhost:8000/api/v1/auth/login/email/ \
   -H "Content-Type: application/json" \
   -H "X-Access-Key: <your-access-key>" \
   -H "X-Access-Secret: <your-access-secret>" \
-  -d '{
-    "email": "user@example.com",
-    "password": "SecurePass123!"
-  }'
+  -d '{"email": "user@example.com", "password": "SecureP@ss1!"}'
 ```
 
 Response:
 ```json
 {
-  "access_token": "eyJ...",
-  "refresh_token": "eyJ...",
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "refresh_token": "a1b2c3d4e5...",
   "token_type": "Bearer",
-  "expires_in": 3600
+  "expires_in": 3600,
+  "user": {
+    "id": "1",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "is_email_verified": false,
+    "is_2fa_enabled": false
+  }
 }
 ```
 
-## 8. Authenticate Subsequent Requests
-
 ```bash
-curl -X GET http://localhost:8000/api/v1/auth/me/ \
+# Use the access token for authenticated requests
+curl http://localhost:8000/api/v1/auth/me/ \
   -H "Authorization: Bearer <access_token>" \
   -H "X-Access-Key: <your-access-key>" \
   -H "X-Access-Secret: <your-access-secret>"
 ```
 
-## 9. Minimal `settings.py` Configuration
+---
+
+## Production
+
+In production (`DEBUG=False`), configure explicitly:
 
 ```python
-# Required
-SECRET_KEY = 'your-django-secret-key'
-
-# Optional — override Tenxyte defaults
-TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 3600       # 1 hour
-TENXYTE_JWT_REFRESH_TOKEN_LIFETIME = 604800    # 7 days
-TENXYTE_REFRESH_TOKEN_ROTATION = True
-TENXYTE_MAX_LOGIN_ATTEMPTS = 5
-TENXYTE_LOCKOUT_DURATION_MINUTES = 30
+# settings.py
+TENXYTE_JWT_SECRET_KEY = 'your-dedicated-jwt-secret-key'  # REQUIRED
+TENXYTE_SHORTCUT_SECURE_MODE = 'medium'  # or 'robust'
 ```
 
-Or use a **Shortcut Secure Mode** to configure everything at once:
+All individual settings remain overridable:
 
 ```python
-TENXYTE_SHORTCUT_SECURE_MODE = 'medium'  # 'starter' | 'medium' | 'robust'
+TENXYTE_SHORTCUT_SECURE_MODE = 'medium'
+TENXYTE_MAX_LOGIN_ATTEMPTS = 3       # overrides the preset
+TENXYTE_BREACH_CHECK_ENABLED = True  # overrides the preset
 ```
 
-See [Settings Reference → Shortcut Secure Mode](settings.md#shortcut-secure-mode) for the full preset table.
+→ [Settings Reference](settings.md) for the 150+ options.
 
 ---
 
-## MongoDB — Django Admin Support
+## Manual Configuration (Alternative)
 
-When using MongoDB (`django-mongodb-backend`), Django Admin requires custom app configs to set the correct auto field type. Without this, admin migrations will fail.
-
-### Step 1 — Create custom app configs
-
-In your main app's `apps.py`:
+If you prefer not to use `tenxyte.setup()`:
 
 ```python
-from django.contrib.admin.apps import AdminConfig
-from django.contrib.auth.apps import AuthConfig
-from django.contrib.contenttypes.apps import ContentTypesConfig
-
-
-class MongoAdminConfig(AdminConfig):
-    default_auto_field = "django_mongodb_backend.fields.ObjectIdAutoField"
-
-
-class MongoAuthConfig(AuthConfig):
-    default_auto_field = "django_mongodb_backend.fields.ObjectIdAutoField"
-
-
-class MongoContentTypesConfig(ContentTypesConfig):
-    default_auto_field = "django_mongodb_backend.fields.ObjectIdAutoField"
-```
-
-### Step 2 — Register them in `INSTALLED_APPS`
-
-Replace the default Django admin/auth/contenttypes entries with your custom configs:
-
-```python
+# settings.py
 INSTALLED_APPS = [
-    # Replace these three defaults:
-    # 'django.contrib.admin',
-    # 'django.contrib.auth',
-    # 'django.contrib.contenttypes',
-
-    # With your MongoDB-aware versions:
-    'config.apps.MongoAdminConfig',
-    'config.apps.MongoAuthConfig',
-    'config.apps.MongoContentTypesConfig',
-
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    ...,
+    'rest_framework',
     'tenxyte',
+]
+
+AUTH_USER_MODEL = 'tenxyte.User'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'tenxyte.authentication.JWTAuthentication',
+    ],
+}
+
+MIDDLEWARE = [
+    ...,
+    'tenxyte.middleware.ApplicationAuthMiddleware',
 ]
 ```
 
-> Replace `config` with the name of your main Django app (the one containing `apps.py`).
-
-After this, run migrations and Django Admin will work correctly with MongoDB:
+Then run:
 
 ```bash
 python manage.py makemigrations
 python manage.py migrate
+python manage.py tenxyte_seed
 ```
+
+---
+
+## MongoDB
+
+For MongoDB, see the [MongoDB configuration](#mongodb--required-configuration) section in the README.
+
+---
 
 ## Next Steps
 
-- [Settings Reference](settings.md) — All 150+ configuration options
-- [API Endpoints](endpoints.md) — Full endpoint reference with examples
+- [Settings Reference](settings.md) — 150+ configuration options
+- [API Endpoints](endpoints.md) — Full reference with curl examples
 - [RBAC Guide](rbac.md) — Roles, permissions, decorators
 - [Security Guide](security.md) — Rate limiting, 2FA, device fingerprinting
 - [Organizations Guide](organizations.md) — B2B multi-tenant setup

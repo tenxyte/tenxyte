@@ -1,117 +1,115 @@
-"""
-Tenxyte - Cleanup command for expired tokens, OTPs, and old logs.
-
-Usage:
-    python manage.py tenxyte_cleanup
-
-Options:
-    --login-attempts-days   Days to keep login attempts (default: 90)
-    --audit-log-days        Days to keep audit logs (default: 365, 0 = keep all)
-    --dry-run               Show what would be deleted without actually deleting
-"""
-from datetime import timedelta
-
+import logging
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+from django.db import models
 
-from tenxyte.models import (
-    BlacklistedToken, OTPCode, RefreshToken, LoginAttempt, AuditLog
-)
+logger = logging.getLogger("tenxyte.security")
 
 
 class Command(BaseCommand):
-    help = 'Clean up expired tokens, OTPs, login attempts, and old audit logs'
+    help = "Nettoie les tokens expirés (JWT Blacklist, Magic Links, OTPs) pour libérer de l'espace et prévenir la réutilisation."
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--login-attempts-days',
-            type=int,
-            default=90,
-            help='Delete login attempts older than N days (default: 90)',
+            "--dry-run", action="store_true", help="Ne supprime rien, affiche juste ce qui serait supprimé"
         )
         parser.add_argument(
-            '--audit-log-days',
-            type=int,
-            default=365,
-            help='Delete audit logs older than N days (default: 365, 0 = keep all)',
+            "--login-attempts-days", type=int, default=90, help="Jours avant suppression des LoginAttempt (0 = garder)"
         )
         parser.add_argument(
-            '--dry-run',
-            action='store_true',
-            help='Show what would be deleted without actually deleting',
+            "--audit-log-days", type=int, default=365, help="Jours avant suppression des AuditLog (0 = garder)"
         )
 
     def handle(self, *args, **options):
-        now = timezone.now()
-        dry_run = options['dry_run']
-        login_days = options['login_attempts_days']
-        audit_days = options['audit_log_days']
+        dry_run = options["dry_run"]
+        login_days = options["login_attempts_days"]
+        audit_days = options["audit_log_days"]
 
         if dry_run:
-            self.stdout.write(self.style.WARNING('DRY RUN - no data will be deleted\n'))
+            self.stdout.write("DRY RUN - no data will be deleted (simulation only).")
 
-        self.stdout.write(self.style.NOTICE('Tenxyte - Cleaning up expired data...\n'))
+        self.stdout.write("Demarrage du nettoyage des tokens expirés...")
 
-        total_deleted = 0
+        # 1. Clean Blacklisted JWT Tokens
+        try:
+            from tenxyte.models.security import BlacklistedToken
 
-        # 1. Blacklisted tokens (expired)
-        total_deleted += self._cleanup_model(
-            'Blacklisted tokens (expired)',
-            BlacklistedToken.objects.filter(expires_at__lt=now),
-            dry_run,
-        )
+            qs = BlacklistedToken.objects.filter(expires_at__lt=timezone.now())
+            bl_count = qs.count()
+            if not dry_run:
+                BlacklistedToken.cleanup_expired()
+            self.stdout.write(self.style.SUCCESS(f"Blacklisted tokens (expired): {bl_count} deleted."))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error cleaning blacklisted tokens: {str(e)}"))
 
-        # 2. OTP codes (expired or used)
-        total_deleted += self._cleanup_model(
-            'OTP codes (expired or used)',
-            OTPCode.objects.filter(expires_at__lt=now),
-            dry_run,
-        )
+        # 2. Clean Expired Magic Links (F-13)
+        try:
+            from tenxyte.models.magic_link import MagicLinkToken
 
-        # 3. Refresh tokens (revoked or expired)
-        total_deleted += self._cleanup_model(
-            'Refresh tokens (revoked or expired)',
-            RefreshToken.objects.filter(
-                is_revoked=True
-            ) | RefreshToken.objects.filter(
-                expires_at__lt=now
-            ),
-            dry_run,
-        )
+            qs = MagicLinkToken.objects.filter(expires_at__lt=timezone.now())
+            ml_count = qs.count()
+            if not dry_run:
+                qs.delete()
+            self.stdout.write(self.style.SUCCESS(f"Successfully deleted {ml_count} expired Magic Link tokens."))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error cleaning Magic Link tokens: {str(e)}"))
 
-        # 4. Login attempts (older than N days)
-        cutoff = now - timedelta(days=login_days)
-        total_deleted += self._cleanup_model(
-            f'Login attempts (older than {login_days} days)',
-            LoginAttempt.objects.filter(created_at__lt=cutoff),
-            dry_run,
-        )
+        # 3. Clean Expired OTP Codes
+        try:
+            from tenxyte.models.operational import OTPCode
 
-        # 5. Audit logs (older than N days, if configured)
+            qs = OTPCode.objects.filter(expires_at__lt=timezone.now())
+            otp_count = qs.count()
+            if not dry_run:
+                qs.delete()
+            self.stdout.write(self.style.SUCCESS(f"OTP codes (expired or used): {otp_count} deleted."))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error cleaning OTP codes: {str(e)}"))
+
+        # 4. Clean Expired/Revoked Refresh Tokens
+        try:
+            from tenxyte.models.operational import RefreshToken
+
+            qs = RefreshToken.objects.filter(models.Q(expires_at__lt=timezone.now()) | models.Q(is_revoked=True))
+            rt_count = qs.count()
+            if not dry_run:
+                qs.delete()
+            self.stdout.write(self.style.SUCCESS(f"Refresh tokens (revoked or expired): {rt_count} deleted."))
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f"Error cleaning Refresh tokens: {str(e)}"))
+
+        # 5. Clean Old Login Attempts
+        if login_days > 0:
+            try:
+                from tenxyte.models.operational import LoginAttempt
+
+                cutoff = timezone.now() - timezone.timedelta(days=login_days)
+                qs = LoginAttempt.objects.filter(created_at__lt=cutoff)
+                la_count = qs.count()
+                if not dry_run:
+                    qs.delete()
+                self.stdout.write(
+                    self.style.SUCCESS(f"Login attempts (older than {login_days} days): {la_count} deleted.")
+                )
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"Error cleaning Login attempts: {str(e)}"))
+        else:
+            self.stdout.write("Login attempts: skipped")
+
+        # 6. Clean Old Audit Logs
         if audit_days > 0:
-            cutoff = now - timedelta(days=audit_days)
-            total_deleted += self._cleanup_model(
-                f'Audit logs (older than {audit_days} days)',
-                AuditLog.objects.filter(created_at__lt=cutoff),
-                dry_run,
-            )
-        else:
-            self.stdout.write('  Audit logs: skipped (--audit-log-days=0)')
+            try:
+                from tenxyte.models.security import AuditLog
 
-        self.stdout.write('')
-        if dry_run:
-            self.stdout.write(self.style.WARNING(
-                f'DRY RUN: {total_deleted} records would be deleted'
-            ))
+                cutoff = timezone.now() - timezone.timedelta(days=audit_days)
+                qs = AuditLog.objects.filter(created_at__lt=cutoff)
+                al_count = qs.count()
+                if not dry_run:
+                    qs.delete()
+                self.stdout.write(self.style.SUCCESS(f"Audit logs (older than {audit_days} days): {al_count} deleted."))
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"Error cleaning Audit logs: {str(e)}"))
         else:
-            self.stdout.write(self.style.SUCCESS(
-                f'Cleanup completed: {total_deleted} records deleted'
-            ))
+            self.stdout.write("Audit logs: skipped (--audit-log-days=0)")
 
-    def _cleanup_model(self, label, queryset, dry_run):
-        count = queryset.count()
-        if not dry_run:
-            queryset.delete()
-        status = 'would delete' if dry_run else 'deleted'
-        self.stdout.write(f'  {label}: {count} {status}')
-        return count
+        self.stdout.write(self.style.SUCCESS("Nettoyage termine avec succes."))

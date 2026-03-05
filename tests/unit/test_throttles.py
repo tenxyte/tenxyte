@@ -43,13 +43,23 @@ class TestGetClientIP:
         req = _make_request(ip="5.6.7.8")
         assert get_client_ip(req) == "5.6.7.8"
 
+    @override_settings(TENXYTE_TRUSTED_PROXIES=["1.2.3.4"], TENXYTE_NUM_PROXIES=3)
     def test_returns_first_ip_from_x_forwarded_for(self):
         req = _make_request(forwarded_for="10.0.0.1, 192.168.1.1, 1.2.3.4")
         assert get_client_ip(req) == "10.0.0.1"
 
+    @override_settings(TENXYTE_TRUSTED_PROXIES=["1.2.3.4"], TENXYTE_NUM_PROXIES=2)
     def test_strips_whitespace_from_forwarded_for(self):
         req = _make_request(forwarded_for="  10.0.0.2 , 192.168.0.1")
         assert get_client_ip(req) == "10.0.0.2"
+
+    @override_settings(TENXYTE_TRUSTED_PROXIES=[], TENXYTE_NUM_PROXIES=1)
+    def test_reject_forwarded_for_when_trusted_proxies_empty(self):
+        # VULN-003 Mitigation Check
+        req = _make_request(ip="5.5.5.5", forwarded_for="1.1.1.1")
+        with patch('logging.Logger.warning') as mock_warn:
+            assert get_client_ip(req) == "5.5.5.5" # Falls back to REMOTE_ADDR
+            mock_warn.assert_called()
 
 
 # ─── IPBasedThrottle ─────────────────────────────────────────────────────────
@@ -63,6 +73,7 @@ class TestIPBasedThrottle:
         assert "9.9.9.9" in key
         assert "login" in key
 
+    @override_settings(TENXYTE_TRUSTED_PROXIES=["1.2.3.4"], TENXYTE_NUM_PROXIES=2)
     def test_cache_key_uses_first_forwarded_ip(self):
         throttle = LoginThrottle()
         req = _make_request(forwarded_for="11.22.33.44, 5.6.7.8")
@@ -105,6 +116,7 @@ class TestProgressiveLoginThrottle:
         ProgressiveLoginThrottle.reset_failures(req)
         assert cache.get("login_failures_5.5.5.5") is None
 
+    @override_settings(TENXYTE_TRUSTED_PROXIES=["1.2.3.4"], TENXYTE_NUM_PROXIES=2)
     def test_record_failure_with_forwarded_for(self):
         req = _make_request(forwarded_for="22.22.22.22, 99.99.99.99")
         ProgressiveLoginThrottle.record_failure(req)
@@ -117,6 +129,7 @@ class TestProgressiveLoginThrottle:
         key = throttle.get_cache_key(req, None)
         assert key == "progressive_login_1.2.3.4"
 
+    @override_settings(TENXYTE_TRUSTED_PROXIES=["1.2.3.4"], TENXYTE_NUM_PROXIES=2)
     def test_get_cache_key_forwarded_for(self):
         throttle = ProgressiveLoginThrottle()
         req = _make_request(forwarded_for="8.8.8.8, 4.4.4.4")
@@ -127,6 +140,7 @@ class TestProgressiveLoginThrottle:
         throttle = ProgressiveLoginThrottle()
         assert throttle.get_rate() == "5/min"
 
+    @override_settings(TENXYTE_TRUSTED_PROXIES=["1.2.3.4"], TENXYTE_NUM_PROXIES=2)
     def test_reset_failures_with_forwarded_for(self):
         req = _make_request(forwarded_for="7.7.7.7, 1.1.1.1")
         ProgressiveLoginThrottle.record_failure(req)
@@ -199,6 +213,7 @@ class TestSimpleThrottleRule:
         safe_pattern = pattern.replace('/', '_').strip('_$')
         assert key == f"throttle_simple_{safe_pattern}_10.10.10.10" 
 
+    @override_settings(TENXYTE_TRUSTED_PROXIES=["1.2.3.4"], TENXYTE_NUM_PROXIES=1)
     def test_get_cache_key_with_matching_rule_forwarded_for(self):
         rule = SimpleThrottleRule()
         req = _make_request(forwarded_for="20.20.20.20", path=f"{api_prefix}/test/")

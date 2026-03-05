@@ -123,3 +123,45 @@ class TestJWTService:
 
         assert payload['role'] == 'admin'
         assert payload['level'] == 5
+
+    def test_rs256_asymmetric_keys(self):
+        """Test de génération et validation avec paires de clés RS256."""
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.hazmat.primitives import serialization
+        from unittest.mock import patch, PropertyMock
+
+        # Generate RSA key pair on the fly
+        private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        public_key = private_key.public_key()
+        
+        private_pem = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        ).decode('utf-8')
+        
+        public_pem = public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).decode('utf-8')
+
+        with patch('tenxyte.conf.TenxyteSettings.JWT_ALGORITHM', new_callable=PropertyMock, return_value='RS256'), \
+             patch('tenxyte.conf.TenxyteSettings.JWT_PRIVATE_KEY', new_callable=PropertyMock, return_value=private_pem), \
+             patch('tenxyte.conf.TenxyteSettings.JWT_PUBLIC_KEY', new_callable=PropertyMock, return_value=public_pem):
+             
+             # Instance de JWTService avec clés asymétriques
+             jwt_service = JWTService()
+             
+             assert jwt_service.is_asymmetric is True
+             assert jwt_service.algorithm == 'RS256'
+             
+             # Générer un token
+             token, jti, exp = jwt_service.generate_access_token(user_id="rs256_user", application_id="app_123")
+             
+             # Le token a été encodé avec success
+             assert token is not None
+             
+             # Valider et décoder
+             payload = jwt_service.decode_token(token)
+             assert payload is not None
+             assert payload['user_id'] == "rs256_user"

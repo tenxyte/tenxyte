@@ -48,7 +48,7 @@ def test_tenxyte_cleanup_normal(cleanup_data):
     call_command('tenxyte_cleanup', stdout=out)
     output = out.getvalue()
     
-    assert 'Cleanup completed' in output
+    assert 'Nettoyage termine avec succes.' in output
     assert BlacklistedToken.objects.count() == 1
     assert OTPCode.objects.count() == 1
     assert RefreshToken.objects.count() == 1  # only valid_rt remains
@@ -62,7 +62,7 @@ def test_tenxyte_cleanup_dry_run(cleanup_data):
     output = out.getvalue()
     
     assert 'DRY RUN - no data will be deleted' in output
-    assert 'would delete' in output
+    assert 'simulation only' in output
     
     assert BlacklistedToken.objects.count() == 2
     assert OTPCode.objects.count() == 2
@@ -73,10 +73,32 @@ def test_tenxyte_cleanup_dry_run(cleanup_data):
 @pytest.mark.django_db
 def test_tenxyte_cleanup_custom_days_and_skip_audit(cleanup_data):
     out = StringIO()
-    # Skip audit logs by passing --audit-log-days 0
-    # Make login attempt cutoff 5 days instead of 90
-    call_command('tenxyte_cleanup', '--audit-log-days', '0', '--login-attempts-days', '5', stdout=out)
+    # Skip audit logs and login attempts by passing 0
+    call_command('tenxyte_cleanup', '--audit-log-days', '0', '--login-attempts-days', '0', stdout=out)
     output = out.getvalue()
     
     assert 'Audit logs: skipped' in output
+    assert 'Login attempts: skipped' in output
     assert AuditLog.objects.count() == 2  # Not deleted!
+    assert LoginAttempt.objects.count() == 2  # Not deleted!
+
+from unittest.mock import patch
+
+@pytest.mark.django_db
+@patch('tenxyte.models.security.BlacklistedToken.cleanup_expired', side_effect=Exception('Test BL Error'))
+@patch('tenxyte.models.magic_link.MagicLinkToken.objects.filter', side_effect=Exception('Test ML Error'))
+@patch('tenxyte.models.operational.OTPCode.objects.filter', side_effect=Exception('Test OTP Error'))
+@patch('tenxyte.models.operational.RefreshToken.objects.filter', side_effect=Exception('Test RT Error'))
+@patch('tenxyte.models.operational.LoginAttempt.objects.filter', side_effect=Exception('Test LA Error'))
+@patch('tenxyte.models.security.AuditLog.objects.filter', side_effect=Exception('Test AL Error'))
+def test_tenxyte_cleanup_exceptions(mock_al, mock_la, mock_rt, mock_otp, mock_ml, mock_bl, cleanup_data):
+    out = StringIO()
+    call_command('tenxyte_cleanup', stdout=out)
+    output = out.getvalue()
+    
+    assert 'Error cleaning blacklisted tokens: Test BL Error' in output
+    assert 'Error cleaning Magic Link tokens: Test ML Error' in output
+    assert 'Error cleaning OTP codes: Test OTP Error' in output
+    assert 'Error cleaning Refresh tokens: Test RT Error' in output
+    assert 'Error cleaning Login attempts: Test LA Error' in output
+    assert 'Error cleaning Audit logs: Test AL Error' in output
