@@ -179,15 +179,31 @@ Security event log entry.
 
 ```json
 {
-  "id": "uuid",
-  "user": "uuid",
+  "id": "uuid-string",
+  "user": "uuid-string",
+  "user_email": "admin@example.com",
   "action": "login",
   "ip_address": "203.0.113.42",
   "user_agent": "Mozilla/5.0 ...",
-  "metadata": {},
+  "application": "uuid-string",
+  "application_name": "Web Dashboard",
+  "details": {},
   "created_at": "2026-03-04T03:00:00Z"
 }
 ```
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string (UUID) | Log entry identifier |
+| `user` | string (UUID) \| null | Associated user ID (if any) |
+| `user_email` | string \| null | Email of the associated user |
+| `action` | string | The security action performed (e.g., "login", "2fa_enabled") |
+| `ip_address` | string \| null | IP address of the client |
+| `user_agent` | string \| null | Device info or User-Agent string |
+| `application` | string (UUID) \| null | Application ID used for the action |
+| `application_name` | string \| null | Display name of the application |
+| `details` | object \| null | Extra contextual data (was metadata) |
+| `created_at` | string (date-time) | Timestamp of the event |
 
 See [Security Guide](security.md#audit-logging) for the full list of `action` values.
 
@@ -197,9 +213,20 @@ See [Security Guide](security.md#audit-logging) for the full list of `action` va
 
 ```json
 {
-  "id": "uuid",
-  "name": "admin",
-  "permissions": ["can_manage_users", "can_view_audit_logs"]
+  "id": "uuid-string",
+  "code": "admin",
+  "name": "Administrator",
+  "description": "Full access to all system features",
+  "permissions": [
+    {
+      "id": "uuid-string",
+      "code": "users.manage",
+      "name": "Manage Users"
+    }
+  ],
+  "is_default": false,
+  "created_at": "2026-03-01T00:00:00Z",
+  "updated_at": "2026-03-02T00:00:00Z"
 }
 ```
 
@@ -213,16 +240,20 @@ Structured fingerprint string sent by the client during login.
 
 **Format (v1):**
 ```
-v=1|os=windows;osv=11|device=desktop|arch=x64|runtime=chrome;rtv=122
+v=1|os=windows;osv=11|device=desktop|arch=x64|app=tenxyte;appv=1.4.2|runtime=chrome;rtv=122|tz=Europe/Paris
 ```
 
 | Key | Description |
 |---|---|
 | `v` | Format version (always `1`) |
-| `os` | Operating system |
+| `os` | Operating system (`windows`, `android`, `ios`, `macos`, `linux`) |
 | `osv` | OS version |
-| `device` | `desktop`, `mobile`, or `tablet` |
-| `arch` | CPU architecture |
-| `runtime` | Browser/runtime + version |
+| `device` | `desktop`, `mobile`, `tablet`, `server`, `bot`, `api-client` |
+| `arch` | CPU architecture (`x64`, `arm64`, `arm`, `x86`) |
+| `app` | Application name |
+| `appv` | Application version |
+| `runtime` | Browser/runtime client (`chrome`, `firefox`, `safari`, `curl`, `postman`, etc.) |
+| `rtv` | Runtime version |
+| `tz` | Timezone (e.g. `Europe/Paris`) |
 
 See [Security Guide](security.md#session--device-limits) for configuration details.
