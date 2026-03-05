@@ -23,7 +23,7 @@ class AirsSettingsMixin:
         return self._get('AIRS_REQUIRE_EXPLICIT_PERMISSIONS', True)
 
     # =============================================
-    # Agent / AIRS Settings (Phase 2)
+    # Agent / AIRS Settings (Phase 02)
     # =============================================
 
     @property
