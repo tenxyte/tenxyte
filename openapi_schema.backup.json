@@ -10381,7 +10381,7 @@
               "examples": {
                 "SocialAuthGoogleToken": {
                   "value": {
-                    "access_token": "ya29.a0AfH6SMC..."
+                    "access_token": "ya29.EXAMPLE_TOKEN_OAUTH2_GOOGLE..."
                   },
                   "summary": "Auth Google avec access_token"
                 },
@@ -10471,7 +10471,7 @@
                 "examples": {
                   "SocialAuthGoogleToken": {
                     "value": {
-                      "access_token": "ya29.a0AfH6SMC..."
+                      "access_token": "ya29.EXAMPLE_TOKEN_OAUTH2_GOOGLE..."
                     },
                     "summary": "Auth Google avec access_token"
                   },

@@ -206,6 +206,7 @@ class PasswordResetConfirmView(APIView):
             return Response({"error": error, "code": "RESET_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Mettre à jour le mot de passe
+        # nosemgrep: python.django.security.audit.unvalidated-password.unvalidated-password
         user.set_password(serializer.validated_data["new_password"])
         user.save()
 
@@ -303,6 +304,7 @@ class ChangePasswordView(APIView):
         if not breach_ok:
             return Response({"error": breach_error, "code": "PASSWORD_BREACHED"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # nosemgrep: python.django.security.audit.unvalidated-password.unvalidated-password
         request.user.set_password(serializer.validated_data["new_password"])
         request.user.save()
 

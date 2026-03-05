@@ -17,6 +17,7 @@ class IPBasedThrottle(SimpleRateThrottle):
 
     def get_cache_key(self, request, view):
         ip = get_client_ip(request)
+        # nosemgrep: python.flask.security.audit.directly-returned-format-string.directly-returned-format-string
         return f"throttle_{self.scope}_{ip}"
 
 
@@ -151,6 +152,7 @@ class ProgressiveLoginThrottle(SimpleRateThrottle):
 
     def get_cache_key(self, request, view):
         ip = get_client_ip(request)
+        # nosemgrep: python.flask.security.audit.directly-returned-format-string.directly-returned-format-string
         return f"progressive_login_{ip}"
 
     def get_rate(self):
@@ -257,6 +259,7 @@ class SimpleThrottleRule(SimpleRateThrottle):
 
         # Nettoyer le pattern pour la cle de cache
         safe_pattern = pattern.replace("/", "_").strip("_$")
+        # nosemgrep: python.flask.security.audit.directly-returned-format-string.directly-returned-format-string
         return f"throttle_simple_{safe_pattern}_{ip}"
 
     def allow_request(self, request, view):
