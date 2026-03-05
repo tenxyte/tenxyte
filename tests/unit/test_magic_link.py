@@ -137,6 +137,114 @@ class TestMagicLinkTokenModel:
         instance, _ = MagicLinkToken.generate(user=user, ip_address="192.168.1.1")
         assert instance.ip_address == "192.168.1.1"
 
+    def test_generate_truncates_long_user_agent(self):
+        """Test that user_agent is truncated to 255 characters if too long."""
+        user = _user("longua@example.com")
+        long_ua = "a" * 300  # 300 characters
+        instance, _ = MagicLinkToken.generate(user=user, user_agent=long_ua)
+        assert len(instance.user_agent) == 255
+        assert instance.user_agent == "a" * 255
+
+    def test_generate_with_short_user_agent(self):
+        """Test that short user_agent is not truncated."""
+        user = _user("shortua@example.com")
+        short_ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        instance, _ = MagicLinkToken.generate(user=user, user_agent=short_ua)
+        assert instance.user_agent == short_ua
+
+    def test_get_valid_ip_address_mismatch_logs_warning(self):
+        """Test that IP address mismatch logs security warning and returns None."""
+        user = _user("ipmismatch@example.com")
+        instance, raw_token = MagicLinkToken.generate(
+            user=user, 
+            ip_address="192.168.1.100",
+            user_agent="TestAgent/1.0"
+        )
+        
+        with patch('logging.getLogger') as mock_logger:
+            mock_security_logger = MagicMock()
+            mock_logger.return_value = mock_security_logger
+            
+            # Try to validate with different IP
+            result = MagicLinkToken.get_valid(
+                raw_token=raw_token,
+                ip_address="192.168.1.200",  # Different IP
+                user_agent="TestAgent/1.0"
+            )
+            
+            assert result is None
+            mock_security_logger.warning.assert_called_once()
+            warning_call = mock_security_logger.warning.call_args[0][0]
+            assert "[Security F-12] Magic link IP mismatch" in warning_call
+            assert "Expected 192.168.1.100" in warning_call
+            assert "got 192.168.1.200" in warning_call
+
+    def test_get_valid_user_agent_mismatch_logs_warning(self):
+        """Test that User-Agent mismatch logs security warning and returns None."""
+        user = _user("uamismatch@example.com")
+        instance, raw_token = MagicLinkToken.generate(
+            user=user,
+            ip_address="192.168.1.100",
+            user_agent="OriginalAgent/1.0"
+        )
+        
+        with patch('logging.getLogger') as mock_logger:
+            mock_security_logger = MagicMock()
+            mock_logger.return_value = mock_security_logger
+            
+            # Try to validate with different User-Agent
+            result = MagicLinkToken.get_valid(
+                raw_token=raw_token,
+                ip_address="192.168.1.100",  # Same IP
+                user_agent="DifferentAgent/2.0"
+            )
+            
+            assert result is None
+            mock_security_logger.warning.assert_called_once()
+            warning_call = mock_security_logger.warning.call_args[0][0]
+            assert "[Security F-12] Magic link User-Agent mismatch" in warning_call
+
+    def test_get_valid_user_agent_truncation_comparison(self):
+        """Test that user agent comparison uses truncated version."""
+        user = _user("uatrunc@example.com")
+        long_ua = "a" * 300  # 300 characters, will be truncated to 255
+        instance, raw_token = MagicLinkToken.generate(
+            user=user,
+            ip_address="192.168.1.100",
+            user_agent=long_ua
+        )
+        
+        # Should match with truncated version
+        result = MagicLinkToken.get_valid(
+            raw_token=raw_token,
+            ip_address="192.168.1.100",
+            user_agent=long_ua  # Same long UA
+        )
+        assert result is not None
+        assert result.pk == instance.pk
+
+    def test_get_valid_security_checks_disabled(self):
+        """Test that security checks can be disabled via settings."""
+        user = _user("nosecurity@example.com")
+        instance, raw_token = MagicLinkToken.generate(
+            user=user,
+            ip_address="192.168.1.100",
+            user_agent="TestAgent/1.0"
+        )
+        
+        with patch('tenxyte.conf.auth_settings') as mock_settings:
+            # Mock the setting to be False
+            mock_settings.MAGIC_LINK_REQUIRE_SAME_CLIENT = False
+            
+            # Should succeed even with different IP and User-Agent
+            result = MagicLinkToken.get_valid(
+                raw_token=raw_token,
+                ip_address="192.168.1.200",  # Different IP
+                user_agent="DifferentAgent/2.0"  # Different UA
+            )
+            assert result is not None
+            assert result.pk == instance.pk
+
 
 # ===========================================================================
 # MagicLinkService Tests

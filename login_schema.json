@@ -1,0 +1,224 @@
+{
+  "post": {
+    "operationId": "login_email_create",
+    "description": "Authentifie un utilisateur avec son email et mot de passe. Si 2FA est activ\u00e9, le champ totp_code est requis. Le device fingerprinting est automatiquement effectu\u00e9 via User-Agent. Les limites de session et de device sont respect\u00e9es.",
+    "summary": "Connexion par email",
+    "tags": [
+      "Auth"
+    ],
+    "requestBody": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/LoginEmailRequest"
+          },
+          "examples": {
+            "LoginSuccess": {
+              "value": {
+                "email": "user@example.com",
+                "password": "SecureP@ss123!"
+              },
+              "summary": "Connexion r\u00e9ussie"
+            },
+            "LoginWith2fa": {
+              "value": {
+                "email": "user@example.com",
+                "password": "SecureP@ss123!",
+                "totp_code": "123456"
+              },
+              "summary": "Connexion avec 2FA"
+            },
+            "SessionLimitExceeded": {
+              "value": {
+                "error": "Session limit exceeded",
+                "details": "Maximum concurrent sessions (1) already reached. Please logout from other devices.",
+                "code": "SESSION_LIMIT_EXCEEDED"
+              },
+              "summary": "Limite de session d\u00e9pass\u00e9e"
+            },
+            "AccountLocked": {
+              "value": {
+                "error": "Account locked",
+                "details": "Account has been locked due to too many failed login attempts.",
+                "code": "ACCOUNT_LOCKED",
+                "retry_after": 1800
+              },
+              "summary": "Compte verrouill\u00e9"
+            }
+          }
+        },
+        "application/x-www-form-urlencoded": {
+          "schema": {
+            "$ref": "#/components/schemas/LoginEmailRequest"
+          }
+        },
+        "multipart/form-data": {
+          "schema": {
+            "$ref": "#/components/schemas/LoginEmailRequest"
+          }
+        }
+      },
+      "required": true
+    },
+    "security": [
+      {
+        "jwtAuth": []
+      },
+      {
+        "jwtAuth": []
+      },
+      {}
+    ],
+    "responses": {
+      "200": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "access": {
+                  "type": "string"
+                },
+                "refresh": {
+                  "type": "string"
+                },
+                "user": {
+                  "$ref": "#/components/schemas/User"
+                },
+                "requires_2fa": {
+                  "type": "boolean"
+                },
+                "session_id": {
+                  "type": "string"
+                },
+                "device_id": {
+                  "type": "string"
+                }
+              }
+            },
+            "examples": {
+              "LoginSuccess": {
+                "value": {
+                  "email": "user@example.com",
+                  "password": "SecureP@ss123!"
+                },
+                "summary": "Connexion r\u00e9ussie"
+              },
+              "LoginWith2fa": {
+                "value": {
+                  "email": "user@example.com",
+                  "password": "SecureP@ss123!",
+                  "totp_code": "123456"
+                },
+                "summary": "Connexion avec 2FA"
+              },
+              "SessionLimitExceeded": {
+                "value": {
+                  "error": "Session limit exceeded",
+                  "details": "Maximum concurrent sessions (1) already reached. Please logout from other devices.",
+                  "code": "SESSION_LIMIT_EXCEEDED"
+                },
+                "summary": "Limite de session d\u00e9pass\u00e9e"
+              },
+              "AccountLocked": {
+                "value": {
+                  "error": "Account locked",
+                  "details": "Account has been locked due to too many failed login attempts.",
+                  "code": "ACCOUNT_LOCKED",
+                  "retry_after": 1800
+                },
+                "summary": "Compte verrouill\u00e9"
+              }
+            }
+          }
+        },
+        "description": ""
+      },
+      "401": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "details": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "retry_after": {
+                  "type": "integer",
+                  "nullable": true
+                }
+              }
+            }
+          }
+        },
+        "description": ""
+      },
+      "409": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "details": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "description": ""
+      },
+      "423": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "details": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "description": ""
+      },
+      "429": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "retry_after": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "description": ""
+      }
+    }
+  }
+}

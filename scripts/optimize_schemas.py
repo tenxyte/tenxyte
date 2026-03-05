@@ -3,11 +3,16 @@
 Schema Optimization Script
 
 This script optimizes the OpenAPI schema for better performance:
-1. Removes duplicate schemas
-2. Optimizes schema references
-3. Adds caching hints
-4. Reduces schema size
-5. Improves loading performance
+1. Validates path keys (detects corruption before optimizing)
+2. Removes duplicate schemas
+3. Optimizes schema references
+4. Adds caching hints
+5. Reduces schema size
+6. Improves loading performance
+
+IMPORTANT: Always regenerate the schema from source before optimizing:
+    python scripts/generate_openapi_schema.py
+    python scripts/optimize_schemas.py
 """
 
 import json
@@ -34,11 +39,13 @@ class SchemaOptimizer:
             'optimized_size': 0,
             'schemas_removed': 0,
             'references_added': 0,
-            'duplicates_found': 0
+            'duplicates_found': 0,
+            'corrupted_paths': 0,
         }
+        self.corrupted_path_details: List[str] = []
         
     def optimize_schema(self) -> Dict:
-        """Load, optimize, and return the schema."""
+        """Load, validate, optimize, and return the schema."""
         print("🔧 Starting schema optimization...")
         
         # Load schema
@@ -48,6 +55,14 @@ class SchemaOptimizer:
         
         # Record original size
         self.stats['original_size'] = len(json.dumps(schema, default=str))
+        
+        # Validate paths FIRST — abort if corrupted
+        corrupted = self.validate_paths(schema)
+        if corrupted:
+            print(f"\n❌ Found {len(corrupted)} corrupted path(s). Optimization aborted.")
+            print("   Regenerate the schema first:")
+            print("   python scripts/generate_openapi_schema.py")
+            return schema
         
         # Run optimizations
         self.remove_duplicate_schemas(schema)
@@ -63,6 +78,49 @@ class SchemaOptimizer:
         self.save_optimized_schema(schema)
         
         return schema
+    
+    def validate_paths(self, schema: Dict) -> List[str]:
+        """Validate all path keys — detect corruption before optimizing."""
+        print("🔍 Validating path keys...")
+        
+        corrupted = []
+        paths = schema.get('paths', {})
+        
+        for path in paths.keys():
+            issues = []
+            
+            # Check for trailing/leading whitespace
+            if path != path.strip():
+                issues.append('trailing/leading whitespace')
+            
+            # Check for double spaces (embedded console output)
+            if '  ' in path:
+                issues.append('double spaces (embedded content)')
+            
+            # Check for unreasonably long segments
+            segments = path.split('/')
+            for seg in segments:
+                if len(seg) > 50 and not seg.startswith('{'):
+                    issues.append(f'suspiciously long segment: {seg[:30]}...')
+                    break
+            
+            # Check for path within path (e.g. /admin/login-attempts/ens/cleanup/)
+            # where a suffix from another path got embedded
+            if len(segments) > 10:
+                issues.append(f'too many segments ({len(segments)})')
+            
+            if issues:
+                detail = f"{path!r}: {', '.join(issues)}"
+                corrupted.append(detail)
+                self.corrupted_path_details.append(detail)
+                print(f"   ⚠️  CORRUPTED: {detail}")
+        
+        self.stats['corrupted_paths'] = len(corrupted)
+        
+        if not corrupted:
+            print(f"   ✅ All {len(paths)} paths are valid")
+        
+        return corrupted
     
     def load_schema(self) -> Dict:
         """Load the OpenAPI schema."""
@@ -449,15 +507,24 @@ class SchemaOptimizer:
                 'schemas_removed': self.stats['schemas_removed'],
                 'references_added': self.stats['references_added'],
                 'duplicates_found': self.stats['duplicates_found'],
+                'corrupted_paths': self.stats['corrupted_paths'],
                 'optimizations_count': len(self.optimizations)
             },
             'optimizations': self.optimizations,
+            'corrupted_path_details': self.corrupted_path_details,
             'recommendations': self.generate_recommendations()
         }
     
     def generate_recommendations(self) -> List[str]:
         """Generate optimization recommendations."""
         recommendations = []
+        
+        if self.stats.get('corrupted_paths', 0) > 0:
+            recommendations.append(
+                f"CRITICAL: {self.stats['corrupted_paths']} corrupted path(s) found. "
+                "Regenerate the schema: python scripts/generate_openapi_schema.py"
+            )
+            return recommendations
         
         size_reduction = self.stats.get('original_size', 0) - self.stats.get('optimized_size', 0)
         if size_reduction > 0:

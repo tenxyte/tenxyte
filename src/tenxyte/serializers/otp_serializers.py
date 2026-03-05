@@ -1,6 +1,7 @@
 """
 OTP serializers - OTP request and verification.
 """
+
 from rest_framework import serializers
 
 
@@ -9,4 +10,4 @@ class VerifyOTPSerializer(serializers.Serializer):
 
 
 class RequestOTPSerializer(serializers.Serializer):
-    otp_type = serializers.ChoiceField(choices=['email', 'phone'])
+    otp_type = serializers.ChoiceField(choices=["email", "phone"])
