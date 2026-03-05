@@ -6,18 +6,20 @@ Welcome to the comprehensive documentation for the Tenxyte Django authentication
 
 ### 📖 **Developer Guides**
 - [**Quickstart**](quickstart.md) - Get started in 2 minutes
-- [**Settings Reference**](settings.md) - All 150+ configuration options
+- [**Settings Reference**](settings.md) - All 95+ configuration options
 - [**API Endpoints**](endpoints.md) - Full endpoint reference with examples
 - [**RBAC Guide**](rbac.md) - Roles, permissions, and decorators
 - [**Security Guide**](security.md) - Security features and best practices
 - [**Organizations Guide**](organizations.md) - B2B multi-tenant setup
+- [**AIRS Guide**](airs.md) - AI Responsibility & Security
+- [**Migration Guide**](MIGRATION_GUIDE.md) - Migration from dj-rest-auth, simplejwt
 
 ### 🔧 **Technical Documentation**
-- [**Database Setup**](../DATABASE_SETUP.md) - PostgreSQL, MySQL, MongoDB, SQLite
 - [**Schemas Reference**](schemas.md) - Reusable schema components
 - [**Testing Guide**](TESTING.md) - Testing strategies and examples
 - [**Periodic Tasks**](periodic_tasks.md) - Scheduled maintenance and cleanup tasks
 - [**Troubleshooting**](troubleshooting.md) - Common issues and solutions
+- [**Contributing**](CONTRIBUTING.md) - How to contribute to Tenxyte
 
 ## 🎯 **Enhanced Features Overview**
 
@@ -51,9 +53,9 @@ http://localhost:8000/api/schema/  # OpenAPI JSON
 | Metric | Value | Status |
 |--------|-------|--------|
 | API Coverage | 100% | ✅ Complete |
-| Quality Score | 95/100 | ✅ Excellent |
-| Schema Size Reduction | 40% | ✅ Optimized |
-| Examples Count | 15+ | ✅ Comprehensive |
+| Quality Score | 100/100 | ✅ Perfect |
+| Schema Size Reduction | 3% | ✅ Optimized |
+| Examples Count | 280+ | ✅ Comprehensive |
 | Error Code Coverage | 100% | ✅ Complete |
 | Multi-tenant Documentation | 100% | ✅ Complete |
 
@@ -91,58 +93,30 @@ pip install tenxyte[all]
 
 ### 2. Basic Configuration
 ```python
-# settings.py
-INSTALLED_APPS = [
-    # ... other apps
-    'tenxyte',
-    'drf_spectacular',
-]
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'tenxyte.authentication.JWTAuthentication',
-    ],
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-}
-
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'Tenxyte API',
-    'DESCRIPTION': 'Enhanced DRF Spectacular Documentation',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-}
+# settings.py — add these 2 lines
+import tenxyte
+tenxyte.setup()  # auto-configures INSTALLED_APPS, AUTH_USER_MODEL, REST_FRAMEWORK, MIDDLEWARE
 ```
 
 ### 3. URL Configuration
 ```python
 # urls.py
 from django.urls import path, include
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from tenxyte.conf import auth_settings
+
+api_prefix = auth_settings.API_PREFIX.strip('/')
 
 urlpatterns = [
-    path('api/auth/', include('tenxyte.urls')),
-    
-    # API Documentation
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('admin/', admin.site.urls),
+    path(f'{api_prefix}/auth/', include('tenxyte.urls')),
 ]
 ```
 
-### 4. Database Setup
+### 4. Bootstrap
 ```bash
-# PostgreSQL (recommended)
-pip install tenxyte[postgres]
-
-# MySQL/MariaDB
-pip install tenxyte[mysql]
-
-# MongoDB
-pip install tenxyte[mongodb]
-
-# Run migrations
-python manage.py migrate
+python manage.py tenxyte_quickstart
 ```
+*This command creates the database architecture, seeds the required roles/permissions, and generates your first Application Access Key / Secret.*
 
 ## 📖 **Documentation Access**
 
@@ -195,28 +169,40 @@ python manage.py migrate
 
 ### Example Tests
 ```python
+from django.urls import reverse
+
 # Test authentication
-def test_login_endpoint():
-    response = client.post('/api/v1/auth/login/email/', {
+def test_login_endpoint(client):
+    url = reverse('authentication:login_email')
+    response = client.post(url, {
         'email': 'user@example.com',
         'password': 'password'
-    })
+    }, HTTP_X_ACCESS_KEY='test-key', HTTP_X_ACCESS_SECRET='test-secret')
+    
     assert response.status_code == 200
     assert 'access' in response.json()
     assert 'refresh' in response.json()
 
 # Test multi-tenant
-def test_organization_endpoint():
-    client.credentials(HTTP_AUTHORIZATION='Bearer token')
-    client.credentials(HTTP_X_ORG_SLUG='acme-corp')
-    response = client.get('/api/v1/auth/organizations/members/')
+def test_organization_endpoint(client):
+    url = reverse('authentication:list_members')
+    client.credentials(
+        HTTP_AUTHORIZATION='Bearer token',
+        HTTP_X_ORG_SLUG='acme-corp',
+        HTTP_X_ACCESS_KEY='test-key',
+        HTTP_X_ACCESS_SECRET='test-secret'
+    )
+    response = client.get(url)
     assert response.status_code == 200
 ```
 
 ### Documentation Tests
 ```bash
-# Run documentation example tests
-python tests/test_documentation_examples.py
+# Run the entire test suite
+pytest
+
+# Run documentation example tests specifically
+pytest tests/test_documentation_examples.py
 
 # Validate OpenAPI specification
 python scripts/validate_openapi_spec.py

@@ -10,30 +10,36 @@ Represents an authenticated Tenxyte user.
 
 ```json
 {
-  "id": "uuid",
+  "id": "uuid-string",
   "email": "user@example.com",
-  "phone": "+33612345678",
+  "phone_country_code": "+33",
+  "phone_number": "612345678",
   "first_name": "John",
   "last_name": "Doe",
-  "is_active": true,
-  "is_verified": true,
-  "has_2fa": false,
-  "date_joined": "2026-01-01T00:00:00Z",
-  "last_login": "2026-03-01T12:00:00Z",
-  "roles": ["member"],
-  "organization_slug": "acme-corp"
+  "is_email_verified": true,
+  "is_phone_verified": false,
+  "is_2fa_enabled": false,
+  "roles": ["admin"],
+  "permissions": ["users.view", "users.manage"],
+  "created_at": "2026-01-01T00:00:00Z",
+  "last_login": "2026-03-01T12:00:00Z"
 }
 ```
 
 | Field | Type | Description |
 |---|---|---|
-| `id` | UUID | Unique user identifier |
-| `email` | string | Primary login email |
-| `phone` | string \| null | E.164-formatted phone number |
+| `id` | string (UUID) | Unique user identifier |
+| `email` | string \| null | Primary login email |
+| `phone_country_code` | string \| null | Country code (e.g. +33) |
+| `phone_number` | string \| null | Local phone number |
 | `first_name` / `last_name` | string | Display name |
-| `is_verified` | boolean | Email or phone verified |
-| `has_2fa` | boolean | TOTP two-factor enabled |
-| `roles` | string[] | Active roles within current org context |
+| `is_email_verified` | boolean | Indicates if the email was verified |
+| `is_phone_verified` | boolean | Indicates if the phone number was verified |
+| `is_2fa_enabled` | boolean | Indicates if TOTP two-factor is active |
+| `roles` | string[] | Flat list of assigned role IDs |
+| `permissions` | string[] | Flat list of assigned permissions (direct + from roles) |
+| `created_at` | string (date-time) | Account creation timestamp |
+| `last_login` | string (date-time) \| null | Last login timestamp |
 
 ---
 
@@ -43,19 +49,21 @@ Issued on successful login or token refresh.
 
 ```json
 {
-  "access": "<JWT access token>",
-  "refresh": "<JWT refresh token>",
-  "access_expires_at": "2026-03-04T04:00:00Z",
-  "refresh_expires_at": "2026-03-11T03:00:00Z"
+  "access_token": "<JWT access token>",
+  "refresh_token": "<JWT refresh token>",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "device_summary": "Windows 11 Desktop"
 }
 ```
 
 | Field | Type | Description |
 |---|---|---|
-| `access` | JWT string | Short-lived access token (default: 15 min) |
-| `refresh` | JWT string | Long-lived refresh token (default: 7 days) |
-| `access_expires_at` | ISO 8601 | Expiry timestamp for the access token |
-| `refresh_expires_at` | ISO 8601 | Expiry timestamp for the refresh token |
+| `access_token` | JWT string | Short-lived access token |
+| `refresh_token` | JWT string | Long-lived refresh token |
+| `token_type` | string | Token type (always "Bearer") |
+| `expires_in` | integer | Access token expiration in seconds |
+| `device_summary` | string \| null | Description of the user's device (if `device_info` was sent) |
 
 ---
 
@@ -97,11 +105,14 @@ Returned on all `4xx` and `5xx` responses.
 
 ## PaginatedResponse
 
-All list endpoints return a paginated wrapper:
+All list endpoints return a custom paginated wrapper (`TenxytePagination`):
 
 ```json
 {
   "count": 42,
+  "page": 1,
+  "page_size": 20,
+  "total_pages": 3,
   "next": "http://localhost:8000/api/v1/auth/admin/users/?page=2",
   "previous": null,
   "results": [ ... ]
@@ -111,6 +122,9 @@ All list endpoints return a paginated wrapper:
 | Field | Type | Description |
 |---|---|---|
 | `count` | integer | Total number of items across all pages |
+| `page` | integer | Current page number |
+| `page_size` | integer | Number of items per page |
+| `total_pages` | integer | Total number of pages |
 | `next` | string \| null | URL of the next page (null if last page) |
 | `previous` | string \| null | URL of the previous page (null if first page) |
 | `results` | array | Items on the current page |
@@ -123,22 +137,39 @@ Represents a tenant organization.
 
 ```json
 {
-  "id": "uuid",
+  "id": 1,
   "name": "Acme Corp",
   "slug": "acme-corp",
+  "description": "Acme Corporation Workspace",
   "parent": null,
-  "plan": "enterprise",
+  "parent_name": null,
+  "metadata": {},
+  "is_active": true,
   "max_members": 0,
   "member_count": 12,
-  "created_at": "2026-01-01T00:00:00Z"
+  "created_at": "2026-01-01T00:00:00Z",
+  "updated_at": "2026-01-02T00:00:00Z",
+  "created_by_email": "admin@acmecorp.com",
+  "user_role": "owner"
 }
 ```
 
 | Field | Type | Description |
 |---|---|---|
-| `slug` | string | URL-safe identifier used in `X-Org-Slug` header |
-| `parent` | UUID \| null | Parent org ID for hierarchical tenants |
+| `id` | integer | Unique organization identifier |
+| `name` | string | Display name of the organization |
+| `slug` | string | URL-safe identifier (used in `X-Org-Slug` header) |
+| `description` | string \| null | Description of the organization |
+| `parent` | integer \| null | Parent org ID for hierarchical tenants |
+| `parent_name` | string \| null | Name of the parent organization |
+| `metadata` | object | Custom key-value pairs |
+| `is_active` | boolean | Indicates if the organization is active |
 | `max_members` | integer | `0` = unlimited |
+| `member_count` | integer | Current number of members |
+| `created_at` | string (date-time) | Creation timestamp |
+| `updated_at` | string (date-time) | Last update timestamp |
+| `created_by_email` | string \| null | Email of the creator |
+| `user_role` | string \| null | Current authenticated user's role code in this organization |
 
 ---
 

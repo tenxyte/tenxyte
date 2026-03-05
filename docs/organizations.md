@@ -334,9 +334,11 @@ is_member = service.is_member(user, org)
 Use `@require_org_permission` to protect views with org-scoped permissions:
 
 ```python
-from tenxyte.decorators import require_org_permission
+from tenxyte.decorators import require_jwt, require_org_context, require_org_permission
 
 class OrgSettingsView(APIView):
+    @require_jwt
+    @require_org_context
     @require_org_permission('org.manage')
     def post(self, request):
         # request.organization is set by middleware

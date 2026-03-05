@@ -74,12 +74,13 @@ class TestAutoDevPreset:
             result = obj._get('PASSWORD_HISTORY_ENABLED', False)
             assert result is True  # Explicit setting wins
 
-    def test_application_auth_disabled_in_dev_preset(self):
-        """Development preset disables APPLICATION_AUTH_ENABLED for zero-config DX."""
+    def test_application_auth_enabled_in_dev_preset(self):
+        """Development preset does NOT disable APPLICATION_AUTH_ENABLED — app auth is active even in dev."""
         from tenxyte.conf.presets import SECURE_MODE_PRESETS
 
-        assert 'APPLICATION_AUTH_ENABLED' in SECURE_MODE_PRESETS['development']
-        assert SECURE_MODE_PRESETS['development']['APPLICATION_AUTH_ENABLED'] is False
+        # APPLICATION_AUTH_ENABLED is not in the development preset,
+        # so the default (True) applies — app auth is always active.
+        assert 'APPLICATION_AUTH_ENABLED' not in SECURE_MODE_PRESETS['development']
 
     def test_application_auth_not_disabled_in_medium(self):
         """Medium preset does not include APPLICATION_AUTH_ENABLED=False."""

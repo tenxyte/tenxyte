@@ -133,6 +133,11 @@ Authenticated endpoints additionally require:
 Authorization: Bearer <access_token>
 ```
 
+Multi-tenant endpoints (organizations) require:
+```
+X-Org-Slug: <organization-slug>
+```
+
 ---
 
 ## Authentication

@@ -1,5 +1,19 @@
 # Quickstart — Tenxyte in 2 minutes
 
+## Table of Contents
+
+- [Install](#1-install)
+- [Configure](#2-configure-settingspy)
+- [Bootstrap](#3-bootstrap)
+- [Ready!](#-ready)
+- [Login & Use JWT](#4-login--use-your-jwt)
+- [Production](#production)
+- [Manual Configuration](#manual-configuration-alternative)
+- [MongoDB](#mongodb)
+- [Next Steps](#next-steps)
+
+---
+
 ## 1. Install
 
 ```bash
@@ -19,10 +33,13 @@ Then add the URLs:
 ```python
 # urls.py
 from django.urls import path, include
+from tenxyte.conf import auth_settings
+
+api_prefix = auth_settings.API_PREFIX.strip('/')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/auth/', include('tenxyte.urls')),
+    path(f'{api_prefix}/auth/', include('tenxyte.urls')),
 ]
 ```
 
@@ -37,18 +54,68 @@ This single command executes:
 - Seed roles and permissions (4 roles, 41 permissions)
 - Create a default Application (credentials displayed)
 
+**Options:**
+
+| Flag | Description |
+|---|---|
+| `--no-seed` | Skip seeding roles and permissions |
+| `--no-app` | Skip creating the default Application |
+| `--app-name "My App"` | Custom name for the default Application |
+
 ## ✅ Ready!
 
 In `DEBUG=True` mode (zero-config), the `development` preset is automatically activated:
 - No need for `TENXYTE_JWT_SECRET_KEY` (auto-generated ephemeral key)
-- No need for Application credentials (X-Access-Key disabled)
+- Application credentials (`X-Access-Key` / `X-Access-Secret`) are **required** — use the credentials displayed by `tenxyte_quickstart`
 - Rate limiting, lockout, and basic security enabled
 
+> **Note:** The Access Secret is bcrypt-hashed and shown **only once** during bootstrap.
+> If lost, regenerate credentials via `POST /api/v1/auth/applications/{id}/regenerate/`.
+
 ```bash
-# Your first request — no special headers required in dev!
+# Register your first user — use the credentials from tenxyte_quickstart
 curl -X POST http://localhost:8000/api/v1/auth/register/ \
   -H "Content-Type: application/json" \
+  -H "X-Access-Key: <your-access-key>" \
+  -H "X-Access-Secret: <your-access-secret>" \
   -d '{"email": "user@example.com", "password": "SecureP@ss1!", "first_name": "John", "last_name": "Doe"}'
+```
+
+## 4. Login & Use Your JWT
+
+```bash
+# Login
+curl -X POST http://localhost:8000/api/v1/auth/login/email/ \
+  -H "Content-Type: application/json" \
+  -H "X-Access-Key: <your-access-key>" \
+  -H "X-Access-Secret: <your-access-secret>" \
+  -d '{"email": "user@example.com", "password": "SecureP@ss1!"}'
+```
+
+Response:
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "refresh_token": "a1b2c3d4e5...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": "1",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "is_email_verified": false,
+    "is_2fa_enabled": false
+  }
+}
+```
+
+```bash
+# Use the access token for authenticated requests
+curl http://localhost:8000/api/v1/auth/me/ \
+  -H "Authorization: Bearer <access_token>" \
+  -H "X-Access-Key: <your-access-key>" \
+  -H "X-Access-Secret: <your-access-secret>"
 ```
 
 ---
@@ -61,9 +128,6 @@ In production (`DEBUG=False`), configure explicitly:
 # settings.py
 TENXYTE_JWT_SECRET_KEY = 'your-dedicated-jwt-secret-key'  # REQUIRED
 TENXYTE_SHORTCUT_SECURE_MODE = 'medium'  # or 'robust'
-
-# If Application auth is needed (recommended):
-# TENXYTE_APPLICATION_AUTH_ENABLED = True  # already True by default outside dev preset
 ```
 
 All individual settings remain overridable:

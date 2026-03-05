@@ -74,7 +74,7 @@ urlpatterns = [
     # Refresh: POST /api/auth/refresh/
 ]
 
-> **Note**: If you have configured `TENXYTE_API_PREFIX = '/api/v1'` in `settings.py`, the endpoints will be prefixed accordingly.
+> **Note**: The exact URL depends on where you mount `tenxyte.urls` in your `urls.py`. If you configured `path('api/v1/auth/', include('tenxyte.urls'))`, the endpoints will be prefixed with `/api/v1/auth/`.
 ```
 
 ### Token Format Compatibility
@@ -130,7 +130,7 @@ python manage.py migrate
 
 ### Endpoint Mapping
 
-| dj-rest-auth endpoint | Tenxyte equivalent (with `TENXYTE_API_PREFIX=/api/v1`) |
+| dj-rest-auth endpoint | Tenxyte equivalent (assuming `path('api/v1/auth/', ...)` in your `urls.py`) |
 |---|---|
 | `POST /auth/login/` | `POST /api/v1/auth/login/email/` |
 | `POST /auth/logout/` | `POST /api/v1/auth/logout/` |
