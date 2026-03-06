@@ -26,34 +26,6 @@
                     "code": "123456"
                   },
                   "summary": "Régénérer codes de secours"
-                },
-                "BackupCodesResponse": {
-                  "value": {
-                    "message": "Backup codes regenerated",
-                    "backup_codes": [
-                      "AB12CD34",
-                      "EF56GH78",
-                      "IJ90KL12",
-                      "MN34OP56",
-                      "QR78ST90",
-                      "UV12WX34",
-                      "YZ56AB78",
-                      "CD90EF12",
-                      "GH34IJ56",
-                      "KL78MN90"
-                    ],
-                    "codes_count": 10,
-                    "warning": "Save these codes securely. They will not be shown again."
-                  },
-                  "summary": "Réponse avec nouveaux codes"
-                },
-                "InvalidTotpBackup": {
-                  "value": {
-                    "error": "Invalid TOTP code",
-                    "details": "The TOTP code provided is incorrect",
-                    "code": "INVALID_CODE"
-                  },
-                  "summary": "Code TOTP invalide"
                 }
               }
             },
@@ -186,30 +158,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/TwoFactorConfirmRequestRequest"
-              },
-              "examples": {
-                "Confirm2faSuccess": {
-                  "value": {
-                    "code": "123456"
-                  },
-                  "summary": "Confirmation 2FA réussie"
-                },
-                "InvalidTotpCode": {
-                  "value": {
-                    "error": "Invalid TOTP code",
-                    "details": "The code provided is incorrect or outside the valid time window",
-                    "code": "INVALID_CODE"
-                  },
-                  "summary": "Code TOTP invalide"
-                },
-                "TotpWindowExpired": {
-                  "value": {
-                    "error": "TOTP code expired",
-                    "details": "The code is outside the valid 30-second window",
-                    "code": "TOTP_WINDOW_EXPIRED"
-                  },
-                  "summary": "Fenêtre TOTP expirée"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -333,14 +281,6 @@
                     "password": "UserP@ss123!"
                   },
                   "summary": "Désactiver 2FA avec code de secours"
-                },
-                "InvalidPasswordDisable": {
-                  "value": {
-                    "error": "Invalid password",
-                    "details": "The password provided is incorrect",
-                    "code": "INVALID_PASSWORD"
-                  },
-                  "summary": "Mot de passe incorrect"
                 }
               }
             },
@@ -389,20 +329,6 @@
                   }
                 },
                 "examples": {
-                  "Disable2faTotp": {
-                    "value": {
-                      "code": "123456",
-                      "password": "UserP@ss123!"
-                    },
-                    "summary": "Désactiver 2FA avec code TOTP"
-                  },
-                  "Disable2faBackup": {
-                    "value": {
-                      "code": "12345678",
-                      "password": "UserP@ss123!"
-                    },
-                    "summary": "Désactiver 2FA avec code de secours"
-                  },
                   "InvalidPasswordDisable": {
                     "value": {
                       "error": "Invalid password",
@@ -1121,29 +1047,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ProcessDeletionRequestRequest"
-              },
-              "examples": {
-                "ProcessSuccess": {
-                  "value": {
-                    "confirmation": "PERMANENTLY DELETE",
-                    "admin_notes": "Processed per user request - GDPR compliance"
-                  },
-                  "summary": "Suppression traitée"
-                },
-                "ConfirmationRequired": {
-                  "value": {
-                    "error": "Explicit confirmation required",
-                    "code": "CONFIRMATION_REQUIRED"
-                  },
-                  "summary": "Confirmation requise"
-                },
-                "RequestNotConfirmed": {
-                  "value": {
-                    "error": "Cannot process unconfirmed deletion request",
-                    "code": "REQUEST_NOT_CONFIRMED"
-                  },
-                  "summary": "Demande non confirmée"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -3180,17 +3083,6 @@
                 "$ref": "#/components/schemas/ApplicationCreateRequest"
               },
               "examples": {
-                "CreateAppSuccess": {
-                  "value": {
-                    "name": "Mobile App v2",
-                    "description": "Application mobile iOS/Android",
-                    "redirect_uris": [
-                      "myapp://callback",
-                      "https://app.example.com/auth"
-                    ]
-                  },
-                  "summary": "Application créée avec secret"
-                },
                 "SecretWarning": {
                   "value": {
                     "client_secret": "sk_live_1234567890abcdef...",
@@ -3681,21 +3573,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RegenerateApplicationCredentialsRequest"
-              },
-              "examples": {
-                "RegenerateSuccess": {
-                  "value": {
-                    "confirmation": "REGENERATE"
-                  },
-                  "summary": "Credentials régénérés"
-                },
-                "ConfirmationRequired": {
-                  "value": {
-                    "error": "Confirmation required",
-                    "code": "CONFIRMATION_REQUIRED"
-                  },
-                  "summary": "Confirmation requise"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -3830,20 +3707,6 @@
                     "password": "CurrentPassword123!"
                   },
                   "summary": "Suppression annulée"
-                },
-                "NoPendingDeletion": {
-                  "value": {
-                    "error": "No pending deletion request found",
-                    "code": "NO_PENDING_DELETION"
-                  },
-                  "summary": "Aucune suppression en cours"
-                },
-                "InvalidPassword": {
-                  "value": {
-                    "error": "Invalid password",
-                    "code": "INVALID_PASSWORD"
-                  },
-                  "summary": "Mot de passe invalide"
                 }
               }
             },
@@ -3894,12 +3757,6 @@
                   }
                 },
                 "examples": {
-                  "CancelSuccess": {
-                    "value": {
-                      "password": "CurrentPassword123!"
-                    },
-                    "summary": "Suppression annulée"
-                  },
                   "NoPendingDeletion": {
                     "value": {
                       "error": "No pending deletion request found",
@@ -3971,29 +3828,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/TokenRequestRequest"
-              },
-              "examples": {
-                "ConfirmSuccess": {
-                  "value": {
-                    "token": "confirm_abc123def456"
-                  },
-                  "summary": "Suppression confirmée"
-                },
-                "TokenExpired": {
-                  "value": {
-                    "error": "Confirmation token has expired",
-                    "code": "TOKEN_EXPIRED",
-                    "expired_at": "2024-01-16T10:30:00Z"
-                  },
-                  "summary": "Token expiré"
-                },
-                "InvalidToken": {
-                  "value": {
-                    "error": "Invalid confirmation token",
-                    "code": "INVALID_TOKEN"
-                  },
-                  "summary": "Token invalide"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -4445,12 +4279,6 @@
                     "password": "CurrentPassword123!"
                   },
                   "summary": "Exportation des données réussie"
-                },
-                "InvalidPassword": {
-                  "value": {
-                    "error": "Invalid password"
-                  },
-                  "summary": "Mot de passe invalide"
                 }
               }
             },
@@ -4504,12 +4332,6 @@
                   }
                 },
                 "examples": {
-                  "ExportSuccess": {
-                    "value": {
-                      "password": "CurrentPassword123!"
-                    },
-                    "summary": "Exportation des données réussie"
-                  },
                   "InvalidPassword": {
                     "value": {
                       "error": "Invalid password"
@@ -4623,23 +4445,6 @@
                     "totp_code": "123456"
                   },
                   "summary": "Connexion avec 2FA"
-                },
-                "SessionLimitExceeded": {
-                  "value": {
-                    "error": "Session limit exceeded",
-                    "details": "Maximum concurrent sessions (1) already reached. Please logout from other devices.",
-                    "code": "SESSION_LIMIT_EXCEEDED"
-                  },
-                  "summary": "Limite de session dépassée"
-                },
-                "AccountLocked": {
-                  "value": {
-                    "error": "Account locked",
-                    "details": "Account has been locked due to too many failed login attempts.",
-                    "code": "ACCOUNT_LOCKED",
-                    "retry_after": 1800
-                  },
-                  "summary": "Compte verrouillé"
                 }
               }
             },
@@ -4693,21 +4498,6 @@
                   }
                 },
                 "examples": {
-                  "LoginSuccess": {
-                    "value": {
-                      "email": "user@example.com",
-                      "password": "SecureP@ss123!"
-                    },
-                    "summary": "Connexion réussie"
-                  },
-                  "LoginWith2fa": {
-                    "value": {
-                      "email": "user@example.com",
-                      "password": "SecureP@ss123!",
-                      "totp_code": "123456"
-                    },
-                    "summary": "Connexion avec 2FA"
-                  },
                   "SessionLimitExceeded": {
                     "value": {
                       "error": "Session limit exceeded",
@@ -4916,23 +4706,6 @@
                   }
                 },
                 "examples": {
-                  "LoginPhoneSuccess": {
-                    "value": {
-                      "phone_country_code": "+33",
-                      "phone_number": "612345678",
-                      "password": "SecureP@ss123!"
-                    },
-                    "summary": "Connexion par téléphone réussie"
-                  },
-                  "LoginPhoneWith2fa": {
-                    "value": {
-                      "phone_country_code": "+33",
-                      "phone_number": "612345678",
-                      "password": "SecureP@ss123!",
-                      "totp_code": "123456"
-                    },
-                    "summary": "Connexion par téléphone avec 2FA"
-                  },
                   "InvalidPhoneFormat": {
                     "value": {
                       "error": "Validation error",
@@ -5020,12 +4793,6 @@
                 "$ref": "#/components/schemas/RefreshTokenRequest"
               },
               "examples": {
-                "LogoutSuccess": {
-                  "value": {
-                    "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-                  },
-                  "summary": "Déconnexion réussie"
-                },
                 "LogoutWithAccessToken": {
                   "value": {
                     "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
@@ -5204,27 +4971,6 @@
                     "validation_url": "https://app.example.com/auth-magic/link/verify"
                   },
                   "summary": "Demander magic link"
-                },
-                "MagicLinkDisabled": {
-                  "value": {
-                    "error": "Magic links are disabled",
-                    "details": "Contact administrator to enable magic link authentication"
-                  },
-                  "summary": "Magic link désactivé"
-                },
-                "ValidationUrlMissing": {
-                  "value": {
-                    "error": "Validation URL is required",
-                    "code": "VALIDATION_URL_REQUIRED"
-                  },
-                  "summary": "Validation URL manquant"
-                },
-                "MagicLinkRateLimited": {
-                  "value": {
-                    "error": "Too many magic link requests",
-                    "retry_after": 3600
-                  },
-                  "summary": "Limite de rate dépassée"
                 }
               }
             },
@@ -5270,13 +5016,6 @@
                   }
                 },
                 "examples": {
-                  "RequestMagicLink": {
-                    "value": {
-                      "email": "user@example.com",
-                      "validation_url": "https://app.example.com/auth-magic/link/verify"
-                    },
-                    "summary": "Demander magic link"
-                  },
                   "MagicLinkDisabled": {
                     "value": {
                       "error": "Magic links are disabled",
@@ -5623,38 +5362,6 @@
                       }
                     }
                   }
-                },
-                "examples": {
-                  "UserProfileComplete": {
-                    "value": {
-                      "id": 12345,
-                      "email": "john.doe@example.com",
-                      "first_name": "John",
-                      "last_name": "Doe",
-                      "username": "johndoe",
-                      "phone": "+33612345678",
-                      "avatar": "https://cdn.example.com/avatars/john.jpg",
-                      "bio": "Software developer passionate about security",
-                      "timezone": "Europe/Paris",
-                      "language": "fr",
-                      "is_active": true,
-                      "is_verified": true,
-                      "date_joined": "2024-01-15T10:30:00Z",
-                      "last_login": "2024-01-20T14:22:00Z",
-                      "custom_fields": {
-                        "department": "Engineering",
-                        "employee_id": "EMP001",
-                        "manager": "jane.smith@example.com"
-                      },
-                      "preferences": {
-                        "email_notifications": true,
-                        "sms_notifications": false,
-                        "marketing_emails": false,
-                        "two_factor_enabled": true
-                      }
-                    },
-                    "summary": "Profil utilisateur complet"
-                  }
                 }
               }
             },
@@ -5695,20 +5402,6 @@
                     "timezone": "Europe/Paris"
                   },
                   "summary": "Mise à jour profil"
-                },
-                "ValidationError": {
-                  "value": {
-                    "error": "Validation failed",
-                    "field_errors": {
-                      "phone": [
-                        "Invalid phone format"
-                      ],
-                      "username": [
-                        "Username already taken"
-                      ]
-                    }
-                  },
-                  "summary": "Erreur de validation"
                 }
               }
             },
@@ -5994,15 +5687,6 @@
                 "$ref": "#/components/schemas/CreateOrganizationRequestRequest"
               },
               "examples": {
-                "CreateOrgSuccess": {
-                  "value": {
-                    "name": "Acme Corp",
-                    "slug": "acme-corp",
-                    "description": "Technologie et innovation",
-                    "max_members": 100
-                  },
-                  "summary": "Création réussie"
-                },
                 "CreateOrgWithParent": {
                   "value": {
                     "name": "Acme France",
@@ -6011,13 +5695,6 @@
                     "description": "Filiale française"
                   },
                   "summary": "Création avec parent"
-                },
-                "HierarchyDepthLimit": {
-                  "value": {
-                    "error": "Organization hierarchy depth limit exceeded (max 5 levels)",
-                    "code": "HIERARCHY_DEPTH_LIMIT"
-                  },
-                  "summary": "Limite profondeur hiérarchie"
                 }
               }
             },
@@ -6414,20 +6091,6 @@
                     "expires_in_days": 7
                   },
                   "summary": "Invitation envoyée"
-                },
-                "AlreadyMember": {
-                  "value": {
-                    "error": "User is already a member of this organization",
-                    "code": "ALREADY_MEMBER"
-                  },
-                  "summary": "Déjà membre"
-                },
-                "InvitationExists": {
-                  "value": {
-                    "error": "Pending invitation already exists for this email",
-                    "code": "INVITATION_EXISTS"
-                  },
-                  "summary": "Invitation existante"
                 }
               }
             },
@@ -6485,14 +6148,6 @@
                   }
                 },
                 "examples": {
-                  "InviteSuccess": {
-                    "value": {
-                      "email": "new.user@example.com",
-                      "role_code": "member",
-                      "expires_in_days": 7
-                    },
-                    "summary": "Invitation envoyée"
-                  },
                   "AlreadyMember": {
                     "value": {
                       "error": "User is already a member of this organization",
@@ -6924,28 +6579,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequestRequest"
-              },
-              "examples": {
-                "UpdateRoleSuccess": {
-                  "value": {
-                    "role_code": "admin"
-                  },
-                  "summary": "Rôle mis à jour"
-                },
-                "CannotDemoteOwner": {
-                  "value": {
-                    "error": "Cannot demote organization owner",
-                    "code": "CANNOT_DEMOTE_OWNER"
-                  },
-                  "summary": "Impossible de rétrograder owner"
-                },
-                "LastOwnerError": {
-                  "value": {
-                    "error": "Cannot remove role from last organization owner",
-                    "code": "LAST_OWNER_REQUIRED"
-                  },
-                  "summary": "Dernier propriétaire"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -7234,36 +6867,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AddOrganizationMemberRequestRequest"
-              },
-              "examples": {
-                "AddMemberSuccess": {
-                  "value": {
-                    "user_id": 123,
-                    "role_code": "member"
-                  },
-                  "summary": "Membre ajouté avec succès"
-                },
-                "MemberLimitExceeded": {
-                  "value": {
-                    "error": "Organization member limit exceeded",
-                    "code": "MEMBER_LIMIT_EXCEEDED"
-                  },
-                  "summary": "Limite de membres dépassée"
-                },
-                "AlreadyMember": {
-                  "value": {
-                    "error": "User is already a member of this organization",
-                    "code": "ALREADY_MEMBER"
-                  },
-                  "summary": "Déjà membre"
-                },
-                "InvalidRole": {
-                  "value": {
-                    "error": "Cannot assign owner role through add_member",
-                    "code": "INVALID_ROLE"
-                  },
-                  "summary": "Rôle invalide"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -7470,30 +7073,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PatchedUpdateOrganizationRequestRequest"
-              },
-              "examples": {
-                "UpdateOrgSuccess": {
-                  "value": {
-                    "name": "Acme Corporation",
-                    "description": "Mise à jour description",
-                    "max_members": 200
-                  },
-                  "summary": "Mise à jour réussie"
-                },
-                "ParentConstraintViolation": {
-                  "value": {
-                    "error": "Cannot set parent: would create circular hierarchy",
-                    "code": "CIRCULAR_HIERARCHY"
-                  },
-                  "summary": "Violation contrainte parent"
-                },
-                "MemberLimitTooLow": {
-                  "value": {
-                    "error": "Member limit cannot be less than current member count",
-                    "code": "MEMBER_LIMIT_VIOLATION"
-                  },
-                  "summary": "Limite membres trop basse"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -7635,20 +7214,6 @@
                     "otp_type": "phone_verification"
                   },
                   "summary": "Demande OTP par SMS"
-                },
-                "NoEmailError": {
-                  "value": {
-                    "error": "No email address on account",
-                    "code": "NO_EMAIL"
-                  },
-                  "summary": "Aucune adresse email"
-                },
-                "OtpRateLimited": {
-                  "value": {
-                    "error": "Too many OTP requests",
-                    "retry_after": 300
-                  },
-                  "summary": "Limite OTP dépassée"
                 }
               }
             },
@@ -7790,38 +7355,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/VerifyOTPRequest"
-              },
-              "examples": {
-                "VerifyEmailSuccess": {
-                  "value": {
-                    "code": "123456"
-                  },
-                  "summary": "Vérification email réussie"
-                },
-                "InvalidOtpCode": {
-                  "value": {
-                    "error": "Invalid OTP code",
-                    "details": "The code provided is incorrect or has expired",
-                    "code": "INVALID_OTP"
-                  },
-                  "summary": "Code OTP invalide"
-                },
-                "OtpExpired": {
-                  "value": {
-                    "error": "OTP code has expired",
-                    "details": "Please request a new verification code",
-                    "code": "OTP_EXPIRED"
-                  },
-                  "summary": "Code OTP expiré"
-                },
-                "MaxAttemptsReached": {
-                  "value": {
-                    "error": "Maximum OTP attempts reached",
-                    "details": "Please request a new verification code",
-                    "code": "MAX_ATTEMPTS_REACHED"
-                  },
-                  "summary": "Maximum de tentatives atteint"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -7956,38 +7489,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/VerifyOTPRequest"
-              },
-              "examples": {
-                "VerifyPhoneSuccess": {
-                  "value": {
-                    "code": "123456"
-                  },
-                  "summary": "Vérification téléphone réussie"
-                },
-                "InvalidPhoneOtp": {
-                  "value": {
-                    "error": "Invalid OTP code",
-                    "details": "The code provided is incorrect or has expired",
-                    "code": "INVALID_OTP"
-                  },
-                  "summary": "Code OTP téléphone invalide"
-                },
-                "PhoneNotVerified": {
-                  "value": {
-                    "error": "Phone number not verified",
-                    "details": "Please request an OTP verification first",
-                    "code": "PHONE_NOT_VERIFIED"
-                  },
-                  "summary": "Téléphone non vérifié"
-                },
-                "OtpWindowExpired": {
-                  "value": {
-                    "error": "OTP verification window expired",
-                    "details": "The 10-minute verification window has passed",
-                    "code": "OTP_WINDOW_EXPIRED"
-                  },
-                  "summary": "Fenêtre de vérification expirée"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -8125,39 +7626,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ChangePasswordRequest"
-              },
-              "examples": {
-                "ChangePasswordSuccess": {
-                  "value": {
-                    "current_password": "OldP@ss123!",
-                    "new_password": "NewSecureP@ss456!",
-                    "confirm_password": "NewSecureP@ss456!"
-                  },
-                  "summary": "Changement réussi"
-                },
-                "InvalidCurrentPassword": {
-                  "value": {
-                    "error": "Current password is incorrect",
-                    "code": "INVALID_PASSWORD"
-                  },
-                  "summary": "Mot de passe actuel incorrect"
-                },
-                "PasswordReused": {
-                  "value": {
-                    "error": "Password has already been used",
-                    "details": "You cannot reuse any of your last 5 passwords",
-                    "code": "PASSWORD_REUSED"
-                  },
-                  "summary": "Mot de passe déjà utilisé"
-                },
-                "PasswordBreached": {
-                  "value": {
-                    "error": "Password breach detected",
-                    "details": "This password has been found in known data breaches. Please choose a different password.",
-                    "code": "PASSWORD_BREACHED"
-                  },
-                  "summary": "Mot de passe dans une fuite"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -8344,22 +7812,6 @@
                     "confirm_password": "NewSecureP@ss123!"
                   },
                   "summary": "Confirmation par téléphone"
-                },
-                "OtpExpired": {
-                  "value": {
-                    "error": "OTP code has expired",
-                    "details": "Please request a new password reset code",
-                    "code": "OTP_EXPIRED"
-                  },
-                  "summary": "Code OTP expiré"
-                },
-                "BreachPasswordReset": {
-                  "value": {
-                    "error": "Password breach detected",
-                    "details": "This password has been found in known data breaches. Please choose a different password.",
-                    "code": "PASSWORD_BREACH"
-                  },
-                  "summary": "Mot de passe dans une fuite"
                 }
               }
             },
@@ -8404,25 +7856,6 @@
                   }
                 },
                 "examples": {
-                  "ResetConfirmEmail": {
-                    "value": {
-                      "email": "user@example.com",
-                      "otp_code": "123456",
-                      "new_password": "NewSecureP@ss123!",
-                      "confirm_password": "NewSecureP@ss123!"
-                    },
-                    "summary": "Confirmation par email"
-                  },
-                  "ResetConfirmPhone": {
-                    "value": {
-                      "phone_country_code": "+33",
-                      "phone_number": "612345678",
-                      "otp_code": "123456",
-                      "new_password": "NewSecureP@ss123!",
-                      "confirm_password": "NewSecureP@ss123!"
-                    },
-                    "summary": "Confirmation par téléphone"
-                  },
                   "OtpExpired": {
                     "value": {
                       "error": "OTP code has expired",
@@ -8516,13 +7949,6 @@
                     "phone_number": "612345678"
                   },
                   "summary": "Demande par téléphone"
-                },
-                "ResetRateLimited": {
-                  "value": {
-                    "error": "Too many password reset requests",
-                    "retry_after": 3600
-                  },
-                  "summary": "Limite de rate dépassée"
                 }
               }
             },
@@ -8574,19 +8000,6 @@
                   }
                 },
                 "examples": {
-                  "ResetRequestEmail": {
-                    "value": {
-                      "email": "user@example.com"
-                    },
-                    "summary": "Demande par email"
-                  },
-                  "ResetRequestPhone": {
-                    "value": {
-                      "phone_country_code": "+33",
-                      "phone_number": "612345678"
-                    },
-                    "summary": "Demande par téléphone"
-                  },
                   "ResetRateLimited": {
                     "value": {
                       "error": "Too many password reset requests",
@@ -9153,30 +8566,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RefreshTokenRequest"
-              },
-              "examples": {
-                "RefreshSuccess": {
-                  "value": {
-                    "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
-                  },
-                  "summary": "Rafraîchissement réussi"
-                },
-                "RefreshExpired": {
-                  "value": {
-                    "error": "Refresh token expired",
-                    "details": "Please login again to get a new refresh token",
-                    "code": "REFRESH_EXPIRED"
-                  },
-                  "summary": "Refresh token expiré"
-                },
-                "RefreshBlacklisted": {
-                  "value": {
-                    "error": "Refresh token has been revoked",
-                    "details": "This refresh token has been blacklisted due to logout",
-                    "code": "REFRESH_BLACKLISTED"
-                  },
-                  "summary": "Refresh token blacklisté"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -9329,14 +8718,6 @@
                     }
                   },
                   "summary": "Inscription réussie"
-                },
-                "BreachPassword": {
-                  "value": {
-                    "error": "Password breach detected",
-                    "details": "This password has been found in known data breaches. Please choose a different password.",
-                    "code": "PASSWORD_BREACH"
-                  },
-                  "summary": "Mot de passe trouvé dans une fuite"
                 }
               }
             },
@@ -9491,24 +8872,6 @@
                     "reason": "No longer need the account"
                   },
                   "summary": "Demande de suppression créée"
-                },
-                "DeletionAlreadyPending": {
-                  "value": {
-                    "error": "Account deletion already pending",
-                    "code": "DELETION_ALREADY_PENDING",
-                    "existing_request": {
-                      "scheduled_deletion_date": "2024-02-15T10:30:00Z",
-                      "cancellation_token": "cancel_abc123"
-                    }
-                  },
-                  "summary": "Suppression déjà en cours"
-                },
-                "Invalid2fa": {
-                  "value": {
-                    "error": "Invalid or missing OTP code",
-                    "code": "INVALID_2FA_CODE"
-                  },
-                  "summary": "Code 2FA invalide"
                 }
               }
             },
@@ -9570,14 +8933,6 @@
                   }
                 },
                 "examples": {
-                  "DeletionRequestSuccess": {
-                    "value": {
-                      "password": "CurrentPassword123!",
-                      "otp_code": "123456",
-                      "reason": "No longer need the account"
-                    },
-                    "summary": "Demande de suppression créée"
-                  },
                   "DeletionAlreadyPending": {
                     "value": {
                       "error": "Account deletion already pending",
@@ -10381,7 +9736,7 @@
               "examples": {
                 "SocialAuthGoogleToken": {
                   "value": {
-                    "access_token": "ya29.EXAMPLE_TOKEN_OAUTH2_GOOGLE..."
+                    "access_token": "********..."
                   },
                   "summary": "Auth Google avec access_token"
                 },
@@ -10397,26 +9752,6 @@
                     "id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6..."
                   },
                   "summary": "Auth Google avec ID token"
-                },
-                "ProviderNotSupported": {
-                  "value": {
-                    "error": "Provider 'linkedin' is not supported or not enabled.",
-                    "code": "PROVIDER_NOT_SUPPORTED",
-                    "supported_providers": [
-                      "google",
-                      "github",
-                      "microsoft",
-                      "facebook"
-                    ]
-                  },
-                  "summary": "Provider non supporté"
-                },
-                "MissingRedirectUri": {
-                  "value": {
-                    "error": "redirect_uri is required with code",
-                    "code": "REDIRECT_URI_REQUIRED"
-                  },
-                  "summary": "Redirect URI manquant"
                 }
               }
             },
@@ -10471,7 +9806,7 @@
                 "examples": {
                   "SocialAuthGoogleToken": {
                     "value": {
-                      "access_token": "ya29.EXAMPLE_TOKEN_OAUTH2_GOOGLE..."
+                      "access_token": "********..."
                     },
                     "summary": "Auth Google avec access_token"
                   },
@@ -11225,12 +10560,6 @@
                   "AuthBeginResidentKey": {
                     "value": {},
                     "summary": "Auth resident key"
-                  },
-                  "AuthBeginUserSpecific": {
-                    "value": {
-                      "email": "user@example.com"
-                    },
-                    "summary": "Auth utilisateur spécifique"
                   }
                 }
               }
@@ -11271,26 +10600,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequestRequest"
-              },
-              "examples": {
-                "AuthCompleteSuccess": {
-                  "value": {
-                    "challenge_id": 456,
-                    "credential": {
-                      "id": "credentialId",
-                      "rawId": "rawId",
-                      "response": {}
-                    }
-                  },
-                  "summary": "Authentification réussie"
-                },
-                "CounterReplayAttack": {
-                  "value": {
-                    "error": "Credential counter replay detected",
-                    "code": "REPLAY_ATTACK"
-                  },
-                  "summary": "Attaque replay détectée"
-                }
               }
             },
             "application/x-www-form-urlencoded": {
@@ -11665,27 +10974,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequestRequest"
-              },
-              "examples": {
-                "RegisterCompleteSuccess": {
-                  "value": {
-                    "challenge_id": 123,
-                    "credential": {
-                      "id": "credentialId",
-                      "rawId": "rawId",
-                      "response": {}
-                    },
-                    "device_name": "iPhone 14"
-                  },
-                  "summary": "Enregistrement réussi"
-                },
-                "CredentialAlreadyExists": {
-                  "value": {
-                    "error": "Credential already registered",
-                    "code": "CREDENTIAL_EXISTS"
-                  },
-                  "summary": "Credential déjà existante"
-                }
               }
             },
             "application/x-www-form-urlencoded": {

@@ -97,7 +97,7 @@ class SocialAuthView(APIView):
             OpenApiExample(
                 name="social_auth_google_token",
                 summary="Auth Google avec access_token",
-                value={"access_token": "ya29.EXAMPLE_TOKEN_OAUTH2_GOOGLE..."},
+                value={"access_token": "********..."},
             ),
             OpenApiExample(
                 name="social_auth_github_code",

@@ -388,7 +388,7 @@ Authenticate via OAuth2 provider.
 **Request (access_token):**
 ```json
 {
-  "access_token": "ya29.a0AfH6SMC...",
+  "access_token": "********...",
   "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
