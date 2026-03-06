@@ -37,8 +37,8 @@ jobs:
       - name: pip-audit (CVE database check)
         run: pip-audit --desc on --format markdown
 
-      - name: safety check (known vulnerabilities)
-        run: safety check --full-report
+      - name: safety scan (known vulnerabilities)
+        run: safety scan --full-report
         continue-on-error: true  # Non-bloquant en PR, bloquant en main via branch protection
 
   # ===========================================================================
