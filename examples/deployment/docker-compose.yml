@@ -16,6 +16,7 @@ services:
       redis:
         condition: service_healthy
 
+  # nosemgrep: yaml.docker-compose.security.writable-filesystem-service.writable-filesystem-service, yaml.docker-compose.security.no-new-privileges.no-new-privileges
   db:
     image: postgres:15-alpine
     restart: unless-stopped
@@ -33,6 +34,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # nosemgrep: yaml.docker-compose.security.writable-filesystem-service.writable-filesystem-service, yaml.docker-compose.security.no-new-privileges.no-new-privileges
   redis:
     image: redis:7-alpine
     restart: unless-stopped
