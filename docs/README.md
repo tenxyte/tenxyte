@@ -22,6 +22,8 @@ Welcome to the comprehensive documentation for the Tenxyte Django authentication
 - [**Quickstart**](quickstart.md) - Get started in 2 minutes
 - [**Settings Reference**](settings.md) - All 95+ configuration options
 - [**API Endpoints**](endpoints.md) - Full endpoint reference with examples
+- [**Admin Accounts**](admin.md) - Manage Superusers and RBAC Admins
+- [**Applications Guide**](applications.md) - Manage API clients and credentials
 - [**RBAC Guide**](rbac.md) - Roles, permissions, and decorators
 - [**Security Guide**](security.md) - Security features and best practices
 - [**Organizations Guide**](organizations.md) - B2B multi-tenant setup
@@ -96,7 +98,7 @@ python scripts/generate_postman_collection.py
 python scripts/generate_docs_site.py
 ```
 
-See [Scripts Documentation](../scripts/README.md) for complete usage guide.
+See [Scripts Documentation](https://github.com/tenxyte/tenxyte/blob/main/scripts/README.md) for complete usage guide.
 
 ## 🚀 **Quick Start**
 
@@ -145,7 +147,7 @@ python manage.py tenxyte_quickstart
 - **Migration Guide**: [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)
 
 ### Developer Resources
-- **Scripts Documentation**: `../scripts/README.md`
+- **Scripts Documentation**: [https://github.com/tenxyte/tenxyte/blob/main/scripts/README.md](https://github.com/tenxyte/tenxyte/blob/main/scripts/README.md)
 
 ## 🔍 **Key Features Documentation**
 
