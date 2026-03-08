@@ -1,0 +1,51 @@
+site_name: Tenxyte Documentation
+site_url: https://tenxyte.readthedocs.io/
+repo_url: https://github.com/tenxyte/tenxyte
+repo_name: tenxyte/tenxyte
+docs_dir: docs
+
+theme:
+  name: material
+  logo: https://github.com/tenxyte/tenxyte/raw/main/docs/logo.png
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - tables
+  - admonition
+
+nav:
+  - Home: README.md
+  - Quickstart: quickstart.md
+  - 'Developer Guides':
+      - 'Settings Reference': settings.md
+      - 'API Endpoints': endpoints.md
+      - 'Data Schemas': schemas.md
+      - 'AIRs Reference': airs.md
+      - 'Admin Accounts': admin.md
+      - 'Applications Guide': applications.md
+      - 'RBAC Guide': rbac.md
+      - 'Security Guide': security.md
+      - 'Organizations': organizations.md
+  - 'Operations & Maintenance':
+      - 'Periodic Tasks': periodic_tasks.md
+      - 'Troubleshooting': troubleshooting.md
+      - 'Migration Guide': MIGRATION_GUIDE.md
+      - 'Runbooks':
+          - 'Deployment': runbooks/deployment.md
+          - 'Incident Response': runbooks/incident_response.md
+          - 'Rollback': runbooks/rollback.md
+  - 'Contributing':
+      - 'Contributing Guidelines': CONTRIBUTING.md
+      - 'Testing': TESTING.md

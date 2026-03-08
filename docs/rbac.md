@@ -339,6 +339,42 @@ DELETE /api/v1/auth/users/<id>/permissions/
 
 ---
 
+## Assigning Admin Roles & Superusers
+
+There are two primary ways to grant administrative privileges in Tenxyte:
+
+### 1. Django Superuser (`is_superuser=True`)
+A superuser bypasses all RBAC permission checks automatically. They also have access to the Django Admin interface (`/admin/`).
+You typically create your first superuser via the command line:
+
+```bash
+python manage.py createsuperuser
+```
+
+*Note: Superusers do not need to be explicitly assigned the `admin` or `super_admin` RBAC roles.*
+
+### 2. RBAC Admin Roles (`super_admin` or `admin`)
+These are standard users assigned a role that contains high-level permissions. They don't have access to the Django Admin panel (unless `is_staff=True`), but they have administrative capabilities over the API.
+
+To assign an Admin role to an existing user via the API:
+
+```bash
+POST /api/v1/auth/users/<user_id>/roles/
+Authorization: Bearer <superuser_token>
+
+{
+  "role_codes": ["super_admin"]
+}
+```
+
+Or via the Django python shell:
+```python
+user = User.objects.get(email="manager@example.com")
+user.assign_role("admin")
+```
+
+---
+
 ## Organization-Scoped RBAC
 
 When `TENXYTE_ORGANIZATIONS_ENABLED = True`, roles can be scoped to an organization:

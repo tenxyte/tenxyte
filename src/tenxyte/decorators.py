@@ -76,8 +76,9 @@ def require_jwt(view_func):
             return JsonResponse({"error": "Invalid or expired token", "code": "TOKEN_INVALID"}, status=401)
 
         # Vérifier que l'application du token correspond
-        if hasattr(request, "application") and request.application:
-            if str(request.application.id) != payload.get("app_id"):
+        application = getattr(request, "application", None)
+        if application:
+            if str(application.id) != payload.get("app_id"):
                 return JsonResponse(
                     {"error": "Token does not match application", "code": "TOKEN_APP_MISMATCH"}, status=401
                 )
