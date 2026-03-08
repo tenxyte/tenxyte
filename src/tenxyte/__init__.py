@@ -84,7 +84,7 @@ def setup(settings_module=None):
     Call from your settings.py:
         import tenxyte
         tenxyte.setup()
-        
+
     Or pass globals() to modify the settings dict directly:
         import tenxyte
         tenxyte.setup(globals())
@@ -101,16 +101,16 @@ def setup(settings_module=None):
     from django.conf import settings as django_settings
 
     target = settings_module or django_settings
-    
+
     # Check if target is a dict (from globals()) or a module object
     is_dict = isinstance(target, dict)
-    
+
     def get_setting(name, default=None):
         """Get a setting value from either dict or module."""
         if is_dict:
             return target.get(name, default)
         return getattr(target, name, default)
-    
+
     def set_setting(name, value):
         """Set a setting value on either dict or module."""
         if is_dict:
@@ -141,11 +141,11 @@ def setup(settings_module=None):
             "tenxyte.authentication.JWTAuthentication",
         ]
         changed_rf = True
-        
+
     if "DEFAULT_SCHEMA_CLASS" not in rf:
         rf["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
         changed_rf = True
-        
+
     if changed_rf:
         set_setting("REST_FRAMEWORK", rf)
 

@@ -31,7 +31,7 @@ def get_application_from_request(request):
     Returns None if the application attribute doesn't exist or is None.
     This prevents crashes when ApplicationAuthMiddleware is not in the middleware chain.
     """
-    return getattr(request, 'application', None)
+    return getattr(request, "application", None)
 
 
 def validate_application_required(request):
@@ -40,7 +40,7 @@ def validate_application_required(request):
     Returns a Response with error if validation fails, None otherwise.
     """
     from ..conf import auth_settings
-    
+
     if auth_settings.APPLICATION_AUTH_ENABLED:
         application = get_application_from_request(request)
         if not application:
@@ -48,9 +48,9 @@ def validate_application_required(request):
                 {
                     "error": "Application authentication is required but no valid application was found",
                     "code": "APP_AUTH_REQUIRED",
-                    "details": "Please provide valid X-Access-Key and X-Access-Secret headers"
+                    "details": "Please provide valid X-Access-Key and X-Access-Secret headers",
                 },
-                status=status.HTTP_401_UNAUTHORIZED
+                status=status.HTTP_401_UNAUTHORIZED,
             )
     return None
 
@@ -128,7 +128,7 @@ class RegisterView(APIView):
         app_error = validate_application_required(request)
         if app_error:
             return app_error
-        
+
         serializer = RegisterSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(
@@ -148,7 +148,10 @@ class RegisterView(APIView):
             return Response({"error": breach_error, "code": "PASSWORD_BREACHED"}, status=status.HTTP_400_BAD_REQUEST)
 
         success, user, error = auth_service.register_user(
-            **serializer.validated_data, ip_address=ip_address, application=get_application_from_request(request), device_info=device_info
+            **serializer.validated_data,
+            ip_address=ip_address,
+            application=get_application_from_request(request),
+            device_info=device_info,
         )
 
         if not success:
@@ -220,7 +223,10 @@ class RegisterView(APIView):
 
         if login_after:
             tokens = auth_service.generate_tokens_for_user(
-                user=user, application=get_application_from_request(request), ip_address=ip_address, device_info=device_info
+                user=user,
+                application=get_application_from_request(request),
+                ip_address=ip_address,
+                device_info=device_info,
             )
             response_data.update(tokens)
 
@@ -316,7 +322,7 @@ class LoginEmailView(APIView):
         app_error = validate_application_required(request)
         if app_error:
             return app_error
-        
+
         serializer = LoginEmailSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(
@@ -442,7 +448,7 @@ class LoginPhoneView(APIView):
         app_error = validate_application_required(request)
         if app_error:
             return app_error
-        
+
         serializer = LoginPhoneSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(
@@ -563,7 +569,7 @@ class RefreshTokenView(APIView):
         app_error = validate_application_required(request)
         if app_error:
             return app_error
-        
+
         serializer = RefreshTokenSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(
@@ -572,7 +578,8 @@ class RefreshTokenView(APIView):
 
         auth_service = AuthService()
         success, data, error = auth_service.refresh_access_token(
-            refresh_token_str=serializer.validated_data["refresh_token"], application=get_application_from_request(request)
+            refresh_token_str=serializer.validated_data["refresh_token"],
+            application=get_application_from_request(request),
         )
 
         if not success:

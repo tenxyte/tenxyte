@@ -290,7 +290,7 @@ class TwoFactorBackupCodesView(APIView):
                 request_only=True,
                 name="regenerate_backup_codes",
                 summary="Régénérer codes de secours",
-                value={"code": "123456"}
+                value={"code": "123456"},
             ),
             OpenApiExample(
                 response_only=True,
