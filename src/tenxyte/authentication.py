@@ -33,8 +33,9 @@ class JWTAuthentication(BaseAuthentication):
             raise AuthenticationFailed("Token invalide ou expiré")
 
         # Vérifier l'application si présente
-        if hasattr(request, "application") and request.application:
-            if str(request.application.id) != payload.get("app_id"):
+        application = getattr(request, "application", None)
+        if application:
+            if str(application.id) != payload.get("app_id"):
                 raise AuthenticationFailed("Token ne correspond pas à l'application")
 
         # Récupérer l'utilisateur

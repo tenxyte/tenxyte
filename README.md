@@ -6,8 +6,8 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/tenxyte.svg)](https://pypi.org/project/tenxyte/)
 [![Django versions](https://img.shields.io/badge/django-5.0%2B-blue.svg)](https://www.djangoproject.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Coverage](https://img.shields.io/badge/coverage-80%25-brightgreen.svg)]()
-[![Tests](https://img.shields.io/badge/tests-1069%20passing-brightgreen.svg)]()
+[![Coverage](https://codecov.io/gh/tenxyte/tenxyte/graph/badge.svg)](https://codecov.io/gh/tenxyte/tenxyte)
+[![Tests](https://github.com/tenxyte/tenxyte/actions/workflows/ci.yml/badge.svg)](https://github.com/tenxyte/tenxyte/actions/workflows/ci.yml)
 
 ---
 
@@ -90,10 +90,20 @@ pip install tenxyte
 ### 2. Configure (`settings.py` + `urls.py`)
 
 ```python
-# settings.py — add these 2 lines
+# settings.py — Add this at the END of the file (after INSTALLED_APPS, MIDDLEWARE, etc.)
 import tenxyte
-tenxyte.setup()  # auto-configures INSTALLED_APPS, AUTH_USER_MODEL, REST_FRAMEWORK, MIDDLEWARE
+tenxyte.setup(globals())
+
+# `tenxyte.setup(globals())` automatically injects the minimal required configuration:
+# - Sets AUTH_USER_MODEL = 'tenxyte.User'
+# - Adds 'rest_framework' and 'tenxyte' to INSTALLED_APPS
+# - Configures DEFAULT_AUTHENTICATION_CLASSES and DEFAULT_SCHEMA_CLASS for REST_FRAMEWORK
+# - Adds 'tenxyte.middleware.ApplicationAuthMiddleware' to MIDDLEWARE
+# Note: It will NEVER overwrite settings you have already explicitly defined.
 ```
+
+### Understanding `tenxyte.setup()` VS `tenxyte.setup(globals())`
+Passing `globals()` tells Tenxyte to directly modify the local dictionary of variables in your `settings.py`. **This is the recommended and safest approach**, as it strictly ensures that your `INSTALLED_APPS`, `MIDDLEWARE`, and `REST_FRAMEWORK` dictionaries are cleanly appended to without risking module resolution issues. Always place it at the **very bottom** of your `settings.py`.
 
 ```python
 # urls.py
@@ -255,11 +265,30 @@ For more complete examples with responses, see: [docs/endpoints.md](docs/endpoin
 
 ### Interactive Documentation
 
+To enable the interactive documentation endpoints (Swagger UI, ReDoc, and OpenAPI Schema), make sure they are included in your routing, normally done in your main `urls.py`:
+
+```python
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from tenxyte.conf import auth_settings
+
+api_prefix = auth_settings.API_PREFIX.strip('/')
+
+urlpatterns = [
+    # ... your other urls
+    path(f'{api_prefix}/docs/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path(f'{api_prefix}/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path(f'{api_prefix}/docs/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+]
+```
+
+Once configured, start your server:
+
 ```bash
 python manage.py runserver
 
 # Swagger UI: http://localhost:8000/api/v1/docs/
-# ReDoc:      http://localhost:8000/api/v1/redoc/
+# ReDoc:      http://localhost:8000/api/v1/docs/redoc/
+# Schema:     http://localhost:8000/api/v1/docs/schema/
 ```
 
 - [**Static Site**](docs_site/index.html) — Full documentation
@@ -450,7 +479,7 @@ TENXYTE_JWT_AUTH_ENABLED = False          # testing only
 ```bash
 git clone https://github.com/tenxyte/tenxyte.git
 pip install -e ".[dev]"
-pytest                               # 1069 tests, 100% pass rate
+pytest                               # 1553 tests, 100% pass rate
 pytest --cov=tenxyte --cov-report=html
 ```
 
