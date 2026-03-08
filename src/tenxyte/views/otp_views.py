@@ -110,13 +110,15 @@ class RequestOTPView(APIView):
             otp_service.send_phone_otp(request.user, raw_code)
             masked_recipient = _mask_phone(request.user.phone_number)
 
-        return Response({
-            "message": "OTP sent successfully",
-            "otp_id": otp.pk,
-            "expires_at": otp.expires_at.isoformat(),
-            "channel": otp_type,
-            "masked_recipient": masked_recipient,
-        })
+        return Response(
+            {
+                "message": "OTP sent successfully",
+                "otp_id": otp.pk,
+                "expires_at": otp.expires_at.isoformat(),
+                "channel": otp_type,
+                "masked_recipient": masked_recipient,
+            }
+        )
 
 
 class VerifyEmailOTPView(APIView):
@@ -204,11 +206,13 @@ class VerifyEmailOTPView(APIView):
             return Response({"error": error, "code": "OTP_VERIFICATION_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
 
         verified_at = timezone.now().isoformat()
-        return Response({
-            "message": "Email verified successfully",
-            "email_verified": True,
-            "verified_at": verified_at,
-        })
+        return Response(
+            {
+                "message": "Email verified successfully",
+                "email_verified": True,
+                "verified_at": verified_at,
+            }
+        )
 
 
 class VerifyPhoneOTPView(APIView):
@@ -297,10 +301,16 @@ class VerifyPhoneOTPView(APIView):
             return Response({"error": error, "code": "OTP_VERIFICATION_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
 
         verified_at = timezone.now().isoformat()
-        phone_display = f"+{request.user.phone_country_code}{request.user.phone_number}" if request.user.phone_country_code else request.user.phone_number
-        return Response({
-            "message": "Phone verified successfully",
-            "phone_verified": True,
-            "verified_at": verified_at,
-            "phone_number": phone_display,
-        })
+        phone_display = (
+            f"+{request.user.phone_country_code}{request.user.phone_number}"
+            if request.user.phone_country_code
+            else request.user.phone_number
+        )
+        return Response(
+            {
+                "message": "Phone verified successfully",
+                "phone_verified": True,
+                "verified_at": verified_at,
+                "phone_number": phone_display,
+            }
+        )
