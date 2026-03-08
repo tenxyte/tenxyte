@@ -194,14 +194,13 @@ class AgentTokenListCreateView(APIView):
         budget_limit_usd = data.get("budget_limit_usd")
 
         # Requires application
-        if not hasattr(request, "application") or not request.application:
+        application = getattr(request, "application", None)
+        if not application:
             Application = get_application_model()
             app = Application.objects.filter(is_active=True).first()
             if not app:
                 return JsonResponse({"error": "Application context required"}, status=400)
             application = app
-        else:
-            application = request.application
 
         organization = None
         if organization_slug:

@@ -23,10 +23,22 @@ pip install tenxyte
 ## 2. Configure `settings.py`
 
 ```python
-# settings.py — add these 2 lines
+# settings.py — Add this at the END of the file (after INSTALLED_APPS, MIDDLEWARE, etc.)
 import tenxyte
-tenxyte.setup()  # auto-configures INSTALLED_APPS, AUTH_USER_MODEL, REST_FRAMEWORK, MIDDLEWARE
+tenxyte.setup(globals())
+
+# `tenxyte.setup(globals())` automatically injects the minimal required configuration:
+# - Sets AUTH_USER_MODEL = 'tenxyte.User'
+# - Adds 'rest_framework' and 'tenxyte' to INSTALLED_APPS
+# - Configures DEFAULT_AUTHENTICATION_CLASSES and DEFAULT_SCHEMA_CLASS for REST_FRAMEWORK
+# - Adds 'tenxyte.middleware.ApplicationAuthMiddleware' to MIDDLEWARE
+# Note: It will NEVER overwrite settings you have already explicitly defined.
 ```
+
+### Understanding `tenxyte.setup()` VS `tenxyte.setup(globals())`
+By default, calling `tenxyte.setup()` will try to find the Django settings module and modify its properties. However, inside your `settings.py` file, standard variables you just defined (like `INSTALLED_APPS` or `MIDDLEWARE`) might not be fully loaded into the module registry yet. 
+
+Passing `globals()` tells Tenxyte to directly modify the local dictionary of variables in your `settings.py`. **This is the recommended and safest approach**, as it strictly ensures that your `INSTALLED_APPS`, `MIDDLEWARE`, and `REST_FRAMEWORK` dictionaries are cleanly appended to without risking module resolution issues. Always place it at the **very bottom** of your `settings.py`.
 
 Then add the URLs:
 
@@ -61,6 +73,16 @@ This single command executes:
 | `--no-seed` | Skip seeding roles and permissions |
 | `--no-app` | Skip creating the default Application |
 | `--app-name "My App"` | Custom name for the default Application |
+
+## 4. Create an Admin Account
+
+Some features and views (like the Django Admin Panel or RBAC configuration) require an administrator account. You can create your initial Superuser using the standard Django command:
+
+```bash
+python manage.py createsuperuser
+```
+
+Follow the prompts to set your email and password. This account is created with `is_staff=True` and `is_superuser=True`, granting you full access to all endpoints, including the built-in `http://localhost:8000/admin/` interface.
 
 ## ✅ Ready!
 

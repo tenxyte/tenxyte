@@ -1,0 +1,2431 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://tenxyte.readthedocs.io/rbac/">
+      
+      
+        <link rel="prev" href="../applications/">
+      
+      
+        <link rel="next" href="../security/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.15">
+    
+    
+      
+        <title>RBAC Guide - Tenxyte Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.7e359304.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#rbac-guide-roles-permissions-decorators" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Tenxyte Documentation" class="md-header__button md-logo" aria-label="Tenxyte Documentation" data-md-component="logo">
+      
+  <img src="https://github.com/tenxyte/tenxyte/raw/main/docs/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Tenxyte Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              RBAC Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/tenxyte/tenxyte" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    tenxyte/tenxyte
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../quickstart/" class="md-tabs__link">
+        
+  
+    
+  
+  Quickstart
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../settings/" class="md-tabs__link">
+          
+  
+  Developer Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../periodic_tasks/" class="md-tabs__link">
+          
+  
+  Operations & Maintenance
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../CONTRIBUTING/" class="md-tabs__link">
+          
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Tenxyte Documentation" class="md-nav__button md-logo" aria-label="Tenxyte Documentation" data-md-component="logo">
+      
+  <img src="https://github.com/tenxyte/tenxyte/raw/main/docs/logo.png" alt="logo">
+
+    </a>
+    Tenxyte Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/tenxyte/tenxyte" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    tenxyte/tenxyte
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quickstart
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Developer Guides
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Developer Guides
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../settings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Settings Reference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../endpoints/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    API Endpoints
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schemas/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Schemas
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../airs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    AIRs Reference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admin/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Admin Accounts
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../applications/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Applications Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    RBAC Guide
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    RBAC Guide
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table of Contents
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Concepts
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concepts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permissions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permission-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permission Hierarchy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Roles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permission-resolution-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permission Resolution Order
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-rbac-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      User RBAC Methods
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User RBAC Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#permission-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permission Methods
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#role-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Role Methods
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decorators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Decorators
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decorators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#require_permission" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_permission
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_any_permission" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_any_permission
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_all_permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_all_permissions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_role" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_role
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_any_role" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_any_role
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_all_roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_all_roles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_jwt" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_jwt
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_verified_email" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_verified_email
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_verified_phone" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_verified_phone
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#combining-decorators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Combining Decorators
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-endpoints-for-rbac-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      API Endpoints for RBAC Management
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API Endpoints for RBAC Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#permissions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permissions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roles_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Roles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#user-roles-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      User Roles &amp; Permissions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assigning-admin-roles-superusers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Assigning Admin Roles &amp; Superusers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Assigning Admin Roles & Superusers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-django-superuser-is_superusertrue" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Django Superuser (is_superuser=True)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-rbac-admin-roles-super_admin-or-admin" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. RBAC Admin Roles (super_admin or admin)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organization-scoped-rbac" class="md-nav__link">
+    <span class="md-ellipsis">
+      Organization-Scoped RBAC
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#default-roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default Roles
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-permission-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Built-in Permission Codes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Built-in Permission Codes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#users" class="md-nav__link">
+    <span class="md-ellipsis">
+      Users
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roles-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Roles &amp; Permissions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#applications" class="md-nav__link">
+    <span class="md-ellipsis">
+      Applications
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#content-generic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Content (generic)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#system-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      System &amp; Security
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#seeding-customization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Seeding &amp; Customization
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Seeding & Customization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tenxyte_seed-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      tenxyte_seed Command
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#swappable-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      Swappable Models
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Security Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../organizations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Organizations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Operations & Maintenance
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Operations & Maintenance
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../periodic_tasks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Periodic Tasks
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Troubleshooting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MIGRATION_GUIDE/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Migration Guide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Runbooks
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            Runbooks
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/deployment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Deployment
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/incident_response/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Incident Response
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/rollback/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Rollback
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Contributing
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Contributing
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributing Guidelines
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../TESTING/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Testing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table of Contents
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Concepts
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concepts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permissions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permission-hierarchy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permission Hierarchy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Roles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permission-resolution-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permission Resolution Order
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-rbac-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      User RBAC Methods
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User RBAC Methods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#permission-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permission Methods
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#role-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Role Methods
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decorators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Decorators
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decorators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#require_permission" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_permission
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_any_permission" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_any_permission
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_all_permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_all_permissions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_role" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_role
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_any_role" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_any_role
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_all_roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_all_roles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_jwt" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_jwt
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_verified_email" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_verified_email
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#require_verified_phone" class="md-nav__link">
+    <span class="md-ellipsis">
+      @require_verified_phone
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#combining-decorators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Combining Decorators
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-endpoints-for-rbac-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      API Endpoints for RBAC Management
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API Endpoints for RBAC Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#permissions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Permissions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roles_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Roles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#user-roles-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      User Roles &amp; Permissions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assigning-admin-roles-superusers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Assigning Admin Roles &amp; Superusers
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Assigning Admin Roles & Superusers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-django-superuser-is_superusertrue" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Django Superuser (is_superuser=True)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-rbac-admin-roles-super_admin-or-admin" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. RBAC Admin Roles (super_admin or admin)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organization-scoped-rbac" class="md-nav__link">
+    <span class="md-ellipsis">
+      Organization-Scoped RBAC
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#default-roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default Roles
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-permission-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Built-in Permission Codes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Built-in Permission Codes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#users" class="md-nav__link">
+    <span class="md-ellipsis">
+      Users
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roles-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Roles &amp; Permissions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#applications" class="md-nav__link">
+    <span class="md-ellipsis">
+      Applications
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#content-generic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Content (generic)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#system-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      System &amp; Security
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#seeding-customization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Seeding &amp; Customization
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Seeding & Customization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tenxyte_seed-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      tenxyte_seed Command
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#swappable-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      Swappable Models
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="rbac-guide-roles-permissions-decorators">RBAC Guide — Roles, Permissions &amp; Decorators</h1>
+<p>Tenxyte provides a flexible Role-Based Access Control (RBAC) system with:
+- <strong>Permissions</strong> — atomic capabilities (e.g. <code>posts.publish</code>, <code>users.ban</code>)
+- <strong>Roles</strong> — named groups of permissions with optional hierarchy
+- <strong>Decorators</strong> — protect views with a single line of code</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#concepts">Concepts</a></li>
+<li><a href="#permissions">Permissions</a></li>
+<li><a href="#permission-hierarchy">Permission Hierarchy</a></li>
+<li><a href="#roles">Roles</a></li>
+<li><a href="#permission-resolution-order">Permission Resolution Order</a></li>
+<li><a href="#user-rbac-methods">User RBAC Methods</a></li>
+<li><a href="#decorators">Decorators</a></li>
+<li><a href="#require_permission"><code>@require_permission</code></a></li>
+<li><a href="#require_any_permission"><code>@require_any_permission</code></a></li>
+<li><a href="#require_all_permissions"><code>@require_all_permissions</code></a></li>
+<li><a href="#require_role"><code>@require_role</code></a></li>
+<li><a href="#require_any_role"><code>@require_any_role</code></a></li>
+<li><a href="#require_all_roles"><code>@require_all_roles</code></a></li>
+<li><a href="#require_jwt"><code>@require_jwt</code></a></li>
+<li><a href="#require_verified_email"><code>@require_verified_email</code></a></li>
+<li><a href="#require_verified_phone"><code>@require_verified_phone</code></a></li>
+<li><a href="#combining-decorators">Combining Decorators</a></li>
+<li><a href="#api-endpoints-for-rbac-management">API Endpoints for RBAC Management</a></li>
+<li><a href="#permissions-1">Permissions</a></li>
+<li><a href="#roles-1">Roles</a></li>
+<li><a href="#user-roles--permissions">User Roles &amp; Permissions</a></li>
+<li><a href="#organization-scoped-rbac">Organization-Scoped RBAC</a></li>
+<li><a href="#default-roles">Default Roles</a></li>
+<li><a href="#built-in-permission-codes">Built-in Permission Codes</a></li>
+<li><a href="#seeding--customization">Seeding &amp; Customization</a></li>
+<li><a href="#tenxyte_seed-command"><code>tenxyte_seed</code> Command</a></li>
+<li><a href="#swappable-models">Swappable Models</a></li>
+</ul>
+<hr />
+<h2 id="concepts">Concepts</h2>
+<h3 id="permissions">Permissions</h3>
+<p>A permission is a string code like <code>users.view</code>, <code>posts.publish</code>, <code>billing.manage</code>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Permission</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Create</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">perm</span> <span class="o">=</span> <span class="n">Permission</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;posts.publish&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Publish Posts&quot;</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># Assign directly to a user</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">user</span><span class="o">.</span><span class="n">direct_permissions</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">perm</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Check</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">user</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="s2">&quot;posts.publish&quot;</span><span class="p">)</span>  <span class="c1"># True</span>
+</span></code></pre></div>
+<h3 id="permission-hierarchy">Permission Hierarchy</h3>
+<p>Permissions support parent/child relationships. Having a parent permission automatically grants all its children.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Permission</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Create a parent permission</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">content</span> <span class="o">=</span> <span class="n">Permission</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;All Content&quot;</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Create children — having &quot;content&quot; grants both automatically</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">Permission</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;content.edit&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Edit Content&quot;</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">content</span><span class="p">)</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">Permission</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;content.publish&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Publish Content&quot;</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">content</span><span class="p">)</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># A user with the parent has all children</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="n">user</span><span class="o">.</span><span class="n">direct_permissions</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">user</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="s2">&quot;content.edit&quot;</span><span class="p">)</span>     <span class="c1"># True (inherited from parent)</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="n">user</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="s2">&quot;content.publish&quot;</span><span class="p">)</span>  <span class="c1"># True (inherited from parent)</span>
+</span></code></pre></div>
+<h3 id="roles">Roles</h3>
+<p>A role groups multiple permissions. Each role has a unique <code>code</code> identifier.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Role</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># Create a role (code is required and must be unique)</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">editor</span> <span class="o">=</span> <span class="n">Role</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;editor&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Editor&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Can edit content&quot;</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">editor</span><span class="o">.</span><span class="n">permissions</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Permission</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;posts.edit&quot;</span><span class="p">))</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Create another role</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">publisher</span> <span class="o">=</span> <span class="n">Role</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;publisher&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Publisher&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Can publish content&quot;</span><span class="p">)</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">publisher</span><span class="o">.</span><span class="n">permissions</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">Permission</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;posts.publish&quot;</span><span class="p">))</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="c1"># Assign to user</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">user</span><span class="o">.</span><span class="n">roles</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">editor</span><span class="p">)</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="c1"># Check</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="n">user</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="s2">&quot;posts.edit&quot;</span><span class="p">)</span>    <span class="c1"># True (from editor role)</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">user</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="s2">&quot;posts.publish&quot;</span><span class="p">)</span> <span class="c1"># False (only publisher has it)</span>
+</span></code></pre></div>
+<h3 id="permission-resolution-order">Permission Resolution Order</h3>
+<p>When checking <code>user.has_permission("x")</code>, Tenxyte checks:
+1. User's <strong>direct permissions</strong> and permissions from user's <strong>roles</strong> (checked together in a single query)
+2. <strong>Permission hierarchy</strong> — if the permission has ancestors (via <code>parent</code>), checks if any ancestor permission is assigned to the user</p>
+<hr />
+<h2 id="user-rbac-methods">User RBAC Methods</h2>
+<p>The <code>User</code> model provides these built-in methods for RBAC:</p>
+<h3 id="permission-methods">Permission Methods</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Single permission check (includes roles, direct, and hierarchy)</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">user</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="s2">&quot;posts.publish&quot;</span><span class="p">)</span>             <span class="c1"># bool</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Multiple permission checks</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">user</span><span class="o">.</span><span class="n">has_any_permission</span><span class="p">([</span><span class="s2">&quot;posts.edit&quot;</span><span class="p">,</span> <span class="s2">&quot;posts.publish&quot;</span><span class="p">])</span>   <span class="c1"># True if at least one</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">user</span><span class="o">.</span><span class="n">has_all_permissions</span><span class="p">([</span><span class="s2">&quot;posts.edit&quot;</span><span class="p">,</span> <span class="s2">&quot;posts.publish&quot;</span><span class="p">])</span>  <span class="c1"># True if all</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="c1"># List all effective permissions (roles + direct + hierarchy)</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">user</span><span class="o">.</span><span class="n">get_all_permissions</span><span class="p">()</span>  <span class="c1"># [&#39;posts.edit&#39;, &#39;posts.publish&#39;, ...]</span>
+</span></code></pre></div>
+<h3 id="role-methods">Role Methods</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Check roles</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">user</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">)</span>                           <span class="c1"># bool</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">user</span><span class="o">.</span><span class="n">has_any_role</span><span class="p">([</span><span class="s2">&quot;admin&quot;</span><span class="p">,</span> <span class="s2">&quot;editor&quot;</span><span class="p">])</span>            <span class="c1"># True if at least one</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">user</span><span class="o">.</span><span class="n">has_all_roles</span><span class="p">([</span><span class="s2">&quot;admin&quot;</span><span class="p">,</span> <span class="s2">&quot;editor&quot;</span><span class="p">])</span>           <span class="c1"># True if all</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># Assign / remove roles</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">user</span><span class="o">.</span><span class="n">assign_role</span><span class="p">(</span><span class="s2">&quot;editor&quot;</span><span class="p">)</span>    <span class="c1"># True if assigned, False if role not found</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">user</span><span class="o">.</span><span class="n">remove_role</span><span class="p">(</span><span class="s2">&quot;editor&quot;</span><span class="p">)</span>    <span class="c1"># True if removed, False if role not found</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="c1"># List all role codes</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="n">user</span><span class="o">.</span><span class="n">get_all_roles</span><span class="p">()</span>          <span class="c1"># [&#39;editor&#39;, &#39;viewer&#39;]</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># Assign the default role (is_default=True)</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="n">user</span><span class="o">.</span><span class="n">assign_default_role</span><span class="p">()</span>
+</span></code></pre></div>
+<hr />
+<h2 id="decorators">Decorators</h2>
+<h3 id="require_permission"><code>@require_permission</code></h3>
+<p>Protect a view method — returns <code>403</code> if the user lacks the permission.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_permission</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">PostPublishView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="nd">@require_permission</span><span class="p">(</span><span class="s1">&#39;posts.publish&#39;</span><span class="p">)</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>        <span class="o">...</span>
+</span></code></pre></div>
+<h3 id="require_any_permission"><code>@require_any_permission</code></h3>
+<p>Allow access if the user has <strong>at least one</strong> of the listed permissions.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_any_permission</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">ContentView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="nd">@require_any_permission</span><span class="p">([</span><span class="s1">&#39;posts.edit&#39;</span><span class="p">,</span> <span class="s1">&#39;posts.publish&#39;</span><span class="p">])</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        <span class="o">...</span>
+</span></code></pre></div>
+<h3 id="require_all_permissions"><code>@require_all_permissions</code></h3>
+<p>Allow access only if the user has <strong>all</strong> listed permissions.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_all_permissions</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">AdminView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="nd">@require_all_permissions</span><span class="p">([</span><span class="s1">&#39;users.view&#39;</span><span class="p">,</span> <span class="s1">&#39;users.manage&#39;</span><span class="p">])</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="o">...</span>
+</span></code></pre></div>
+<h3 id="require_role"><code>@require_role</code></h3>
+<p>Allow access only if the user has a specific role (by <strong>code</strong>, not name).</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_role</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">EditorView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="nd">@require_role</span><span class="p">(</span><span class="s1">&#39;editor&#39;</span><span class="p">)</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="o">...</span>
+</span></code></pre></div>
+<h3 id="require_any_role"><code>@require_any_role</code></h3>
+<p>Allow access if the user has <strong>at least one</strong> of the listed roles.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_any_role</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">StaffView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="nd">@require_any_role</span><span class="p">([</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span> <span class="s1">&#39;editor&#39;</span><span class="p">])</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>        <span class="o">...</span>
+</span></code></pre></div>
+<h3 id="require_all_roles"><code>@require_all_roles</code></h3>
+<p>Allow access only if the user has <strong>all</strong> listed roles.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_all_roles</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">SuperStaffView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="nd">@require_all_roles</span><span class="p">([</span><span class="s1">&#39;admin&#39;</span><span class="p">,</span> <span class="s1">&#39;editor&#39;</span><span class="p">])</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>        <span class="o">...</span>
+</span></code></pre></div>
+<h3 id="require_jwt"><code>@require_jwt</code></h3>
+<p>Require a valid JWT access token. Returns <code>401</code> if missing or invalid.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_jwt</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">ProtectedView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="nd">@require_jwt</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>        <span class="c1"># request.user is set</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>        <span class="o">...</span>
+</span></code></pre></div>
+<h3 id="require_verified_email"><code>@require_verified_email</code></h3>
+<p>Require the user's email to be verified.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_verified_email</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">SensitiveView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="nd">@require_verified_email</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>        <span class="o">...</span>
+</span></code></pre></div>
+<h3 id="require_verified_phone"><code>@require_verified_phone</code></h3>
+<p>Require the user's phone number to be verified. Includes JWT validation.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_verified_phone</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">PhoneRequiredView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="nd">@require_verified_phone</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>        <span class="o">...</span>
+</span></code></pre></div>
+<hr />
+<h2 id="combining-decorators">Combining Decorators</h2>
+<p>Decorators can be stacked — they are applied bottom-up:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">AdminOnlyView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    <span class="nd">@require_permission</span><span class="p">(</span><span class="s1">&#39;admin.access&#39;</span><span class="p">)</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="nd">@require_verified_email</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>        <span class="o">...</span>
+</span></code></pre></div>
+<blockquote>
+<p><strong>Note:</strong> <code>@require_permission</code>, <code>@require_any_permission</code>, <code>@require_all_permissions</code>, <code>@require_role</code>, and <code>@require_verified_email</code> all include JWT validation internally — no need to add <code>@require_jwt</code> explicitly when using them.</p>
+</blockquote>
+<hr />
+<h2 id="api-endpoints-for-rbac-management">API Endpoints for RBAC Management</h2>
+<h3 id="permissions_1">Permissions</h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># List all permissions</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>GET<span class="w"> </span>/api/v1/auth/permissions/
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="c1"># Create a permission</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>POST<span class="w"> </span>/api/v1/auth/permissions/
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="o">{</span><span class="w"> </span><span class="s2">&quot;code&quot;</span>:<span class="w"> </span><span class="s2">&quot;posts.publish&quot;</span>,<span class="w"> </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;Publish Posts&quot;</span><span class="w"> </span><span class="o">}</span>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="c1"># Get / Update / Delete</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>GET<span class="w">    </span>/api/v1/auth/permissions/&lt;id&gt;/
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>PUT<span class="w">    </span>/api/v1/auth/permissions/&lt;id&gt;/
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>DELETE<span class="w"> </span>/api/v1/auth/permissions/&lt;id&gt;/
+</span></code></pre></div>
+<h3 id="roles_1">Roles</h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># List all roles</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>GET<span class="w"> </span>/api/v1/auth/roles/
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="c1"># Create a role</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>POST<span class="w"> </span>/api/v1/auth/roles/
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="o">{</span><span class="w"> </span><span class="s2">&quot;code&quot;</span>:<span class="w"> </span><span class="s2">&quot;editor&quot;</span>,<span class="w"> </span><span class="s2">&quot;name&quot;</span>:<span class="w"> </span><span class="s2">&quot;Editor&quot;</span>,<span class="w"> </span><span class="s2">&quot;description&quot;</span>:<span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="w"> </span><span class="o">}</span>
+</span><span id="__span-16-7"><a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>
+</span><span id="__span-16-8"><a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="c1"># Get / Update / Delete</span>
+</span><span id="__span-16-9"><a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>GET<span class="w">    </span>/api/v1/auth/roles/&lt;id&gt;/
+</span><span id="__span-16-10"><a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>PUT<span class="w">    </span>/api/v1/auth/roles/&lt;id&gt;/
+</span><span id="__span-16-11"><a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>DELETE<span class="w"> </span>/api/v1/auth/roles/&lt;id&gt;/
+</span><span id="__span-16-12"><a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>
+</span><span id="__span-16-13"><a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a><span class="c1"># Manage role permissions</span>
+</span><span id="__span-16-14"><a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>GET<span class="w">  </span>/api/v1/auth/roles/&lt;id&gt;/permissions/
+</span><span id="__span-16-15"><a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>POST<span class="w"> </span>/api/v1/auth/roles/&lt;id&gt;/permissions/
+</span><span id="__span-16-16"><a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a><span class="o">{</span><span class="w"> </span><span class="s2">&quot;permission_codes&quot;</span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;posts.publish&quot;</span>,<span class="w"> </span><span class="s2">&quot;posts.edit&quot;</span><span class="o">]</span><span class="w"> </span><span class="o">}</span>
+</span></code></pre></div>
+<h3 id="user-roles-permissions">User Roles &amp; Permissions</h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Assign/remove roles</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>GET<span class="w">    </span>/api/v1/auth/users/&lt;id&gt;/roles/
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>POST<span class="w">   </span>/api/v1/auth/users/&lt;id&gt;/roles/
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>DELETE<span class="w"> </span>/api/v1/auth/users/&lt;id&gt;/roles/
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="c1"># Assign/remove direct permissions</span>
+</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>GET<span class="w">    </span>/api/v1/auth/users/&lt;id&gt;/permissions/
+</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>POST<span class="w">   </span>/api/v1/auth/users/&lt;id&gt;/permissions/
+</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>DELETE<span class="w"> </span>/api/v1/auth/users/&lt;id&gt;/permissions/
+</span></code></pre></div>
+<hr />
+<h2 id="assigning-admin-roles-superusers">Assigning Admin Roles &amp; Superusers</h2>
+<p>There are two primary ways to grant administrative privileges in Tenxyte:</p>
+<h3 id="1-django-superuser-is_superusertrue">1. Django Superuser (<code>is_superuser=True</code>)</h3>
+<p>A superuser bypasses all RBAC permission checks automatically. They also have access to the Django Admin interface (<code>/admin/</code>).
+You typically create your first superuser via the command line:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>python<span class="w"> </span>manage.py<span class="w"> </span>createsuperuser
+</span></code></pre></div>
+<p><em>Note: Superusers do not need to be explicitly assigned the <code>admin</code> or <code>super_admin</code> RBAC roles.</em></p>
+<h3 id="2-rbac-admin-roles-super_admin-or-admin">2. RBAC Admin Roles (<code>super_admin</code> or <code>admin</code>)</h3>
+<p>These are standard users assigned a role that contains high-level permissions. They don't have access to the Django Admin panel (unless <code>is_staff=True</code>), but they have administrative capabilities over the API.</p>
+<p>To assign an Admin role to an existing user via the API:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>POST<span class="w"> </span>/api/v1/auth/users/&lt;user_id&gt;/roles/
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;superuser_token&gt;
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="o">{</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span><span class="s2">&quot;role_codes&quot;</span>:<span class="w"> </span><span class="o">[</span><span class="s2">&quot;super_admin&quot;</span><span class="o">]</span>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="o">}</span>
+</span></code></pre></div>
+<p>Or via the Django python shell:
+<div class="language-python highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">email</span><span class="o">=</span><span class="s2">&quot;manager@example.com&quot;</span><span class="p">)</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="n">user</span><span class="o">.</span><span class="n">assign_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">)</span>
+</span></code></pre></div></p>
+<hr />
+<h2 id="organization-scoped-rbac">Organization-Scoped RBAC</h2>
+<p>When <code>TENXYTE_ORGANIZATIONS_ENABLED = True</code>, roles can be scoped to an organization:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># A user can be &quot;Admin&quot; in Org A but &quot;Viewer&quot; in Org B</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="n">membership</span> <span class="o">=</span> <span class="n">OrganizationMembership</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">organization</span><span class="o">=</span><span class="n">org_a</span><span class="p">)</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="n">membership</span><span class="o">.</span><span class="n">role</span>  <span class="c1"># OrganizationRole scoped to org_a</span>
+</span></code></pre></div>
+<p>Use <code>@require_org_permission</code> to check org-scoped permissions:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_org_permission</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">OrgAdminView</span><span class="p">(</span><span class="n">APIView</span><span class="p">):</span>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>    <span class="nd">@require_org_permission</span><span class="p">(</span><span class="s1">&#39;org.manage&#39;</span><span class="p">)</span>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">):</span>
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>        <span class="c1"># request.organization is set by the middleware</span>
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>        <span class="o">...</span>
+</span></code></pre></div>
+<p>See <a href="../organizations/">organizations.md</a> for the full Organizations guide.</p>
+<hr />
+<h2 id="default-roles">Default Roles</h2>
+<p>Tenxyte seeds 4 default roles via <code>tenxyte_seed</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Name</th>
+<th>Default</th>
+<th>Permissions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>viewer</code></td>
+<td>Viewer</td>
+<td>✅</td>
+<td><code>content.view</code></td>
+</tr>
+<tr>
+<td><code>editor</code></td>
+<td>Editor</td>
+<td>—</td>
+<td><code>content.view</code>, <code>content.create</code>, <code>content.edit</code></td>
+</tr>
+<tr>
+<td><code>admin</code></td>
+<td>Administrator</td>
+<td>—</td>
+<td>Content + Users + Roles view + Permissions view</td>
+</tr>
+<tr>
+<td><code>super_admin</code></td>
+<td>Super Administrator</td>
+<td>—</td>
+<td><strong>All permissions</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note:</strong> The <code>viewer</code> role is the default role (<code>is_default=True</code>) — it is automatically assigned to new users when calling <code>user.assign_default_role()</code>.</p>
+</blockquote>
+<hr />
+<h2 id="built-in-permission-codes">Built-in Permission Codes</h2>
+<p>Tenxyte seeds 41 permissions via <code>tenxyte_seed</code>. Parent permissions (bold) grant all their children via hierarchy.</p>
+<h3 id="users">Users</h3>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>users</code></strong></td>
+<td>All user permissions (parent)</td>
+</tr>
+<tr>
+<td><code>users.view</code></td>
+<td>View user list and details</td>
+</tr>
+<tr>
+<td><code>users.create</code></td>
+<td>Create new users</td>
+</tr>
+<tr>
+<td><code>users.edit</code></td>
+<td>Edit user information</td>
+</tr>
+<tr>
+<td><code>users.delete</code></td>
+<td>Delete users</td>
+</tr>
+<tr>
+<td><code>users.ban</code></td>
+<td>Ban/unban users</td>
+</tr>
+<tr>
+<td><code>users.lock</code></td>
+<td>Lock/unlock user accounts</td>
+</tr>
+<tr>
+<td><strong><code>users.roles</code></strong></td>
+<td>All user role permissions (parent)</td>
+</tr>
+<tr>
+<td><code>users.roles.view</code></td>
+<td>View user roles</td>
+</tr>
+<tr>
+<td><code>users.roles.assign</code></td>
+<td>Assign roles to users</td>
+</tr>
+<tr>
+<td><code>users.roles.remove</code></td>
+<td>Remove roles from users</td>
+</tr>
+<tr>
+<td><strong><code>users.permissions</code></strong></td>
+<td>All user direct permission management (parent)</td>
+</tr>
+<tr>
+<td><code>users.permissions.view</code></td>
+<td>View user direct permissions</td>
+</tr>
+<tr>
+<td><code>users.permissions.assign</code></td>
+<td>Assign direct permissions to users</td>
+</tr>
+<tr>
+<td><code>users.permissions.remove</code></td>
+<td>Remove direct permissions from users</td>
+</tr>
+</tbody>
+</table>
+<h3 id="roles-permissions">Roles &amp; Permissions</h3>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>roles</code></strong></td>
+<td>All role permissions (parent)</td>
+</tr>
+<tr>
+<td><code>roles.view</code></td>
+<td>View role list and details</td>
+</tr>
+<tr>
+<td><code>roles.create</code></td>
+<td>Create new roles</td>
+</tr>
+<tr>
+<td><code>roles.update</code></td>
+<td>Update role information</td>
+</tr>
+<tr>
+<td><code>roles.delete</code></td>
+<td>Delete roles</td>
+</tr>
+<tr>
+<td><code>roles.manage_permissions</code></td>
+<td>Assign/remove permissions from roles</td>
+</tr>
+<tr>
+<td><strong><code>permissions</code></strong></td>
+<td>All permission permissions (parent)</td>
+</tr>
+<tr>
+<td><code>permissions.view</code></td>
+<td>View permission list</td>
+</tr>
+<tr>
+<td><code>permissions.create</code></td>
+<td>Create new permissions</td>
+</tr>
+<tr>
+<td><code>permissions.update</code></td>
+<td>Update permission information</td>
+</tr>
+<tr>
+<td><code>permissions.delete</code></td>
+<td>Delete permissions</td>
+</tr>
+</tbody>
+</table>
+<h3 id="applications">Applications</h3>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>applications</code></strong></td>
+<td>All application permissions (parent)</td>
+</tr>
+<tr>
+<td><code>applications.view</code></td>
+<td>View application list and details</td>
+</tr>
+<tr>
+<td><code>applications.create</code></td>
+<td>Create new applications</td>
+</tr>
+<tr>
+<td><code>applications.update</code></td>
+<td>Update application information</td>
+</tr>
+<tr>
+<td><code>applications.delete</code></td>
+<td>Delete applications</td>
+</tr>
+<tr>
+<td><code>applications.regenerate</code></td>
+<td>Regenerate application credentials</td>
+</tr>
+</tbody>
+</table>
+<h3 id="content-generic">Content (generic)</h3>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>content</code></strong></td>
+<td>All content permissions (parent)</td>
+</tr>
+<tr>
+<td><code>content.view</code></td>
+<td>View content</td>
+</tr>
+<tr>
+<td><code>content.create</code></td>
+<td>Create content</td>
+</tr>
+<tr>
+<td><code>content.edit</code></td>
+<td>Edit content</td>
+</tr>
+<tr>
+<td><code>content.delete</code></td>
+<td>Delete content</td>
+</tr>
+<tr>
+<td><code>content.publish</code></td>
+<td>Publish content</td>
+</tr>
+</tbody>
+</table>
+<h3 id="system-security">System &amp; Security</h3>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>system</code></strong></td>
+<td>All system permissions (parent)</td>
+</tr>
+<tr>
+<td><code>system.admin</code></td>
+<td>Full system administration access</td>
+</tr>
+<tr>
+<td><code>system.settings</code></td>
+<td>Manage system settings</td>
+</tr>
+<tr>
+<td><code>system.logs</code></td>
+<td>View system logs</td>
+</tr>
+<tr>
+<td><code>system.audit</code></td>
+<td>View audit trail</td>
+</tr>
+<tr>
+<td><code>dashboard.view</code></td>
+<td>Access dashboard statistics</td>
+</tr>
+<tr>
+<td><code>security.view</code></td>
+<td>View audit logs, login attempts, tokens</td>
+</tr>
+<tr>
+<td><code>gdpr.admin</code></td>
+<td>View deletion requests</td>
+</tr>
+<tr>
+<td><code>gdpr.process</code></td>
+<td>Process deletion requests</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="seeding-customization">Seeding &amp; Customization</h2>
+<h3 id="tenxyte_seed-command"><code>tenxyte_seed</code> Command</h3>
+<p>Seed the default permissions and roles into the database:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># Seed all defaults</span>
+</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>python<span class="w"> </span>manage.py<span class="w"> </span>tenxyte_seed
+</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>
+</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="c1"># Options</span>
+</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>python<span class="w"> </span>manage.py<span class="w"> </span>tenxyte_seed<span class="w"> </span>--no-permissions<span class="w">   </span><span class="c1"># Skip permissions</span>
+</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>python<span class="w"> </span>manage.py<span class="w"> </span>tenxyte_seed<span class="w"> </span>--no-roles<span class="w">          </span><span class="c1"># Skip roles</span>
+</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>python<span class="w"> </span>manage.py<span class="w"> </span>tenxyte_seed<span class="w"> </span>--force<span class="w">              </span><span class="c1"># Delete and recreate all</span>
+</span></code></pre></div>
+<p>This command is idempotent — running it multiple times will not create duplicates.</p>
+<h3 id="swappable-models">Swappable Models</h3>
+<p>All RBAC models can be replaced with custom implementations:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># settings.py</span>
+</span><span id="__span-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="n">TENXYTE_PERMISSION_MODEL</span> <span class="o">=</span> <span class="s1">&#39;myapp.CustomPermission&#39;</span>  <span class="c1"># extends AbstractPermission</span>
+</span><span id="__span-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="n">TENXYTE_ROLE_MODEL</span> <span class="o">=</span> <span class="s1">&#39;myapp.CustomRole&#39;</span>              <span class="c1"># extends AbstractRole</span>
+</span><span id="__span-24-4"><a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="n">TENXYTE_USER_MODEL</span> <span class="o">=</span> <span class="s1">&#39;myapp.CustomUser&#39;</span>              <span class="c1"># extends AbstractUser</span>
+</span></code></pre></div>
+<p>Example custom permission model:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbstractPermission</span>
+</span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>
+</span><span id="__span-25-3"><a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">CustomPermission</span><span class="p">(</span><span class="n">AbstractPermission</span><span class="p">):</span>
+</span><span id="__span-25-4"><a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>    <span class="n">category</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">CharField</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+</span><span id="__span-25-5"><a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>    <span class="n">is_system</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">BooleanField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-25-6"><a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>
+</span><span id="__span-25-7"><a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>    <span class="k">class</span><span class="w"> </span><span class="nc">Meta</span><span class="p">(</span><span class="n">AbstractPermission</span><span class="o">.</span><span class="n">Meta</span><span class="p">):</span>
+</span><span id="__span-25-8"><a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>        <span class="n">db_table</span> <span class="o">=</span> <span class="s1">&#39;custom_permissions&#39;</span>
+</span></code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.bd41221c.min.js"></script>
+      
+    
+  </body>
+</html>

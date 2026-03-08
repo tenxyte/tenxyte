@@ -10,6 +10,24 @@ class TenxyteConfig(AppConfig):
     verbose_name = "Tenxyte Authentication"
     default_auto_field = "django.db.models.BigAutoField"
 
+    def __init__(self, app_name, app_module):
+        super().__init__(app_name, app_module)
+        from django.conf import settings
+
+        # Set default values for swappable models if not already set
+        defaults = {
+            "TENXYTE_ORGANIZATION_MODEL": "tenxyte.Organization",
+            "TENXYTE_ORGANIZATION_ROLE_MODEL": "tenxyte.OrganizationRole",
+            "TENXYTE_ORGANIZATION_MEMBERSHIP_MODEL": "tenxyte.OrganizationMembership",
+            "TENXYTE_APPLICATION_MODEL": "tenxyte.Application",
+            "TENXYTE_PERMISSION_MODEL": "tenxyte.Permission",
+            "TENXYTE_ROLE_MODEL": "tenxyte.Role",
+            "TENXYTE_USER_MODEL": "tenxyte.User",
+        }
+        for key, value in defaults.items():
+            if not hasattr(settings, key):
+                setattr(settings, key, value)
+
     def ready(self):
         """
         Appelé quand l'application est prête.
