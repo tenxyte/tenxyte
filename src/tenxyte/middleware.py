@@ -44,11 +44,13 @@ class ApplicationAuthMiddleware:
 
         # Vérifier si le chemin est exempté (exact match)
         if request.path in exact_exempt_paths:
+            request.application = None
             return self.get_response(request)
 
         # Vérifier si le chemin est exempté (prefix match)
         for path in exempt_paths:
             if request.path.startswith(path):
+                request.application = None
                 return self.get_response(request)
 
         # Récupérer les credentials de l'application
