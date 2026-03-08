@@ -85,6 +85,10 @@ def setup(settings_module=None):
         import tenxyte
         tenxyte.setup()
 
+    Or pass globals() to modify the settings dict directly:
+        import tenxyte
+        tenxyte.setup(globals())
+
     This function will NOT override settings that are already explicitly defined.
     It only fills in the minimal defaults needed to get Tenxyte running.
 
@@ -98,32 +102,56 @@ def setup(settings_module=None):
 
     target = settings_module or django_settings
 
+    # Check if target is a dict (from globals()) or a module object
+    is_dict = isinstance(target, dict)
+
+    def get_setting(name, default=None):
+        """Get a setting value from either dict or module."""
+        if is_dict:
+            return target.get(name, default)
+        return getattr(target, name, default)
+
+    def set_setting(name, value):
+        """Set a setting value on either dict or module."""
+        if is_dict:
+            target[name] = value
+        else:
+            setattr(target, name, value)
+
     # AUTH_USER_MODEL: set to tenxyte.User if still default or unset
-    current_auth_model = getattr(target, "AUTH_USER_MODEL", "auth.User")
+    current_auth_model = get_setting("AUTH_USER_MODEL", "auth.User")
     if current_auth_model == "auth.User":
-        target.AUTH_USER_MODEL = "tenxyte.User"
+        set_setting("AUTH_USER_MODEL", "tenxyte.User")
 
     # INSTALLED_APPS: ensure rest_framework and tenxyte are present
-    apps = list(getattr(target, "INSTALLED_APPS", []))
+    apps = list(get_setting("INSTALLED_APPS", []))
     changed = False
     for app in ["rest_framework", "tenxyte"]:
         if app not in apps:
             apps.append(app)
             changed = True
     if changed:
-        target.INSTALLED_APPS = apps
+        set_setting("INSTALLED_APPS", apps)
 
-    # REST_FRAMEWORK: set default auth class if not already configured
-    rf = dict(getattr(target, "REST_FRAMEWORK", {}))
+    # REST_FRAMEWORK: set default auth class and schema class if not already configured
+    rf = dict(get_setting("REST_FRAMEWORK", {}))
+    changed_rf = False
     if "DEFAULT_AUTHENTICATION_CLASSES" not in rf:
         rf["DEFAULT_AUTHENTICATION_CLASSES"] = [
             "tenxyte.authentication.JWTAuthentication",
         ]
-        target.REST_FRAMEWORK = rf
+        changed_rf = True
+
+    if "DEFAULT_SCHEMA_CLASS" not in rf:
+        rf["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
+        changed_rf = True
+
+    if changed_rf:
+        set_setting("REST_FRAMEWORK", rf)
 
     # MIDDLEWARE: add ApplicationAuthMiddleware if missing
-    mw = list(getattr(target, "MIDDLEWARE", []))
+    mw = list(get_setting("MIDDLEWARE", []))
     app_auth_mw = "tenxyte.middleware.ApplicationAuthMiddleware"
     if app_auth_mw not in mw:
         mw.append(app_auth_mw)
-        target.MIDDLEWARE = mw
+        set_setting("MIDDLEWARE", mw)

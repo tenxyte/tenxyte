@@ -1,12 +1,28 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, OpenApiExample
 
 from ..serializers import RequestOTPSerializer, VerifyOTPSerializer
 from ..services import OTPService
 from ..decorators import require_jwt
 from ..throttles import OTPRequestThrottle, OTPVerifyThrottle
+
+
+def _mask_email(email: str) -> str:
+    """Masque l'email pour sécurité anti-énumération. Ex: user@example.com → u***@example.com"""
+    if not email or "@" not in email:
+        return "***"
+    local, domain = email.split("@", 1)
+    return f"{local[0]}***@{domain}"
+
+
+def _mask_phone(phone_number: str) -> str:
+    """Masque le numéro de téléphone. Ex: 612345678 → ***5678"""
+    if not phone_number:
+        return "***"
+    return f"***{phone_number[-4:]}"
 
 
 class RequestOTPView(APIView):
@@ -72,6 +88,7 @@ class RequestOTPView(APIView):
 
         otp_service = OTPService()
         otp_type = serializer.validated_data["otp_type"]
+        otp = None
 
         if otp_type == "email":
             if not request.user.email:
@@ -81,6 +98,7 @@ class RequestOTPView(APIView):
 
             otp, raw_code = otp_service.generate_email_verification_otp(request.user)
             otp_service.send_email_otp(request.user, raw_code, otp.otp_type)
+            masked_recipient = _mask_email(request.user.email)
 
         elif otp_type == "phone":
             if not request.user.phone_number:
@@ -90,8 +108,17 @@ class RequestOTPView(APIView):
 
             otp, raw_code = otp_service.generate_phone_verification_otp(request.user)
             otp_service.send_phone_otp(request.user, raw_code)
+            masked_recipient = _mask_phone(request.user.phone_number)
 
-        return Response({"message": "OTP sent successfully"})
+        return Response(
+            {
+                "message": "OTP sent successfully",
+                "otp_id": otp.pk,
+                "expires_at": otp.expires_at.isoformat(),
+                "channel": otp_type,
+                "masked_recipient": masked_recipient,
+            }
+        )
 
 
 class VerifyEmailOTPView(APIView):
@@ -178,7 +205,14 @@ class VerifyEmailOTPView(APIView):
         if not success:
             return Response({"error": error, "code": "OTP_VERIFICATION_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({"message": "Email verified successfully"})
+        verified_at = timezone.now().isoformat()
+        return Response(
+            {
+                "message": "Email verified successfully",
+                "email_verified": True,
+                "verified_at": verified_at,
+            }
+        )
 
 
 class VerifyPhoneOTPView(APIView):
@@ -266,4 +300,17 @@ class VerifyPhoneOTPView(APIView):
         if not success:
             return Response({"error": error, "code": "OTP_VERIFICATION_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({"message": "Phone verified successfully"})
+        verified_at = timezone.now().isoformat()
+        phone_display = (
+            f"+{request.user.phone_country_code}{request.user.phone_number}"
+            if request.user.phone_country_code
+            else request.user.phone_number
+        )
+        return Response(
+            {
+                "message": "Phone verified successfully",
+                "phone_verified": True,
+                "verified_at": verified_at,
+                "phone_number": phone_display,
+            }
+        )
