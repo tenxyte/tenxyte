@@ -6,7 +6,8 @@ docs_dir: docs
 
 theme:
   name: material
-  logo: https://github.com/tenxyte/tenxyte/raw/main/docs/logo.png
+  logo: https://tenxyte-graphics.s3.us-east-1.amazonaws.com/tenxyte-graphics/out/custom/SVG/v1_logo-sharp.svg
+  favicon: https://tenxyte-graphics.s3.us-east-1.amazonaws.com/tenxyte-graphics/out/custom/SVG/v1_logo-sharp.svg
   features:
     - navigation.tabs
     - navigation.sections
