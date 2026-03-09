@@ -160,7 +160,7 @@ TENXYTE_MAX_LOGIN_ATTEMPTS = 3       # overrides the preset
 TENXYTE_BREACH_CHECK_ENABLED = True  # overrides the preset
 ```
 
-→ [Settings Reference](settings.md) for the 150+ options.
+→ [Settings Reference](settings.md) for the 115+ options.
 
 ---
 
@@ -208,7 +208,7 @@ For MongoDB, see the [MongoDB configuration](#mongodb--required-configuration) s
 
 ## Next Steps
 
-- [Settings Reference](settings.md) — 150+ configuration options
+- [Settings Reference](settings.md) — 115+ configuration options
 - [API Endpoints](endpoints.md) — Full reference with curl examples
 - [RBAC Guide](rbac.md) — Roles, permissions, decorators
 - [Security Guide](security.md) — Rate limiting, 2FA, device fingerprinting

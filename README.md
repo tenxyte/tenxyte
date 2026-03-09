@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://tenxyte-graphics.s3.us-east-1.amazonaws.com/tenxyte-graphics/out/custom/SVG/v1_tenxyte-long-logo-sharp.svg" alt="Tenxyte Auth" width="500">
+</p>
+
 # Tenxyte Auth
 
 > Production-ready Django authentication in minutes — JWT, RBAC, 2FA, Magic Links, Passkeys, Social Login, Breach Check, Organizations (B2B), multi-application support.
@@ -461,7 +465,7 @@ Same pattern for `TENXYTE_ROLE_MODEL`, `TENXYTE_PERMISSION_MODEL`, `TENXYTE_APPL
 
 ## Configuration Reference
 
-All 150+ settings documented in [docs/settings.md](docs/settings.md).
+All 115+ settings documented in [docs/settings.md](docs/settings.md).
 
 Useful toggles for development:
 
