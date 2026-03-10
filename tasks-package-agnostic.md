@@ -16,8 +16,8 @@
   - [x] Sub-issue 3.2: Implement the Repositories defined in Issue 2 by wrapping the current Django ORM (**no changes to models or DB**).
   - [x] Sub-issue 3.3: **[Backward Compatibility]** If views are moved, keep import pointers in old files (e.g., `tenxyte/views.py`) with a `DeprecationWarning` for v2.0.
 
-- [ ] **Issue 4: Re-architect Testing Suite (Sanctification)**
-  - [ ] Sub-issue 4.1: Set up pure unit tests for `tenxyte.core` (without `pytest-django`).
+- [x] **Issue 4: Re-architect Testing Suite (Sanctification)**
+  - [x] Sub-issue 4.1: Set up pure unit tests for `tenxyte.core` (without `pytest-django`).
   - [ ] Sub-issue 4.2: Move current tests to a `tests/integration/django/` subfolder.
   - [ ] Sub-issue 4.3: **[Backward Compatibility]** Run the entire current Django test suite **without modifying behavior or assertions** to guarantee absolute zero regression.
 
