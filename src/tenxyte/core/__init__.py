@@ -10,6 +10,10 @@ from .settings import (
     init,
     get_settings,
 )
+from .env_provider import (
+    EnvSettingsProvider,
+    get_env_settings,
+)
 from .email_service import (
     EmailService,
     EmailAttachment,
@@ -40,6 +44,9 @@ __all__ = [
     "SECURE_MODE_PRESETS",
     "init",
     "get_settings",
+    # Environment Provider
+    "EnvSettingsProvider",
+    "get_env_settings",
     # Email
     "EmailService",
     "EmailAttachment",
@@ -56,6 +63,30 @@ __all__ = [
     "LoginRequest",
     "TokenResponse",
     "OrganizationBase",
-    "OrganizationCreate",
-    "OrganizationResponse",
+    # Services - JWT
+    "JWTService",
+    "TokenPair",
+    "DecodedToken",
+    "TokenBlacklistService",
+    "InMemoryTokenBlacklistService",
+    # Services - TOTP
+    "TOTPService",
+    "TOTPSetupResult",
+    "TOTPUserData",
+    "TOTPStorage",
+    "CodeReplayProtection",
+    # Services - WebAuthn
+    "WebAuthnService",
+    "WebAuthnCredential",
+    "WebAuthnChallenge",
+    "RegistrationResult",
+    "AuthenticationResult",
+    "WebAuthnCredentialRepository",
+    "WebAuthnChallengeRepository",
+    # Services - Magic Link
+    "MagicLinkService",
+    "MagicLinkToken",
+    "MagicLinkResult",
+    "MagicLinkRepository",
+    "UserLookup",
 ]

@@ -1,8 +1,8 @@
 # Milestone: Make the package agnostic (Core Re-architecture)
 
 - [x] **Issue 1: Extract Business Logic (Core) outside of Django**
-  - [ ] Sub-issue 1.1: Extract JWT token generation and validation into a pure Python module.
-  - [ ] Sub-issue 1.2: Extract validation and generation logic (TOTP, WebAuthn/Passkeys, Magic Links) so it depends only on simple variables (dictionaries, dataclasses).
+  - [x] Sub-issue 1.1: Extract JWT token generation and validation into a pure Python module.
+  - [x] Sub-issue 1.2: Extract validation and generation logic (TOTP, WebAuthn/Passkeys, Magic Links) so it depends only on simple variables (dictionaries, dataclasses).
   - [x] Sub-issue 1.3: Create a configuration system (`Settings` class) specific to the Core package.
   - [x] Sub-issue 1.4: **[Backward Compatibility]** Create an adapter that automatically reads `django.conf.settings` to feed the Core without any changes required on the user side.
 
@@ -33,11 +33,11 @@
   - [ ] Sub-issue 6.4: Document how to create custom adapters and extend the package.
   - [ ] Sub-issue 6.5: Create a troubleshooting guide for common migration issues.
 
-- [ ] **Issue 7: Abstract Cross-cutting Services (Critical)**
-  - [ ] Sub-issue 7.1: Create an `EmailService` port to abstract email sending and implement the Django adapter (`DjangoEmailService` using `django.core.mail`).
-  - [ ] Sub-issue 7.2: Create a `CacheService` port to abstract the cache system and implement the Django adapter (`DjangoCacheService` using `django.core.cache`).
-  - [ ] Sub-issue 7.3: Extract business logic from middlewares (`ApplicationAuthMiddleware`, audit logging) to the Core using defined ports. Django middlewares become wrappers.
-  - [ ] Sub-issue 7.4: Create an agnostic validation system (Pydantic) for the Core, independent of DRF serializers.
+- [x] **Issue 7: Abstract Cross-cutting Services (Critical)**
+  - [x] Sub-issue 7.1: Create an `EmailService` port to abstract email sending and implement the Django adapter (`DjangoEmailService` using `django.core.mail`).
+  - [x] Sub-issue 7.2: Create a `CacheService` port to abstract the cache system and implement the Django adapter (`DjangoCacheService` using `django.core.cache`).
+  - [x] Sub-issue 7.3: Extract business logic from middlewares (`ApplicationAuthMiddleware`, audit logging) to the Core using defined ports. Django middlewares become wrappers.
+  - [x] Sub-issue 7.4: Create an agnostic validation system (Pydantic) for the Core, independent of DRF serializers.
   - [ ] Sub-issue 7.5: Abstract session and refresh token management independently of the framework.
 
 - [ ] **Issue 8: Dependency Management and Modular Packaging**
