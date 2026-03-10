@@ -1,10 +1,3 @@
-"""
-Password Views - Django DRF Facades for Tenxyte Core.
-
-These views act as adapters between Django/DRF and the framework-agnostic Core.
-They maintain 100% backward compatibility with existing endpoints and responses.
-"""
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -14,53 +7,13 @@ from rest_framework import serializers
 from drf_spectacular.types import OpenApiTypes
 
 from ..serializers import PasswordResetRequestSerializer, PasswordResetConfirmSerializer, ChangePasswordSerializer
-from ..services import OTPService
+from ..services import AuthService, OTPService
 from ..services.breach_check_service import breach_check_service
 from ..models import get_user_model
 from ..decorators import require_jwt
 from ..throttles import PasswordResetThrottle, PasswordResetDailyThrottle, OTPVerifyThrottle
 
-# Core imports
-from tenxyte.adapters.django.repositories import DjangoUserRepository
-from tenxyte.adapters.django.cache_service import DjangoCacheService
-from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
-from tenxyte.core import JWTService, Settings
-
 User = get_user_model()
-
-# Global Core repository (lazy initialization)
-_core_user_repo = None
-_core_cache = None
-_core_settings = None
-_core_jwt_service = None
-
-
-def get_core_user_repo():
-    global _core_user_repo
-    if _core_user_repo is None:
-        _core_user_repo = DjangoUserRepository()
-    return _core_user_repo
-
-
-def get_core_cache():
-    global _core_cache
-    if _core_cache is None:
-        _core_cache = DjangoCacheService()
-    return _core_cache
-
-
-def get_core_settings():
-    global _core_settings
-    if _core_settings is None:
-        _core_settings = Settings(DjangoSettingsProvider())
-    return _core_settings
-
-
-def get_core_jwt_service():
-    global _core_jwt_service
-    if _core_jwt_service is None:
-        _core_jwt_service = JWTService(get_core_settings(), get_core_cache())
-    return _core_jwt_service
 
 
 class PasswordResetRequestView(APIView):
@@ -224,7 +177,6 @@ class PasswordResetConfirmView(APIView):
         ],
     )
     def post(self, request):
-        """Password reset via Core repository."""
         serializer = PasswordResetConfirmSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(
@@ -253,13 +205,13 @@ class PasswordResetConfirmView(APIView):
         if not success:
             return Response({"error": error, "code": "RESET_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Mettre à jour le mot de passe via Core repository
-        user_repo = get_core_user_repo()
-        user_repo.update_password(str(user.id), serializer.validated_data["new_password"])
+        # Mettre à jour le mot de passe
+        # nosemgrep: python.django.security.audit.unvalidated-password.unvalidated-password
+        user.set_password(serializer.validated_data["new_password"])
+        user.save()
 
-        # Révoquer tous les refresh tokens via Core JWT service
-        jwt_service = get_core_jwt_service()
-        jwt_service.revoke_all_user_tokens(str(user.id))
+        # Révoquer tous les refresh tokens
+        AuthService().logout_all_devices(user)
 
         return Response({"message": "Password reset successfully"})
 
@@ -335,18 +287,13 @@ class ChangePasswordView(APIView):
     )
     @require_jwt
     def post(self, request):
-        """Change password via Core repository."""
         serializer = ChangePasswordSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(
                 {"error": "Validation error", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Verify current password via Core repository
-        user_repo = get_core_user_repo()
-        is_valid = user_repo.check_password(str(request.user.id), serializer.validated_data["current_password"])
-        
-        if not is_valid:
+        if not request.user.check_password(serializer.validated_data["current_password"]):
             return Response(
                 {"error": "Current password is incorrect", "code": "INVALID_PASSWORD"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -357,8 +304,9 @@ class ChangePasswordView(APIView):
         if not breach_ok:
             return Response({"error": breach_error, "code": "PASSWORD_BREACHED"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Update password via Core repository
-        user_repo.update_password(str(request.user.id), serializer.validated_data["new_password"])
+        # nosemgrep: python.django.security.audit.unvalidated-password.unvalidated-password
+        request.user.set_password(serializer.validated_data["new_password"])
+        request.user.save()
 
         return Response({"message": "Password changed successfully"})
 

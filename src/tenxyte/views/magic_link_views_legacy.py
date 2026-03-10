@@ -1,8 +1,5 @@
 """
-Views for Magic Link (passwordless) authentication - Core facades.
-
-These views act as adapters between Django/DRF and the framework-agnostic Core.
-They maintain 100% backward compatibility with existing endpoints and responses.
+Views for Magic Link (passwordless) authentication.
 """
 
 from rest_framework.views import APIView
@@ -13,71 +10,10 @@ from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializ
 from rest_framework import serializers
 from drf_spectacular.types import OpenApiTypes
 
+from ..services.magic_link_service import MagicLinkService
 from ..decorators import get_client_ip
 from ..device_info import build_device_info_from_user_agent
 from ..throttles import MagicLinkRequestThrottle, MagicLinkVerifyThrottle
-
-# Core imports
-from tenxyte.adapters.django.repositories import DjangoUserRepository
-from tenxyte.adapters.django.cache_service import DjangoCacheService
-from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
-from tenxyte.adapters.django.email_service import DjangoEmailService
-from tenxyte.core import MagicLinkService, JWTService, Settings
-
-# Global Core services (lazy initialization)
-_core_user_repo = None
-_core_cache = None
-_core_settings = None
-_core_email_service = None
-_core_magic_link_service = None
-_core_jwt_service = None
-
-
-def get_core_user_repo():
-    global _core_user_repo
-    if _core_user_repo is None:
-        _core_user_repo = DjangoUserRepository()
-    return _core_user_repo
-
-
-def get_core_cache():
-    global _core_cache
-    if _core_cache is None:
-        _core_cache = DjangoCacheService()
-    return _core_cache
-
-
-def get_core_settings():
-    global _core_settings
-    if _core_settings is None:
-        _core_settings = Settings(DjangoSettingsProvider())
-    return _core_settings
-
-
-def get_core_email_service():
-    global _core_email_service
-    if _core_email_service is None:
-        _core_email_service = DjangoEmailService()
-    return _core_email_service
-
-
-def get_core_magic_link_service():
-    global _core_magic_link_service
-    if _core_magic_link_service is None:
-        _core_magic_link_service = MagicLinkService(
-            settings=get_core_settings(),
-            storage=get_core_cache(),
-            user_repo=get_core_user_repo(),
-            email_service=get_core_email_service()
-        )
-    return _core_magic_link_service
-
-
-def get_core_jwt_service():
-    global _core_jwt_service
-    if _core_jwt_service is None:
-        _core_jwt_service = JWTService(get_core_settings(), get_core_cache())
-    return _core_jwt_service
 
 
 class MagicLinkRequestView(APIView):
@@ -153,7 +89,6 @@ class MagicLinkRequestView(APIView):
         ],
     )
     def post(self, request):
-        """Request magic link using Core service."""
         email = request.data.get("email", "").strip().lower()
         validation_url = request.data.get("validation_url", "").strip()
 
@@ -175,14 +110,18 @@ class MagicLinkRequestView(APIView):
         app_name = getattr(request, "application", None)
         app_name_str = app_name.name if app_name and hasattr(app_name, "name") else "Tenxyte"
 
-        service = get_core_magic_link_service()
-        success = service.request_magic_link(
+        service = MagicLinkService()
+        success, error = service.request_magic_link(
             email=email,
-            validation_url=validation_url,
-            app_name=app_name_str,
+            application=getattr(request, "application", None),
             ip_address=ip_address,
-            device_info=device_info
+            device_info=device_info,
+            app_name=app_name_str,
+            validation_url=validation_url,
         )
+
+        if not success:
+            return Response({"error": error, "code": "MAGIC_LINK_FAILED"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         # Toujours retourner 200 même si l'email n'existe pas (sécurité)
         return Response({"message": "If this email is registered, a magic link has been sent."})
@@ -281,7 +220,6 @@ class MagicLinkVerifyView(APIView):
         ],
     )
     def get(self, request):
-        """Verify magic link using Core service."""
         token = request.query_params.get("token", "").strip()
         if not token:
             return Response(
@@ -293,36 +231,19 @@ class MagicLinkVerifyView(APIView):
             request.META.get("HTTP_USER_AGENT", "")
         )
 
-        # Verify magic link via Core service
-        service = get_core_magic_link_service()
-        auth_result = service.verify_magic_link(
+        service = MagicLinkService()
+        success, data, error = service.verify_magic_link(
             token=token,
+            application=getattr(request, "application", None),
             ip_address=ip_address,
-            device_info=device_info
+            device_info=device_info,
         )
 
-        # Generate JWT tokens via Core service
-        jwt_service = get_core_jwt_service()
-        access_token = jwt_service.generate_access_token(auth_result.user_id)
-        refresh_token = jwt_service.generate_refresh_token(auth_result.user_id, device_info=device_info)
+        if not success:
+            response = Response({"error": error, "code": "MAGIC_LINK_INVALID"}, status=status.HTTP_401_UNAUTHORIZED)
+            response["Referrer-Policy"] = "no-referrer"
+            return response
 
-        # Get user for response
-        from ..models import get_user_model
-        from ..serializers import UserSerializer
-        User = get_user_model()
-        try:
-            user = User.objects.get(id=auth_result.user_id)
-            user_data = UserSerializer(user).data
-        except User.DoesNotExist:
-            user_data = {"id": auth_result.user_id}
-
-        response_data = {
-            "access": access_token,
-            "refresh": refresh_token,
-            "user": user_data,
-            "message": "Magic link verified successfully",
-        }
-
-        response = Response(response_data)
+        response = Response(data)
         response["Referrer-Policy"] = "no-referrer"
         return response
