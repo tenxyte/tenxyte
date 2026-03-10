@@ -168,7 +168,7 @@ Changelog = "https://github.com/tenxyte/tenxyte/blob/main/CHANGELOG.md"
 packages = ["src/tenxyte"]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "tests.settings"
+DJANGO_SETTINGS_MODULE = "tests.integration.django.settings"
 pythonpath = ["."]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]

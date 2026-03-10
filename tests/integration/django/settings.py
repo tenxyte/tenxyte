@@ -48,7 +48,7 @@ MIDDLEWARE = [
     'tenxyte.middleware.ApplicationAuthMiddleware',
 ]
 
-ROOT_URLCONF = 'tests.urls'
+ROOT_URLCONF = 'tests.integration.django.urls'
 
 DATABASES = {
     'default': {

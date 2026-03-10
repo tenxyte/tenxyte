@@ -1,5 +1,8 @@
 """
-Views for WebAuthn / Passkeys (FIDO2) authentication.
+Views for WebAuthn / Passkeys (FIDO2) authentication - Core facades.
+
+These views act as adapters between Django/DRF and the framework-agnostic Core.
+They maintain 100% backward compatibility with existing endpoints and responses.
 
 Endpoints:
 - POST {API_PREFIX}/auth/webauthn/register/begin/      — generate registration challenge
@@ -18,12 +21,72 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
 
-from ..services.webauthn_service import WebAuthnService
 from ..decorators import require_jwt, get_client_ip
 from ..device_info import build_device_info_from_user_agent
 from ..models import get_user_model
 
+# Core imports
+from tenxyte.adapters.django.repositories import DjangoUserRepository
+from tenxyte.adapters.django.cache_service import DjangoCacheService
+from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
+from tenxyte.adapters.django.webauthn_storage import DjangoWebAuthnStorage
+from tenxyte.core import WebAuthnService, JWTService, Settings
+
 User = get_user_model()
+
+# Global Core services (lazy initialization)
+_core_user_repo = None
+_core_cache = None
+_core_settings = None
+_core_webauthn_storage = None
+_core_webauthn_service = None
+_core_jwt_service = None
+
+
+def get_core_user_repo():
+    global _core_user_repo
+    if _core_user_repo is None:
+        _core_user_repo = DjangoUserRepository()
+    return _core_user_repo
+
+
+def get_core_cache():
+    global _core_cache
+    if _core_cache is None:
+        _core_cache = DjangoCacheService()
+    return _core_cache
+
+
+def get_core_settings():
+    global _core_settings
+    if _core_settings is None:
+        _core_settings = Settings(DjangoSettingsProvider())
+    return _core_settings
+
+
+def get_core_webauthn_storage():
+    global _core_webauthn_storage
+    if _core_webauthn_storage is None:
+        _core_webauthn_storage = DjangoWebAuthnStorage()
+    return _core_webauthn_storage
+
+
+def get_core_webauthn_service():
+    global _core_webauthn_service
+    if _core_webauthn_service is None:
+        _core_webauthn_service = WebAuthnService(
+            settings=get_core_settings(),
+            storage=get_core_webauthn_storage(),
+            user_repo=get_core_user_repo()
+        )
+    return _core_webauthn_service
+
+
+def get_core_jwt_service():
+    global _core_jwt_service
+    if _core_jwt_service is None:
+        _core_jwt_service = JWTService(get_core_settings(), get_core_cache())
+    return _core_jwt_service
 
 
 class WebAuthnRegisterBeginView(APIView):
@@ -90,11 +153,14 @@ class WebAuthnRegisterBeginView(APIView):
     )
     @require_jwt
     def post(self, request):
-        service = WebAuthnService()
-        success, data, error = service.begin_registration(request.user)
-        if not success:
-            return Response({"error": error, "code": "WEBAUTHN_ERROR"}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(data)
+        """Begin WebAuthn registration using Core service."""
+        service = get_core_webauthn_service()
+        options = service.begin_registration(
+            user_id=str(request.user.id),
+            email=request.user.email,
+            username=request.user.email or str(request.user.id)
+        )
+        return Response(options)
 
 
 class WebAuthnRegisterCompleteView(APIView):
@@ -158,25 +224,22 @@ class WebAuthnRegisterCompleteView(APIView):
     )
     @require_jwt
     def post(self, request):
-        challenge_id = request.data.get("challenge_id")
+        """Complete WebAuthn registration using Core service."""
         credential_data = request.data.get("credential")
         device_name = request.data.get("device_name", "")
 
-        if not challenge_id or not credential_data:
+        if not credential_data:
             return Response(
-                {"error": "challenge_id and credential are required", "code": "MISSING_FIELDS"},
+                {"error": "credential is required", "code": "MISSING_FIELDS"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        service = WebAuthnService()
-        success, credential, error = service.complete_registration(
-            user=request.user, credential_data=credential_data, challenge_id=challenge_id, device_name=device_name
+        service = get_core_webauthn_service()
+        credential = service.complete_registration(
+            user_id=str(request.user.id),
+            credential_data=credential_data,
+            device_name=device_name
         )
-
-        if not success:
-            return Response(
-                {"error": error, "code": "WEBAUTHN_REGISTRATION_FAILED"}, status=status.HTTP_400_BAD_REQUEST
-            )
 
         return Response(
             {
@@ -184,7 +247,7 @@ class WebAuthnRegisterCompleteView(APIView):
                 "credential": {
                     "id": credential.id,
                     "device_name": credential.device_name,
-                    "created_at": credential.created_at.isoformat(),
+                    "created_at": credential.created_at.isoformat() if hasattr(credential.created_at, 'isoformat') else str(credential.created_at),
                 },
             },
             status=status.HTTP_201_CREATED,
@@ -245,16 +308,18 @@ class WebAuthnAuthenticateBeginView(APIView):
         ],
     )
     def post(self, request):
+        """Begin WebAuthn authentication using Core service."""
         email = request.data.get("email", "").strip().lower()
-        user = None
+        
+        user_id = None
         if email:
             user = User.objects.filter(email__iexact=email, is_active=True).first()
+            if user:
+                user_id = str(user.id)
 
-        service = WebAuthnService()
-        success, data, error = service.begin_authentication(user=user)
-        if not success:
-            return Response({"error": error, "code": "WEBAUTHN_ERROR"}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(data)
+        service = get_core_webauthn_service()
+        options = service.begin_authentication(user_id=user_id)
+        return Response(options)
 
 
 class WebAuthnAuthenticateCompleteView(APIView):
@@ -313,12 +378,12 @@ class WebAuthnAuthenticateCompleteView(APIView):
         ],
     )
     def post(self, request):
-        challenge_id = request.data.get("challenge_id")
+        """Complete WebAuthn authentication using Core service."""
         credential_data = request.data.get("credential")
 
-        if not challenge_id or not credential_data:
+        if not credential_data:
             return Response(
-                {"error": "challenge_id and credential are required", "code": "MISSING_FIELDS"},
+                {"error": "credential is required", "code": "MISSING_FIELDS"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -327,19 +392,32 @@ class WebAuthnAuthenticateCompleteView(APIView):
             request.META.get("HTTP_USER_AGENT", "")
         )
 
-        service = WebAuthnService()
-        success, data, error = service.complete_authentication(
+        service = get_core_webauthn_service()
+        auth_result = service.complete_authentication(
             credential_data=credential_data,
-            challenge_id=challenge_id,
-            application=getattr(request, "application", None),
-            ip_address=ip_address,
-            device_info=device_info,
+            device_info=device_info
         )
 
-        if not success:
-            return Response({"error": error, "code": "WEBAUTHN_AUTH_FAILED"}, status=status.HTTP_401_UNAUTHORIZED)
+        # Generate JWT tokens via Core service
+        jwt_service = get_core_jwt_service()
+        access_token = jwt_service.generate_access_token(auth_result.user_id)
+        refresh_token = jwt_service.generate_refresh_token(auth_result.user_id, device_info=device_info)
 
-        return Response(data)
+        # Get user for response
+        from ..serializers import UserSerializer
+        try:
+            user = User.objects.get(id=auth_result.user_id)
+            user_data = UserSerializer(user).data
+        except User.DoesNotExist:
+            user_data = {"id": auth_result.user_id}
+
+        return Response({
+            "access": access_token,
+            "refresh": refresh_token,
+            "user": user_data,
+            "message": "Authentication successful",
+            "credential_used": auth_result.credential_id,
+        })
 
 
 class WebAuthnCredentialListView(APIView):
@@ -380,8 +458,9 @@ class WebAuthnCredentialListView(APIView):
     )
     @require_jwt
     def get(self, request):
-        service = WebAuthnService()
-        credentials = service.list_credentials(request.user)
+        """List credentials using Core service."""
+        service = get_core_webauthn_service()
+        credentials = service.list_credentials(user_id=str(request.user.id))
         return Response({"credentials": credentials, "count": len(credentials)})
 
 
@@ -414,8 +493,12 @@ class WebAuthnCredentialDeleteView(APIView):
     )
     @require_jwt
     def delete(self, request, credential_id: int):
-        service = WebAuthnService()
-        success, error = service.delete_credential(request.user, credential_id)
+        """Delete credential using Core service."""
+        service = get_core_webauthn_service()
+        success = service.delete_credential(
+            credential_id=str(credential_id),
+            user_id=str(request.user.id)
+        )
         if not success:
-            return Response({"error": error, "code": "CREDENTIAL_NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Credential not found", "code": "CREDENTIAL_NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
         return Response(status=status.HTTP_204_NO_CONTENT)

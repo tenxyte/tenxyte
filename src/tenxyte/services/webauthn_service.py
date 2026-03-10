@@ -35,6 +35,9 @@ class WebAuthnService:
     """
     Gère les opérations WebAuthn (Passkeys) FIDO2.
 
+    .. deprecated::
+        This Django-specific WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService instead.
+
     Flow d'enregistrement:
     1. begin_registration(user) → challenge + options JSON
     2. complete_registration(user, credential_data, challenge) → WebAuthnCredential
@@ -43,6 +46,14 @@ class WebAuthnService:
     1. begin_authentication(user_or_email) → challenge + options JSON
     2. complete_authentication(credential_data, challenge) → JWT tokens
     """
+
+    def __init__(self):
+        warnings.warn(
+            "tenxyte.services.webauthn_service.WebAuthnService is deprecated. "
+            "Use tenxyte.core.WebAuthnService with Django adapters instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
 
     def _get_rp_id(self) -> str:
         return getattr(settings, "TENXYTE_WEBAUTHN_RP_ID", "localhost")
