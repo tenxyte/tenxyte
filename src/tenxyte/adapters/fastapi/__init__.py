@@ -1,0 +1,1 @@
+"""Tenxyte FastAPI Adapter."""
