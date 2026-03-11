@@ -199,9 +199,16 @@ class MagicLinkService:
             logger.info(f"Magic link requested for unknown email: {email}")
             return True, ""
         
-        user_id = user.get('id')
-        user_email = user.get('email', email)
-        user_first_name = first_name or user.get('first_name', '')
+        # Handle both dict and object user types
+        if isinstance(user, dict):
+            user_id = user.get('id')
+            user_email = user.get('email', email)
+            user_first_name = first_name or user.get('first_name', '')
+        else:
+            # User is an object (e.g., Django User model)
+            user_id = getattr(user, 'id', None)
+            user_email = getattr(user, 'email', email)
+            user_first_name = first_name or getattr(user, 'first_name', '')
         
         # Check if user is active
         if not self.user_lookup.is_active(user_id):
@@ -232,11 +239,8 @@ class MagicLinkService:
         try:
             self.email_service.send_magic_link(
                 to_email=user_email,
-                token=raw_token,
-                magic_url=magic_url,
-                first_name=user_first_name,
-                expiry_minutes=self.expiry_minutes,
-                app_name=self.app_name
+                magic_link_url=magic_url or f"https://example.com/verify?token={raw_token}",
+                expires_in_minutes=self.expiry_minutes
             )
         except Exception as e:
             logger.error(f"Failed to send magic link email to {user_email}: {e}")
