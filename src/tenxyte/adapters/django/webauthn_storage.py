@@ -90,8 +90,7 @@ class DjangoWebAuthnStorage:
             from tenxyte.models import WebAuthnCredential as WebAuthnCredentialModel
             
             cred = WebAuthnCredentialModel.objects.get(
-                credential_id=credential_id,
-                is_active=True
+                credential_id=credential_id
             )
             return {
                 'id': str(cred.id),
@@ -117,8 +116,7 @@ class DjangoWebAuthnStorage:
             from tenxyte.models import WebAuthnCredential as WebAuthnCredentialModel
             
             creds = WebAuthnCredentialModel.objects.filter(
-                user_id=user_id,
-                is_active=True
+                user_id=user_id
             )
             return [
                 {
@@ -192,8 +190,7 @@ class DjangoWebAuthnStorage:
             from tenxyte.models import WebAuthnCredential as WebAuthnCredentialModel
             
             cred = WebAuthnCredentialModel.objects.get(credential_id=credential_id)
-            cred.is_active = False
-            cred.save(update_fields=['is_active'])
+            cred.delete()
             return True
         except Exception:
             return False
@@ -297,8 +294,7 @@ class DjangoWebAuthnStorage:
             from tenxyte.models import WebAuthnCredential as WebAuthnCredentialModel
             
             cred = WebAuthnCredentialModel.objects.get(
-                credential_id=credential_id,
-                is_active=True
+                credential_id=credential_id
             )
             return WebAuthnCredential(
                 id=str(cred.id),
@@ -319,8 +315,7 @@ class DjangoWebAuthnStorage:
             from tenxyte.models import WebAuthnCredential as WebAuthnCredentialModel
             
             creds = WebAuthnCredentialModel.objects.filter(
-                user_id=user_id,
-                is_active=True
+                user_id=user_id
             )
             return [
                 WebAuthnCredential(
@@ -428,8 +423,7 @@ class DjangoWebAuthnStorage:
                 id=credential_id,
                 user_id=user_id
             )
-            cred.is_active = False
-            cred.save(update_fields=['is_active'])
+            cred.delete()
             return True
         except Exception:
             return False
