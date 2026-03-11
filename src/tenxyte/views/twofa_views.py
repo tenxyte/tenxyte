@@ -332,7 +332,7 @@ class TwoFactorDisableView(APIView):
         # Use Core TOTP service with storage
         totp_service = get_core_totp_service()
         storage = get_core_totp_storage()
-        is_valid, error_msg = totp_service.verify_2fa(
+        is_valid, error_msg = totp_service.disable_2fa(
             user_id=str(request.user.id),
             code=code,
             storage=storage
@@ -441,7 +441,7 @@ class TwoFactorBackupCodesView(APIView):
         # Use Core TOTP service with storage
         totp_service = get_core_totp_service()
         storage = get_core_totp_storage()
-        is_valid, error_msg = totp_service.verify_2fa(
+        is_valid, plain_codes, error_msg = totp_service.regenerate_backup_codes(
             user_id=str(request.user.id),
             code=code,
             storage=storage
@@ -449,11 +449,6 @@ class TwoFactorBackupCodesView(APIView):
 
         if not is_valid:
             return Response({"error": error_msg or "Invalid TOTP code", "code": "INVALID_CODE"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Generate new backup codes via Core service
-        plain_codes, hashed_codes = totp_service.generate_backup_codes()
-        # Save hashed codes to storage
-        storage.save_backup_codes(str(request.user.id), hashed_codes)
 
         return Response(
             {
