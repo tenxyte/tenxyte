@@ -199,6 +199,38 @@ class DjangoCacheService(CacheService):
         """Close cache connection if needed."""
         # Django handles connection management automatically
         pass
+    
+    # Replay protection methods for TOTP
+    
+    def is_code_used(self, user_id: str, code: str) -> bool:
+        """
+        Check if a TOTP code has been used recently (replay protection).
+        
+        Args:
+            user_id: User ID
+            code: TOTP code to check
+            
+        Returns:
+            True if code was recently used
+        """
+        cache_key = f"totp_used_{user_id}_{code}"
+        return self._get_cache().get(cache_key) is not None
+    
+    def mark_code_used(self, user_id: str, code: str, ttl_seconds: int = 60) -> bool:
+        """
+        Mark a TOTP code as used to prevent replay attacks.
+        
+        Args:
+            user_id: User ID
+            code: TOTP code that was used
+            ttl_seconds: Time to keep code in cache (default 60s)
+            
+        Returns:
+            True if marked successfully
+        """
+        cache_key = f"totp_used_{user_id}_{code}"
+        self._get_cache().set(cache_key, True, timeout=ttl_seconds)
+        return True
 
 
 # Convenience function for getting configured cache service

@@ -282,10 +282,12 @@ class MeView(APIView):
             'email_verified': core_user.email_verified if not email_changed else False,
         }
         
-        updated_user = user_repo.update(str(request.user.id), update_data)
+        updated_user = user_repo.update_user(str(request.user.id), update_data)
         
-        # Get Django user for serialization
-        user = request.user
+        # Refresh user from database to get updated values
+        from tenxyte.models import get_user_model
+        UserModel = get_user_model()
+        user = UserModel.objects.get(id=request.user.id)
         
         # VULN-005 Mitigation: Reset verification flags if contact info is updated
         if email_changed:
@@ -577,7 +579,7 @@ class UserDetailView(APIView):
         for attr, value in serializer.validated_data.items():
             update_data[attr] = value
         
-        updated_user = user_repo.update(str(user_id), update_data)
+        updated_user = user_repo.update_user(str(user_id), update_data)
         
         # Get Django user for serialization
         try:

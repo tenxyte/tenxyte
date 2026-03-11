@@ -23,7 +23,8 @@ from tenxyte.core.middleware import (
     CORSCoreMiddleware,
     OrganizationContextCoreMiddleware,
 )
-from tenxyte.core.settings import Settings, DjangoSettingsProvider
+from tenxyte.core.settings import Settings
+from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
 
 
 def _django_request_to_context(request) -> RequestContext:
