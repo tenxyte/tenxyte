@@ -417,17 +417,18 @@ class WebAuthnAuthenticateCompleteView(APIView):
             credential_data=credential_data,
             challenge_id=str(challenge_id) if challenge_id else ""
         )
-        
         if not auth_result.success:
             return Response(
-                {"error": auth_result.error or "Authentication failed", "code": "AUTH_FAILED"},
+                {"error": auth_result.error or "Authentication failed", "code": "WEBAUTHN_AUTH_FAILED"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
+        app_id = str(request.application.id) if hasattr(request, 'application') and request.application else None
+        
         # Generate JWT tokens via Core service
         jwt_service = get_core_jwt_service()
-        access_token = jwt_service.generate_access_token(auth_result.user_id)
-        refresh_token = jwt_service.generate_refresh_token(auth_result.user_id, device_info=device_info)
+        access_token = jwt_service.generate_access_token(auth_result.user_id, application_id=app_id)
+        refresh_token = jwt_service.generate_refresh_token(auth_result.user_id, application_id=app_id, device_info=device_info)
 
         # Get user for response
         from ..serializers import UserSerializer
@@ -442,7 +443,7 @@ class WebAuthnAuthenticateCompleteView(APIView):
             "refresh": refresh_token,
             "user": user_data,
             "message": "Authentication successful",
-            "credential_used": auth_result.credential_id,
+            "credential_used": auth_result.credential.credential_id if auth_result.credential else None,
         })
 
 
@@ -521,10 +522,10 @@ class WebAuthnCredentialDeleteView(APIView):
     def delete(self, request, credential_id: int):
         """Delete credential using Core service."""
         service = get_core_webauthn_service()
-        success = service.delete_credential(
+        success, error_msg = service.delete_credential(
             credential_id=str(credential_id),
             user_id=str(request.user.id)
         )
         if not success:
-            return Response({"error": "Credential not found", "code": "CREDENTIAL_NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": error_msg or "Credential not found", "code": "CREDENTIAL_NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
         return Response(status=status.HTTP_204_NO_CONTENT)
