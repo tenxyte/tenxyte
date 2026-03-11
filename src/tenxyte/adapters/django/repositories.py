@@ -207,6 +207,65 @@ class DjangoUserRepository(UserRepository):
             return True
         except UserModel.DoesNotExist:
             return False
+            
+    def soft_delete(self, user_id: str) -> bool:
+        """Alias for delete()."""
+        return self.delete(user_id)
+        
+    def ban(self, user_id: str, reason: str = "") -> bool:
+        """Ban user account."""
+        try:
+            django_user = UserModel.objects.get(id=user_id)
+            if hasattr(django_user, 'ban_account'):
+                django_user.ban_account(reason)
+            else:
+                django_user.is_active = False
+                django_user.is_banned = True
+                django_user.save(update_fields=['is_active', 'is_banned'])
+            return True
+        except UserModel.DoesNotExist:
+            return False
+            
+    def unban(self, user_id: str) -> bool:
+        """Unban user account."""
+        try:
+            django_user = UserModel.objects.get(id=user_id)
+            if hasattr(django_user, 'unban_account'):
+                django_user.unban_account()
+            else:
+                django_user.is_active = True
+                django_user.is_banned = False
+                django_user.save(update_fields=['is_active', 'is_banned'])
+            return True
+        except UserModel.DoesNotExist:
+            return False
+            
+    def lock(self, user_id: str, duration_minutes: int = 30, reason: str = "") -> bool:
+        """Lock user account."""
+        try:
+            django_user = UserModel.objects.get(id=user_id)
+            if hasattr(django_user, 'lock_account'):
+                django_user.lock_account(duration_minutes)
+            else:
+                django_user.is_locked = True
+                # we don't track locked_until if the method doesn't exist, this is a fallback
+                django_user.save(update_fields=['is_locked'])
+            return True
+        except UserModel.DoesNotExist:
+            return False
+            
+    def unlock(self, user_id: str) -> bool:
+        """Unlock user account."""
+        try:
+            django_user = UserModel.objects.get(id=user_id)
+            if hasattr(django_user, 'unlock_account'):
+                django_user.unlock_account()
+            else:
+                django_user.is_locked = False
+                django_user.save(update_fields=['is_locked'])
+            return True
+        except UserModel.DoesNotExist:
+            return False
     
     def list_all(
         self,
