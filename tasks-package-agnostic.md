@@ -19,7 +19,7 @@
 - [x] **Issue 4: Re-architect Testing Suite (Sanctification)**
   - [x] Sub-issue 4.1: Set up pure unit tests for `tenxyte.core` (without `pytest-django`).
   - [x] Sub-issue 4.2: Move current tests to a `tests/integration/django/` subfolder.
-  - [ ] Sub-issue 4.3: **[Backward Compatibility]** Run the entire current Django test suite **without modifying behavior or assertions** to guarantee absolute zero regression.
+  - [x] Sub-issue 4.3: **[Backward Compatibility]** Run the entire current Django test suite **without modifying behavior or assertions** to guarantee absolute zero regression.
 
 - [ ] **Issue 5: [Proof of Concept] Develop a second adapter (FastAPI)**
   - [ ] Sub-issue 5.1: Create an abstract data model (e.g., Pydantic or SQLAlchemy) to represent users within the FastAPI context.
