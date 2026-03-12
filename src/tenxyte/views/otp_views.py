@@ -112,8 +112,8 @@ class RequestOTPView(APIView):
 
         return Response(
             {
-                "message": "OTP sent successfully",
-                "otp_id": otp.pk,
+                "message": "OTP verification code sent",
+                "otp_id": str(otp.pk),
                 "expires_at": otp.expires_at.isoformat(),
                 "channel": otp_type,
                 "masked_recipient": masked_recipient,
@@ -203,7 +203,7 @@ class VerifyEmailOTPView(APIView):
         success, error = otp_service.verify_email_otp(request.user, serializer.validated_data["code"])
 
         if not success:
-            return Response({"error": error, "code": "OTP_VERIFICATION_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": error, "code": "INVALID_OTP"}, status=status.HTTP_401_UNAUTHORIZED)
 
         verified_at = timezone.now().isoformat()
         return Response(
@@ -298,7 +298,7 @@ class VerifyPhoneOTPView(APIView):
         success, error = otp_service.verify_phone_otp(request.user, serializer.validated_data["code"])
 
         if not success:
-            return Response({"error": error, "code": "OTP_VERIFICATION_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": error, "code": "INVALID_OTP"}, status=status.HTTP_401_UNAUTHORIZED)
 
         verified_at = timezone.now().isoformat()
         phone_display = (
