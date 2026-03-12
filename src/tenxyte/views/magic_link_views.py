@@ -172,7 +172,7 @@ class MagicLinkRequestView(APIView):
 
         if not validation_url:
             return Response(
-                {"error": "VALIDATION URL is required", "code": "VALIDATION_URL_REQUIRED"},
+                {"error": "Validation URL is required", "code": "VALIDATION_URL_REQUIRED"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -316,7 +316,7 @@ class MagicLinkVerifyView(APIView):
 
         if not auth_result.success:
             return Response(
-                {"error": auth_result.error, "code": "MAGIC_LINK_INVALID"},
+                {"error": auth_result.error, "code": "INVALID_TOKEN"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
@@ -341,6 +341,8 @@ class MagicLinkVerifyView(APIView):
             "refresh": refresh_token,
             "user": user_data,
             "message": "Magic link verified successfully",
+            "session_id": auth_result.session_id if hasattr(auth_result, 'session_id') else None,
+            "device_id": auth_result.device_id if hasattr(auth_result, 'device_id') else None,
         }
 
         response = Response(response_data)

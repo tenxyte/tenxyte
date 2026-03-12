@@ -424,6 +424,7 @@ class SocialAuthService:
 
         if not user:
             # 3. Créer un nouvel utilisateur
+            is_new_user = True
             user = User.objects.create(
                 email=email.lower() if email else None,
                 first_name=user_data.get("first_name", ""),
@@ -457,6 +458,7 @@ class SocialAuthService:
                         f"Failed to create default organization for user {user.id} via social auth: {e}"
                     )
         else:
+            is_new_user = False
             # Mettre à jour l'email vérifié si nécessaire
             if email and user_data.get("email_verified") and not user.is_email_verified:
                 user.is_email_verified = True
@@ -505,7 +507,12 @@ class SocialAuthService:
                     "first_name": user.first_name,
                     "last_name": user.last_name,
                     "is_email_verified": user.is_email_verified,
+                    "is_phone_verified": getattr(user, "is_phone_verified", False),
+                    "is_2fa_enabled": getattr(user, "is_2fa_enabled", False),
+                    "roles": user.get_all_roles(),
+                    "permissions": user.get_all_permissions(),
                 },
+                "is_new_user": is_new_user,
             },
             "",
         )

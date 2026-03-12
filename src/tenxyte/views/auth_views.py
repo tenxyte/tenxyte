@@ -23,7 +23,7 @@ from ..serializers import (
     UserSerializer,
 )
 from ..decorators import require_jwt, get_client_ip
-from ..device_info import build_device_info_from_user_agent
+from ..device_info import build_device_info_from_user_agent, get_device_summary
 from ..throttles import (
     LoginThrottle,
     LoginHourlyThrottle,
@@ -343,6 +343,8 @@ class RegisterView(APIView):
             response_data.update({
                 'access_token': tokens.access_token,
                 'refresh_token': tokens.refresh_token,
+                'token_type': 'Bearer',
+                'expires_in': get_core_settings().jwt_access_token_lifetime,
             })
 
         return Response(response_data, status=status.HTTP_201_CREATED)
@@ -419,7 +421,7 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
             )
         except Exception:
             pass
-        return False, None, "Account is locked due to too many failed attempts"
+        return False, None, "Account has been locked due to too many failed login attempts"
     
     # Verify password
     if not user_repo.check_password(user.id, password):
@@ -491,6 +493,9 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
     data = {
         'access_token': tokens.access_token,
         'refresh_token': tokens.refresh_token,
+        'token_type': 'Bearer',
+        'expires_in': get_core_settings().jwt_access_token_lifetime,
+        'device_summary': get_device_summary(device_info) if device_info else 'Unknown device',
         'user': user_data,
         '_user': user,  # Internal field for 2FA check (not serialized)
         'requires_2fa': user.mfa_type != MFAType.NONE,
@@ -531,7 +536,7 @@ def authenticate_by_phone_with_core(country_code, phone_number, password, ip_add
     
     # Check if account is locked
     if user_repo.is_account_locked(user.id):
-        return False, None, "Account is locked due to too many failed attempts"
+        return False, None, "Account has been locked due to too many failed login attempts"
     
     # Verify password
     if not user_repo.check_password(user.id, password):
@@ -586,6 +591,9 @@ def authenticate_by_phone_with_core(country_code, phone_number, password, ip_add
     data = {
         'access_token': tokens.access_token,
         'refresh_token': tokens.refresh_token,
+        'token_type': 'Bearer',
+        'expires_in': get_core_settings().jwt_access_token_lifetime,
+        'device_summary': get_device_summary(device_info) if device_info else 'Unknown device',
         'user': user_data,
         '_user': user,  # Internal field for 2FA check
         'requires_2fa': user.mfa_type != MFAType.NONE,
@@ -705,6 +713,17 @@ class LoginEmailView(APIView):
         )
 
         if not success:
+            # Check if account is locked for 423 status
+            if error and "locked due to too many failed login attempts" in error:
+                return Response(
+                    {
+                        "error": "Account locked",
+                        "details": error,
+                        "code": "ACCOUNT_LOCKED",
+                        "retry_after": get_core_settings().lockout_duration,
+                    },
+                    status=status.HTTP_423_LOCKED,
+                )
             return Response({"error": error, "code": "LOGIN_FAILED"}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Vérifier 2FA si activé ou obligatoire pour ce profil
@@ -857,6 +876,17 @@ class LoginPhoneView(APIView):
         )
 
         if not success:
+            # Check if account is locked for 423 status
+            if error and "locked due to too many failed login attempts" in error:
+                return Response(
+                    {
+                        "error": "Account locked",
+                        "details": error,
+                        "code": "ACCOUNT_LOCKED",
+                        "retry_after": get_core_settings().lockout_duration,
+                    },
+                    status=status.HTTP_423_LOCKED,
+                )
             return Response({"error": error, "code": "LOGIN_FAILED"}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Vérifier 2FA si activé
@@ -936,8 +966,10 @@ class RefreshTokenView(APIView):
             200: {
                 "type": "object",
                 "properties": {
-                    "access": {"type": "string"},
-                    "refresh": {"type": "string", "description": "Nouveau refresh token (rotation)"},
+                    "access_token": {"type": "string"},
+                    "refresh_token": {"type": "string", "description": "Nouveau refresh token (rotation)"},
+                    "token_type": {"type": "string"},
+                    "expires_in": {"type": "integer"},
                     "user": {"$ref": "#/components/schemas/User"},
                 },
             },
@@ -1000,6 +1032,8 @@ class RefreshTokenView(APIView):
             data = {
                 'access_token': result.access_token,
                 'refresh_token': result.refresh_token,
+                'token_type': 'Bearer',
+                'expires_in': get_core_settings().jwt_access_token_lifetime,
             }
             
             # Convert user to serialized format

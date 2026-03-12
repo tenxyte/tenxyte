@@ -106,23 +106,43 @@ class UserSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
     roles = serializers.SerializerMethodField()
     permissions = serializers.SerializerMethodField()
+    username = serializers.CharField(source='get_username', read_only=True, allow_null=True)
+    phone = serializers.SerializerMethodField()
+    avatar = serializers.CharField(source='avatar_url', read_only=True, allow_null=True)
+    bio = serializers.CharField(read_only=True, allow_null=True)
+    timezone = serializers.CharField(read_only=True, allow_null=True)
+    language = serializers.CharField(read_only=True, allow_null=True)
+    is_active = serializers.BooleanField(read_only=True)
+    is_verified = serializers.BooleanField(source='is_email_verified', read_only=True)
+    date_joined = serializers.DateTimeField(source='created_at', read_only=True)
+    custom_fields = serializers.JSONField(read_only=True, allow_null=True)
+    preferences = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             "id",
             "email",
-            "phone_country_code",
-            "phone_number",
+            "username",
+            "phone",
+            "avatar",
+            "bio",
+            "timezone",
+            "language",
             "first_name",
             "last_name",
+            "is_active",
+            "is_verified",
             "is_email_verified",
             "is_phone_verified",
             "is_2fa_enabled",
-            "roles",
-            "permissions",
+            "date_joined",
             "created_at",
             "last_login",
+            "custom_fields",
+            "preferences",
+            "roles",
+            "permissions",
         ]
         # VULN-005: Ensure sensitive fields are strictly read-only even if injected
         read_only_fields = [
@@ -147,3 +167,16 @@ class UserSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_permissions(self, obj):
         return obj.get_all_permissions()
+
+    def get_phone(self, obj):
+        if obj.phone_country_code and obj.phone_number:
+            return f"+{obj.phone_country_code}{obj.phone_number}"
+        return None
+
+    def get_preferences(self, obj):
+        return {
+            "email_notifications": getattr(obj, 'email_notifications', True),
+            "sms_notifications": getattr(obj, 'sms_notifications', False),
+            "marketing_emails": getattr(obj, 'marketing_emails', False),
+            "two_factor_enabled": obj.is_2fa_enabled,
+        }
