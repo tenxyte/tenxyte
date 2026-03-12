@@ -5,237 +5,79 @@ rootdir: C:\Users\bobop\Documents\own\tenxyte
 configfile: pyproject.toml
 plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, django-4.11.1
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
-collected 48 items
+collected 3 items
+run-last-failure: rerun previous 3 failures (skipped 94 files)
 
-tests\integration\django\unit\test_webauthn.py ......................... [ 52%]
-.................F..FF.
-ERROR: Coverage failure: total of 37 is less than fail-under=90
+tests\core\test_magic_link_service.py FFF
+ERROR: Coverage failure: total of 19 is less than fail-under=90
                                                                          [100%]
 
 ================================== FAILURES ===================================
-____________ TestWebAuthnViews.test_authenticate_complete_success _____________
-tests\integration\django\unit\test_webauthn.py:592: in test_authenticate_complete_success
-    resp = _anon_post(WebAuthnAuthenticateCompleteView, '/webauthn/authenticate/complete/', {
-tests\integration\django\unit\test_webauthn.py:109: in _anon_post
-    return view_cls.as_view()(req)
-           ^^^^^^^^^^^^^^^^^^^^^^^
-..\..\..\AppData\Local\Python\pythoncore-3.12-64\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
-    return view_func(request, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-..\..\..\AppData\Local\Python\pythoncore-3.12-64\Lib\site-packages\django\views\generic\base.py:106: in view
-    return self.dispatch(request, *args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-..\..\..\AppData\Local\Python\pythoncore-3.12-64\Lib\site-packages\rest_framework\views.py:515: in dispatch
-    response = self.handle_exception(exc)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^
-..\..\..\AppData\Local\Python\pythoncore-3.12-64\Lib\site-packages\rest_framework\views.py:475: in handle_exception
-    self.raise_uncaught_exception(exc)
-..\..\..\AppData\Local\Python\pythoncore-3.12-64\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
-    raise exc
-..\..\..\AppData\Local\Python\pythoncore-3.12-64\Lib\site-packages\rest_framework\views.py:512: in dispatch
-    response = handler(request, *args, **kwargs)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-src\tenxyte\views\webauthn_views.py:446: in post
-    "credential_used": auth_result.credential_id,
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^
-E   AttributeError: 'AuthenticationResult' object has no attribute 'credential_id'. Did you mean: 'credential'?
-_______________ TestWebAuthnViews.test_credential_list_success ________________
-tests\integration\django\unit\test_webauthn.py:626: in test_credential_list_success
-    assert resp.data['count'] == 2
-E   assert 0 == 2
-______________ TestWebAuthnViews.test_credential_delete_success _______________
-tests\integration\django\unit\test_webauthn.py:634: in test_credential_delete_success
-    assert resp.status_code == 204
-E   assert 404 == 204
-E    +  where 404 = <Response status_code=404, "text/html; charset=utf-8">.status_code
-============================== warnings summary ===============================
-src\tenxyte\services\totp_service.py:382
-  C:\Users\bobop\Documents\own\tenxyte\src\tenxyte\services\totp_service.py:382: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
-    totp_service = TOTPService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_begin_registration_disabled
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:202: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_begin_registration_success
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:210: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_begin_registration_error
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:229: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_registration_invalid_challenge
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:244: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_registration_expired_challenge
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:257: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_registration_verification_failure
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:270: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_registration_success
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:289: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_begin_authentication_disabled
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:315: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_begin_authentication_success
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:323: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_authentication_invalid_challenge
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:338: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_authentication_unknown_credential
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:350: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_authentication_success
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:365: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_authentication_success
-  C:\Users\bobop\Documents\own\tenxyte\src\tenxyte\services\webauthn_service.py:296: DeprecationWarning: tenxyte.services.auth_service.AuthService is deprecated. Use tenxyte.core services (JWTService, UserRepository) with Django adapters instead.
-    jwt_data = AuthService().generate_tokens_for_user(
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_authentication_success
-  C:\Users\bobop\Documents\own\tenxyte\src\tenxyte\services\auth_service.py:31: DeprecationWarning: tenxyte.services.jwt_service.JWTService is deprecated. Use tenxyte.core.JWTService with Django adapters instead.
-    self.jwt_service = JWTService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_list_credentials
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:389: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_delete_credential_success
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:399: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_delete_credential_not_found
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:406: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_delete_credential_wrong_user
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:415: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_get_origin_not_localhost
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:427: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_registration_disabled
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:433: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_begin_authentication_error
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:441: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_authentication_disabled
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:452: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_authentication_expired_challenge
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:461: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_authentication_inactive_user
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:473: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_authentication_locked_user
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:487: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnService::test_complete_authentication_verification_failure
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:497: DeprecationWarning: tenxyte.services.webauthn_service.WebAuthnService is deprecated. Use tenxyte.core.WebAuthnService with Django adapters instead.
-    service = WebAuthnService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_register_begin_success
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_register_begin_error
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_register_complete_missing_fields
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_register_complete_success
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_credential_list_success
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_credential_delete_success
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_credential_delete_not_found
-  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_webauthn.py:46: DeprecationWarning: tenxyte.services.jwt_service.JWTService is deprecated. Use tenxyte.core.JWTService with Django adapters instead.
-    return JWTService().generate_token_pair(
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_register_begin_success
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_register_begin_error
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_register_complete_missing_fields
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_register_complete_success
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_credential_list_success
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_credential_delete_success
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_credential_delete_not_found
-  C:\Users\bobop\Documents\own\tenxyte\src\tenxyte\authentication.py:29: DeprecationWarning: tenxyte.services.jwt_service.JWTService is deprecated. Use tenxyte.core.JWTService with Django adapters instead.
-    jwt_service = JWTService()
-
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_register_begin_success
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_register_begin_error
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_register_complete_missing_fields
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_register_complete_success
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_credential_list_success
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_credential_delete_success
-tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_credential_delete_not_found
-  C:\Users\bobop\Documents\own\tenxyte\src\tenxyte\decorators.py:72: DeprecationWarning: tenxyte.services.jwt_service.JWTService is deprecated. Use tenxyte.core.JWTService with Django adapters instead.
-    jwt_service = JWTService()
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+_____________________________ test_generate_token _____________________________
+tests\core\test_magic_link_service.py:91: in test_generate_token
+    assert success is True
+E   assert False is True
+---------------------------- Captured stderr call -----------------------------
+Failed to send magic link email to test@example.com: MockEmailService.send_magic_link() missing 1 required positional argument: 'token'
+------------------------------ Captured log call ------------------------------
+ERROR    tenxyte.core.magic_link_service:magic_link_service.py:246 Failed to send magic link email to test@example.com: MockEmailService.send_magic_link() missing 1 required positional argument: 'token'
+______________________________ test_verify_token ______________________________
+tests\core\test_magic_link_service.py:102: in test_verify_token
+    url = magic_link_service.email_service.sent_emails[0][1]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   IndexError: list index out of range
+---------------------------- Captured stderr call -----------------------------
+Failed to send magic link email to test@example.com: MockEmailService.send_magic_link() missing 1 required positional argument: 'token'
+------------------------------ Captured log call ------------------------------
+ERROR    tenxyte.core.magic_link_service:magic_link_service.py:246 Failed to send magic link email to test@example.com: MockEmailService.send_magic_link() missing 1 required positional argument: 'token'
+___________________________ test_verify_used_token ____________________________
+tests\core\test_magic_link_service.py:116: in test_verify_used_token
+    url = magic_link_service.email_service.sent_emails[0][1]
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   IndexError: list index out of range
+---------------------------- Captured stderr call -----------------------------
+Failed to send magic link email to test@example.com: MockEmailService.send_magic_link() missing 1 required positional argument: 'token'
+------------------------------ Captured log call ------------------------------
+ERROR    tenxyte.core.magic_link_service:magic_link_service.py:246 Failed to send magic link email to test@example.com: MockEmailService.send_magic_link() missing 1 required positional argument: 'token'
 =============================== tests coverage ================================
 ______________ coverage: platform win32, python 3.12.10-final-0 _______________
 
 Name                                                          Stmts   Miss  Cover   Missing
 -------------------------------------------------------------------------------------------
 src\tenxyte\__init__.py                                          47     39    17%   74-76, 101-157
-src\tenxyte\adapters\django\__init__.py                           5      0   100%
-src\tenxyte\adapters\django\cache_service.py                     61     41    33%   54-57, 69, 88-89, 101-102, 117-118, 131-137, 153-158, 174-191, 195-196, 216-217, 231-233, 253
-src\tenxyte\adapters\django\crypto_service.py                    32     18    44%   34, 85, 97, 109, 122, 140-141, 154-157, 170-176, 185-186
-src\tenxyte\adapters\django\email_service.py                     38     28    26%   51, 55-59, 88-120, 137-151, 171-172
-src\tenxyte\adapters\django\middleware.py                       111     77    31%   41-71, 85-101, 113-123, 141-143, 148-151, 156-195, 210, 223, 228-248, 259, 270, 281, 292
-src\tenxyte\adapters\django\repositories.py                     497    423    15%   46-63, 86-101, 105-109, 113-117, 138-143, 147-178, 182-200, 204-209, 213, 217-227, 231-241, 245-255, 259-268, 277-290, 294-302, 306-312, 316-323, 327-333, 337-346, 350-361, 367-371, 397-411, 415, 419-425, 430-435, 439-444, 448-462, 466-471, 491-494, 510-514, 518-522, 526-536, 540-558, 562-568, 577-593, 597-601, 605-625, 629-641, 647-652, 656-661, 665-669, 673-677, 686-691, 702-707, 710-715, 718-726, 729-738, 741-747, 750-753, 756-762, 771-774, 785-793, 796-800, 803-805, 809, 812, 815-817, 820-824, 831-853, 866-879, 895-904, 908-919
-src\tenxyte\adapters\django\settings_provider.py                 24      6    75%   62, 82-88
-src\tenxyte\adapters\django\totp_storage.py                     118     94    20%   21, 46, 58-65, 78-87, 99-109, 124-127, 141-145, 157-165, 178-187, 200-214, 220, 229-240, 244, 248-257, 261-272
-src\tenxyte\adapters\django\webauthn_storage.py                 171    115    33%   18, 22, 26, 30, 34, 38, 42, 46, 50, 54, 58, 89-104, 116-134, 147-158, 171-179, 191-199, 211-226, 238-253, 265-271, 280-288, 296-314, 325, 349-361, 365-389, 399-420, 433, 439-456, 460-468
 src\tenxyte\admin.py                                            303    127    58%   89-93, 98-118, 125-145, 151-154, 160-175, 179-209, 267, 330, 364, 369-379, 385-400, 406-421, 427-442, 448-463, 469-483, 510, 548, 553, 558, 589, 594, 599
 src\tenxyte\apps.py                                              47     19    60%   29, 58-86, 92, 109-123
-src\tenxyte\authentication.py                                    38      9    76%   33, 39, 44-45, 48, 51, 54, 62, 74
+src\tenxyte\authentication.py                                    38     38     0%   5-74
 src\tenxyte\backends\__init__.py                                  0      0   100%
-src\tenxyte\backends\email.py                                    81     64    21%   75-80, 106-143, 167-179, 192-198, 209-236, 246-251
+src\tenxyte\backends\email.py                                    81     81     0%   24-251
 src\tenxyte\backends\sms.py                                      72     72     0%   5-167
 src\tenxyte\conf\__init__.py                                     12      0   100%
 src\tenxyte\conf\airs.py                                         34     11    68%   6, 11, 16, 21, 30, 35, 40, 45, 50, 59, 64
-src\tenxyte\conf\auth.py                                         67     14    79%   6, 11, 16, 25, 30, 35, 40, 84, 89, 94, 99, 104, 109, 114
+src\tenxyte\conf\auth.py                                         67     22    67%   6, 11, 16, 25, 30, 35, 40, 49, 54, 59, 64, 69, 74, 79, 84, 89, 94, 99, 104, 109, 114, 119
 src\tenxyte\conf\base.py                                         49     15    69%   31-33, 42, 50, 55, 60-64, 73, 78, 105, 118, 126, 135
 src\tenxyte\conf\communication.py                                38     12    68%   15, 20, 25, 46, 55, 60, 65, 74, 79, 84, 93, 98
-src\tenxyte\conf\jwt.py                                          40     12    70%   18-34, 49, 54, 85
+src\tenxyte\conf\jwt.py                                          40     19    52%   15-39, 44, 49, 54, 59, 64, 77, 85
 src\tenxyte\conf\modules.py                                      19      2    89%   8, 48
 src\tenxyte\conf\presets.py                                       2      0   100%
-src\tenxyte\conf\security.py                                     76     22    71%   6, 11, 46, 51, 59, 64, 69, 77, 86, 94, 112, 121, 126, 134, 139, 144, 149, 165, 170, 179, 187, 208
-src\tenxyte\conf\social.py                                       53     16    70%   13, 21, 26, 31, 36, 41, 46, 51, 65, 70, 75, 84, 89, 94, 103, 108
+src\tenxyte\conf\security.py                                     76     25    67%   6, 11, 28, 37, 46, 51, 59, 64, 69, 77, 86, 94, 103, 112, 121, 126, 134, 139, 144, 149, 165, 170, 179, 187, 208
+src\tenxyte\conf\social.py                                       53     17    68%   13, 21, 26, 31, 36, 41, 46, 51, 60, 65, 70, 75, 84, 89, 94, 103, 108
 src\tenxyte\core\__init__.py                                     11      0   100%
 src\tenxyte\core\cache_service.py                               104     67    36%   141-142, 154-155, 167-168, 189-206, 218, 235, 239-246, 250-255, 259-265, 274-276, 280-282, 286-288, 292-303, 307-312, 316-324, 328-329, 333-335
 src\tenxyte\core\email_service.py                                63     39    38%   88-110, 131-153, 219-246, 267-298, 309, 323-339
 src\tenxyte\core\env_provider.py                                 51     34    33%   99-105, 124-140, 144-156, 161, 166-168, 188, 208-211
-src\tenxyte\core\jwt_service.py                                 182    107    41%   50, 60, 72-73, 77-89, 99-102, 106, 110-116, 162-165, 200, 206, 231, 236-239, 285-289, 318-325, 349-412, 426-427, 431-434, 438-441, 461-467, 482, 509-596
-src\tenxyte\core\magic_link_service.py                          129     82    36%   38-42, 69, 73, 81, 85, 94, 98, 102, 147-155, 160, 164-165, 191-250, 273-327, 339-356
-src\tenxyte\core\middleware.py                                  159     94    41%   42-43, 47-51, 68-69, 85-87, 92, 97, 102-110, 132, 165, 187, 201-218, 235-241, 257-266, 274-276, 294-296, 301-305, 310-358, 363-371, 394-399, 412-418, 426, 434, 442-447, 453-455
+src\tenxyte\core\jwt_service.py                                 182    132    27%   50, 60, 72-73, 77-89, 99-102, 106, 110-116, 153-177, 199-242, 264, 285-289, 318-325, 349-412, 426-427, 431-434, 438-441, 461-467, 482, 509-596
+src\tenxyte\core\magic_link_service.py                          129     55    57%   38-42, 69, 73, 81, 85, 94, 98, 102, 192, 199-200, 209-211, 215-216, 249-250, 273-327, 339-356
+src\tenxyte\core\middleware.py                                  159    159     0%   12-455
 src\tenxyte\core\schemas.py                                     145      6    96%   107-112
 src\tenxyte\core\session_service.py                              63     63     0%   8-199
-src\tenxyte\core\settings.py                                    133     37    72%   18, 122, 128-130, 141-142, 148-149, 161, 166, 171-174, 188, 247, 252, 257, 266, 271, 280, 285, 293, 302, 307, 312, 321, 326, 335, 340, 349, 358-363, 369-370
+src\tenxyte\core\settings.py                                    133     58    56%   18, 117-133, 137-152, 161, 166, 171-174, 183, 188, 193, 198, 203, 208, 213, 247, 252, 257, 266, 271, 280, 285, 293, 302, 307, 312, 321, 326, 335, 340, 349, 358-363, 369-370
 src\tenxyte\core\totp_service.py                                222    161    27%   47, 56, 60, 64, 68, 72, 81, 85, 92, 96-97, 103-105, 151-174, 178-180, 184-193, 197, 201, 209-210, 219-237, 251-270, 285-310, 331-356, 376-389, 414-433, 453-476, 496-520, 540-557
-src\tenxyte\core\webauthn_service.py                            163     89    45%   26-28, 65-69, 95, 99, 103, 107, 111, 126, 130, 134, 188-190, 213-257, 278-329, 349-391, 408-452, 480
-src\tenxyte\decorators.py                                       313    242    23%   26, 31, 39, 58, 62-64, 76, 82, 90, 93, 98-99, 111-121, 129-139, 150-184, 206-247, 253-262, 274-287, 296-311, 320-335, 348-353, 366-381, 390-405, 423-443, 458-491, 509-543, 561-599, 612, 627-654, 676-746
-src\tenxyte\device_info.py                                      200    183     8%   93-126, 146-163, 183-210, 230-262, 285-296, 319-424
+src\tenxyte\core\webauthn_service.py                            163    100    39%   26-28, 65-69, 95, 99, 103, 107, 111, 126, 130, 134, 177-184, 188-190, 213-257, 278-329, 349-391, 408-452, 464-465, 478-481
+src\tenxyte\decorators.py                                       313    313     0%   1-746
+src\tenxyte\device_info.py                                      200    200     0%   21-424
 src\tenxyte\docs\__init__.py                                      0      0   100%
 src\tenxyte\docs\schemas.py                                      56     56     0%   7-488
-src\tenxyte\filters.py                                          121    108    11%   38-54, 70-77, 89-97, 110-119, 137-147, 164-169, 186-191, 216-232, 251-264, 277-296, 317-338, 358-371
+src\tenxyte\filters.py                                          121    121     0%   15-371
 src\tenxyte\management\__init__.py                                0      0   100%
 src\tenxyte\management\commands\__init__.py                       0      0   100%
 src\tenxyte\management\commands\tenxyte_cleanup.py               79     79     0%   1-115
@@ -244,81 +86,81 @@ src\tenxyte\management\commands\tenxyte_quickstart.py            68     68     0
 src\tenxyte\middleware.py                                       202    202     0%   1-431
 src\tenxyte\models\__init__.py                                   13      0   100%
 src\tenxyte\models\agent.py                                      69      6    91%   80, 85, 95-96, 101, 129
-src\tenxyte\models\application.py                                52     15    71%   51, 62-66, 69-71, 78-85
-src\tenxyte\models\auth.py                                      299    155    48%   35, 90, 94-97, 101-105, 135, 138, 142, 255-283, 289, 294, 298, 302, 320-322, 325-327, 333-334, 343, 350-387, 391-393, 396, 409-416, 428-439, 451-452, 466-488, 502-525, 537-543, 555, 567, 575, 579, 583, 600-601, 607-628, 632, 636, 648-656, 660-668, 672-677
+src\tenxyte\models\application.py                                52     22    58%   51, 56-57, 62-66, 69-71, 78-85, 92-96
+src\tenxyte\models\auth.py                                      299    175    41%   31, 35, 90, 94-97, 101-105, 135, 138, 142, 243-247, 255-283, 289, 294, 298, 302, 320-322, 325-327, 330-335, 339, 343, 350-387, 391-393, 396, 409-416, 428-439, 451-452, 466-488, 502-525, 537-543, 555, 567, 575, 579, 583, 587-603, 607-628, 632, 636, 640, 644, 648-656, 660-668, 672-677
 src\tenxyte\models\base.py                                       57     17    70%   20-21, 23-26, 50-53, 65-68, 80-83, 95-98
 src\tenxyte\models\gdpr.py                                       82     47    43%   81, 87-91, 101-122, 126-131, 135-168, 172-174, 178-180, 185
 src\tenxyte\models\magic_link.py                                 58     30    48%   55, 65-79, 90-119, 123-125, 128
-src\tenxyte\models\operational.py                                99     27    73%   53, 57-64, 67, 70-99, 179-180, 188, 196-197, 232-233, 237
+src\tenxyte\models\operational.py                                99     35    65%   53, 57-64, 67, 70-99, 140, 151-163, 179-180, 185, 188, 196-197, 222, 232-233, 237
 src\tenxyte\models\organization.py                              179     71    60%   76, 90-97, 109-118, 127-130, 140-145, 150, 159-161, 165, 169-171, 215, 219-226, 278, 282, 286, 342, 359-362, 368, 372, 384-411, 415-416, 476-479, 484-487, 492-495
-src\tenxyte\models\security.py                                  103     31    70%   44, 49-55, 65, 69-72, 79-80, 166, 199-206, 235, 240-241, 327-346
+src\tenxyte\models\security.py                                  103     51    50%   44, 49-55, 62-74, 79-80, 166, 182-220, 235, 240-241, 322-346
 src\tenxyte\models\social.py                                     26      3    88%   61, 84-97
 src\tenxyte\models\tenant.py                                     29     14    52%   26-49, 56, 93-106
-src\tenxyte\models\webauthn.py                                   47      1    98%   46
-src\tenxyte\pagination.py                                        16      2    88%   44, 59
-src\tenxyte\ports\__init__.py                                     2      0   100%
-src\tenxyte\ports\repositories.py                               177     17    90%   57-58, 77-78, 94-95, 113-114, 365, 374, 383, 392, 401, 405, 409, 413, 417
-src\tenxyte\serializers\__init__.py                              10      0   100%
-src\tenxyte\serializers\application_serializers.py               16      0   100%
-src\tenxyte\serializers\auth_serializers.py                      60     18    70%   35-39, 51-53, 71-75, 94-98
-src\tenxyte\serializers\gdpr_admin_serializers.py                14      1    93%   37
-src\tenxyte\serializers\organization_serializers.py              82      9    89%   89, 93-97, 112-113, 117
-src\tenxyte\serializers\otp_serializers.py                        5      0   100%
-src\tenxyte\serializers\password_serializers.py                  13      3    77%   21-23
-src\tenxyte\serializers\rbac_serializers.py                      79     37    53%   28-30, 34-37, 40-46, 49-58, 82-87, 90-97
-src\tenxyte\serializers\security_serializers.py                  56      4    93%   73-75, 104-106
-src\tenxyte\serializers\twofa_serializers.py                     16      0   100%
-src\tenxyte\serializers\user_admin_serializers.py                39      3    92%   39, 80, 84
-src\tenxyte\services\__init__.py                                 10      0   100%
+src\tenxyte\models\webauthn.py                                   47      9    81%   46, 49-51, 87-88, 99, 102-103
+src\tenxyte\pagination.py                                        16     16     0%   10-109
+src\tenxyte\ports\__init__.py                                     2      2     0%   3-21
+src\tenxyte\ports\repositories.py                               177    177     0%   8-425
+src\tenxyte\serializers\__init__.py                              10     10     0%   9-94
+src\tenxyte\serializers\application_serializers.py               16     16     0%   5-34
+src\tenxyte\serializers\auth_serializers.py                      60     60     0%   5-149
+src\tenxyte\serializers\gdpr_admin_serializers.py                14     14     0%   5-43
+src\tenxyte\serializers\organization_serializers.py              82     82     0%   5-172
+src\tenxyte\serializers\otp_serializers.py                        5      5     0%   5-13
+src\tenxyte\serializers\password_serializers.py                  13     13     0%   5-38
+src\tenxyte\serializers\rbac_serializers.py                      79     79     0%   5-122
+src\tenxyte\serializers\security_serializers.py                  56     56     0%   7-135
+src\tenxyte\serializers\twofa_serializers.py                     16     16     0%   5-37
+src\tenxyte\serializers\user_admin_serializers.py                39     39     0%   5-117
+src\tenxyte\services\__init__.py                                 10     10     0%   1-11
 src\tenxyte\services\account_deletion_service.py                 95     95     0%   5-461
-src\tenxyte\services\agent_service.py                           180    157    13%   13, 16, 35-118, 126-158, 167-189, 193-198, 202-212, 216-222, 226-235, 239-243, 249-288, 293-295, 306-318, 322-334, 343-360
-src\tenxyte\services\auth_service.py                            194    149    23%   35-44, 48, 52, 56, 62-68, 268-313, 331-346, 353-362, 472, 540-607, 616-733, 740-785, 800
-src\tenxyte\services\breach_check_service.py                      9      0   100%
-src\tenxyte\services\email_service.py                           105     86    18%   50-56, 79, 111-156, 170-207, 286-331, 356-416, 429-460, 472-511, 523-547, 559-587, 602-628, 640-646
-src\tenxyte\services\jwt_service.py                              79     36    54%   29-38, 113, 116-119, 125, 131-134, 140-143, 157-179
-src\tenxyte\services\magic_link_service.py                       50     35    30%   33-40, 57-94, 105-144
+src\tenxyte\services\agent_service.py                           180    180     0%   1-360
+src\tenxyte\services\auth_service.py                            194    194     0%   1-802
+src\tenxyte\services\breach_check_service.py                      9      9     0%   14-113
+src\tenxyte\services\email_service.py                           105    105     0%   24-646
+src\tenxyte\services\jwt_service.py                              79     79     0%   1-181
+src\tenxyte\services\magic_link_service.py                       50     50     0%   8-144
 src\tenxyte\services\organization_service.py                    176    176     0%   12-606
-src\tenxyte\services\otp_service.py                              73     61    16%   23-25, 41-43, 61-78, 84-101, 139-152, 168-190
-src\tenxyte\services\social_auth_service.py                     183    124    32%   61, 66, 71, 75-83, 87-95, 111, 115-136, 139-142, 145, 157, 181, 184-202, 212, 237, 240-245, 255, 281, 284-300, 310, 335-345, 365, 383-497
+src\tenxyte\services\otp_service.py                              73     73     0%   1-190
+src\tenxyte\services\social_auth_service.py                     183    183     0%   13-497
 src\tenxyte\services\stats_service.py                            95     95     0%   7-339
-src\tenxyte\services\totp_service.py                            167    127    24%   49, 57-65, 69, 73, 81, 87, 101-129, 136-137, 146-164, 177-190, 199-236, 246-266, 284-298, 311-329, 342-356, 365-378
-src\tenxyte\services\webauthn_service.py                        110      1    99%   28
-src\tenxyte\signals.py                                           44      8    82%   95-108, 127, 130, 136
+src\tenxyte\services\totp_service.py                            167    167     0%   11-382
+src\tenxyte\services\webauthn_service.py                        110    110     0%   11-327
+src\tenxyte\signals.py                                           44     26    41%   73, 87-108, 118-143
 src\tenxyte\tasks\__init__.py                                     0      0   100%
 src\tenxyte\tasks\agent_tasks.py                                 24     24     0%   1-46
 src\tenxyte\tenant_context.py                                     7      2    71%   26, 36
-src\tenxyte\throttles.py                                        130     78    40%   19-21, 154-156, 160, 169-174, 179-181, 209-211, 215-217, 225-242, 245-263, 266-273, 290-344
+src\tenxyte\throttles.py                                        130    130     0%   11-344
 src\tenxyte\urls.py                                              14     14     0%   1-253
-src\tenxyte\validators.py                                        34     12    65%   286-301
-src\tenxyte\views\__init__.py                                     9      0   100%
+src\tenxyte\validators.py                                        34     34     0%   11-301
+src\tenxyte\views\__init__.py                                     9      9     0%   1-58
 src\tenxyte\views\account_deletion_views.py                      51     51     0%   5-493
-src\tenxyte\views\agent_views.py                                132     80    39%   65-79, 185-237, 267-272, 303-309, 330-336, 370-382, 410-411, 456-477, 539-544, 606-611
-src\tenxyte\views\application_views.py                           90     57    37%   92-102, 106-116, 251-255, 259-275, 279-293, 299-305, 359-372
-src\tenxyte\views\auth_views.py                                 160    109    32%   44-45, 49-50, 54-55, 66-68, 73-78, 83-85, 94, 99-110, 118-165, 980-1024, 1078-1131, 1174-1209
+src\tenxyte\views\agent_views.py                                132    132     0%   1-614
+src\tenxyte\views\application_views.py                           90     90     0%   1-372
+src\tenxyte\views\auth_views.py                                 160    160     0%   8-1209
 src\tenxyte\views\auth_views_legacy.py                           71     71     0%   1-711
 src\tenxyte\views\dashboard_views.py                             36     36     0%   7-194
 src\tenxyte\views\gdpr_admin_views.py                            82     82     0%   11-377
 src\tenxyte\views\magic_link_views.py                            83     83     0%   8-348
 src\tenxyte\views\magic_link_views_legacy.py                     33     33     0%   5-249
 src\tenxyte\views\organization_views.py                         140    140     0%   8-1065
-src\tenxyte\views\otp_views.py                                   36     16    56%   15-18, 23-25, 196-209
-src\tenxyte\views\password_views.py                              49     12    76%   40-42, 47-49, 54-56, 61-63
+src\tenxyte\views\otp_views.py                                   36     36     0%   1-224
+src\tenxyte\views\password_views.py                              49     49     0%   8-465
 src\tenxyte\views\password_views_legacy.py                       25     25     0%   1-413
-src\tenxyte\views\rbac_views.py                                 263    198    25%   98-108, 112-119, 186-190, 194-206, 210-215, 292-302, 306-313, 387-391, 395-407, 411-416, 502-505, 509-515, 520-530, 539-543, 554-590, 595-632, 800-803, 807-813, 818-826, 835-839, 851-887, 892-929
-src\tenxyte\views\security_views.py                             138     85    38%   86-90, 124-134, 217-218, 256-300, 318-330, 392-396, 433-451, 487-498, 554-558, 586-597
+src\tenxyte\views\rbac_views.py                                 263    263     0%   1-929
+src\tenxyte\views\security_views.py                             138    138     0%   8-597
 src\tenxyte\views\social_auth_views.py                           74     74     0%   8-372
-src\tenxyte\views\twofa_views.py                                 93     48    48%   38-40, 45-47, 52-54, 59-61, 66-68, 73-75, 80-85, 102, 154-168, 242-262, 435-453
+src\tenxyte\views\twofa_views.py                                 93     93     0%   8-453
 src\tenxyte\views\twofa_views_legacy.py                          46     46     0%   1-344
-src\tenxyte\views\user_views.py                                 205    136    34%   45-47, 52-54, 250-301, 372-399, 432, 471-481, 492-495, 505-508, 565-589, 600-618, 692-711, 729-746, 823-847, 867-884
+src\tenxyte\views\user_views.py                                 205    205     0%   8-893
 src\tenxyte\views\user_views_legacy.py                          159    159     0%   1-789
-src\tenxyte\views\webauthn_views.py                              55      3    95%   48-50
+src\tenxyte\views\webauthn_views.py                              55     55     0%   16-494
 src\tenxyte\views\webauthn_views_legacy.py                       20     20     0%   13-388
 -------------------------------------------------------------------------------------------
-TOTAL                                                         10053   6335    37%
+TOTAL                                                          8996   7310    19%
 Coverage HTML written to dir htmlcov
-FAIL Required test coverage of 90% not reached. Total coverage: 36.98%
+FAIL Required test coverage of 90% not reached. Total coverage: 18.74%
 =========================== short test summary info ===========================
-FAILED tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_authenticate_complete_success
-FAILED tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_credential_list_success
-FAILED tests/integration/django/unit/test_webauthn.py::TestWebAuthnViews::test_credential_delete_success
-================= 3 failed, 45 passed, 48 warnings in 15.47s ==================
+FAILED tests/core/test_magic_link_service.py::test_generate_token - assert Fa...
+FAILED tests/core/test_magic_link_service.py::test_verify_token - IndexError:...
+FAILED tests/core/test_magic_link_service.py::test_verify_used_token - IndexE...
+============================== 3 failed in 5.28s ==============================
