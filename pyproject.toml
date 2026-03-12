@@ -173,7 +173,7 @@ packages = ["src/tenxyte"]
 # Django tests (integration tests with Django ORM)
 # Run with: pytest tests/integration/django/
 DJANGO_SETTINGS_MODULE = "tests.integration.django.settings"
-pythonpath = ["."]
+pythonpath = [".", "src"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -190,3 +190,7 @@ target-version = ["py310", "py311", "py312"]
 [tool.ruff]
 line-length = 120
 target-version = "py310"
+
+[tool.pyright]
+include = ["src"]
+extraPaths = ["src"]
