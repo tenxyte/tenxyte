@@ -148,6 +148,9 @@ class PasswordResetRequestView(APIView):
                 }
             )
 
+        # Ne pas révéler si l'utilisateur existe - retourner une réponse identique
+        return Response(status=status.HTTP_200_OK)
+
 
 class PasswordResetConfirmView(APIView):
     """

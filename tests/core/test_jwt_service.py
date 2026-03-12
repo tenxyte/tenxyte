@@ -22,6 +22,9 @@ class MockTokenBlacklist:
         self.blacklist.add(jti)
         return True
         
+    def is_user_revoked(self, user_id: str, token_iat: datetime = None) -> bool:
+        return False
+        
     def get(self, key: str):
         return None
         

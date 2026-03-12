@@ -1,93 +1,161 @@
+"""
+Tests for DjangoEmailService - targeting 100% coverage of
+src/tenxyte/adapters/django/email_service.py
+"""
 import pytest
 from unittest.mock import patch, MagicMock
 
-from tenxyte.models import User, AccountDeletionRequest
-from tenxyte.services.email_service import EmailService
+from tenxyte.adapters.django.email_service import DjangoEmailService, get_email_service
+from tenxyte.core.email_service import EmailAttachment
+
 
 @pytest.fixture
-def user(db):
-    u = User.objects.create(email="test_email_svc@test.com", is_active=True)
-    u.set_password("Pass123!")
-    u.save()
-    return u
+def email_svc():
+    return DjangoEmailService()
 
-@pytest.mark.django_db
-def test_send_welcome_email():
-    service = EmailService()
-    
-    with patch.object(service, 'send_email', return_value=True) as mock_send:
-        result = service.send_welcome_email(
-            to_email="newuser@test.com",
-            first_name="John",
-            app_name="TestApp"
+
+# ── _get_from_email ──────────────────────────────────────────────────────────
+
+def test_get_from_email_explicit(email_svc):
+    """Returns the explicitly provided from_email (line 55-56)."""
+    assert email_svc._get_from_email("alice@example.com") == "alice@example.com"
+
+
+def test_get_from_email_default_instance():
+    """Returns _default_from_email when set on the instance (line 57-58)."""
+    svc = DjangoEmailService(default_from_email="svc@example.com")
+    assert svc._get_from_email() == "svc@example.com"
+
+
+def test_get_from_email_django_setting(email_svc):
+    """Falls back to Django DEFAULT_FROM_EMAIL setting (line 59)."""
+    with patch("tenxyte.adapters.django.email_service.django_settings") as mock_settings:
+        mock_settings.DEFAULT_FROM_EMAIL = "django@example.com"
+        result = email_svc._get_from_email()
+    assert result == "django@example.com"
+
+
+# ── send ────────────────────────────────────────────────────────────────────
+
+def test_send_plain_text(email_svc):
+    """send() with plain-text body returns True (lines 88-114)."""
+    with patch("tenxyte.adapters.django.email_service.EmailMultiAlternatives") as MockMsg:
+        instance = MagicMock()
+        MockMsg.return_value = instance
+        result = email_svc.send(
+            to_email="bob@example.com",
+            subject="Hello",
+            body="World",
         )
-        
     assert result is True
-    mock_send.assert_called_once()
-    call_args = mock_send.call_args.kwargs
-    assert call_args['to_email'] == "newuser@test.com"
-    assert "Bienvenue sur TestApp" in call_args['subject']
-    assert "John," in call_args['message']
-    assert "John," in call_args['html_message']
+    instance.send.assert_called_once()
+    instance.attach_alternative.assert_not_called()
 
-@pytest.mark.django_db
-def test_send_magic_link_email():
-    service = EmailService()
-    
-    with patch.object(service, 'send_email', return_value=True) as mock_send:
-        result = service.send_magic_link_email(
-            to_email="magic@test.com",
-            token="test-token-123",
-            first_name="Jane",
-            expiry_minutes=30,
-            app_name="TestApp",
-            validation_url="https://test.com/magic/"
+
+def test_send_with_html(email_svc):
+    """send() with html_body attaches the HTML alternative (line 100-101)."""
+    with patch("tenxyte.adapters.django.email_service.EmailMultiAlternatives") as MockMsg:
+        instance = MagicMock()
+        MockMsg.return_value = instance
+        result = email_svc.send(
+            to_email="bob@example.com",
+            subject="Hello",
+            body="World",
+            html_body="<b>World</b>",
         )
-        
     assert result is True
-    mock_send.assert_called_once()
-    call_args = mock_send.call_args.kwargs
-    assert call_args['to_email'] == "magic@test.com"
-    assert "Votre lien de connexion" in call_args['subject']
-    assert "Jane," in call_args['message']
-    assert "https://test.com/magic/?token=test-token-123" in call_args['message']
-    assert "https://test.com/magic/?token=test-token-123" in call_args['html_message']
+    instance.attach_alternative.assert_called_once_with("<b>World</b>", "text/html")
 
-@pytest.mark.django_db
-def test_send_account_deletion_confirmation(user):
-    from django.utils import timezone
-    service = EmailService()
-    
-    with patch.object(AccountDeletionRequest, 'send_confirmation_email', return_value=None):
-        req = AccountDeletionRequest.create_request(
-            user=user, ip_address="1.2.3.4", user_agent="test"
+
+def test_send_with_cc_bcc(email_svc):
+    """send() passes cc and bcc through to EmailMultiAlternatives (lines 95-96)."""
+    with patch("tenxyte.adapters.django.email_service.EmailMultiAlternatives") as MockMsg:
+        instance = MagicMock()
+        MockMsg.return_value = instance
+        result = email_svc.send(
+            to_email="bob@example.com",
+            subject="Hi",
+            body="Body",
+            cc=["cc@example.com"],
+            bcc=["bcc@example.com"],
         )
-    
-    mock_site = MagicMock()
-    mock_site.domain = 'testserver.com'
-    with patch('django.contrib.sites.shortcuts.get_current_site', return_value=mock_site), \
-         patch.object(service, '_send_template_email', return_value=True) as mock_send:
-        result = service.send_account_deletion_confirmation(req)
-        
     assert result is True
-    mock_send.assert_called_once()
-    call_args = mock_send.call_args.kwargs
-    assert call_args['to_email'] == user.email
-    assert "Confirmez votre demande de suppression" in call_args['subject']
-    assert 'account_deletion_confirmation.html' in call_args['template_name']
-    assert call_args['context']['user'] == user
-    assert req.confirmation_token in call_args['context']['confirmation_url']
+    _, kwargs = MockMsg.call_args
+    assert kwargs["cc"] == ["cc@example.com"]
+    assert kwargs["bcc"] == ["bcc@example.com"]
 
-@pytest.mark.django_db
-def test_send_account_deletion_confirmation_failure(user):
-    service = EmailService()
-    
-    with patch.object(AccountDeletionRequest, 'send_confirmation_email', return_value=None):
-        req = AccountDeletionRequest.create_request(
-            user=user, ip_address="1.2.3.4", user_agent="test"
+
+def test_send_with_attachments(email_svc):
+    """send() attaches files when attachments provided (lines 104-110)."""
+    attachment = EmailAttachment(
+        filename="file.txt",
+        content=b"hello",
+        content_type="text/plain",
+    )
+    with patch("tenxyte.adapters.django.email_service.EmailMultiAlternatives") as MockMsg:
+        instance = MagicMock()
+        MockMsg.return_value = instance
+        result = email_svc.send(
+            to_email="bob@example.com",
+            subject="Hi",
+            body="Body",
+            attachments=[attachment],
         )
-    
-    with patch.object(service, '_send_template_email', return_value=False):
-        result = service.send_account_deletion_confirmation(req)
-        
+    assert result is True
+    instance.attach.assert_called_once_with("file.txt", b"hello", "text/plain")
+
+
+def test_send_exception_returns_false(email_svc):
+    """send() returns False and prints error when an exception occurs (lines 116-120)."""
+    with patch("tenxyte.adapters.django.email_service.EmailMultiAlternatives") as MockMsg:
+        MockMsg.side_effect = Exception("SMTP error")
+        result = email_svc.send(
+            to_email="bob@example.com",
+            subject="Hi",
+            body="Body",
+        )
     assert result is False
+
+
+# ── send_mass_email ──────────────────────────────────────────────────────────
+
+def test_send_mass_email_success(email_svc):
+    """send_mass_email() returns the count of sent emails (lines 137-148)."""
+    recipients = [
+        ("Subject1", "Body1", "a@example.com"),
+        ("Subject2", "Body2", "b@example.com"),
+    ]
+    with patch("django.core.mail.send_mass_mail", return_value=2) as mock_smm:
+        result = email_svc.send_mass_email(recipients)
+    assert result == 2
+    mock_smm.assert_called_once()
+
+
+def test_send_mass_email_exception_returns_zero(email_svc):
+    """send_mass_email() returns 0 on exception (lines 149-151)."""
+    with patch("django.core.mail.send_mass_mail", side_effect=Exception("fail")):
+        result = email_svc.send_mass_email([("S", "B", "x@example.com")])
+    assert result == 0
+
+
+def test_send_mass_email_with_from(email_svc):
+    """send_mass_email() forwards custom from_email (line 139)."""
+    with patch("django.core.mail.send_mass_mail", return_value=1) as mock_smm:
+        email_svc.send_mass_email(
+            [("S", "B", "x@example.com")],
+            from_email="custom@example.com",
+        )
+    args, _ = mock_smm.call_args
+    # First arg is the list of tuples; check the from_email field
+    assert args[0][0][2] == "custom@example.com"
+
+
+# ── get_email_service ────────────────────────────────────────────────────────
+
+def test_get_email_service(email_svc):
+    """get_email_service() returns a configured DjangoEmailService (lines 171-172)."""
+    with patch("tenxyte.adapters.django.email_service.django_settings") as mock_settings:
+        mock_settings.DEFAULT_FROM_EMAIL = "noreply@example.com"
+        svc = get_email_service()
+    assert isinstance(svc, DjangoEmailService)
+    assert svc._default_from_email == "noreply@example.com"

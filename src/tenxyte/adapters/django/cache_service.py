@@ -101,6 +101,9 @@ class DjangoCacheService(CacheService):
         self._get_cache().delete(key)
         return True
     
+    # Sentinel object used by exists() to distinguish a missing key from None
+    _CACHE_MISS = object()
+
     def exists(self, key: str) -> bool:
         """
         Check if a key exists in Django cache.
@@ -111,11 +114,8 @@ class DjangoCacheService(CacheService):
         Returns:
             True if key exists and hasn't expired
         """
-        # Django's cache doesn't have a direct exists method
-        # We use get() and check if it returns None
-        # Note: This is not perfect as None could be a valid cached value
-        value = self._get_cache().get(key)
-        return value is not None or self._get_cache().get(key, sentinel=True) is not True
+        # Use a sentinel default to distinguish a missing key from a cached None value
+        return self._get_cache().get(key, self._CACHE_MISS) is not self._CACHE_MISS
     
     def increment(self, key: str, delta: int = 1) -> int:
         """
@@ -231,6 +231,50 @@ class DjangoCacheService(CacheService):
         cache_key = f"totp_used_{user_id}_{code}"
         self._get_cache().set(cache_key, True, timeout=ttl_seconds)
         return True
+
+    def revoke_all_user_tokens(self, user_id: str) -> 'datetime':
+        """
+        Revoke all tokens for a user by setting a revocation timestamp.
+        """
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        self._get_cache().set(f"revoked_user_{user_id}", now.timestamp(), timeout=86400 * 30) # 30 days
+        return now
+
+    def is_blacklisted(self, jti: str) -> bool:
+        """Check if a token JTI is blacklisted."""
+        return self._get_cache().get(f"blacklisted_token_{jti}") is not None
+        
+    def blacklist_token(
+        self,
+        jti: str,
+        expires_at: 'datetime',
+        user_id: Optional[str] = None,
+        reason: str = ""
+    ) -> bool:
+        """Add a token JTI to the blacklist."""
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        ttl = max(0, int((expires_at - now).total_seconds()))
+        self._get_cache().set(f"blacklisted_token_{jti}", True, timeout=ttl)
+        return True
+        
+    def is_user_revoked(self, user_id: str, token_iat: 'datetime' = None) -> bool:
+        """Check if all tokens for a user issued before a certain time are revoked."""
+        if not token_iat:
+            return False
+            
+        revocation_time = self._get_cache().get(f"revoked_user_{user_id}")
+        if not revocation_time:
+            return False
+            
+        from datetime import datetime, timezone
+        if isinstance(revocation_time, datetime):
+            return token_iat < revocation_time
+        elif isinstance(revocation_time, (int, float)):
+            revocation_dt = datetime.fromtimestamp(revocation_time, tz=timezone.utc)
+            return token_iat < revocation_dt
+        return False
 
 
 # Convenience function for getting configured cache service

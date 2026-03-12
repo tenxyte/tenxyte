@@ -316,7 +316,7 @@ class MagicLinkVerifyView(APIView):
 
         if not auth_result.success:
             return Response(
-                {"error": auth_result.error, "code": "INVALID_TOKEN"},
+                {"error": auth_result.error, "code": "MAGIC_LINK_INVALID"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
