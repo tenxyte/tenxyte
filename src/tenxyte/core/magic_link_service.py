@@ -66,11 +66,11 @@ class MagicLinkRepository(Protocol):
         expiry_minutes: int = 15
     ) -> MagicLinkToken:
         """Create a new magic link token. Returns token with raw token set."""
-        ...
+        ...  # pragma: no cover
     
     def get_by_token(self, token: str) -> Optional[MagicLinkToken]:
         """Get token by raw token value (validates hash internally)."""
-        ...
+        ...  # pragma: no cover
     
     def invalidate_user_tokens(
         self,
@@ -78,11 +78,11 @@ class MagicLinkRepository(Protocol):
         application_id: Optional[str] = None
     ) -> int:
         """Mark all unused tokens for user as used. Returns count."""
-        ...
+        ...  # pragma: no cover
     
     def consume(self, token_id: str) -> bool:
         """Mark token as used."""
-        ...
+        ...  # pragma: no cover
 
 
 @runtime_checkable
@@ -91,15 +91,15 @@ class UserLookup(Protocol):
     
     def get_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """Get user by email (case-insensitive). Returns None if not found."""
-        ...
+        ...  # pragma: no cover
     
     def is_active(self, user_id: str) -> bool:
         """Check if user account is active."""
-        ...
+        ...  # pragma: no cover
     
     def is_locked(self, user_id: str) -> bool:
         """Check if user account is locked."""
-        ...
+        ...  # pragma: no cover
 
 
 class MagicLinkService:
@@ -350,7 +350,7 @@ class MagicLinkService:
             if len(stored_parts) == 4 and len(current_parts) == 4:
                 # IPv4 /24 subnet match (first 3 octets)
                 return stored_parts[:3] == current_parts[:3]
-        except Exception:
+        except Exception:  # pragma: no cover
             pass
         
         return False

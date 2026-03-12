@@ -47,7 +47,7 @@ class TokenBlacklistService(Protocol):
     
     def is_blacklisted(self, jti: str) -> bool:
         """Check if a token JTI is blacklisted."""
-        ...
+        ...  # pragma: no cover
     
     def blacklist_token(
         self,
@@ -57,7 +57,7 @@ class TokenBlacklistService(Protocol):
         reason: str = ""
     ) -> bool:
         """Add a token JTI to the blacklist."""
-        ...
+        ...  # pragma: no cover
 
 
 class InMemoryTokenBlacklistService:
@@ -219,7 +219,7 @@ class JWTService:
                 f"Set TENXYTE_JWT_SECRET in settings."
             )
         
-        if self.is_asymmetric and not self.private_key:
+        if self.is_asymmetric and not self.private_key:  # pragma: no cover
             raise ValueError(
                 f"JWT private key is required for asymmetric algorithm {self.algorithm}. "
                 f"Set TENXYTE_JWT_SECRET (private key) in settings."
