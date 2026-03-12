@@ -112,7 +112,7 @@ class RequestOTPView(APIView):
 
         return Response(
             {
-                "message": "OTP verification code sent",
+                "message": "OTP sent",
                 "otp_id": str(otp.pk),
                 "expires_at": otp.expires_at.isoformat(),
                 "channel": otp_type,
@@ -203,7 +203,7 @@ class VerifyEmailOTPView(APIView):
         success, error = otp_service.verify_email_otp(request.user, serializer.validated_data["code"])
 
         if not success:
-            return Response({"error": error, "code": "INVALID_OTP"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"error": error, "code": "OTP_VERIFICATION_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
 
         verified_at = timezone.now().isoformat()
         return Response(
@@ -298,9 +298,14 @@ class VerifyPhoneOTPView(APIView):
         success, error = otp_service.verify_phone_otp(request.user, serializer.validated_data["code"])
 
         if not success:
-            return Response({"error": error, "code": "INVALID_OTP"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"error": error, "code": "OTP_VERIFICATION_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
 
         verified_at = timezone.now().isoformat()
+        phone_changed = False
+        if "phone" in serializer.validated_data:
+            new_phone = serializer.validated_data["phone"]
+            current_phone = f"{request.user.phone_country_code}{request.user.phone_number}"
+            phone_changed = new_phone != current_phone
         phone_display = (
             f"+{request.user.phone_country_code}{request.user.phone_number}"
             if request.user.phone_country_code

@@ -71,6 +71,8 @@ class InMemoryTokenBlacklistService:
     def __init__(self):
         self._blacklisted: Dict[str, datetime] = {}
         self._reasons: Dict[str, str] = {}
+        # User-level revocation: user_id -> revocation timestamp
+        self._user_revocations: Dict[str, datetime] = {}
     
     def is_blacklisted(self, jti: str) -> bool:
         """Check if a token JTI is blacklisted."""
@@ -87,6 +89,21 @@ class InMemoryTokenBlacklistService:
             return False
         
         return True
+    
+    def is_user_revoked(self, user_id: str, token_iat: datetime) -> bool:
+        """Check if all tokens for a user issued before a certain time are revoked."""
+        if user_id not in self._user_revocations:
+            return False
+        
+        revocation_time = self._user_revocations[user_id]
+        # If token was issued before revocation, it's revoked
+        return token_iat < revocation_time
+    
+    def revoke_all_user_tokens(self, user_id: str) -> datetime:
+        """Mark all current and future tokens for a user as revoked until now."""
+        now = datetime.now(timezone.utc)
+        self._user_revocations[user_id] = now
+        return now
     
     def blacklist_token(
         self,
@@ -393,6 +410,12 @@ class JWTService:
             is_blacklisted = False
             if check_blacklist:
                 is_blacklisted = self.blacklist_service.is_blacklisted(jti)
+                
+                # Also check user-level revocation (for password change, etc.)
+                if not is_blacklisted and user_id:
+                    is_blacklisted = self.blacklist_service.is_user_revoked(
+                        user_id, iat_dt
+                    )
             
             return DecodedToken(
                 user_id=str(user_id),
@@ -486,6 +509,64 @@ class JWTService:
             reason=reason
         )
     
+    def revoke_all_user_tokens(
+        self,
+        user_id: str,
+        reason: str = "password_change"
+    ) -> bool:
+        """
+        Revoke all tokens for a specific user.
+        
+        This revokes:
+        1. All refresh tokens in the database (marks them as revoked)
+        2. All current JWT access tokens via user-level revocation timestamp
+        
+        Typically called when a user changes their password to invalidate 
+        all existing sessions.
+        
+        Args:
+            user_id: User identifier
+            reason: Reason for revocation (default: password_change)
+            
+        Returns:
+            True if operation was successful
+        """
+        revoked_count = 0
+        
+        # 1. Revoke all refresh tokens in database
+        try:
+            from tenxyte.models import RefreshToken as RefreshTokenModel
+            
+            # Get all non-revoked refresh tokens for this user
+            active_tokens = RefreshTokenModel.objects.filter(
+                user_id=user_id,
+                is_revoked=False
+            )
+            
+            # Revoke each token
+            for token_obj in active_tokens:
+                token_obj.is_revoked = True
+                token_obj.save(update_fields=['is_revoked'])
+                revoked_count += 1
+                
+        except ImportError:
+            # Django models not available, skip database revocation
+            pass
+        
+        # 2. Mark all current JWT access tokens as revoked via user-level revocation
+        # This sets a timestamp - any token issued before this time is considered revoked
+        revocation_time = self.blacklist_service.revoke_all_user_tokens(user_id)
+        
+        # Also store the revocation event for audit purposes
+        self.blacklist_service.blacklist_token(
+            jti=f"user_revocation:{user_id}:{revocation_time.isoformat()}",
+            expires_at=datetime.now(timezone.utc) + self.refresh_token_lifetime,
+            user_id=user_id,
+            reason=reason
+        )
+        
+        return True
+
     def refresh_tokens(
         self,
         refresh_token: str,

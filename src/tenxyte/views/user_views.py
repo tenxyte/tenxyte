@@ -256,13 +256,16 @@ class MeView(APIView):
         email_changed = (
             "email" in serializer.validated_data and serializer.validated_data["email"] != request.user.email
         )
-        phone_changed = (
-            "phone_number" in serializer.validated_data
-            and serializer.validated_data["phone_number"] != request.user.phone_number
-        ) or (
-            "phone_country_code" in serializer.validated_data
-            and serializer.validated_data["phone_country_code"] != request.user.phone_country_code
-        )
+        phone_changed = False
+        if "phone" in request.data:
+            new_phone = request.data["phone"]
+            current_phone = f"+{request.user.phone_country_code}{request.user.phone_number}" if request.user.phone_country_code else request.user.phone_number
+            if new_phone != current_phone:
+                phone_changed = True
+        elif "phone_number" in request.data and request.data["phone_number"] != request.user.phone_number:
+            phone_changed = True
+        elif "phone_country_code" in request.data and request.data["phone_country_code"] != request.user.phone_country_code:
+            phone_changed = True
 
         # Use Core repository for update
         user_repo = get_core_user_repo()
