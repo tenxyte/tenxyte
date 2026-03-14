@@ -1,4 +1,5 @@
 from typing import Optional, Dict, Any, Tuple
+import warnings
 from django.utils import timezone
 
 from ..models import get_application_model, RefreshToken, LoginAttempt, AuditLog, PasswordHistory, get_user_model
@@ -13,11 +14,20 @@ Application = get_application_model()
 class AuthService:
     """
     Service principal d'authentification
+
+    .. deprecated::
+        This Django-specific AuthService is deprecated. Use tenxyte.core services with Django adapters instead.
     """
 
     _DUMMY_HASH = None
 
     def __init__(self):
+        warnings.warn(
+            "tenxyte.services.auth_service.AuthService is deprecated. "
+            "Use tenxyte.core services (JWTService, UserRepository) with Django adapters instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         self.jwt_service = JWTService()
 
     @classmethod

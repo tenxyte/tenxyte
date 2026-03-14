@@ -1,6 +1,9 @@
 """
 Service TOTP pour l'authentification 2FA.
 
+.. deprecated::
+    This Django-specific TOTPService is deprecated. Use tenxyte.core.TOTPService instead.
+
 Utilise pyotp pour générer et vérifier les codes TOTP compatibles
 avec Google Authenticator, Authy, etc.
 """
@@ -9,6 +12,7 @@ import base64
 import secrets
 import logging
 import os
+import warnings
 from io import BytesIO
 from typing import Tuple, List
 
@@ -28,9 +32,18 @@ class TOTPService:
     """
     Service de gestion 2FA avec TOTP (Time-based One-Time Password).
     Compatible avec Google Authenticator, Authy, Microsoft Authenticator, etc.
+
+    .. deprecated::
+        This Django-specific TOTPService is deprecated. Use tenxyte.core.TOTPService instead.
     """
 
     def __init__(self):
+        warnings.warn(
+            "tenxyte.services.totp_service.TOTPService is deprecated. "
+            "Use tenxyte.core.TOTPService with Django adapters instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         encryption_key = os.environ.get("TENXYTE_TOTP_ENCRYPTION_KEY")
         if encryption_key:
             self.totp_key = Fernet(encryption_key.encode("utf-8"))

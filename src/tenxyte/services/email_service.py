@@ -1,6 +1,9 @@
 """
 Service d'envoi d'emails pour Tenxyte.
 
+.. deprecated::
+    This Django-specific EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+
 Utilise le système de mail Django par défaut.
 L'utilisateur configure son backend dans settings.py:
 
@@ -19,6 +22,7 @@ L'utilisateur configure son backend dans settings.py:
 """
 
 import logging
+import warnings
 from typing import Optional, Dict, Any
 
 from django.conf import settings
@@ -32,6 +36,9 @@ class EmailService:
     """
     Service de haut niveau pour l'envoi d'emails.
 
+    .. deprecated::
+        This Django-specific EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+
     Fournit des méthodes pratiques pour les cas d'usage courants:
     - Envoi de code OTP
     - Email de bienvenue
@@ -40,6 +47,12 @@ class EmailService:
     """
 
     def __init__(self):
+        warnings.warn(
+            "tenxyte.services.email_service.EmailService is deprecated. "
+            "Use tenxyte.adapters.django.email_service.DjangoEmailService instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         self.backend = get_email_backend()
 
     def send_email(

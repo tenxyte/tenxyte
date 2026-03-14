@@ -1,5 +1,6 @@
 import jwt
 import uuid
+import warnings
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, Tuple
 
@@ -9,9 +10,18 @@ from ..conf import auth_settings
 class JWTService:
     """
     Service de gestion des tokens JWT
+
+    .. deprecated::
+        This Django-specific JWTService is deprecated. Use tenxyte.core.JWTService instead.
     """
 
     def __init__(self):
+        warnings.warn(
+            "tenxyte.services.jwt_service.JWTService is deprecated. "
+            "Use tenxyte.core.JWTService with Django adapters instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         self.algorithm = auth_settings.JWT_ALGORITHM
         self.is_asymmetric = self.algorithm.startswith(("RS", "PS", "ES"))
 
