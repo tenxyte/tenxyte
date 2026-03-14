@@ -23,8 +23,8 @@
 
 - [ ] **Issue 5: [Proof of Concept] Develop a second adapter (FastAPI)**
   - [x] Sub-issue 5.1: Create an abstract data model (e.g., Pydantic or SQLAlchemy) to represent users within the FastAPI context.
-  - [ ] Sub-issue 5.2: Implement the Repositories for the FastAPI adapter.
-  - [ ] Sub-issue 5.3: Expose 1 or 2 routes (e.g., Login, Magic Link) via FastAPI + Tenxyte Core.
+  - [x] Sub-issue 5.2: Implement the Repositories for the FastAPI adapter.
+  - [x] Sub-issue 5.3: Expose 1 or 2 routes (e.g., Login, Magic Link) via FastAPI + Tenxyte Core.
 
 - [ ] **Issue 6: Update Documentation (Readme & Docs)**
   - [ ] Sub-issue 6.1: Update `README.md` (change "Complete Django authentication" to "Framework-Agnostic Python Authentication").
