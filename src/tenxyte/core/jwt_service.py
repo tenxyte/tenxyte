@@ -63,6 +63,7 @@ class TokenBlacklistService(Protocol):
         """Add a token JTI to the blacklist."""
         ...  # pragma: no cover
 
+
 @runtime_checkable
 class AsyncTokenBlacklistService(TokenBlacklistService, Protocol):
     """Protocol for async token blacklist operations."""
@@ -70,16 +71,18 @@ class AsyncTokenBlacklistService(TokenBlacklistService, Protocol):
     async def is_blacklisted_async(self, jti: str) -> bool:
         """Check if a token JTI is blacklisted."""
         ...  # pragma: no cover
-        
+
     async def is_user_revoked_async(self, user_id: str, token_iat: datetime) -> bool:
         """Check if a user's tokens are revoked."""
         ...  # pragma: no cover
-        
+
     async def revoke_all_user_tokens_async(self, user_id: str) -> datetime:
         """Mark all tokens for a user as revoked."""
         ...  # pragma: no cover
 
-    async def blacklist_token_async(self, jti: str, expires_at: datetime, user_id: Optional[str] = None, reason: str = "") -> bool:
+    async def blacklist_token_async(
+        self, jti: str, expires_at: datetime, user_id: Optional[str] = None, reason: str = ""
+    ) -> bool:
         """Add a token JTI to the blacklist."""
         ...  # pragma: no cover
 
@@ -145,7 +148,9 @@ class InMemoryTokenBlacklistService:
     async def revoke_all_user_tokens_async(self, user_id: str) -> datetime:
         return await asyncio.to_thread(self.revoke_all_user_tokens, user_id)
 
-    async def blacklist_token_async(self, jti: str, expires_at: datetime, user_id: Optional[str] = None, reason: str = "") -> bool:
+    async def blacklist_token_async(
+        self, jti: str, expires_at: datetime, user_id: Optional[str] = None, reason: str = ""
+    ) -> bool:
         return await asyncio.to_thread(self.blacklist_token, jti, expires_at, user_id, reason)
 
     def get_reason(self, jti: str) -> Optional[str]:
@@ -459,7 +464,7 @@ class JWTService:
 
         try:
             options = {"require": ["exp", "iat"]}
-            
+
             # Decoding is CPU bound, run in thread
             payload = await asyncio.to_thread(
                 jwt.decode,
@@ -504,7 +509,9 @@ class JWTService:
                     if hasattr(self.blacklist_service, "is_user_revoked_async"):
                         is_blacklisted = await self.blacklist_service.is_user_revoked_async(str(user_id), iat_dt)
                     else:
-                        is_blacklisted = await asyncio.to_thread(self.blacklist_service.is_user_revoked, str(user_id), iat_dt)
+                        is_blacklisted = await asyncio.to_thread(
+                            self.blacklist_service.is_user_revoked, str(user_id), iat_dt
+                        )
 
             return DecodedToken(
                 user_id=str(user_id),
@@ -609,7 +616,10 @@ class JWTService:
         else:
             return await asyncio.to_thread(
                 self.blacklist_service.blacklist_token,
-                jti=result.jti, expires_at=result.exp, user_id=user_id, reason=reason
+                jti=result.jti,
+                expires_at=result.exp,
+                user_id=user_id,
+                reason=reason,
             )
 
     async def blacklist_token_by_jti_async(
@@ -622,8 +632,7 @@ class JWTService:
             )
         else:
             return await asyncio.to_thread(
-                self.blacklist_service.blacklist_token,
-                jti=jti, expires_at=expires_at, user_id=user_id, reason=reason
+                self.blacklist_service.blacklist_token, jti=jti, expires_at=expires_at, user_id=user_id, reason=reason
             )
 
     def revoke_all_user_tokens(self, user_id: str, reason: str = "password_change") -> bool:
@@ -679,12 +688,12 @@ class JWTService:
 
     async def revoke_all_user_tokens_async(self, user_id: str, reason: str = "password_change") -> bool:
         """Asynchronous version of revoke_all_user_tokens."""
-        revoked_count = 0
 
         # We keep the database revocation inside to_thread as ORMs block
         def _db_revoke():
             try:
                 from tenxyte.models import RefreshToken as RefreshTokenModel
+
                 active_tokens = RefreshTokenModel.objects.filter(user_id=user_id, is_revoked=False)
                 count = 0
                 for token_obj in active_tokens:
@@ -695,7 +704,7 @@ class JWTService:
             except ImportError:
                 return 0
 
-        revoked_count = await asyncio.to_thread(_db_revoke)
+        await asyncio.to_thread(_db_revoke)
 
         if hasattr(self.blacklist_service, "revoke_all_user_tokens_async"):
             revocation_time = await self.blacklist_service.revoke_all_user_tokens_async(user_id)
@@ -704,15 +713,14 @@ class JWTService:
 
         jti = f"user_revocation:{user_id}:{revocation_time.isoformat()}"
         expires_at = datetime.now(timezone.utc) + self.refresh_token_lifetime
-        
+
         if hasattr(self.blacklist_service, "blacklist_token_async"):
             await self.blacklist_service.blacklist_token_async(
                 jti=jti, expires_at=expires_at, user_id=user_id, reason=reason
             )
         else:
             await asyncio.to_thread(
-                self.blacklist_service.blacklist_token,
-                jti=jti, expires_at=expires_at, user_id=user_id, reason=reason
+                self.blacklist_service.blacklist_token, jti=jti, expires_at=expires_at, user_id=user_id, reason=reason
             )
 
         return True
@@ -841,34 +849,40 @@ class JWTService:
             except Exception:
                 return None
 
-    async def refresh_tokens_async(self, refresh_token: str, user_repository: Optional[Any] = None) -> Optional[TokenPair]:
+    async def refresh_tokens_async(
+        self, refresh_token: str, user_repository: Optional[Any] = None
+    ) -> Optional[TokenPair]:
         """Asynchronous version of refresh_tokens."""
+
         # For database operations, we delegate to a thread since models are sync.
         # But we do JWT checks asynchronously.
         def _db_lookup_and_rotate():
             try:
                 from tenxyte.models import RefreshToken as RefreshTokenModel
+
                 try:
                     token_obj = RefreshTokenModel.get_by_raw_token(refresh_token)
-                    if token_obj.is_revoked or (token_obj.expires_at and token_obj.expires_at < datetime.now(timezone.utc)):
+                    if token_obj.is_revoked or (
+                        token_obj.expires_at and token_obj.expires_at < datetime.now(timezone.utc)
+                    ):
                         return False, None
-                    
+
                     user_id = str(token_obj.user_id)
                     app_id = str(token_obj.application_id) if token_obj.application_id else "default"
-                    
+
                     access_token, jti, expires_at = self.generate_access_token(user_id=user_id, application_id=app_id)
                     new_refresh_token = str(uuid.uuid4())
-                    
+
                     token_obj.is_revoked = True
                     token_obj.save(update_fields=["is_revoked"])
-                    
+
                     RefreshTokenModel.objects.create(
                         user_id=user_id,
                         application_id=token_obj.application_id,
                         token=new_refresh_token,
                         expires_at=datetime.now(timezone.utc) + self.refresh_token_lifetime,
                     )
-                    
+
                     return True, TokenPair(
                         access_token=access_token,
                         access_token_jti=jti,
@@ -881,27 +895,27 @@ class JWTService:
                     return False, "not_found"
             except ImportError:
                 return False, "no_django"
-                
+
         is_db, result = await asyncio.to_thread(_db_lookup_and_rotate)
-        
+
         if is_db:
             return result
-            
+
         # If not db, treat as JWT refresh token
         try:
             decoded = await self.decode_token_async(refresh_token, check_blacklist=True)
             if not decoded or not decoded.is_valid or decoded.type != "refresh":
                 return None
-                
+
             access_token, jti, expires_at = self.generate_access_token(
                 user_id=decoded.user_id, application_id=decoded.app_id
             )
             new_refresh_token = str(uuid.uuid4())
-            
+
             await self.blacklist_token_by_jti_async(
                 jti=decoded.jti, expires_at=decoded.exp, user_id=decoded.user_id, reason="token_rotation"
             )
-            
+
             return TokenPair(
                 access_token=access_token,
                 access_token_jti=jti,

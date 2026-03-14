@@ -53,6 +53,7 @@ from .magic_link_service import (
     MagicLinkRepository,
     UserLookup,
 )
+from .task_service import TaskService
 from .schemas import (
     UserBase,
     UserCreate,
@@ -121,4 +122,5 @@ __all__ = [
     "MagicLinkResult",
     "MagicLinkRepository",
     "UserLookup",
+    "TaskService",
 ]

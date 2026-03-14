@@ -72,24 +72,21 @@ class TOTPStorage(Protocol):
         """Load user TOTP data."""
         ...
 
+
 @runtime_checkable
 class AsyncTOTPStorage(TOTPStorage, Protocol):
     """Protocol for async TOTP data storage operations."""
 
-    async def save_totp_secret_async(self, user_id: str, encrypted_secret: str) -> bool:
-        ...
+    async def save_totp_secret_async(self, user_id: str, encrypted_secret: str) -> bool: ...
 
-    async def save_backup_codes_async(self, user_id: str, hashed_codes: List[str]) -> bool:
-        ...
+    async def save_backup_codes_async(self, user_id: str, hashed_codes: List[str]) -> bool: ...
 
-    async def enable_2fa_async(self, user_id: str) -> bool:
-        ...
+    async def enable_2fa_async(self, user_id: str) -> bool: ...
 
-    async def disable_2fa_async(self, user_id: str) -> bool:
-        ...
+    async def disable_2fa_async(self, user_id: str) -> bool: ...
 
-    async def load_user_data_async(self, user_id: str) -> Optional[TOTPUserData]:
-        ...
+    async def load_user_data_async(self, user_id: str) -> Optional[TOTPUserData]: ...
+
 
 @runtime_checkable
 class CodeReplayProtection(Protocol):
@@ -103,15 +100,15 @@ class CodeReplayProtection(Protocol):
         """Mark code as used for replay protection."""
         ...
 
+
 @runtime_checkable
 class AsyncCodeReplayProtection(CodeReplayProtection, Protocol):
     """Protocol for async code replay protection."""
 
-    async def is_code_used_async(self, user_id: str, code: str) -> bool:
-        ...
+    async def is_code_used_async(self, user_id: str, code: str) -> bool: ...
 
-    async def mark_code_used_async(self, user_id: str, code: str, ttl_seconds: int) -> bool:
-        ...
+    async def mark_code_used_async(self, user_id: str, code: str, ttl_seconds: int) -> bool: ...
+
 
 class InMemoryCodeReplayProtection:
     """In-memory implementation of code replay protection."""
@@ -397,7 +394,7 @@ class TOTPService:
                 is_used = await self.replay_protection.is_code_used_async(user_id, code)
             else:
                 is_used = await asyncio.to_thread(self.replay_protection.is_code_used, user_id, code)
-                
+
             if is_used:
                 logger.warning(f"[TOTP] Replay attack prevented for user {user_id}")
                 return False
@@ -464,7 +461,7 @@ class TOTPService:
 
         qr_code = await asyncio.to_thread(self.generate_qr_code, secret, email)
         plain_codes, hashed_codes = await asyncio.to_thread(self.generate_backup_codes)
-        
+
         if hasattr(storage, "save_backup_codes_async"):
             await storage.save_backup_codes_async(user_id, hashed_codes)
         else:
@@ -517,7 +514,7 @@ class TOTPService:
             user_data = await storage.load_user_data_async(user_id)
         else:
             user_data = await asyncio.to_thread(storage.load_user_data, user_id)
-            
+
         if not user_data or not user_data.totp_secret:
             return False, "2FA setup not initiated. Call setup first."
 
@@ -536,7 +533,7 @@ class TOTPService:
             await storage.enable_2fa_async(user_id)
         else:
             await asyncio.to_thread(storage.enable_2fa, user_id)
-            
+
         logger.info(f"[TOTP] 2FA enabled for user {user_id}")
 
         return True, ""
@@ -585,7 +582,7 @@ class TOTPService:
             user_data = await storage.load_user_data_async(user_id)
         else:
             user_data = await asyncio.to_thread(storage.load_user_data, user_id)
-            
+
         if not user_data:
             return False, "User not found."
 
@@ -658,7 +655,7 @@ class TOTPService:
             user_data = await storage.load_user_data_async(user_id)
         else:
             user_data = await asyncio.to_thread(storage.load_user_data, user_id)
-            
+
         if not user_data:
             return False, "User not found."
 
@@ -681,7 +678,7 @@ class TOTPService:
             await storage.disable_2fa_async(user_id)
         else:
             await asyncio.to_thread(storage.disable_2fa, user_id)
-            
+
         logger.info(f"[TOTP] 2FA disabled for user {user_id}")
 
         return True, ""
@@ -718,13 +715,15 @@ class TOTPService:
         logger.info(f"[TOTP] Backup codes regenerated for user {user_id}")
         return True, plain_codes, ""
 
-    async def regenerate_backup_codes_async(self, user_id: str, code: str, storage: TOTPStorage) -> Tuple[bool, List[str], str]:
+    async def regenerate_backup_codes_async(
+        self, user_id: str, code: str, storage: TOTPStorage
+    ) -> Tuple[bool, List[str], str]:
         """Asynchronous version of regenerate_backup_codes."""
         if hasattr(storage, "load_user_data_async"):
             user_data = await storage.load_user_data_async(user_id)
         else:
             user_data = await asyncio.to_thread(storage.load_user_data, user_id)
-            
+
         if not user_data:
             return False, [], "User not found."
 
@@ -736,7 +735,7 @@ class TOTPService:
             return False, [], "Invalid code."
 
         plain_codes, hashed_codes = await asyncio.to_thread(self.generate_backup_codes)
-        
+
         if hasattr(storage, "save_backup_codes_async"):
             await storage.save_backup_codes_async(user_id, hashed_codes)
         else:
