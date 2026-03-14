@@ -9,6 +9,7 @@ import secrets
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Protocol, Tuple, runtime_checkable
+import asyncio
 
 from tenxyte.core.settings import Settings
 from tenxyte.core.email_service import EmailService
@@ -80,6 +81,30 @@ class MagicLinkRepository(Protocol):
         """Mark token as used."""
         ...  # pragma: no cover
 
+@runtime_checkable
+class AsyncMagicLinkRepository(MagicLinkRepository, Protocol):
+    """Protocol for async magic link token storage."""
+
+    async def create_async(
+        self,
+        token_hash: str,
+        user_id: str,
+        email: str,
+        application_id: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
+        expiry_minutes: int = 15,
+    ) -> MagicLinkToken:
+        ...  # pragma: no cover
+
+    async def get_by_token_async(self, token: str) -> Optional[MagicLinkToken]:
+        ...  # pragma: no cover
+
+    async def invalidate_user_tokens_async(self, user_id: str, application_id: Optional[str] = None) -> int:
+        ...  # pragma: no cover
+
+    async def consume_async(self, token_id: str) -> bool:
+        ...  # pragma: no cover
 
 @runtime_checkable
 class UserLookup(Protocol):
@@ -95,6 +120,29 @@ class UserLookup(Protocol):
 
     def is_locked(self, user_id: str) -> bool:
         """Check if user account is locked."""
+        ...  # pragma: no cover
+
+@runtime_checkable
+class AsyncUserLookup(UserLookup, Protocol):
+    """Protocol for async user lookup operations."""
+
+    async def get_by_email_async(self, email: str) -> Optional[Dict[str, Any]]:
+        ...  # pragma: no cover
+
+    async def is_active_async(self, user_id: str) -> bool:
+        ...  # pragma: no cover
+
+    async def is_locked_async(self, user_id: str) -> bool:
+        ...  # pragma: no cover
+    """Protocol for async user lookup operations."""
+
+    async def get_by_email_async(self, email: str) -> Optional[Dict[str, Any]]:
+        ...  # pragma: no cover
+
+    async def is_active_async(self, user_id: str) -> bool:
+        ...  # pragma: no cover
+
+    async def is_locked_async(self, user_id: str) -> bool:
         ...  # pragma: no cover
 
 
@@ -242,6 +290,100 @@ class MagicLinkService:
         logger.info(f"Magic link sent to {user_email}")
         return True, ""
 
+    async def request_magic_link_async(
+        self,
+        email: str,
+        application_id: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        device_info: str = "",
+        validation_url: Optional[str] = None,
+        first_name: str = "",
+    ) -> Tuple[bool, str]:
+        """Asynchronous version of request_magic_link."""
+        if not self.enabled:
+            return False, "Magic link authentication is not enabled"
+
+        if hasattr(self.user_lookup, "get_by_email_async"):
+            user = await self.user_lookup.get_by_email_async(email)
+        else:
+            user = await asyncio.to_thread(self.user_lookup.get_by_email, email)
+
+        if not user:
+            logger.info(f"Magic link requested for unknown email: {email}")
+            return True, ""
+
+        if isinstance(user, dict):
+            user_id = user.get("id")
+            user_email = user.get("email", email)
+            _user_first_name = first_name or user.get("first_name", "")  # noqa: F841
+        else:
+            user_id = getattr(user, "id", None)
+            user_email = getattr(user, "email", email)
+            _user_first_name = first_name or getattr(user, "first_name", "")  # noqa: F841
+
+        is_active = False
+        if hasattr(self.user_lookup, "is_active_async"):
+            is_active = await self.user_lookup.is_active_async(str(user_id))
+        else:
+            is_active = await asyncio.to_thread(self.user_lookup.is_active, str(user_id))
+
+        if not is_active:
+            logger.info(f"Magic link requested for inactive user: {email}")
+            return True, ""
+
+        if hasattr(self.repo, "invalidate_user_tokens_async"):
+            await self.repo.invalidate_user_tokens_async(str(user_id), application_id)
+        else:
+            await asyncio.to_thread(self.repo.invalidate_user_tokens, str(user_id), application_id)
+
+        raw_token = self._generate_token()
+        token_hash = self._hash_token(raw_token)
+
+        if hasattr(self.repo, "create_async"):
+            await self.repo.create_async(
+                token_hash=token_hash,
+                user_id=str(user_id),
+                email=str(user_email),
+                application_id=application_id,
+                ip_address=ip_address,
+                user_agent=device_info,
+                expiry_minutes=self.expiry_minutes,
+            )
+        else:
+            await asyncio.to_thread(
+                self.repo.create,
+                token_hash=token_hash,
+                user_id=str(user_id),
+                email=str(user_email),
+                application_id=application_id,
+                ip_address=ip_address,
+                user_agent=device_info,
+                expiry_minutes=self.expiry_minutes,
+            )
+
+        magic_url = f"{validation_url}?token={raw_token}" if validation_url else None
+        
+        try:
+            if hasattr(self.email_service, "send_magic_link_async"):
+                await self.email_service.send_magic_link_async(
+                    to_email=str(user_email),
+                    magic_link_url=magic_url or f"https://example.com/verify?token={raw_token}",
+                    expires_in_minutes=self.expiry_minutes,
+                )
+            else:
+                await asyncio.to_thread(
+                    self.email_service.send_magic_link,
+                    to_email=str(user_email),
+                    magic_link_url=magic_url or f"https://example.com/verify?token={raw_token}",
+                    expires_in_minutes=self.expiry_minutes,
+                )
+        except Exception as e:
+            logger.error(f"Failed to send magic link email to {user_email}: {e}")
+            return False, "Failed to send magic link email"
+
+        logger.info(f"Magic link sent to {user_email}")
+        return True, ""
+
     def verify_magic_link(
         self,
         token: str,
@@ -304,6 +446,70 @@ class MagicLinkService:
 
         # Consume token (single-use)
         self.repo.consume(token_instance.id)
+
+        logger.info(f"Magic link verified for user {token_instance.user_id}")
+
+        return MagicLinkResult(success=True, user_id=token_instance.user_id, email=token_instance.email)
+
+    async def verify_magic_link_async(
+        self,
+        token: str,
+        application_id: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        device_info: str = "",
+        require_same_device: bool = True,
+    ) -> MagicLinkResult:
+        """Asynchronous version of verify_magic_link."""
+        if not self.enabled:
+            return MagicLinkResult(success=False, error="Magic link authentication is not enabled")
+
+        if hasattr(self.repo, "get_by_token_async"):
+            token_instance = await self.repo.get_by_token_async(token)
+        else:
+            token_instance = await asyncio.to_thread(self.repo.get_by_token, token)
+
+        if not token_instance:
+            return MagicLinkResult(success=False, error="Invalid or expired magic link.")
+
+        if not token_instance.is_valid():
+            return MagicLinkResult(success=False, error="Magic link has expired or already been used.")
+
+        if application_id and token_instance.application_id:
+            if token_instance.application_id != application_id:
+                return MagicLinkResult(success=False, error="Magic link is not valid for this application.")
+
+        if require_same_device:
+            ip_match = self._ip_matches(token_instance.ip_address, ip_address)
+
+            if not ip_match:
+                logger.warning(
+                    f"Magic link IP mismatch for user {token_instance.user_id}: "
+                    f"expected {token_instance.ip_address}, got {ip_address}"
+                )
+                return MagicLinkResult(
+                    success=False, error="Magic link must be opened on the same device that requested it."
+                )
+
+        if hasattr(self.user_lookup, "is_active_async"):
+            is_active = await self.user_lookup.is_active_async(token_instance.user_id)
+        else:
+            is_active = await asyncio.to_thread(self.user_lookup.is_active, token_instance.user_id)
+            
+        if not is_active:
+            return MagicLinkResult(success=False, error="Account is disabled")
+
+        if hasattr(self.user_lookup, "is_locked_async"):
+            is_locked = await self.user_lookup.is_locked_async(token_instance.user_id)
+        else:
+            is_locked = await asyncio.to_thread(self.user_lookup.is_locked, token_instance.user_id)
+            
+        if is_locked:
+            return MagicLinkResult(success=False, error="Account is locked")
+
+        if hasattr(self.repo, "consume_async"):
+            await self.repo.consume_async(token_instance.id)
+        else:
+            await asyncio.to_thread(self.repo.consume, token_instance.id)
 
         logger.info(f"Magic link verified for user {token_instance.user_id}")
 

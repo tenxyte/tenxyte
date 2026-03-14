@@ -21,7 +21,7 @@
   - [x] Sub-issue 4.2: Move current tests to a `tests/integration/django/` subfolder.
   - [x] Sub-issue 4.3: **[Backward Compatibility]** Run the entire current Django test suite **without modifying behavior or assertions** to guarantee absolute zero regression.
 
-- [ ] **Issue 5: [Proof of Concept] Develop a second adapter (FastAPI)**
+- [x] **Issue 5: [Proof of Concept] Develop a second adapter (FastAPI)**
   - [x] Sub-issue 5.1: Create an abstract data model (e.g., Pydantic or SQLAlchemy) to represent users within the FastAPI context.
   - [x] Sub-issue 5.2: Implement the Repositories for the FastAPI adapter.
   - [x] Sub-issue 5.3: Expose 1 or 2 routes (e.g., Login, Magic Link) via FastAPI + Tenxyte Core.
@@ -40,7 +40,7 @@
   - [x] Sub-issue 7.4: Create an agnostic validation system (Pydantic) for the Core, independent of DRF serializers.
   - [x] Sub-issue 7.5: Abstract session and refresh token management independently of the framework.
 
-- [ ] **Issue 8: Dependency Management and Modular Packaging**
+- [x] **Issue 8: Dependency Management and Modular Packaging**
   - [x] Sub-issue 8.1: Restructure `pyproject.toml` with hierarchical optional extras:
     - `[core]` - Minimal Core dependencies (PyJWT, bcrypt, pyotp, qrcode, Pydantic, requests, Pillow)
     - `[django]` - Django/DRF stack (django>=5.0, djangorestframework, django-cors-headers, drf-spectacular, django-cryptography) + Core
@@ -62,7 +62,7 @@
   - [x] Sub-issue 8.8: Validate all extra combinations work: `pip install tenxyte[django,postgres,webauthn]`, `pip install tenxyte[fastapi,postgres]`, etc.
 
 - [ ] **Issue 9: Async Support and Background Task Abstraction**
-  - [ ] Sub-issue 9.1: Add async/await support to Core services for FastAPI compatibility.
+  - [x] Sub-issue 9.1: Add async/await support to Core services for FastAPI compatibility.
   - [ ] Sub-issue 9.2: Create `TaskService` port for background job abstraction.
   - [ ] Sub-issue 9.3: Implement Django adapter (Celery/RQ integration).
   - [ ] Sub-issue 9.4: Implement FastAPI adapter (asyncio background tasks).
