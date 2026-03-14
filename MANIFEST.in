@@ -2,6 +2,9 @@ include README.md
 include LICENSE
 include CHANGELOG.md
 include requirements-locked.txt
+include requirements-core.txt
+include requirements-django.txt
+include requirements-fastapi.txt
 recursive-include src/tenxyte/migrations *.py
 recursive-include src/tenxyte/templates *
 recursive-include src/tenxyte/static *
