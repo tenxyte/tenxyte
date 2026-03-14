@@ -1,5 +1,5 @@
 import pytest
-from django.test import AsyncClient, Client
+from django.test import AsyncClient
 from tenxyte.models import Application
 from asgiref.sync import async_to_sync, sync_to_async
 

@@ -1,7 +1,6 @@
 """
 Tests for tenxyte.setup() helper function.
 """
-import pytest
 from types import SimpleNamespace
 
 

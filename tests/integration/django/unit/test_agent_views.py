@@ -3,10 +3,8 @@ import json
 from unittest import mock
 from django.urls import reverse
 from rest_framework.test import APIClient
-from tenxyte.models.agent import AgentToken, AgentPendingAction
+from tenxyte.models.agent import AgentToken
 from tenxyte.models.base import get_user_model, get_application_model, get_permission_model
-from django.utils import timezone
-from datetime import timedelta
 
 pytestmark = pytest.mark.django_db
 User = get_user_model()
@@ -176,7 +174,7 @@ class TestAgentViews:
                 mock_get_app.return_value = mock_app_class
                 
                 # Delete request.application logic: we need a view instance or mock
-                with mock.patch('tenxyte.views.agent_views.AgentTokenListCreateView.post') as mock_post:
+                with mock.patch('tenxyte.views.agent_views.AgentTokenListCreateView.post'):
                     # Let's just create a dummy request
                     pass # The 400 is raised if application is missing or fallback fails
 
@@ -232,9 +230,9 @@ class TestAgentViews:
         
         # Create an active application for the fallback
         Application = get_application_model()
-        app = Application.objects.create(name="Fallback App", is_active=True)
+        Application.objects.create(name="Fallback App", is_active=True)
         
-        url = reverse('authentication:agent_token_list_create')
+        reverse('authentication:agent_token_list_create')
         data = {
             'agent_id': 'gpt-4',
             'expires_in': 3600,
@@ -265,7 +263,7 @@ class TestAgentViews:
         
         user.direct_permissions.add(permission)
         
-        url = reverse('authentication:agent_token_list_create')
+        reverse('authentication:agent_token_list_create')
         data = {
             'agent_id': 'gpt-4',
             'expires_in': 3600,
@@ -296,7 +294,6 @@ class TestAgentViews:
 
     def test_create_agent_token_unexpected_exception(self, authenticated_client, user, permission):
         """Test lines 82-85: Exception handling in AgentTokenListCreateView.post."""
-        from django.core.exceptions import PermissionDenied
         
         user.direct_permissions.add(permission)
         

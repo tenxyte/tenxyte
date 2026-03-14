@@ -1,7 +1,6 @@
 import pytest
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional
-import uuid
 
 from tenxyte.core.session_service import SessionService, SessionRepository
 from tenxyte.core.settings import Settings
@@ -62,16 +61,26 @@ class MockSessionRepository(SessionRepository):
 def test_protocol_methods():
     class DummyRepo:
         pass
-    try: SessionRepository.create(DummyRepo(), "u", "d", {}, datetime.now())
-    except Exception: pass
-    try: SessionRepository.get(DummyRepo(), "s")
-    except Exception: pass
-    try: SessionRepository.revoke(DummyRepo(), "s")
-    except Exception: pass
-    try: SessionRepository.revoke_all_for_user(DummyRepo(), "u", "s")
-    except Exception: pass
-    try: SessionRepository.get_user_sessions(DummyRepo(), "u")
-    except Exception: pass
+    try:
+        SessionRepository.create(DummyRepo(), "u", "d", {}, datetime.now())
+    except Exception:
+        pass
+    try:
+        SessionRepository.get(DummyRepo(), "s")
+    except Exception:
+        pass
+    try:
+        SessionRepository.revoke(DummyRepo(), "s")
+    except Exception:
+        pass
+    try:
+        SessionRepository.revoke_all_for_user(DummyRepo(), "u", "s")
+    except Exception:
+        pass
+    try:
+        SessionRepository.get_user_sessions(DummyRepo(), "u")
+    except Exception:
+        pass
 
 @pytest.fixture
 def settings():

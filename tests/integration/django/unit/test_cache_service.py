@@ -1,7 +1,6 @@
 import pytest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch, MagicMock
-from django.core.cache import cache
 
 from tenxyte.adapters.django.cache_service import DjangoCacheService, get_cache_service
 
@@ -141,7 +140,7 @@ def test_is_user_revoked(cache_service):
     assert cache_service.is_user_revoked(user_id, now) is False
     
     # Revoke user
-    revocation_time = cache_service.revoke_all_user_tokens(user_id)
+    cache_service.revoke_all_user_tokens(user_id)
     
     # Tokens issued before revocation are revoked
     assert cache_service.is_user_revoked(user_id, past) is True

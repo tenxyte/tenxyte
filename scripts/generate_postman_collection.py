@@ -16,7 +16,6 @@ import json
 import sys
 import uuid
 import argparse
-import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -180,7 +179,7 @@ def openapi_path_to_postman_url(path: str, base_url: str = "{{baseUrl}}") -> Dic
     """Convert an OpenAPI path like /api/v1/auth/{user_id}/ to Postman URL."""
     # Replace {param} with :param style for Postman URL display
     # but keep {{}} for Postman variables
-    raw = base_url + path
+    base_url + path
 
     # Split path into segments, replacing {param} with :param
     path_parts = []
@@ -281,13 +280,13 @@ def build_test_script(operation: Dict) -> List[str]:
     """Generate a minimal Postman test script from the operation responses."""
     responses = operation.get("responses", {})
     success_codes = [int(c) for c in responses if str(c).startswith("2")]
-    error_codes = [int(c) for c in responses if str(c).startswith("4")]
+    [int(c) for c in responses if str(c).startswith("4")]
 
     lines = []
     if success_codes:
         codes_str = ", ".join(str(c) for c in success_codes)
         lines += [
-            f"pm.test('Response is successful', function () {{",
+            "pm.test('Response is successful', function () {",
             f"    pm.expect(pm.response.code).to.be.oneOf([{codes_str}]);",
             "});",
         ]
@@ -317,7 +316,6 @@ def build_test_script(operation: Dict) -> List[str]:
 def group_by_tags(schema: Dict) -> Dict[str, List[Tuple[str, str, Dict]]]:
     """Group (path, method, operation) triples by their first tag."""
     groups: Dict[str, List] = {}
-    untagged: List = []
 
     for path, path_item in schema.get("paths", {}).items():
         for method in HTTP_METHODS:
@@ -502,11 +500,11 @@ def main():
     print(f"   Folders:  {len(collection['item'])}")
     print(f"   Requests: {total}")
     print(f"   Variables: {len(collection['variable'])}")
-    print(f"\n   Import into Postman:")
+    print("\n   Import into Postman:")
     print(f"   1. File → Import → {Path(args.output).name}")
     print(f"   2. File → Import → {Path(args.env_output).name}")
-    print(f"   3. Select 'Tenxyte API — Local' environment")
-    print(f"   4. Run 'POST Login (email)' to get tokens")
+    print("   3. Select 'Tenxyte API — Local' environment")
+    print("   4. Run 'POST Login (email)' to get tokens")
     print(f"{'=' * 55}")
 
     sys.exit(0)

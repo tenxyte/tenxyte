@@ -3,7 +3,7 @@ Tests for core middleware - targeting 100% coverage of
 src/tenxyte/core/middleware.py
 """
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from tenxyte.core.middleware import (
     RequestContext,
@@ -19,8 +19,8 @@ from tenxyte.core.middleware import (
     OrganizationContextCoreMiddleware,
 )
 # Force TYPE_CHECKING branch evaluation for coverage
-from unittest.mock import patch
-with patch("tenxyte.core.middleware.TYPE_CHECKING", True):
+from unittest.mock import patch as _patch  # noqa: F811
+with _patch("tenxyte.core.middleware.TYPE_CHECKING", True):
     import importlib
     import tenxyte.core.middleware
     importlib.reload(tenxyte.core.middleware)
@@ -380,7 +380,7 @@ def test_jwt_auth_no_bearer():
     """Lines 412-414: no Bearer → skipped."""
     mw = JWTAuthCoreMiddleware(settings=_make_settings())
     req = _make_request(headers={"Authorization": "Basic creds"})
-    result = mw.process_request(req)
+    result = mw.process_request(req)  # noqa: F841
     assert "jwt_token" not in req.metadata
 
 
@@ -416,7 +416,7 @@ def test_org_context_with_slug():
     """Lines 442-447: X-Org-Slug present."""
     mw = OrganizationContextCoreMiddleware(settings=_make_settings())
     req = _make_request(headers={"X-Org-Slug": "acme"})
-    result = mw.process_request(req)
+    result = mw.process_request(req)  # noqa: F841
     assert req.metadata["org_slug"] == "acme"
 
 
@@ -424,5 +424,5 @@ def test_org_context_no_slug():
     """Lines 442, 447: no header."""
     mw = OrganizationContextCoreMiddleware(settings=_make_settings())
     req = _make_request()
-    result = mw.process_request(req)
+    result = mw.process_request(req)  # noqa: F841
     assert "org_slug" not in req.metadata

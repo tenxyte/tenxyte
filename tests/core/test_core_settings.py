@@ -1,6 +1,6 @@
 import pytest
 from tenxyte.core import settings
-from tenxyte.core.settings import Settings, SecureModePreset, SettingsProvider
+from tenxyte.core.settings import Settings, SettingsProvider
 
 class DummyProviderForExceptions:
     def __init__(self, raise_attr=False, raise_key=False):

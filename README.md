@@ -8,7 +8,7 @@
 
 [![PyPI version](https://badge.fury.io/py/tenxyte.svg)](https://badge.fury.io/py/tenxyte)
 [![Python versions](https://img.shields.io/pypi/pyversions/tenxyte.svg)](https://pypi.org/project/tenxyte/)
-[![Django versions](https://img.shields.io/badge/django-5.0%2B-blue.svg)](https://www.djangoproject.com/)
+[![Django versions](https://img.shields.io/badge/django-6.0%2B-blue.svg)](https://www.djangoproject.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Coverage](https://codecov.io/gh/tenxyte/tenxyte/graph/badge.svg)](https://codecov.io/gh/tenxyte/tenxyte)
 [![Tests](https://github.com/tenxyte/tenxyte/actions/workflows/ci.yml/badge.svg)](https://github.com/tenxyte/tenxyte/actions/workflows/ci.yml)
@@ -67,7 +67,7 @@
 
 - Python 3.10+ (3.11+ recommended)
 - `pip` and a virtual environment
-- **Django 5.0+** (for the Django adapter) or **FastAPI 0.100+** (for the FastAPI adapter)
+- **Django 6.0+** (for the Django adapter) or **FastAPI 0.135+** (for the FastAPI adapter)
 - Database (PostgreSQL recommended for production)
 
 ## Installation

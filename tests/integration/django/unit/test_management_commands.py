@@ -5,7 +5,6 @@ Couverture de src/tenxyte/management/commands/tenxyte_cleanup.py
 import pytest
 from io import StringIO
 from datetime import timedelta
-from unittest.mock import patch
 
 from django.core.management import call_command
 from django.utils import timezone

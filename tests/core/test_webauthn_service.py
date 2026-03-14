@@ -1,17 +1,17 @@
 import pytest
 from datetime import datetime, timezone, timedelta
-from typing import Dict, Any, Optional, List
 from unittest.mock import patch, MagicMock
 
 from tenxyte.core.webauthn_service import (
     WebAuthnService, WebAuthnCredentialRepository, WebAuthnChallengeRepository,
-    WebAuthnChallenge, WebAuthnCredential, RegistrationResult, AuthenticationResult
+    WebAuthnChallenge, WebAuthnCredential
 )
 from tenxyte.core.settings import Settings
 
 class DummyProvider:
     def get(self, name, default=None):
-        if name == "TENXYTE_WEBAUTHN_RP_ID": return "localhost"
+        if name == "TENXYTE_WEBAUTHN_RP_ID":
+            return "localhost"
         return default
 
 @pytest.fixture
@@ -36,22 +36,38 @@ def test_protocols():
     class DummyChRepo:
         pass
     
-    try: WebAuthnCredentialRepository.get_by_credential_id(DummyCRepo(), "id")
-    except Exception: pass
-    try: WebAuthnCredentialRepository.list_by_user(DummyCRepo(), "id")
-    except Exception: pass
-    try: WebAuthnCredentialRepository.create(DummyCRepo(), None)
-    except Exception: pass
-    try: WebAuthnCredentialRepository.update_sign_count(DummyCRepo(), "id", 1)
-    except Exception: pass
-    try: WebAuthnCredentialRepository.delete(DummyCRepo(), "id", "uid")
-    except Exception: pass
-    try: WebAuthnChallengeRepository.create(DummyChRepo(), "c", "o")
-    except Exception: pass
-    try: WebAuthnChallengeRepository.get_by_id(DummyChRepo(), "id")
-    except Exception: pass
-    try: WebAuthnChallengeRepository.consume(DummyChRepo(), "id")
-    except Exception: pass
+    try:
+        WebAuthnCredentialRepository.get_by_credential_id(DummyCRepo(), "id")
+    except Exception:
+        pass
+    try:
+        WebAuthnCredentialRepository.list_by_user(DummyCRepo(), "id")
+    except Exception:
+        pass
+    try:
+        WebAuthnCredentialRepository.create(DummyCRepo(), None)
+    except Exception:
+        pass
+    try:
+        WebAuthnCredentialRepository.update_sign_count(DummyCRepo(), "id", 1)
+    except Exception:
+        pass
+    try:
+        WebAuthnCredentialRepository.delete(DummyCRepo(), "id", "uid")
+    except Exception:
+        pass
+    try:
+        WebAuthnChallengeRepository.create(DummyChRepo(), "c", "o")
+    except Exception:
+        pass
+    try:
+        WebAuthnChallengeRepository.get_by_id(DummyChRepo(), "id")
+    except Exception:
+        pass
+    try:
+        WebAuthnChallengeRepository.consume(DummyChRepo(), "id")
+    except Exception:
+        pass
 
 
 class MockChRepo:
@@ -72,7 +88,8 @@ class MockCRepo:
         self.db = []
     def get_by_credential_id(self, credential_id):
         for c in self.db:
-            if c.credential_id == credential_id: return c
+            if c.credential_id == credential_id:
+                return c
         return None
     def list_by_user(self, user_id):
         return [c for c in self.db if c.user_id == user_id]
@@ -82,7 +99,8 @@ class MockCRepo:
         return credential
     def update_sign_count(self, credential_id, new_count):
         for c in self.db:
-            if c.id == credential_id: c.sign_count = new_count
+            if c.id == credential_id:
+                c.sign_count = new_count
         return True
     def delete(self, credential_id, user_id):
         initial = len(self.db)

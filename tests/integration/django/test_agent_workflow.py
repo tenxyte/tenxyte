@@ -1,8 +1,6 @@
 import pytest
-import json
 from django.urls import reverse
 from rest_framework.test import APIClient
-from tenxyte.models.agent import AgentToken
 from tenxyte.models.base import get_permission_model
 
 Permission = get_permission_model()

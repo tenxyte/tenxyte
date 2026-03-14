@@ -1,4 +1,3 @@
-import pytest
 from tenxyte.serializers.otp_serializers import VerifyOTPSerializer, RequestOTPSerializer
 
 

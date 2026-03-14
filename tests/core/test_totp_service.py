@@ -1,5 +1,4 @@
 import os
-import sys
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -7,7 +6,7 @@ from unittest.mock import patch, MagicMock
 
 from tenxyte.core.totp_service import (
     TOTPService, TOTPUserData, TOTPStorage, CodeReplayProtection,
-    InMemoryCodeReplayProtection, TOTPSetupResult
+    InMemoryCodeReplayProtection
 )
 from tenxyte.core.settings import Settings
 
@@ -55,25 +54,32 @@ def test_protocols():
         pass
     try:
         TOTPStorage.save_totp_secret(DummyS(), "u", "e")
-    except Exception: pass
+    except Exception:
+        pass
     try:
         TOTPStorage.save_backup_codes(DummyS(), "u", [])
-    except Exception: pass
+    except Exception:
+        pass
     try:
         TOTPStorage.enable_2fa(DummyS(), "u")
-    except Exception: pass
+    except Exception:
+        pass
     try:
         TOTPStorage.disable_2fa(DummyS(), "u")
-    except Exception: pass
+    except Exception:
+        pass
     try:
         TOTPStorage.load_user_data(DummyS(), "u")
-    except Exception: pass
+    except Exception:
+        pass
     try:
         CodeReplayProtection.is_code_used(DummyS(), "u", "c")
-    except Exception: pass
+    except Exception:
+        pass
     try:
         CodeReplayProtection.mark_code_used(DummyS(), "u", "c", 1)
-    except Exception: pass
+    except Exception:
+        pass
 
 
 def test_totp_user_data():
@@ -264,7 +270,7 @@ def test_disable_and_regenerate(settings):
 def test_confirm_decrypt_fail(settings):
     s = TOTPService(settings=settings)
     storage = DummyStorage()
-    res = s.setup_2fa("u", "e", storage)
+    s.setup_2fa("u", "e", storage)
     storage.data["u"].totp_secret = "invalid_encrypted_data"
     s.totp_key = MagicMock()
     s.totp_key.decrypt.side_effect = Exception("fail")
@@ -275,7 +281,7 @@ def test_confirm_decrypt_fail(settings):
 def test_confirm_invalid_code(settings):
     s = TOTPService(settings=settings)
     storage = DummyStorage()
-    res = s.setup_2fa("u", "e", storage)
+    s.setup_2fa("u", "e", storage)
     suk, msg = s.confirm_2fa_setup("u", "invalid", storage)
     assert not suk and "Invalid" in msg
 

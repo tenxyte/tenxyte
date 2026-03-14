@@ -3,7 +3,7 @@ import json
 from django.http import JsonResponse
 from django.test import RequestFactory
 from tenxyte.decorators import require_agent_clearance
-from tenxyte.models.agent import AgentToken, AgentPendingAction
+from tenxyte.models.agent import AgentPendingAction
 from tenxyte.services.agent_service import AgentTokenService
 from tenxyte.models.base import get_user_model, get_application_model, get_permission_model
 

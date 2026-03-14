@@ -10,7 +10,7 @@ from django.utils import timezone
 from datetime import timedelta
 from rest_framework.test import APIRequestFactory
 
-from tenxyte.models import User, Application, Permission, AuditLog, BlacklistedToken, RefreshToken
+from tenxyte.models import User, Application, Permission, AuditLog, RefreshToken
 
 
 # ---------------------------------------------------------------------------
@@ -64,8 +64,6 @@ def _make_audit_log(user, action="login"):
 
 
 def _make_refresh_token(user, app):
-    from django.utils import timezone
-    from datetime import timedelta
     return RefreshToken.objects.create(
         user=user,
         application=app,

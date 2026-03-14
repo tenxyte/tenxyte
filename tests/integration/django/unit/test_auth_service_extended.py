@@ -8,12 +8,12 @@ Couvre : logout, logout_all_devices, refresh_access_token (rotation ON/OFF),
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from django.utils import timezone
 from django.test import override_settings
 from datetime import timedelta
 
-from tenxyte.models import User, Application, RefreshToken, AuditLog
+from tenxyte.models import User, Application, RefreshToken
 from tenxyte.services.auth_service import AuthService
 
 
@@ -126,7 +126,7 @@ class TestLogoutAllDevices:
         app = _app("LogoutAllApp2")
         user = _user("logoutall2@test.com")
         _refresh_token(user, app, revoked=True)
-        rt2 = _refresh_token(user, app)
+        _refresh_token(user, app)
 
         service = AuthService()
         count = service.logout_all_devices(user)
@@ -147,7 +147,7 @@ class TestLogoutAllDevices:
 
     @pytest.mark.django_db
     def test_returns_zero_when_no_active_tokens(self):
-        app = _app("LogoutAllApp4")
+        _app("LogoutAllApp4")
         user = _user("logoutall4@test.com")
 
         service = AuthService()
@@ -217,7 +217,6 @@ class TestRefreshAccessToken:
         app = _app("RefreshApp5")
         user = _user("refresh5@test.com")
         rt = _refresh_token(user, app)
-        old_token_str = rt.token
 
         service = AuthService()
         # R1: capture raw before calling refresh (rotation will revoke old token)
@@ -384,7 +383,6 @@ class TestChangePassword:
     @pytest.mark.django_db
     @override_settings(TENXYTE_PASSWORD_HISTORY_ENABLED=True, TENXYTE_PASSWORD_HISTORY_COUNT=5)
     def test_change_password_history_check(self):
-        from tenxyte.models import PasswordHistory
         app = _app("ChangePwdApp3")
         user = _user("changepwd3@test.com", "OldPass123!")
         service = AuthService()
@@ -459,7 +457,7 @@ class TestEnforceSessionLimit:
         app = _app("SessionLimitApp4")
         user = _user("sessionlimit4@test.com")
         rt1 = _refresh_token(user, app)
-        rt2 = _refresh_token(user, app)
+        _refresh_token(user, app)
 
         service = AuthService()
         result = service._enforce_session_limit(user, app, "1.2.3.4")

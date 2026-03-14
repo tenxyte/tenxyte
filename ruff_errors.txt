@@ -1,0 +1,1396 @@
+E701 Multiple statements on one line (colon)
+   --> scripts\generate_docs_site.py:387:20
+    |
+385 |                     f'<span>{resp.get("description", "")}</span>{rb}</div>')
+386 |             inner = ""
+387 |             if desc:   inner += f'<p class="op__desc">{desc}</p>'
+    |                    ^
+388 |             if params: inner += f'<h4 class="op__subtitle">Paramètres</h4>{params}'
+389 |             if req:    inner += f'<h4 class="op__subtitle">Corps de la requête</h4>{req}'
+    |
+
+E701 Multiple statements on one line (colon)
+   --> scripts\generate_docs_site.py:388:22
+    |
+386 |             inner = ""
+387 |             if desc:   inner += f'<p class="op__desc">{desc}</p>'
+388 |             if params: inner += f'<h4 class="op__subtitle">Paramètres</h4>{params}'
+    |                      ^
+389 |             if req:    inner += f'<h4 class="op__subtitle">Corps de la requête</h4>{req}'
+390 |             if resps:
+    |
+
+E701 Multiple statements on one line (colon)
+   --> scripts\generate_docs_site.py:389:19
+    |
+387 |             if desc:   inner += f'<p class="op__desc">{desc}</p>'
+388 |             if params: inner += f'<h4 class="op__subtitle">Paramètres</h4>{params}'
+389 |             if req:    inner += f'<h4 class="op__subtitle">Corps de la requête</h4>{req}'
+    |                   ^
+390 |             if resps:
+391 |                 inner += (f'<h4 class="op__subtitle">Réponses</h4>'
+    |
+
+E402 Module level import not at top of file
+  --> scripts\validate_documentation.py:27:1
+   |
+25 |   sys.path.insert(0, str(project_root))
+26 |
+27 | / from src.tenxyte.docs.schemas import (
+28 | |     AUTH_EXAMPLES,
+29 | |     ERROR_EXAMPLES,
+30 | |     SUCCESS_EXAMPLES
+31 | | )
+   | |_^
+   |
+
+F401 `django.conf.settings` imported but unused; consider using `importlib.util.find_spec` to test for availability
+  --> scripts\validate_openapi_spec.py:38:29
+   |
+36 | try:
+37 |     import django
+38 |     from django.conf import settings
+   |                             ^^^^^^^^
+39 |     from django.test import Client
+40 |     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.settings')
+   |
+help: Remove unused import: `django.conf.settings`
+
+F401 `django.test.Client` imported but unused; consider using `importlib.util.find_spec` to test for availability
+  --> scripts\validate_openapi_spec.py:39:29
+   |
+37 |     import django
+38 |     from django.conf import settings
+39 |     from django.test import Client
+   |                             ^^^^^^
+40 |     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.settings')
+41 |     django.setup()
+   |
+help: Remove unused import: `django.test.Client`
+
+F821 Undefined name `datetime`
+   --> src\tenxyte\adapters\django\cache_service.py:234:56
+    |
+232 |         return True
+233 |
+234 |     def revoke_all_user_tokens(self, user_id: str) -> 'datetime':
+    |                                                        ^^^^^^^^
+235 |         """
+236 |         Revoke all tokens for a user by setting a revocation timestamp.
+    |
+
+F821 Undefined name `datetime`
+   --> src\tenxyte\adapters\django\cache_service.py:250:22
+    |
+248 |         self,
+249 |         jti: str,
+250 |         expires_at: 'datetime',
+    |                      ^^^^^^^^
+251 |         user_id: Optional[str] = None,
+252 |         reason: str = ""
+    |
+
+F821 Undefined name `datetime`
+   --> src\tenxyte\adapters\django\cache_service.py:261:57
+    |
+259 |         return True
+260 |         
+261 |     def is_user_revoked(self, user_id: str, token_iat: 'datetime' = None) -> bool:
+    |                                                         ^^^^^^^^
+262 |         """Check if all tokens for a user issued before a certain time are revoked."""
+263 |         if not token_iat:
+    |
+
+E741 Ambiguous variable name: `l`
+   --> src\tenxyte\adapters\django\repositories.py:805:44
+    |
+803 |         from tenxyte.models import AuditLog as AuditLogModel
+804 |         logs = AuditLogModel.objects.filter(user_id=user_id).order_by('-created_at')[skip:skip+limit]
+805 |         return [self._to_core_audit(l) for l in logs]
+    |                                            ^
+806 |         
+807 |     def list_by_organization(self, org_id: str, skip: int = 0, limit: int = 100) -> List[AuditLog]:
+    |
+
+F821 Undefined name `Settings`
+  --> src\tenxyte\adapters\django\settings_provider.py:66:31
+   |
+65 | # Convenience function for Django integration
+66 | def get_django_settings() -> 'Settings':
+   |                               ^^^^^^^^
+67 |     """
+68 |     Get or initialize Tenxyte settings with Django provider.
+   |
+
+F401 `.schemas.OrganizationCreate` imported but unused; consider removing, adding to `__all__`, or using a redundant alias
+  --> src\tenxyte\core\__init__.py:65:5
+   |
+63 |     TokenResponse,
+64 |     OrganizationBase,
+65 |     OrganizationCreate,
+   |     ^^^^^^^^^^^^^^^^^^
+66 |     OrganizationResponse,
+67 | )
+   |
+help: Add unused import `OrganizationCreate` to __all__
+
+F401 `.schemas.OrganizationResponse` imported but unused; consider removing, adding to `__all__`, or using a redundant alias
+  --> src\tenxyte\core\__init__.py:66:5
+   |
+64 |     OrganizationBase,
+65 |     OrganizationCreate,
+66 |     OrganizationResponse,
+   |     ^^^^^^^^^^^^^^^^^^^^
+67 | )
+   |
+help: Add unused import `OrganizationResponse` to __all__
+
+F821 Undefined name `Settings`
+   --> src\tenxyte\core\env_provider.py:192:61
+    |
+191 | # Convenience function for quick initialization
+192 | def get_env_settings(dotenv_path: Optional[str] = None) -> 'Settings':
+    |                                                             ^^^^^^^^
+193 |     """
+194 |     Get Tenxyte settings configured from environment variables.
+    |
+
+F821 Undefined name `user_repo`
+   --> src\tenxyte\views\password_views.py:273:9
+    |
+272 |         # Update password via Core repository
+273 |         user_repo.update_password(str(user.id), serializer.validated_data["new_password"])
+    |         ^^^^^^^^^
+274 |
+275 |         # Révoquer tous les refresh tokens via Core JWT service
+    |
+
+F811 Redefinition of unused `is_blacklisted` from line 18
+  --> tests\core\test_jwt_service.py:44:9
+   |
+42 |         return True
+43 |         
+44 |     def is_blacklisted(self, token_jti: str):
+   |         ^^^^^^^^^^^^^^ `is_blacklisted` redefined here
+45 |         return token_jti in self.blacklist
+   |
+  ::: tests\core\test_jwt_service.py:18:9
+   |
+16 |         self.blacklist = set()
+17 |         
+18 |     def is_blacklisted(self, jti: str) -> bool:
+   |         -------------- previous definition of `is_blacklisted` here
+19 |         return jti in self.blacklist
+   |
+help: Remove definition: `is_blacklisted`
+
+E402 Module level import not at top of file
+  --> tests\integration\django\multidb\test_db_auth_flow.py:12:1
+   |
+10 | _is_mongodb = 'mongodb' in settings.DATABASES.get('default', {}).get('ENGINE', '')
+11 |
+12 | from tenxyte.models import User, Application, RefreshToken
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 | from tenxyte.services import AuthService, JWTService
+14 | from tenxyte.services.otp_service import OTPService
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\multidb\test_db_auth_flow.py:13:1
+   |
+12 | from tenxyte.models import User, Application, RefreshToken
+13 | from tenxyte.services import AuthService, JWTService
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | from tenxyte.services.otp_service import OTPService
+15 | from tenxyte.services import TOTPService
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\multidb\test_db_auth_flow.py:14:1
+   |
+12 | from tenxyte.models import User, Application, RefreshToken
+13 | from tenxyte.services import AuthService, JWTService
+14 | from tenxyte.services.otp_service import OTPService
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+15 | from tenxyte.services import TOTPService
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\multidb\test_db_auth_flow.py:15:1
+   |
+13 | from tenxyte.services import AuthService, JWTService
+14 | from tenxyte.services.otp_service import OTPService
+15 | from tenxyte.services import TOTPService
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\multidb\test_db_models.py:14:1
+   |
+12 |   _is_mongodb = 'mongodb' in settings.DATABASES.get('default', {}).get('ENGINE', '')
+13 |
+14 | / from tenxyte.models import (
+15 | |     User, Application, Permission, Role,
+16 | |     RefreshToken, OTPCode, LoginAttempt,
+17 | |     BlacklistedToken, AuditLog, PasswordHistory,
+18 | | )
+   | |_^
+   |
+
+E402 Module level import not at top of file
+ --> tests\integration\django\security\test_idor_mass_assignment.py:6:1
+  |
+4 | from tenxyte.conf import auth_settings
+5 | api_prefix = auth_settings.API_PREFIX
+6 | from tenxyte.models import User, Application
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+7 |
+8 | @pytest.mark.django_db
+  |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\security\test_security.py:19:1
+   |
+17 | api_prefix = auth_settings.API_PREFIX
+18 |
+19 | import pytest
+   | ^^^^^^^^^^^^^
+20 | import jwt
+21 | import json
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\security\test_security.py:20:1
+   |
+19 | import pytest
+20 | import jwt
+   | ^^^^^^^^^^
+21 | import json
+22 | from datetime import datetime, timedelta, timezone as dt_timezone
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\security\test_security.py:21:1
+   |
+19 | import pytest
+20 | import jwt
+21 | import json
+   | ^^^^^^^^^^^
+22 | from datetime import datetime, timedelta, timezone as dt_timezone
+23 | from django.utils import timezone
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\security\test_security.py:22:1
+   |
+20 | import jwt
+21 | import json
+22 | from datetime import datetime, timedelta, timezone as dt_timezone
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+23 | from django.utils import timezone
+24 | from django.core.cache import cache
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\security\test_security.py:23:1
+   |
+21 | import json
+22 | from datetime import datetime, timedelta, timezone as dt_timezone
+23 | from django.utils import timezone
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+24 | from django.core.cache import cache
+25 | from rest_framework import status
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\security\test_security.py:24:1
+   |
+22 | from datetime import datetime, timedelta, timezone as dt_timezone
+23 | from django.utils import timezone
+24 | from django.core.cache import cache
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | from rest_framework import status
+26 | from rest_framework.test import APIClient
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\security\test_security.py:25:1
+   |
+23 | from django.utils import timezone
+24 | from django.core.cache import cache
+25 | from rest_framework import status
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 | from rest_framework.test import APIClient
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\security\test_security.py:26:1
+   |
+24 | from django.core.cache import cache
+25 | from rest_framework import status
+26 | from rest_framework.test import APIClient
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+27 |
+28 | from tenxyte.models import User, Application, RefreshToken
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\security\test_security.py:28:1
+   |
+26 | from rest_framework.test import APIClient
+27 |
+28 | from tenxyte.models import User, Application, RefreshToken
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+29 | from tenxyte.services import JWTService, AuthService
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\security\test_security.py:29:1
+   |
+28 | from tenxyte.models import User, Application, RefreshToken
+29 | from tenxyte.services import JWTService, AuthService
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+E402 Module level import not at top of file
+ --> tests\integration\django\test_dashboard.py:7:1
+  |
+5 | api_prefix = auth_settings.API_PREFIX
+6 |
+7 | import pytest
+  | ^^^^^^^^^^^^^
+8 | from django.contrib.auth import get_user_model
+9 | from django.utils import timezone
+  |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_dashboard.py:8:1
+   |
+ 7 | import pytest
+ 8 | from django.contrib.auth import get_user_model
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 | from django.utils import timezone
+10 | from datetime import timedelta
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_dashboard.py:9:1
+   |
+ 7 | import pytest
+ 8 | from django.contrib.auth import get_user_model
+ 9 | from django.utils import timezone
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 | from datetime import timedelta
+11 | from rest_framework import status
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_dashboard.py:10:1
+   |
+ 8 | from django.contrib.auth import get_user_model
+ 9 | from django.utils import timezone
+10 | from datetime import timedelta
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11 | from rest_framework import status
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_dashboard.py:11:1
+   |
+ 9 | from django.utils import timezone
+10 | from datetime import timedelta
+11 | from rest_framework import status
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 |
+13 | from tenxyte.models import (
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_dashboard.py:13:1
+   |
+11 |   from rest_framework import status
+12 |
+13 | / from tenxyte.models import (
+14 | |     AuditLog, LoginAttempt, BlacklistedToken,
+15 | | )
+   | |_^
+16 |   from tenxyte.services.stats_service import StatsService
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_dashboard.py:16:1
+   |
+14 |     AuditLog, LoginAttempt, BlacklistedToken,
+15 | )
+16 | from tenxyte.services.stats_service import StatsService
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 |
+18 | User = get_user_model()
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_documentation_examples.py:20:1
+   |
+18 |     sys.path.insert(0, src_dir)
+19 |
+20 | import json
+   | ^^^^^^^^^^^
+21 | import pytest
+22 | from rest_framework.test import APITestCase
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_documentation_examples.py:21:1
+   |
+20 | import json
+21 | import pytest
+   | ^^^^^^^^^^^^^
+22 | from rest_framework.test import APITestCase
+23 | from rest_framework import status
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_documentation_examples.py:22:1
+   |
+20 | import json
+21 | import pytest
+22 | from rest_framework.test import APITestCase
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+23 | from rest_framework import status
+24 | from django.urls import reverse
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_documentation_examples.py:23:1
+   |
+21 | import pytest
+22 | from rest_framework.test import APITestCase
+23 | from rest_framework import status
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+24 | from django.urls import reverse
+25 | from django.contrib.auth import get_user_model
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_documentation_examples.py:24:1
+   |
+22 | from rest_framework.test import APITestCase
+23 | from rest_framework import status
+24 | from django.urls import reverse
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+25 | from django.contrib.auth import get_user_model
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_documentation_examples.py:25:1
+   |
+23 | from rest_framework import status
+24 | from django.urls import reverse
+25 | from django.contrib.auth import get_user_model
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+26 |
+27 | from tenxyte.docs.schemas import (
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_documentation_examples.py:27:1
+   |
+25 |   from django.contrib.auth import get_user_model
+26 |
+27 | / from tenxyte.docs.schemas import (
+28 | |     LOGIN_SUCCESS_EXAMPLE,
+29 | |     LOGIN_RATE_LIMITED_EXAMPLE,
+30 | |     VALIDATION_ERROR_EXAMPLE,
+31 | |     NOT_FOUND_ERROR_EXAMPLE,
+32 | |     PERMISSION_DENIED_EXAMPLE,
+33 | |     MULTI_TENANT_SUCCESS_EXAMPLE,
+34 | |     FILE_UPLOAD_SUCCESS_EXAMPLE,
+35 | |     FILE_TOO_LARGE_EXAMPLE,
+36 | |     GDPR_DELETION_CONFIRMED_EXAMPLE,
+37 | |     PAGINATED_RESPONSE_EXAMPLE
+38 | | )
+   | |_^
+39 |
+40 |   User = get_user_model()
+   |
+
+E722 Do not use bare `except`
+   --> tests\integration\django\test_documentation_examples.py:320:13
+    |
+318 |                 # Verify endpoint exists and is documented
+319 |                 assert url is not None
+320 |             except:
+    |             ^^^^^^
+321 |                 pytest.fail(f"Endpoint {endpoint} not found or not documented")
+    |
+
+E402 Module level import not at top of file
+ --> tests\integration\django\test_filters.py:7:1
+  |
+5 | api_prefix = auth_settings.API_PREFIX
+6 |
+7 | import pytest
+  | ^^^^^^^^^^^^^
+8 | from unittest.mock import Mock
+9 | from django.contrib.auth import get_user_model
+  |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_filters.py:8:1
+   |
+ 7 | import pytest
+ 8 | from unittest.mock import Mock
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 | from django.contrib.auth import get_user_model
+10 | from rest_framework import status
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_filters.py:9:1
+   |
+ 7 | import pytest
+ 8 | from unittest.mock import Mock
+ 9 | from django.contrib.auth import get_user_model
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 | from rest_framework import status
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_filters.py:10:1
+   |
+ 8 | from unittest.mock import Mock
+ 9 | from django.contrib.auth import get_user_model
+10 | from rest_framework import status
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11 |
+12 | from tenxyte.models import Permission, Role, Application
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_filters.py:12:1
+   |
+10 | from rest_framework import status
+11 |
+12 | from tenxyte.models import Permission, Role, Application
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 | from tenxyte.pagination import TenxytePagination
+14 | from tenxyte.filters import (
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_filters.py:13:1
+   |
+12 | from tenxyte.models import Permission, Role, Application
+13 | from tenxyte.pagination import TenxytePagination
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | from tenxyte.filters import (
+15 |     apply_search, apply_ordering, apply_boolean_filter,
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_filters.py:14:1
+   |
+12 |   from tenxyte.models import Permission, Role, Application
+13 |   from tenxyte.pagination import TenxytePagination
+14 | / from tenxyte.filters import (
+15 | |     apply_search, apply_ordering, apply_boolean_filter,
+16 | |     apply_permission_filters, apply_role_filters, apply_application_filters,
+17 | | )
+   | |_^
+18 |
+19 |   User = get_user_model()
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_hitl_workflow.py:16:1
+   |
+14 |     return JsonResponse({'status': 'boom deleted'})
+15 |
+16 | from tenxyte.urls import urlpatterns
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 | urlpatterns.append(path('api/test-critical-delete/', dummy_critical_view, name='test_critical_delete'))
+   |
+
+E402 Module level import not at top of file
+ --> tests\integration\django\test_security_views.py:7:1
+  |
+5 | api_prefix = auth_settings.API_PREFIX
+6 |
+7 | import pytest
+  | ^^^^^^^^^^^^^
+8 | from django.contrib.auth import get_user_model
+9 | from django.utils import timezone
+  |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_security_views.py:8:1
+   |
+ 7 | import pytest
+ 8 | from django.contrib.auth import get_user_model
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 9 | from django.utils import timezone
+10 | from datetime import timedelta
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_security_views.py:9:1
+   |
+ 7 | import pytest
+ 8 | from django.contrib.auth import get_user_model
+ 9 | from django.utils import timezone
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 | from datetime import timedelta
+11 | from rest_framework import status
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_security_views.py:10:1
+   |
+ 8 | from django.contrib.auth import get_user_model
+ 9 | from django.utils import timezone
+10 | from datetime import timedelta
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11 | from rest_framework import status
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_security_views.py:11:1
+   |
+ 9 | from django.utils import timezone
+10 | from datetime import timedelta
+11 | from rest_framework import status
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 |
+13 | from tenxyte.models import AuditLog, BlacklistedToken, RefreshToken, LoginAttempt
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_security_views.py:13:1
+   |
+11 | from rest_framework import status
+12 |
+13 | from tenxyte.models import AuditLog, BlacklistedToken, RefreshToken, LoginAttempt
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 |
+15 | User = get_user_model()
+   |
+
+E402 Module level import not at top of file
+ --> tests\integration\django\test_user_admin.py:7:1
+  |
+5 | api_prefix = auth_settings.API_PREFIX
+6 |
+7 | import pytest
+  | ^^^^^^^^^^^^^
+8 | from django.contrib.auth import get_user_model
+9 | from rest_framework import status
+  |
+
+E402 Module level import not at top of file
+ --> tests\integration\django\test_user_admin.py:8:1
+  |
+7 | import pytest
+8 | from django.contrib.auth import get_user_model
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+9 | from rest_framework import status
+  |
+
+E402 Module level import not at top of file
+ --> tests\integration\django\test_user_admin.py:9:1
+  |
+7 | import pytest
+8 | from django.contrib.auth import get_user_model
+9 | from rest_framework import status
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+
+E402 Module level import not at top of file
+ --> tests\integration\django\test_views.py:7:1
+  |
+5 | api_prefix = auth_settings.API_PREFIX
+6 |
+7 | import pytest
+  | ^^^^^^^^^^^^^
+8 | from unittest.mock import Mock, patch
+9 | from rest_framework import status
+  |
+
+E402 Module level import not at top of file
+ --> tests\integration\django\test_views.py:8:1
+  |
+7 | import pytest
+8 | from unittest.mock import Mock, patch
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+9 | from rest_framework import status
+  |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_views.py:9:1
+   |
+ 7 | import pytest
+ 8 | from unittest.mock import Mock, patch
+ 9 | from rest_framework import status
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 |
+11 | from tenxyte.models import Role, Permission
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\test_views.py:11:1
+   |
+ 9 | from rest_framework import status
+10 |
+11 | from tenxyte.models import Role, Permission
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_application_views.py:19:1
+   |
+18 | NONEXISTENT_ID = 999999999  # ID entier qui n'existera jamais en DB (BigAutoField)
+19 | import pytest
+   | ^^^^^^^^^^^^^
+20 | from unittest.mock import patch
+21 | from rest_framework.test import APIRequestFactory
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_application_views.py:20:1
+   |
+18 | NONEXISTENT_ID = 999999999  # ID entier qui n'existera jamais en DB (BigAutoField)
+19 | import pytest
+20 | from unittest.mock import patch
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+21 | from rest_framework.test import APIRequestFactory
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_application_views.py:21:1
+   |
+19 | import pytest
+20 | from unittest.mock import patch
+21 | from rest_framework.test import APIRequestFactory
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+22 |
+23 | from tenxyte.views.application_views import (
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_application_views.py:23:1
+   |
+21 |   from rest_framework.test import APIRequestFactory
+22 |
+23 | / from tenxyte.views.application_views import (
+24 | |     ApplicationListView,
+25 | |     ApplicationDetailView,
+26 | |     ApplicationRegenerateView,
+27 | | )
+   | |_^
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> tests\integration\django\unit\test_application_views.py:68:30
+   |
+66 |     from tenxyte.models import User, Permission
+67 |     user = User.objects.create(email=email, is_active=True)
+68 |     user.set_password("pass"); user.save()
+   |                              ^
+69 |     for code in permission_codes:
+70 |         perm, _ = Permission.objects.get_or_create(code=code, defaults={"name": code})
+   |
+
+E402 Module level import not at top of file
+ --> tests\integration\django\unit\test_backends.py:7:1
+  |
+5 | api_prefix = auth_settings.API_PREFIX
+6 |
+7 | from unittest.mock import Mock, patch
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+8 |
+9 | from tenxyte.backends.sms import (
+  |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_backends.py:9:1
+   |
+ 7 |   from unittest.mock import Mock, patch
+ 8 |
+ 9 | / from tenxyte.backends.sms import (
+10 | |     ConsoleBackend as SMSConsoleBackend,
+11 | |     NGHBackend,
+12 | |     get_sms_backend
+13 | | )
+   | |_^
+14 |   from tenxyte.backends.email import (
+15 |       ConsoleBackend as EmailConsoleBackend,
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_backends.py:14:1
+   |
+12 |       get_sms_backend
+13 |   )
+14 | / from tenxyte.backends.email import (
+15 | |     ConsoleBackend as EmailConsoleBackend,
+16 | |     DjangoBackend,
+17 | |     get_email_backend
+18 | | )
+   | |_^
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_cors_middleware.py:11:1
+   |
+ 9 | api_prefix = auth_settings.API_PREFIX
+10 |
+11 | import pytest
+   | ^^^^^^^^^^^^^
+12 | from django.http import HttpResponse
+13 | from django.test import RequestFactory, override_settings
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_cors_middleware.py:12:1
+   |
+11 | import pytest
+12 | from django.http import HttpResponse
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 | from django.test import RequestFactory, override_settings
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_cors_middleware.py:13:1
+   |
+11 | import pytest
+12 | from django.http import HttpResponse
+13 | from django.test import RequestFactory, override_settings
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 |
+15 | from tenxyte.middleware import CORSMiddleware, SecurityHeadersMiddleware
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_cors_middleware.py:15:1
+   |
+13 | from django.test import RequestFactory, override_settings
+14 |
+15 | from tenxyte.middleware import CORSMiddleware, SecurityHeadersMiddleware
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+
+E402 Module level import not at top of file
+   --> tests\integration\django\unit\test_decorators.py:311:1
+    |
+309 |             assert hasattr(req_owner_ok, 'org_membership')
+310 |
+311 | from tenxyte.decorators import rate_limit, get_client_ip
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+312 |
+313 | class CBVTest:
+    |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_email_backends.py:12:1
+   |
+10 |   sys.modules['sendgrid.helpers.mail'] = MagicMock()
+11 |
+12 | / from tenxyte.backends.email import (
+13 | |     ConsoleBackend,
+14 | |     DjangoBackend,
+15 | |     TemplateEmailBackend,
+16 | |     SendGridBackend,
+17 | |     get_email_backend,
+18 | | )
+   | |_^
+19 |
+20 |   @pytest.fixture
+   |
+
+F811 Redefinition of unused `TestApplyPermissionFilters` from line 513
+   --> tests\integration\django\unit\test_filters.py:610:7
+    |
+608 | # ===========================================================================
+609 |
+610 | class TestApplyPermissionFilters:
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^ `TestApplyPermissionFilters` redefined here
+611 |     @pytest.mark.django_db
+612 |     def test_apply_permission_filters(self):
+    |
+   ::: tests\integration\django\unit\test_filters.py:513:7
+    |
+511 | # ===========================================================================
+512 |
+513 | class TestApplyPermissionFilters:
+    |       -------------------------- previous definition of `TestApplyPermissionFilters` here
+514 |     @pytest.mark.django_db
+515 |     def test_apply_permission_filters(self):
+    |
+help: Remove definition: `TestApplyPermissionFilters`
+
+F811 Redefinition of unused `TestApplyRoleFilters` from line 538
+   --> tests\integration\django\unit\test_filters.py:635:7
+    |
+633 | # ===========================================================================
+634 |
+635 | class TestApplyRoleFilters:
+    |       ^^^^^^^^^^^^^^^^^^^^ `TestApplyRoleFilters` redefined here
+636 |     @pytest.mark.django_db
+637 |     def test_apply_role_filters(self):
+    |
+   ::: tests\integration\django\unit\test_filters.py:538:7
+    |
+536 | # ===========================================================================
+537 |
+538 | class TestApplyRoleFilters:
+    |       -------------------- previous definition of `TestApplyRoleFilters` here
+539 |     @pytest.mark.django_db
+540 |     def test_apply_role_filters(self):
+    |
+help: Remove definition: `TestApplyRoleFilters`
+
+F811 Redefinition of unused `TestApplyApplicationFilters` from line 557
+   --> tests\integration\django\unit\test_filters.py:654:7
+    |
+652 | # ===========================================================================
+653 |
+654 | class TestApplyApplicationFilters:
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `TestApplyApplicationFilters` redefined here
+655 |     @pytest.mark.django_db
+656 |     def test_apply_application_filters(self):
+    |
+   ::: tests\integration\django\unit\test_filters.py:557:7
+    |
+555 | # ===========================================================================
+556 |
+557 | class TestApplyApplicationFilters:
+    |       --------------------------- previous definition of `TestApplyApplicationFilters` here
+558 |     @pytest.mark.django_db
+559 |     def test_apply_application_filters(self):
+    |
+help: Remove definition: `TestApplyApplicationFilters`
+
+F811 Redefinition of unused `TestApplyUserFilters` from line 575
+   --> tests\integration\django\unit\test_filters.py:672:7
+    |
+670 | # ===========================================================================
+671 |
+672 | class TestApplyUserFilters:
+    |       ^^^^^^^^^^^^^^^^^^^^ `TestApplyUserFilters` redefined here
+673 |     @pytest.mark.django_db
+674 |     def test_apply_user_filters(self):
+    |
+   ::: tests\integration\django\unit\test_filters.py:575:7
+    |
+573 | # ===========================================================================
+574 |
+575 | class TestApplyUserFilters:
+    |       -------------------- previous definition of `TestApplyUserFilters` here
+576 |     @pytest.mark.django_db
+577 |     def test_apply_user_filters(self):
+    |
+help: Remove definition: `TestApplyUserFilters`
+
+E741 Ambiguous variable name: `l`
+  --> tests\integration\django\unit\test_lazy_loading.py:35:36
+   |
+34 |             # Verify no eager model imports at module level
+35 |             model_imports = [l for l in module_level_imports if '.models' in l]
+   |                                    ^
+36 |             assert len(model_imports) == 0, f"Found eager model imports: {model_imports}"
+   |
+
+E741 Ambiguous variable name: `l`
+  --> tests\integration\django\unit\test_lazy_loading.py:54:30
+   |
+52 |                 module_level_imports.append(stripped)
+53 |
+54 |         jwt_imports = [l for l in module_level_imports if 'jwt_service' in l.lower() or 'JWTService' in l]
+   |                              ^
+55 |         assert len(jwt_imports) == 0, f"Found eager JWTService imports: {jwt_imports}"
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_rbac_views.py:18:1
+   |
+17 | NONEXISTENT_ID = 999999999  # ID entier qui n'existera jamais en DB (BigAutoField)
+18 | import pytest
+   | ^^^^^^^^^^^^^
+19 | from rest_framework.test import APIRequestFactory
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_rbac_views.py:19:1
+   |
+17 | NONEXISTENT_ID = 999999999  # ID entier qui n'existera jamais en DB (BigAutoField)
+18 | import pytest
+19 | from rest_framework.test import APIRequestFactory
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20 |
+21 | from tenxyte.views.rbac_views import (
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_rbac_views.py:21:1
+   |
+19 |   from rest_framework.test import APIRequestFactory
+20 |
+21 | / from tenxyte.views.rbac_views import (
+22 | |     PermissionListView,
+23 | |     PermissionDetailView,
+24 | |     RoleListView,
+25 | |     RoleDetailView,
+26 | |     RolePermissionsView,
+27 | |     UserRolesView,
+28 | |     UserDirectPermissionsView,
+29 | | )
+   | |_^
+   |
+
+E702 Multiple statements on one line (semicolon)
+  --> tests\integration\django\unit\test_rbac_views.py:58:30
+   |
+56 |     from tenxyte.models import User, Permission
+57 |     user = User.objects.create(email=email, is_active=True)
+58 |     user.set_password("pass"); user.save()
+   |                              ^
+59 |     for code in codes:
+60 |         perm, _ = Permission.objects.get_or_create(code=code, defaults={"name": code})
+   |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:657:36
+    |
+655 |         admin = _create_user_with_perms("urget_admin@t.com", app, "users.roles.view")
+656 |         target = User.objects.create(email="urget_target@t.com", is_active=True)
+657 |         target.set_password("pass"); target.save()
+    |                                    ^
+658 |         role = Role.objects.create(code="ur_get_role_v2", name="UR Get Role V2")
+659 |         target.roles.add(role)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:684:36
+    |
+682 |         admin = _create_user_with_perms("urassign_admin@t.com", app, "users.roles.assign")
+683 |         target = User.objects.create(email="urassign_target@t.com", is_active=True)
+684 |         target.set_password("pass"); target.save()
+    |                                    ^
+685 |         Role.objects.create(code="ur_assign_role_v2", name="UR Assign Role V2")
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:703:36
+    |
+701 |         admin = _create_user_with_perms("urassign_bad@t.com", app, "users.roles.assign")
+702 |         target = User.objects.create(email="urassign_bad_target@t.com", is_active=True)
+703 |         target.set_password("pass"); target.save()
+    |                                    ^
+704 |
+705 |         req = _authed_request(
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:719:36
+    |
+717 |         admin = _create_user_with_perms("urremove_admin@t.com", app, "users.roles.remove")
+718 |         target = User.objects.create(email="urremove_target@t.com", is_active=True)
+719 |         target.set_password("pass"); target.save()
+    |                                    ^
+720 |         role = Role.objects.create(code="ur_remove_role_v2", name="UR Remove Role V2")
+721 |         target.roles.add(role)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:740:36
+    |
+738 |         admin = _create_user_with_perms("urremove_bad@t.com", app, "users.roles.remove")
+739 |         target = User.objects.create(email="urremove_bad_target@t.com", is_active=True)
+740 |         target.set_password("pass"); target.save()
+    |                                    ^
+741 |
+742 |         # Pas de query param role_code
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:755:36
+    |
+753 |         admin = _create_user_with_perms("urget_noperm@t.com", app)  # pas la permission
+754 |         target = User.objects.create(email="urget_noperm_target@t.com", is_active=True)
+755 |         target.set_password("pass"); target.save()
+    |                                    ^
+756 |
+757 |         req = _authed_request("get", f"{api_prefix}/auth/users/{target.id}/roles/", admin, app)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:775:36
+    |
+773 |         admin = _create_user_with_perms("udpget_admin@t.com", app, "users.permissions.view")
+774 |         target = User.objects.create(email="udpget_target@t.com", is_active=True)
+775 |         target.set_password("pass"); target.save()
+    |                                    ^
+776 |         perm = Permission.objects.create(code="udp.test.perm.v2", name="UDP Test Perm V2")
+777 |         target.direct_permissions.add(perm)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:801:36
+    |
+799 |         admin = _create_user_with_perms("udpadd_admin@t.com", app, "users.permissions.assign")
+800 |         target = User.objects.create(email="udpadd_target@t.com", is_active=True)
+801 |         target.set_password("pass"); target.save()
+    |                                    ^
+802 |         Permission.objects.create(code="udp.add.perm.v2", name="UDP Add Perm V2")
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:819:36
+    |
+817 |         admin = _create_user_with_perms("udpadd_bad@t.com", app, "users.permissions.assign")
+818 |         target = User.objects.create(email="udpadd_bad_target@t.com", is_active=True)
+819 |         target.set_password("pass"); target.save()
+    |                                    ^
+820 |
+821 |         req = _authed_request(
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:835:36
+    |
+833 |         admin = _create_user_with_perms("udpremove_admin@t.com", app, "users.permissions.remove")
+834 |         target = User.objects.create(email="udpremove_target@t.com", is_active=True)
+835 |         target.set_password("pass"); target.save()
+    |                                    ^
+836 |         perm = Permission.objects.create(code="udp.remove.perm.v2", name="UDP Remove Perm V2")
+837 |         target.direct_permissions.add(perm)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:854:36
+    |
+852 |         admin = _create_user_with_perms("udpremove_bad@t.com", app, "users.permissions.remove")
+853 |         target = User.objects.create(email="udpremove_bad_target@t.com", is_active=True)
+854 |         target.set_password("pass"); target.save()
+    |                                    ^
+855 |
+856 |         req = _authed_request(
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:870:36
+    |
+868 |         admin = _create_user_with_perms("udpidemp_admin@t.com", app, "users.permissions.assign")
+869 |         target = User.objects.create(email="udpidemp_target@t.com", is_active=True)
+870 |         target.set_password("pass"); target.save()
+    |                                    ^
+871 |         perm = Permission.objects.create(code="udp.idemp.perm.v2", name="UDP Idemp Perm V2")
+872 |         target.direct_permissions.add(perm)  # déjà assignée
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:889:36
+    |
+887 |         admin = _create_user_with_perms("udpget_noperm@t.com", app)  # pas la permission
+888 |         target = User.objects.create(email="udpget_noperm_target@t.com", is_active=True)
+889 |         target.set_password("pass"); target.save()
+    |                                    ^
+890 |
+891 |         req = _authed_request("get", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app)
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:909:36
+    |
+907 |         admin = _create_user_with_perms("udpadd_val_ad@t.com", app, "users.permissions.assign")
+908 |         target = User.objects.create(email="udpadd_val_target@t.com", is_active=True)
+909 |         target.set_password("pass"); target.save()
+    |                                    ^
+910 |
+911 |         req = _authed_request(
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:932:36
+    |
+930 |         admin = _create_user_with_perms("udprm_val_ad@t.com", app, "users.permissions.remove")
+931 |         target = User.objects.create(email="udprm_val_target@t.com", is_active=True)
+932 |         target.set_password("pass"); target.save()
+    |                                    ^
+933 |
+934 |         req = _authed_request(
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:947:36
+    |
+945 |         admin = _create_user_with_perms("udprm_not_ad@t.com", app, "users.permissions.remove")
+946 |         target = User.objects.create(email="udprm_not_target@t.com", is_active=True)
+947 |         target.set_password("pass"); target.save()
+    |                                    ^
+948 |         Permission.objects.create(code="udp.not_assigned.perm.v2", name="Not Assigned UDP")
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:965:36
+    |
+963 |         admin = _create_user_with_perms("udpsafeadd_ad@t.com", app, "users.permissions.assign")
+964 |         target = User.objects.create(email="udpsafeadd_target@t.com", is_active=True)
+965 |         target.set_password("pass"); target.save()
+    |                                    ^
+966 |         Permission.objects.create(code="udp.safe.add.perm1", name="UDP Safe Add Perm 1")
+967 |         Permission.objects.create(code="udp.safe.add.perm2", name="UDP Safe Add Perm 2")
+    |
+
+E702 Multiple statements on one line (semicolon)
+   --> tests\integration\django\unit\test_rbac_views.py:989:36
+    |
+987 |         admin = _create_user_with_perms("udpsaferm_ad@t.com", app, "users.permissions.remove")
+988 |         target = User.objects.create(email="udpsaferm_target@t.com", is_active=True)
+989 |         target.set_password("pass"); target.save()
+    |                                    ^
+990 |         perm = Permission.objects.create(code="udp.safe.rm.perm", name="UDP Safe Rm Perm")
+991 |         target.direct_permissions.add(perm)
+    |
+
+F401 `twilio.base.exceptions` imported but unused; consider using `importlib.util.find_spec` to test for availability
+  --> tests\integration\django\unit\test_sms_backends.py:9:12
+   |
+ 7 |     import twilio
+ 8 |     import twilio.rest
+ 9 |     import twilio.base.exceptions
+   |            ^^^^^^^^^^^^^^^^^^^^^^
+10 | except ImportError:
+11 |     class MockTwilioRestException(Exception):
+   |
+help: Remove unused import: `twilio.base.exceptions`
+
+F811 Redefinition of unused `test_provider_name` from line 282
+   --> tests\integration\django\unit\test_social_auth.py:300:9
+    |
+298 |             assert res is None
+299 |
+300 |     def test_provider_name(self):
+    |         ^^^^^^^^^^^^^^^^^^ `test_provider_name` redefined here
+301 |         assert GitHubOAuthProvider().provider_name == 'github'
+    |
+   ::: tests\integration\django\unit\test_social_auth.py:282:9
+    |
+280 |         assert result['access_token'] == 'gh_tok'
+281 |
+282 |     def test_provider_name(self):
+    |         ------------------ previous definition of `test_provider_name` here
+283 |         assert GitHubOAuthProvider().provider_name == 'github'
+    |
+help: Remove definition: `test_provider_name`
+
+F811 Redefinition of unused `test_abstract_get_non_200` from line 285
+   --> tests\integration\django\unit\test_social_auth.py:303:9
+    |
+301 |         assert GitHubOAuthProvider().provider_name == 'github'
+302 |
+303 |     def test_abstract_get_non_200(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^ `test_abstract_get_non_200` redefined here
+304 |         provider = GitHubOAuthProvider()
+305 |         mock_resp = MagicMock()
+    |
+   ::: tests\integration\django\unit\test_social_auth.py:285:9
+    |
+283 |         assert GitHubOAuthProvider().provider_name == 'github'
+284 |
+285 |     def test_abstract_get_non_200(self):
+    |         ------------------------- previous definition of `test_abstract_get_non_200` here
+286 |         provider = GitHubOAuthProvider()
+287 |         mock_resp = MagicMock()
+    |
+help: Remove definition: `test_abstract_get_non_200`
+
+F811 Redefinition of unused `test_abstract_get_exception` from line 294
+   --> tests\integration\django\unit\test_social_auth.py:312:9
+    |
+310 |             assert res is None
+311 |
+312 |     def test_abstract_get_exception(self):
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `test_abstract_get_exception` redefined here
+313 |         provider = GitHubOAuthProvider()
+314 |         with patch('requests.get', side_effect=Exception("Get error")):
+    |
+   ::: tests\integration\django\unit\test_social_auth.py:294:9
+    |
+292 |             assert res is None
+293 |
+294 |     def test_abstract_get_exception(self):
+    |         --------------------------- previous definition of `test_abstract_get_exception` here
+295 |         provider = GitHubOAuthProvider()
+296 |         with patch('requests.get', side_effect=Exception("Get error")):
+    |
+help: Remove definition: `test_abstract_get_exception`
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_tenxyte_cleanup.py:85:1
+   |
+83 |     assert LoginAttempt.objects.count() == 2  # Not deleted!
+84 |
+85 | from unittest.mock import patch
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+86 |
+87 | @pytest.mark.django_db
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_throttles.py:12:1
+   |
+10 | api_prefix = auth_settings.API_PREFIX
+11 |
+12 | from unittest.mock import MagicMock, patch
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 | from django.test import override_settings
+14 | from django.core.cache import cache
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_throttles.py:13:1
+   |
+12 | from unittest.mock import MagicMock, patch
+13 | from django.test import override_settings
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 | from django.core.cache import cache
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_throttles.py:14:1
+   |
+12 | from unittest.mock import MagicMock, patch
+13 | from django.test import override_settings
+14 | from django.core.cache import cache
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+15 |
+16 | from tenxyte.throttles import (
+   |
+
+E402 Module level import not at top of file
+  --> tests\integration\django\unit\test_throttles.py:16:1
+   |
+14 |   from django.core.cache import cache
+15 |
+16 | / from tenxyte.throttles import (
+17 | |     LoginThrottle,
+18 | |     RegisterThrottle,
+19 | |     ProgressiveLoginThrottle,
+20 | |     SimpleThrottleRule,
+21 | |     get_client_ip,
+22 | | )
+   | |_^
+   |
+
+E402 Module level import not at top of file
+   --> tests\integration\django\unit\test_user_views.py:523:1
+    |
+521 | # Extra Coverage Tests
+522 | # ---------------------------------------------------------------------------
+523 | from tenxyte.views.user_views import get_core_settings, AvatarUploadView
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+524 |
+525 | class TestExtraCoverage:
+    |
+
+Found 120 errors.

@@ -1,10 +1,9 @@
 import pytest
 from rest_framework import status
-from rest_framework.test import APIClient
 
 from tenxyte.conf import auth_settings
 api_prefix = auth_settings.API_PREFIX
-from tenxyte.models import User, Application
+from tenxyte.models import User, Application  # noqa: E402
 
 @pytest.mark.django_db
 class TestIDORSecurity:
