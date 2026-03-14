@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tenxyte"
-version = "0.9.2.5"
+version = "0.9.2.9"
 description = "Framework-agnostic Python authentication — JWT, RBAC, 2FA, Magic Links, Passkeys, Social Login, B2B Organizations, multi-tenant support. Works with Django, FastAPI, and more."
 readme = "README.md"
 license = {text = "MIT"}
@@ -168,12 +168,20 @@ Changelog = "https://github.com/tenxyte/tenxyte/blob/main/CHANGELOG.md"
 packages = ["src/tenxyte"]
 
 [tool.pytest.ini_options]
+# Core tests (pure unit tests, no Django)
+# Run with: pytest tests/core/ -p no:django
+# Django tests (integration tests with Django ORM)
+# Run with: pytest tests/integration/django/
 DJANGO_SETTINGS_MODULE = "tests.integration.django.settings"
-pythonpath = ["."]
+pythonpath = [".", "src"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--cov=tenxyte --cov-report=html --cov-report=term --cov-fail-under=90 --reuse-db --create-db"  # R13 — seuil aligné sur la réalité (98% actuel)
+addopts = "--cov=tenxyte --cov-report=html --cov-report=term --cov-fail-under=90 --reuse-db --create-db"
+markers = [
+    "no_django: marks tests that should run without Django (pure Core tests)",
+    "django: marks tests that require Django (integration tests)",
+]
 
 [tool.black]
 line-length = 120
@@ -182,3 +190,7 @@ target-version = ["py310", "py311", "py312"]
 [tool.ruff]
 line-length = 120
 target-version = "py310"
+
+[tool.pyright]
+include = ["src"]
+extraPaths = ["src"]

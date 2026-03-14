@@ -405,7 +405,7 @@ class TestMagicLinkRequestView:
     def test_request_returns_200_for_valid_email(self):
         user = _user("view_req@example.com")
         app = _app("ReqViewApp")
-        with patch('tenxyte.services.magic_link_service.MagicLinkService.request_magic_link', return_value=(True, '')):
+        with patch('tenxyte.core.magic_link_service.MagicLinkService.request_magic_link', return_value=(True, '')):
             resp = _post(MagicLinkRequestView, '/magic-link/request/', {'email': 'view_req@example.com', 'validation_url': 'http://test.com/verify'}, app=app)
         assert resp.status_code == 200
         assert 'message' in resp.data
@@ -420,7 +420,7 @@ class TestMagicLinkRequestView:
     @override_settings(TENXYTE_MAGIC_LINK_ENABLED=True)
     def test_request_returns_503_on_service_failure(self):
         app = _app("ReqViewApp3")
-        with patch('tenxyte.services.magic_link_service.MagicLinkService.request_magic_link', return_value=(False, 'Failed to send')):
+        with patch('tenxyte.core.magic_link_service.MagicLinkService.request_magic_link', return_value=(False, 'Failed to send')):
             resp = _post(MagicLinkRequestView, '/magic-link/request/', {'email': 'x@example.com', 'validation_url': 'http://test.com/verify'}, app=app)
         assert resp.status_code == 503
 
@@ -428,7 +428,7 @@ class TestMagicLinkRequestView:
     def test_request_returns_200_for_unknown_email(self):
         """Security: should not reveal if email exists."""
         app = _app("ReqViewApp4")
-        with patch('tenxyte.services.magic_link_service.MagicLinkService.request_magic_link', return_value=(True, '')):
+        with patch('tenxyte.core.magic_link_service.MagicLinkService.request_magic_link', return_value=(True, '')):
             resp = _post(MagicLinkRequestView, '/magic-link/request/', {'email': 'unknown@example.com', 'validation_url': 'http://test.com/verify'}, app=app)
         assert resp.status_code == 200
 
@@ -453,7 +453,7 @@ class TestMagicLinkVerifyView:
             resp = MagicLinkVerifyView.as_view()(req)
 
         assert resp.status_code == 200
-        assert 'access_token' in resp.data
+        assert 'access' in resp.data
 
     @override_settings(TENXYTE_MAGIC_LINK_ENABLED=True)
     def test_verify_returns_400_for_missing_token(self):

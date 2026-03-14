@@ -16,8 +16,8 @@ class MockEmailService:
     def __init__(self):
         self.sent_emails = []
         
-    def send_magic_link(self, to_email: str, token: str, magic_url: Optional[str] = None, **kwargs):
-        self.sent_emails.append((to_email, magic_url))
+    def send_magic_link(self, to_email: str, magic_link_url: str, expires_in_minutes: int = 15, **kwargs):
+        self.sent_emails.append((to_email, magic_link_url))
         return True
 
 class MockMagicLinkRepository(MagicLinkRepository):

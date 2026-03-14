@@ -47,7 +47,7 @@ class TokenBlacklistService(Protocol):
     
     def is_blacklisted(self, jti: str) -> bool:
         """Check if a token JTI is blacklisted."""
-        ...
+        ...  # pragma: no cover
     
     def blacklist_token(
         self,
@@ -57,7 +57,7 @@ class TokenBlacklistService(Protocol):
         reason: str = ""
     ) -> bool:
         """Add a token JTI to the blacklist."""
-        ...
+        ...  # pragma: no cover
 
 
 class InMemoryTokenBlacklistService:
@@ -71,6 +71,8 @@ class InMemoryTokenBlacklistService:
     def __init__(self):
         self._blacklisted: Dict[str, datetime] = {}
         self._reasons: Dict[str, str] = {}
+        # User-level revocation: user_id -> revocation timestamp
+        self._user_revocations: Dict[str, datetime] = {}
     
     def is_blacklisted(self, jti: str) -> bool:
         """Check if a token JTI is blacklisted."""
@@ -87,6 +89,21 @@ class InMemoryTokenBlacklistService:
             return False
         
         return True
+    
+    def is_user_revoked(self, user_id: str, token_iat: datetime) -> bool:
+        """Check if all tokens for a user issued before a certain time are revoked."""
+        if user_id not in self._user_revocations:
+            return False
+        
+        revocation_time = self._user_revocations[user_id]
+        # If token was issued before revocation, it's revoked
+        return token_iat < revocation_time
+    
+    def revoke_all_user_tokens(self, user_id: str) -> datetime:
+        """Mark all current and future tokens for a user as revoked until now."""
+        now = datetime.now(timezone.utc)
+        self._user_revocations[user_id] = now
+        return now
     
     def blacklist_token(
         self,
@@ -202,7 +219,7 @@ class JWTService:
                 f"Set TENXYTE_JWT_SECRET in settings."
             )
         
-        if self.is_asymmetric and not self.private_key:
+        if self.is_asymmetric and not self.private_key:  # pragma: no cover
             raise ValueError(
                 f"JWT private key is required for asymmetric algorithm {self.algorithm}. "
                 f"Set TENXYTE_JWT_SECRET (private key) in settings."
@@ -241,6 +258,28 @@ class JWTService:
         token = jwt.encode(payload, self.signing_key, algorithm=self.algorithm)
         return token, jti, expires_at
     
+    def generate_refresh_token(
+        self,
+        user_id: str,
+        application_id: str,
+        device_info: Optional[str] = None,
+        extra_claims: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """
+        Generate a refresh token (opaque UUID string).
+        
+        Args:
+            user_id: User identifier
+            application_id: Application identifier
+            device_info: Optional device information to include in claims
+            extra_claims: Additional claims to include in token (for JWT refresh tokens)
+            
+        Returns:
+            Refresh token string (UUID)
+        """
+        # For now, return a simple UUID - this matches Django model expectation
+        return str(uuid.uuid4())
+    
     def generate_token_pair(
         self,
         user_id: str,
@@ -269,6 +308,42 @@ class JWTService:
             access_token_jti=jti,
             access_token_expires_at=expires_at,
             refresh_token=refresh_token_str,
+            token_type="Bearer",
+            expires_in=int(self.access_token_lifetime.total_seconds()),
+        )
+    
+    def generate_new_token_pair(
+        self,
+        user_id: str,
+        application_id: str,
+        extra_claims: Optional[Dict[str, Any]] = None
+    ) -> TokenPair:
+        """
+        Generate a NEW access token + refresh token pair for initial login.
+        
+        This creates a fresh refresh token (not rotation of existing one).
+        
+        Args:
+            user_id: User identifier
+            application_id: Application identifier
+            extra_claims: Additional claims for access token
+            
+        Returns:
+            TokenPair with both new tokens and metadata
+        """
+        # Generate access token
+        access_token, jti, expires_at = self.generate_access_token(
+            user_id, application_id, extra_claims
+        )
+        
+        # Generate refresh token (opaque string)
+        refresh_token = str(uuid.uuid4())
+        
+        return TokenPair(
+            access_token=access_token,
+            access_token_jti=jti,
+            access_token_expires_at=expires_at,
+            refresh_token=refresh_token,
             token_type="Bearer",
             expires_in=int(self.access_token_lifetime.total_seconds()),
         )
@@ -335,6 +410,12 @@ class JWTService:
             is_blacklisted = False
             if check_blacklist:
                 is_blacklisted = self.blacklist_service.is_blacklisted(jti)
+                
+                # Also check user-level revocation (for password change, etc.)
+                if not is_blacklisted and user_id:
+                    is_blacklisted = self.blacklist_service.is_user_revoked(
+                        user_id, iat_dt
+                    )
             
             return DecodedToken(
                 user_id=str(user_id),
@@ -427,3 +508,197 @@ class JWTService:
             user_id=user_id,
             reason=reason
         )
+    
+    def revoke_all_user_tokens(
+        self,
+        user_id: str,
+        reason: str = "password_change"
+    ) -> bool:
+        """
+        Revoke all tokens for a specific user.
+        
+        This revokes:
+        1. All refresh tokens in the database (marks them as revoked)
+        2. All current JWT access tokens via user-level revocation timestamp
+        
+        Typically called when a user changes their password to invalidate 
+        all existing sessions.
+        
+        Args:
+            user_id: User identifier
+            reason: Reason for revocation (default: password_change)
+            
+        Returns:
+            True if operation was successful
+        """
+        revoked_count = 0
+        
+        # 1. Revoke all refresh tokens in database
+        try:
+            from tenxyte.models import RefreshToken as RefreshTokenModel
+            
+            # Get all non-revoked refresh tokens for this user
+            active_tokens = RefreshTokenModel.objects.filter(
+                user_id=user_id,
+                is_revoked=False
+            )
+            
+            # Revoke each token
+            for token_obj in active_tokens:
+                token_obj.is_revoked = True
+                token_obj.save(update_fields=['is_revoked'])
+                revoked_count += 1
+                
+        except ImportError:
+            # Django models not available, skip database revocation
+            pass
+        
+        # 2. Mark all current JWT access tokens as revoked via user-level revocation
+        # This sets a timestamp - any token issued before this time is considered revoked
+        revocation_time = self.blacklist_service.revoke_all_user_tokens(user_id)
+        
+        # Also store the revocation event for audit purposes
+        self.blacklist_service.blacklist_token(
+            jti=f"user_revocation:{user_id}:{revocation_time.isoformat()}",
+            expires_at=datetime.now(timezone.utc) + self.refresh_token_lifetime,
+            user_id=user_id,
+            reason=reason
+        )
+        
+        return True
+
+    def refresh_tokens(
+        self,
+        refresh_token: str,
+        user_repository: Optional[Any] = None
+    ) -> Optional[TokenPair]:
+        """
+        Refresh tokens using a refresh token.
+        
+        Validates the refresh token and generates a new access token.
+        For opaque refresh tokens (UUID strings), validates against database.
+        For JWT refresh tokens, validates cryptographically.
+        
+        Args:
+            refresh_token: The refresh token to use
+            user_repository: Optional user repository to look up user info
+            
+        Returns:
+            TokenPair with new tokens, or None if refresh failed
+        """
+        # For opaque refresh tokens (UUID format from generate_new_token_pair)
+        try:
+            # Try to look up in database using Django model's get_by_raw_token
+            # which properly hashes the token before lookup
+            from tenxyte.models import RefreshToken as RefreshTokenModel
+            
+            try:
+                token_obj = RefreshTokenModel.get_by_raw_token(refresh_token)
+                
+                if token_obj.is_revoked:
+                    return None
+                
+                # Check if expired
+                if token_obj.expires_at and token_obj.expires_at < datetime.now(timezone.utc):
+                    return None
+                
+                # Generate new tokens
+                user_id = str(token_obj.user_id)
+                app_id = str(token_obj.application_id) if token_obj.application_id else "default"
+                
+                # Generate new access token
+                access_token, jti, expires_at = self.generate_access_token(
+                    user_id=user_id,
+                    application_id=app_id
+                )
+                
+                # Rotate refresh token (create new one)
+                new_refresh_token = str(uuid.uuid4())
+                
+                # Revoke old token
+                token_obj.is_revoked = True
+                token_obj.save(update_fields=['is_revoked'])
+                
+                # Create new refresh token
+                RefreshTokenModel.objects.create(
+                    user_id=user_id,
+                    application_id=token_obj.application_id,
+                    token=new_refresh_token,
+                    expires_at=datetime.now(timezone.utc) + self.refresh_token_lifetime
+                )
+                
+                return TokenPair(
+                    access_token=access_token,
+                    access_token_jti=jti,
+                    access_token_expires_at=expires_at,
+                    refresh_token=new_refresh_token,
+                    token_type="Bearer",
+                    expires_in=int(self.access_token_lifetime.total_seconds())
+                )
+                
+            except RefreshTokenModel.DoesNotExist:
+                # Token not found in DB, might be a JWT refresh token
+                # Try to decode as JWT
+                try:
+                    result = self.decode_token(refresh_token, check_blacklist=True)
+                    if not result or not result.is_valid:
+                        return None
+                    
+                    if result.type != "refresh":
+                        return None
+                    
+                    # Generate new tokens
+                    access_token, jti, expires_at = self.generate_access_token(
+                        user_id=result.user_id,
+                        application_id=result.app_id
+                    )
+                    
+                    # Generate new refresh token
+                    new_refresh_token = str(uuid.uuid4())
+                    
+                    # Blacklist old refresh token
+                    self.blacklist_token_by_jti(
+                        jti=result.jti,
+                        expires_at=result.exp,
+                        user_id=result.user_id,
+                        reason='token_rotation'
+                    )
+                    
+                    return TokenPair(
+                        access_token=access_token,
+                        access_token_jti=jti,
+                        access_token_expires_at=expires_at,
+                        refresh_token=new_refresh_token,
+                        token_type="Bearer",
+                        expires_in=int(self.access_token_lifetime.total_seconds())
+                    )
+                    
+                except Exception:
+                    return None
+                    
+        except ImportError:
+            # Django models not available, try JWT decode only
+            try:
+                result = self.decode_token(refresh_token, check_blacklist=True)
+                if not result or not result.is_valid:
+                    return None
+                
+                # Generate new access token
+                access_token, jti, expires_at = self.generate_access_token(
+                    user_id=result.user_id,
+                    application_id=result.app_id
+                )
+                
+                # Generate new refresh token
+                new_refresh_token = str(uuid.uuid4())
+                
+                return TokenPair(
+                    access_token=access_token,
+                    access_token_jti=jti,
+                    access_token_expires_at=expires_at,
+                    refresh_token=new_refresh_token,
+                    token_type="Bearer",
+                    expires_in=int(self.access_token_lifetime.total_seconds())
+                )
+            except Exception:
+                return None

@@ -5,12 +5,17 @@ Implements the Repository ports using Django ORM.
 """
 
 from typing import Any, Dict, List, Optional
+from datetime import datetime
 
 from tenxyte.ports.repositories import (
     UserRepository,
     OrganizationRepository,
+    RoleRepository,
+    AuditLogRepository,
     User,
     Organization,
+    Role,
+    AuditLog,
     UserStatus,
     MFAType,
 )
@@ -121,7 +126,7 @@ class DjangoUserRepository(UserRepository):
             is_active=user.is_active,
             is_superuser=user.is_superuser,
             is_staff=user.is_staff,
-            email_verified=user.email_verified
+            is_email_verified=user.email_verified
         )
         
         # Set password if provided
@@ -154,7 +159,7 @@ class DjangoUserRepository(UserRepository):
         if user.is_active is not None:
             django_user.is_active = user.is_active
         if user.email_verified is not None:
-            django_user.email_verified = user.email_verified
+            django_user.is_email_verified = user.email_verified
         
         # Update password if changed (and it's not already a hash)
         if user.password_hash and not user.password_hash.startswith(
@@ -172,11 +177,92 @@ class DjangoUserRepository(UserRepository):
         django_user.save()
         return self._to_core_user(django_user)
     
+    def update_user(self, user_id: str, user_data: Dict[str, Any]) -> Optional[User]:
+        """Update user by ID with data dict (for view compatibility)."""
+        try:
+            django_user = UserModel.objects.get(id=user_id)
+        except UserModel.DoesNotExist:
+            return None
+        
+        # Update fields from data dict
+        if 'first_name' in user_data:
+            django_user.first_name = user_data['first_name']
+        if 'last_name' in user_data:
+            django_user.last_name = user_data['last_name']
+        if 'email' in user_data:
+            django_user.email = user_data['email']
+        if 'is_active' in user_data:
+            django_user.is_active = user_data['is_active']
+        if 'is_email_verified' in user_data:
+            django_user.is_email_verified = user_data['is_email_verified']
+        
+        django_user.save()
+        return self._to_core_user(django_user)
+    
     def delete(self, user_id: str) -> bool:
         """Soft delete a user."""
         try:
             django_user = UserModel.objects.get(id=user_id)
             django_user.soft_delete()
+            return True
+        except UserModel.DoesNotExist:
+            return False
+            
+    def soft_delete(self, user_id: str) -> bool:
+        """Alias for delete()."""
+        return self.delete(user_id)
+        
+    def ban(self, user_id: str, reason: str = "") -> bool:
+        """Ban user account."""
+        try:
+            django_user = UserModel.objects.get(id=user_id)
+            if hasattr(django_user, 'ban_account'):
+                django_user.ban_account(reason)
+            else:
+                django_user.is_active = False
+                django_user.is_banned = True
+                django_user.save(update_fields=['is_active', 'is_banned'])
+            return True
+        except UserModel.DoesNotExist:
+            return False
+            
+    def unban(self, user_id: str) -> bool:
+        """Unban user account."""
+        try:
+            django_user = UserModel.objects.get(id=user_id)
+            if hasattr(django_user, 'unban_account'):
+                django_user.unban_account()
+            else:
+                django_user.is_active = True
+                django_user.is_banned = False
+                django_user.save(update_fields=['is_active', 'is_banned'])
+            return True
+        except UserModel.DoesNotExist:
+            return False
+            
+    def lock(self, user_id: str, duration_minutes: int = 30, reason: str = "") -> bool:
+        """Lock user account."""
+        try:
+            django_user = UserModel.objects.get(id=user_id)
+            if hasattr(django_user, 'lock_account'):
+                django_user.lock_account(duration_minutes)
+            else:
+                django_user.is_locked = True
+                # we don't track locked_until if the method doesn't exist, this is a fallback
+                django_user.save(update_fields=['is_locked'])
+            return True
+        except UserModel.DoesNotExist:
+            return False
+            
+    def unlock(self, user_id: str) -> bool:
+        """Unlock user account."""
+        try:
+            django_user = UserModel.objects.get(id=user_id)
+            if hasattr(django_user, 'unlock_account'):
+                django_user.unlock_account()
+            else:
+                django_user.is_locked = False
+                django_user.save(update_fields=['is_locked'])
             return True
         except UserModel.DoesNotExist:
             return False
@@ -195,8 +281,8 @@ class DjangoUserRepository(UserRepository):
                 queryset = queryset.filter(is_active=filters['is_active'])
             if 'is_staff' in filters:
                 queryset = queryset.filter(is_staff=filters['is_staff'])
-            if 'email_verified' in filters:
-                queryset = queryset.filter(email_verified=filters['email_verified'])
+            if 'is_email_verified' in filters:
+                queryset = queryset.filter(is_email_verified=filters['is_email_verified'])
             if 'is_2fa_enabled' in filters:
                 queryset = queryset.filter(is_2fa_enabled=filters['is_2fa_enabled'])
         
@@ -240,8 +326,36 @@ class DjangoUserRepository(UserRepository):
         """Mark user's email as verified."""
         try:
             django_user = UserModel.objects.get(id=user_id)
-            django_user.email_verified = True
-            django_user.save(update_fields=['email_verified'])
+            django_user.is_email_verified = True
+            django_user.save(update_fields=['is_email_verified'])
+            return True
+        except UserModel.DoesNotExist:
+            return False
+    
+    def enable_mfa(self, user_id: str, mfa_type: str) -> bool:
+        """Enable MFA for user."""
+        from tenxyte.models import get_user_model
+        UserModel = get_user_model()
+        
+        try:
+            user = UserModel.objects.get(id=user_id)
+            user.is_2fa_enabled = True
+            user.save(update_fields=['is_2fa_enabled'])
+            return True
+        except UserModel.DoesNotExist:
+            return False
+    
+    def disable_mfa(self, user_id: str) -> bool:
+        """Disable MFA for user."""
+        from tenxyte.models import get_user_model
+        UserModel = get_user_model()
+        
+        try:
+            user = UserModel.objects.get(id=user_id)
+            user.is_2fa_enabled = False
+            user.totp_secret = None
+            user.backup_codes = []
+            user.save(update_fields=['is_2fa_enabled', 'totp_secret', 'backup_codes'])
             return True
         except UserModel.DoesNotExist:
             return False
@@ -274,16 +388,45 @@ class DjangoUserRepository(UserRepository):
         except UserModel.DoesNotExist:
             return False
     
+    def update_password(self, user_id: str, password: str) -> bool:
+        """Update password for user (alias for set_password)."""
+        return self.set_password(user_id, password)
+    
     def is_account_locked(self, user_id: str) -> bool:
-        """Check if user account is locked."""
+        """Check if account is temporarily locked due to failed attempts."""
+        from django.core.cache import cache
+        cache_key = f"account_locked:{user_id}"
+        if cache.get(cache_key):
+            return True
+            
+        from tenxyte.models import get_user_model
+        UserModel = get_user_model()
         try:
-            django_user = UserModel.objects.get(id=user_id)
-            return django_user.is_account_locked()
-        except (UserModel.DoesNotExist, AttributeError):
+            user = UserModel.objects.get(id=user_id)
+            if hasattr(user, 'is_account_locked'):
+                return user.is_account_locked()
+            from django.utils import timezone
+            return getattr(user, 'is_locked', False) and getattr(user, 'locked_until', None) and user.locked_until > timezone.now()
+        except UserModel.DoesNotExist:
+            return False
+    
+    def is_locked(self, user_id: str) -> bool:
+        """Alias for is_account_locked - used by Core MagicLinkService."""
+        return self.is_account_locked(user_id)
+    
+    def is_active(self, user_id: str) -> bool:
+        """Check if user account is active."""
+        from tenxyte.models import get_user_model
+        UserModel = get_user_model()
+        try:
+            user = UserModel.objects.get(id=user_id)
+            return user.is_active
+        except UserModel.DoesNotExist:
             return False
     
     def lock_account(self, user_id: str, duration_minutes: int = 30) -> bool:
         """Lock user account."""
+# ... (rest of the code remains the same)
         try:
             django_user = UserModel.objects.get(id=user_id)
             django_user.lock_account(duration_minutes)
@@ -298,6 +441,24 @@ class DjangoUserRepository(UserRepository):
             django_user.unlock_account()
             return True
         except (UserModel.DoesNotExist, AttributeError):
+            return False
+    
+    def record_failed_login(self, user_id: str) -> bool:
+        """Record a failed login attempt and potentially lock the account."""
+        try:
+            from django.core.cache import cache
+            
+            # Use cache to track failed attempts
+            cache_key = f"failed_login_{user_id}"
+            attempts = cache.get(cache_key, 0) + 1
+            cache.set(cache_key, attempts, timeout=1800)  # 30 minutes
+            
+            # Lock account after 5 failed attempts
+            if attempts >= 5:
+                self.lock_account(user_id, duration_minutes=30)
+            
+            return True
+        except Exception:
             return False
     
     def hard_delete(self, user_id: str) -> bool:
@@ -662,9 +823,106 @@ class DjangoAuditLogRepository(AuditLogRepository):
             qs = qs.filter(created_at__gte=since)
         return qs.count()
 
+class DjangoMagicLinkRepository:
+    """Django ORM implementation of MagicLink repository."""
+    
+    def get_by_token(self, token: str):
+        """Get a valid magic link token by its token string."""
+        from django.utils import timezone
+        from tenxyte.models import MagicLinkToken
+        import hashlib
+        # Hash the token (Django stores SHA-256 hashes)
+        hashed_token = hashlib.sha256(token.encode()).hexdigest()
+        try:
+            token_obj = MagicLinkToken.objects.get(token=hashed_token, is_used=False, expires_at__gt=timezone.now())
+            from tenxyte.core.magic_link_service import MagicLinkToken as CoreMagicLinkToken
+            return CoreMagicLinkToken(
+                id=str(token_obj.id),
+                token="",
+                user_id=str(token_obj.user_id),
+                email=token_obj.user.email,
+                application_id=str(token_obj.application_id) if token_obj.application_id else None,
+                ip_address=token_obj.ip_address,
+                user_agent=token_obj.user_agent,
+                created_at=token_obj.created_at,
+                expires_at=token_obj.expires_at,
+                used_at=token_obj.used_at,
+                is_used=token_obj.is_used
+            )
+        except MagicLinkToken.DoesNotExist:
+            return None
+    
+    def create(
+        self,
+        token_hash: str,
+        user_id: str,
+        email: str,
+        application_id: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
+        expiry_minutes: int = 15
+    ):
+        """Save a magic link token and return a CoreMagicLinkToken."""
+        from tenxyte.models import MagicLinkToken
+        from django.utils import timezone
+        from datetime import timedelta
+        from tenxyte.core.magic_link_service import MagicLinkToken as CoreMagicLinkToken
+        
+        token_obj = MagicLinkToken.objects.create(
+            user_id=user_id,
+            token=token_hash,
+            expires_at=timezone.now() + timedelta(minutes=expiry_minutes),
+            ip_address=ip_address,
+            user_agent=user_agent,
+            application_id=application_id
+        )
+        return CoreMagicLinkToken(
+            id=str(token_obj.id),
+            token="",
+            user_id=str(token_obj.user_id),
+            email=email,
+            application_id=str(token_obj.application_id) if token_obj.application_id else None,
+            ip_address=token_obj.ip_address,
+            user_agent=token_obj.user_agent,
+            created_at=token_obj.created_at,
+            expires_at=token_obj.expires_at,
+            used_at=token_obj.used_at,
+            is_used=token_obj.is_used
+        )
+    
+    def consume(self, token_id: str) -> bool:
+        """Mark a token as consumed."""
+        from tenxyte.models import MagicLinkToken
+        from django.utils import timezone
+        try:
+            token = MagicLinkToken.objects.get(id=token_id)
+            token.is_used = True
+            token.used_at = timezone.now()
+            token.save(update_fields=['is_used', 'used_at'])
+            return True
+        except MagicLinkToken.DoesNotExist:
+            return False
+    
+    def invalidate_user_tokens(self, user_id: str, application_id: Optional[str] = None) -> int:
+        """Invalidate all non-consumed tokens for a user."""
+        from tenxyte.models import MagicLinkToken
+        from django.utils import timezone
+        
+        query = MagicLinkToken.objects.filter(
+            user_id=user_id,
+            is_used=False
+        )
+        if application_id:
+            query = query.filter(application_id=application_id)
+            
+        count = query.update(is_used=True, used_at=timezone.now())
+        return count
+
+
 __all__ = [
     'DjangoUserRepository',
     'DjangoOrganizationRepository',
     'DjangoRoleRepository',
     'DjangoAuditLogRepository',
+    'DjangoMagicLinkRepository',
 ]

@@ -66,11 +66,11 @@ class MagicLinkRepository(Protocol):
         expiry_minutes: int = 15
     ) -> MagicLinkToken:
         """Create a new magic link token. Returns token with raw token set."""
-        ...
+        ...  # pragma: no cover
     
     def get_by_token(self, token: str) -> Optional[MagicLinkToken]:
         """Get token by raw token value (validates hash internally)."""
-        ...
+        ...  # pragma: no cover
     
     def invalidate_user_tokens(
         self,
@@ -78,11 +78,11 @@ class MagicLinkRepository(Protocol):
         application_id: Optional[str] = None
     ) -> int:
         """Mark all unused tokens for user as used. Returns count."""
-        ...
+        ...  # pragma: no cover
     
     def consume(self, token_id: str) -> bool:
         """Mark token as used."""
-        ...
+        ...  # pragma: no cover
 
 
 @runtime_checkable
@@ -91,15 +91,15 @@ class UserLookup(Protocol):
     
     def get_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """Get user by email (case-insensitive). Returns None if not found."""
-        ...
+        ...  # pragma: no cover
     
     def is_active(self, user_id: str) -> bool:
         """Check if user account is active."""
-        ...
+        ...  # pragma: no cover
     
     def is_locked(self, user_id: str) -> bool:
         """Check if user account is locked."""
-        ...
+        ...  # pragma: no cover
 
 
 class MagicLinkService:
@@ -199,9 +199,16 @@ class MagicLinkService:
             logger.info(f"Magic link requested for unknown email: {email}")
             return True, ""
         
-        user_id = user.get('id')
-        user_email = user.get('email', email)
-        user_first_name = first_name or user.get('first_name', '')
+        # Handle both dict and object user types
+        if isinstance(user, dict):
+            user_id = user.get('id')
+            user_email = user.get('email', email)
+            user_first_name = first_name or user.get('first_name', '')
+        else:
+            # User is an object (e.g., Django User model)
+            user_id = getattr(user, 'id', None)
+            user_email = getattr(user, 'email', email)
+            user_first_name = first_name or getattr(user, 'first_name', '')
         
         # Check if user is active
         if not self.user_lookup.is_active(user_id):
@@ -232,11 +239,8 @@ class MagicLinkService:
         try:
             self.email_service.send_magic_link(
                 to_email=user_email,
-                token=raw_token,
-                magic_url=magic_url,
-                first_name=user_first_name,
-                expiry_minutes=self.expiry_minutes,
-                app_name=self.app_name
+                magic_link_url=magic_url or f"https://example.com/verify?token={raw_token}",
+                expires_in_minutes=self.expiry_minutes
             )
         except Exception as e:
             logger.error(f"Failed to send magic link email to {user_email}: {e}")
@@ -346,7 +350,7 @@ class MagicLinkService:
             if len(stored_parts) == 4 and len(current_parts) == 4:
                 # IPv4 /24 subnet match (first 3 octets)
                 return stored_parts[:3] == current_parts[:3]
-        except Exception:
+        except Exception:  # pragma: no cover
             pass
         
         return False

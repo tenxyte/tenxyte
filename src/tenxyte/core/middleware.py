@@ -384,6 +384,10 @@ class SecurityHeadersCoreMiddleware(CoreMiddleware):
         "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
     }
     
+    def process_request(self, request: RequestContext) -> MiddlewareResult:
+        """Security headers only apply to responses, so continue."""
+        return MiddlewareResult.continue_(request)
+    
     def process_response(
         self,
         request: RequestContext,
@@ -392,7 +396,7 @@ class SecurityHeadersCoreMiddleware(CoreMiddleware):
         """Add security headers to response."""
         # Check if enabled in settings
         if getattr(self.settings, 'security_headers_enabled', True):
-            headers = getattr(self.settings, 'security_headers', self.DEFAULT_HEADERS)
+            headers = getattr(self.settings, 'security_headers', None) or self.DEFAULT_HEADERS
             for header, value in headers.items():
                 response.headers[header] = value
         
@@ -449,7 +453,7 @@ class OrganizationContextCoreMiddleware(CoreMiddleware):
 
 # Type hint imports (to avoid circular imports)
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from tenxyte.core.settings import Settings
     from tenxyte.ports.repositories import ApplicationRepository
     from tenxyte.core.cache_service import CacheService

@@ -23,6 +23,36 @@ from .cache_service import (
     CacheService,
     InMemoryCacheService,
 )
+from .jwt_service import (
+    JWTService,
+    TokenPair,
+    DecodedToken,
+    TokenBlacklistService,
+    InMemoryTokenBlacklistService,
+)
+from .totp_service import (
+    TOTPService,
+    TOTPSetupResult,
+    TOTPUserData,
+    TOTPStorage,
+    CodeReplayProtection,
+)
+from .webauthn_service import (
+    WebAuthnService,
+    WebAuthnCredential,
+    WebAuthnChallenge,
+    RegistrationResult,
+    AuthenticationResult,
+    WebAuthnCredentialRepository,
+    WebAuthnChallengeRepository,
+)
+from .magic_link_service import (
+    MagicLinkService,
+    MagicLinkToken,
+    MagicLinkResult,
+    MagicLinkRepository,
+    UserLookup,
+)
 from .schemas import (
     UserBase,
     UserCreate,

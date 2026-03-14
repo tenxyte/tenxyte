@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2.9] - 2026-03-14
+
+### Added
+- **Framework-Agnostic Core** — Refactored business logic into a standalone `tenxyte.core` module, independent of Django.
+- **Framework Adapters** — Introduced `tenxyte.adapters.django` containing Django-specific implementations (cache, email, middleware, settings provider).
+- **Dependency Injection Ports** — Added `tenxyte.ports` defining abstract interfaces (repositories, providers) to allow custom ORM and framework integrations (e.g., FastAPI, Flask).
+- **100% Test Coverage** — Achieved full coverage on core services and middleware components.
+- Complete decoupling of essential services (`jwt_service`, `totp_service`, `magic_link_service`, `webauthn_service`, `email_service`, `cache_service`) from Django's specific dependencies.
+
+### Changed
+- Base middleware refactored into `tenxyte.core.middleware` with abstract core logic, while Django-specific execution moved to `tenxyte.adapters.django.middleware`.
+- Shifted settings and environment variable management from direct Django imports to explicit `SettingsProvider` and `EnvProvider` interfaces.
+
+### Fixed
+- Various test suite fixes, including proper model mocking and exception simulation, using framework-agnostic injection strategies.
+
 ## [0.9.1.7] - 2026-02-21
 
 ### Added

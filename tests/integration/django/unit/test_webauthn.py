@@ -521,7 +521,7 @@ class TestWebAuthnViews:
     def test_register_begin_success(self):
         app = _app("ViewRegBeginApp")
         user = _user("view_reg_begin@example.com")
-        with patch.object(WebAuthnService, 'begin_registration', return_value=(True, {'challenge_id': 1, 'options': '{}'}, '')):
+        with patch('tenxyte.core.WebAuthnService.begin_registration', return_value=(True, {'challenge_id': 1, 'options': '{}'}, '')):
             resp = _authed_post(WebAuthnRegisterBeginView, '/webauthn/register/begin/', {}, user, app)
         assert resp.status_code == 200
         assert 'challenge_id' in resp.data
@@ -530,7 +530,7 @@ class TestWebAuthnViews:
     def test_register_begin_error(self):
         app = _app("ViewRegBeginErrApp")
         user = _user("view_reg_begin_err@example.com")
-        with patch.object(WebAuthnService, 'begin_registration', return_value=(False, None, 'WebAuthn error')):
+        with patch('tenxyte.core.WebAuthnService.begin_registration', return_value=(False, None, 'WebAuthn error')):
             resp = _authed_post(WebAuthnRegisterBeginView, '/webauthn/register/begin/', {}, user, app)
         assert resp.status_code == 400
         assert resp.data['code'] == 'WEBAUTHN_ERROR'
@@ -551,7 +551,8 @@ class TestWebAuthnViews:
         mock_cred.id = 1
         mock_cred.device_name = 'iPhone 15'
         mock_cred.created_at.isoformat.return_value = '2026-01-01T00:00:00'
-        with patch.object(WebAuthnService, 'complete_registration', return_value=(True, mock_cred, '')):
+        from tenxyte.core.webauthn_service import RegistrationResult
+        with patch('tenxyte.core.WebAuthnService.complete_registration', return_value=RegistrationResult(success=True, credential=mock_cred, error='')):
             resp = _authed_post(WebAuthnRegisterCompleteView, '/webauthn/register/complete/', {
                 'challenge_id': 1,
                 'credential': {'id': 'test'},
@@ -563,14 +564,14 @@ class TestWebAuthnViews:
     @override_settings(TENXYTE_WEBAUTHN_ENABLED=True)
     def test_authenticate_begin_anon_success(self):
         app = _app("ViewAuthBeginApp")
-        with patch.object(WebAuthnService, 'begin_authentication', return_value=(True, {'challenge_id': 2, 'options': '{}'}, '')):
+        with patch('tenxyte.core.WebAuthnService.begin_authentication', return_value=(True, {'challenge_id': 2, 'options': '{}'}, '')):
             resp = _anon_post(WebAuthnAuthenticateBeginView, '/webauthn/authenticate/begin/', {}, app=app)
         assert resp.status_code == 200
 
     @override_settings(TENXYTE_WEBAUTHN_ENABLED=True)
     def test_authenticate_begin_error(self):
         app = _app("ViewAuthBeginErrApp")
-        with patch.object(WebAuthnService, 'begin_authentication', return_value=(False, None, 'error')):
+        with patch('tenxyte.core.WebAuthnService.begin_authentication', return_value=(False, None, 'error')):
             resp = _anon_post(WebAuthnAuthenticateBeginView, '/webauthn/authenticate/begin/', {}, app=app)
         assert resp.status_code == 400
 
@@ -584,18 +585,22 @@ class TestWebAuthnViews:
     @override_settings(TENXYTE_WEBAUTHN_ENABLED=True)
     def test_authenticate_complete_success(self):
         app = _app("ViewAuthCompOkApp")
-        with patch.object(WebAuthnService, 'complete_authentication', return_value=(True, {'access_token': 'tok'}, '')):
+        user = _user("view_auth_comp_ok@example.com")
+        from tenxyte.core.webauthn_service import AuthenticationResult
+        mock_cred = MagicMock(credential_id='test')
+        with patch('tenxyte.core.WebAuthnService.complete_authentication', return_value=AuthenticationResult(success=True, user_id=str(user.id), credential=mock_cred, error='')):
             resp = _anon_post(WebAuthnAuthenticateCompleteView, '/webauthn/authenticate/complete/', {
                 'challenge_id': 1,
                 'credential': {'id': 'test'},
             }, app=app)
         assert resp.status_code == 200
-        assert 'access_token' in resp.data
+        assert 'access' in resp.data
 
     @override_settings(TENXYTE_WEBAUTHN_ENABLED=True)
     def test_authenticate_complete_failure(self):
         app = _app("ViewAuthCompFailApp")
-        with patch.object(WebAuthnService, 'complete_authentication', return_value=(False, None, 'invalid')):
+        from tenxyte.core.webauthn_service import AuthenticationResult
+        with patch('tenxyte.core.WebAuthnService.complete_authentication', return_value=AuthenticationResult(success=False, error='invalid')):
             resp = _anon_post(WebAuthnAuthenticateCompleteView, '/webauthn/authenticate/complete/', {
                 'challenge_id': 1,
                 'credential': {'id': 'bad'},

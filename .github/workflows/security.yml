@@ -4,7 +4,11 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
+    paths:
+      - "**.py"
+      - "pyproject.toml"
+      - "requirements*.txt"
   schedule:
     # Every Monday at 08:00 UTC (SCA weekly scan)
     - cron: '0 8 * * 1'
@@ -43,6 +47,7 @@ jobs:
 
   # ===========================================================================
   # SAST — Static Application Security Testing
+  # Scans core + adapters + Django views
   # ===========================================================================
   sast:
     name: Static Security Analysis (Semgrep)
@@ -55,7 +60,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Semgrep
-        run: semgrep ci --config "p/python" --config "p/django" --config "p/security-audit" --config "p/secrets"
+        run: >
+          semgrep ci
+          --config "p/python"
+          --config "p/django"
+          --config "p/security-audit"
+          --config "p/secrets"
+          --config "p/jwt"
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
