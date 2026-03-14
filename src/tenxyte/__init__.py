@@ -1,5 +1,5 @@
 """
-Tenxyte - Complete Django Authentication Package
+Tenxyte - Framework-Agnostic Python Authentication Package
 
 Features:
 - JWT authentication with access and refresh tokens

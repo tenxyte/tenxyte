@@ -65,23 +65,26 @@
 
 ## Prerequisites
 
-- Python 3.11+ (recommended)
+- Python 3.10+ (3.11+ recommended)
 - `pip` and a virtual environment
-- Django 5.0+
+- **Django 5.0+** (for the Django adapter) or **FastAPI 0.100+** (for the FastAPI adapter)
 - Database (PostgreSQL recommended for production)
 
 ## Installation
 
 ```bash
-pip install tenxyte
+pip install tenxyte              # Includes Django adapter (backward compatible)
+pip install tenxyte[core]        # Core only — no framework, bring your own
+pip install tenxyte[fastapi]     # FastAPI adapter + Core
 
-# Optional Extras
-pip install tenxyte[twilio]    # SMS via Twilio
-pip install tenxyte[sendgrid]  # Email via SendGrid
-pip install tenxyte[mongodb]   # MongoDB support
-pip install tenxyte[postgres]  # PostgreSQL
-pip install tenxyte[mysql]     # MySQL/MariaDB
-pip install tenxyte[all]       # Everything included
+# Optional Extras (work with any adapter)
+pip install tenxyte[twilio]      # SMS via Twilio
+pip install tenxyte[sendgrid]    # Email via SendGrid
+pip install tenxyte[mongodb]     # MongoDB support
+pip install tenxyte[postgres]    # PostgreSQL
+pip install tenxyte[mysql]       # MySQL/MariaDB
+pip install tenxyte[webauthn]    # Passkeys / FIDO2
+pip install tenxyte[all]         # Everything included
 ```
 
 ## Quickstart — Development
@@ -322,7 +325,7 @@ python manage.py runserver
 Tenxyte is built around a **Framework-Agnostic Core** utilizing a Ports and Adapters (Hexagonal) architecture. 
 
 - **Core**: Contains pure Python authentication, JWT, and RBAC logic (zero framework dependencies).
-- **Ports**: Defines abstract interfaces for external operations (e.g., Repositories, EmalServices, CacheServices).
+- **Ports**: Defines abstract interfaces for external operations (e.g., Repositories, EmailServices, CacheServices).
 - **Adapters**: Concrete implementations tailored to frameworks (Django, FastAPI) or libraries.
 
 This design guarantees that existing Django deployments run with **zero breaking changes**, while natively opening support for modern async frameworks like FastAPI.

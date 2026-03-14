@@ -10,16 +10,16 @@ Common issues and solutions when integrating Tenxyte.
 
 **Symptom:** Your console shows warnings when starting the server or running tests.
 
-**Cause:** In v0.9.3, the project was restructured into a Core and Adapters architecture. Many internal Django views and services were moved to `tenxyte.adapters.django`.
+**Cause:** In v0.9.3, the project was restructured into a Core and Adapters architecture. Many internal Django services were refactored to use the framework-agnostic Core.
 
 **Fix:** Update your imports. 
 Instead of:
 ```python
-from tenxyte.views import LoginView
+from tenxyte.services.auth_service import AuthService
 ```
 Use:
 ```python
-from tenxyte.adapters.django.views import LoginView
+from tenxyte.core.jwt_service import JWTService
 ```
 *(Note: The old imports will continue to work until v1.0.0).*
 
@@ -29,7 +29,7 @@ from tenxyte.adapters.django.views import LoginView
 
 **Symptom:** You wrote a custom adapter (e.g., CacheService), but the system continues to use the default Django Cache.
 
-**Cause:** If you want to replace a core Port implementation globally while using the Django adapter, you must ensure you instantiate the `AuthService` with your custom adapter and wire it into the dependency injection.
+**Cause:** Custom adapters need to be passed explicitly to the Core services (e.g., `JWTService`, `TOTPService`) that use them.
 
 **Fix:** Follow the initialization steps detailed in the [Custom Adapters Guide](custom_adapters.md) to ensure your custom adapter instances are passed into the Core services.
 
@@ -41,13 +41,13 @@ from tenxyte.adapters.django.views import LoginView
 
 **Symptom:** `INSTALLED_APPS`, `AUTH_USER_MODEL`, or `MIDDLEWARE` are not being configured automatically.
 
-**Cause:** `tenxyte.setup()` must be called **before** any other Django imports that trigger app loading.
+**Cause:** `tenxyte.setup()` reads your existing `INSTALLED_APPS`, `MIDDLEWARE`, and other settings, then appends to them. It must be called **at the very end** of your `settings.py` (after all your Django settings are defined), otherwise it won't see them.
 
 **Fix:**
 ```python
-# settings.py — must be at the very top, before other Django settings
+# settings.py — Add this at the END of the file (after INSTALLED_APPS, MIDDLEWARE, etc.)
 import tenxyte
-tenxyte.setup()
+tenxyte.setup(globals())
 ```
 
 Do not call it inside `if TYPE_CHECKING:` blocks or inside functions.
