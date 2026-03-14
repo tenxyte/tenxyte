@@ -1,0 +1,329 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0
+django: version: 6.0.2, settings: tests.integration.django.settings (from ini)
+rootdir: C:\Users\bobop\Documents\own\tenxyte
+configfile: pyproject.toml
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, django-4.11.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 45 items
+
+tests\integration\django\unit\test_legacy_email_service_extra.py .       [  2%]
+tests\integration\django\unit\test_email_service_deletion.py ........... [ 26%]
+..                                                                       [ 31%]
+tests\integration\django\unit\test_totp.py .......................       [ 82%]
+tests\integration\django\unit\test_legacy_email_service_extra.py .....   [ 93%]
+tests\integration\django\unit\test_email_service_deletion.py ...
+ERROR: Coverage failure: total of 18 is less than fail-under=90
+                                                                         [100%]
+
+============================== warnings summary ===============================
+src\tenxyte\services\totp_service.py:382
+  C:\Users\bobop\Documents\own\tenxyte\src\tenxyte\services\totp_service.py:382: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_legacy_email_service_extra.py::TestLegacyEmailServiceExtras::test_send_account_deletion_confirmation
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_legacy_email_service_extra.py:46: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestSendAccountDeletionConfirmed::test_sends_email_successfully
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:51: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestSendAccountDeletionConfirmed::test_returns_false_on_exception
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:69: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestSendAccountDeletionConfirmed::test_context_contains_required_fields
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:86: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestSendAccountDeletionConfirmed::test_no_grace_period_days_remaining_is_zero
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:112: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestSendAccountDeletionConfirmed::test_calls_send_template_email_with_correct_template
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:136: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestSendAccountDeletionCompleted::test_sends_email_successfully
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:163: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestSendAccountDeletionCompleted::test_returns_false_on_exception
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:176: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestSendAccountDeletionCompleted::test_context_contains_required_fields
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:191: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestSendDeletionRequestRejected::test_sends_email_successfully
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:221: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestSendDeletionRequestRejected::test_returns_false_on_exception
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:237: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestSendDeletionRequestRejected::test_context_contains_required_fields
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:251: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestSendTemplateEmail::test_returns_true_on_success
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:280: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestSendTemplateEmail::test_returns_false_on_exception
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:300: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_generate_secret
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:15: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_get_totp
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:26: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_verify_code_valid
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:36: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_verify_code_anti_replay
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:54: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_verify_code_invalid
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:69: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_verify_code_empty
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:79: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_verify_code_no_secret
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:89: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_get_provisioning_uri
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:98: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_generate_qr_code
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:113: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_generate_backup_codes
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:126: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_backup_codes_uniqueness
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:151: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_issuer_name_configurable
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:161: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_verify_code_exception
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:169: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_verify_backup_code_no_codes
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:176: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_confirm_2fa_errors
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:181: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_disable_2fa_errors
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:400: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_disable_2fa_success_via_backup
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:418: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_verify_2fa
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:438: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_regenerate_backup_codes
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:474: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_totp_key_initialization_and_decryption
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:511: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_verify_backup_code_formats
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:524: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_setup_2fa
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:551: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_setup_2fa
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:571: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service_no_enc = TOTPService()
+
+tests/integration/django/unit/test_totp.py::TestTOTPService::test_confirm_2fa_success
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_totp.py:578: DeprecationWarning: tenxyte.services.totp_service.TOTPService is deprecated. Use tenxyte.core.TOTPService with Django adapters instead.
+    totp_service = TOTPService()
+
+tests/integration/django/unit/test_legacy_email_service_extra.py::TestLegacyEmailServiceExtras::test_send_welcome_email
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_legacy_email_service_extra.py:9: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_legacy_email_service_extra.py::TestLegacyEmailServiceExtras::test_send_magic_link_email
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_legacy_email_service_extra.py:32: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_legacy_email_service_extra.py::TestLegacyEmailServiceExtras::test_send_email_direct
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_legacy_email_service_extra.py:67: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_legacy_email_service_extra.py::TestLegacyEmailServiceExtras::test_send_otp_email
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_legacy_email_service_extra.py:74: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_legacy_email_service_extra.py::TestLegacyEmailServiceExtras::test_send_security_alert_email
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_legacy_email_service_extra.py:92: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestGenerateTextAlternative::test_strips_html_tags
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:321: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestGenerateTextAlternative::test_collapses_whitespace
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:330: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+tests/integration/django/unit/test_email_service_deletion.py::TestGenerateTextAlternative::test_empty_html_returns_empty
+  C:\Users\bobop\Documents\own\tenxyte\tests\integration\django\unit\test_email_service_deletion.py:337: DeprecationWarning: tenxyte.services.email_service.EmailService is deprecated. Use tenxyte.adapters.django.email_service.DjangoEmailService instead.
+    service = EmailService()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.10-final-0 _______________
+
+Name                                                          Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------------------------------
+src\tenxyte\__init__.py                                          47     39    17%   74-76, 101-157
+src\tenxyte\admin.py                                            303    127    58%   89-93, 98-118, 125-145, 151-154, 160-175, 179-209, 267, 330, 364, 369-379, 385-400, 406-421, 427-442, 448-463, 469-483, 510, 548, 553, 558, 589, 594, 599
+src\tenxyte\apps.py                                              47     19    60%   29, 58-86, 92, 109-123
+src\tenxyte\authentication.py                                    38     38     0%   5-74
+src\tenxyte\backends\__init__.py                                  0      0   100%
+src\tenxyte\backends\email.py                                    81     59    27%   75-80, 106-143, 167-179, 192-198, 209-236
+src\tenxyte\backends\sms.py                                      72     72     0%   5-167
+src\tenxyte\conf\__init__.py                                     12      0   100%
+src\tenxyte\conf\airs.py                                         34     11    68%   6, 11, 16, 21, 30, 35, 40, 45, 50, 59, 64
+src\tenxyte\conf\auth.py                                         67     18    73%   25, 30, 35, 40, 49, 54, 64, 69, 74, 79, 84, 89, 94, 99, 104, 109, 114, 119
+src\tenxyte\conf\base.py                                         49     10    80%   31-33, 42, 63, 73, 78, 105, 118, 126, 135
+src\tenxyte\conf\communication.py                                38     11    71%   15, 20, 25, 55, 60, 65, 74, 79, 84, 93, 98
+src\tenxyte\conf\jwt.py                                          40     19    52%   15-39, 44, 49, 54, 59, 64, 77, 85
+src\tenxyte\conf\modules.py                                      19      2    89%   8, 48
+src\tenxyte\conf\presets.py                                       2      0   100%
+src\tenxyte\conf\security.py                                     76     24    68%   6, 11, 28, 37, 46, 51, 59, 64, 69, 77, 86, 94, 112, 121, 126, 134, 139, 144, 149, 165, 170, 179, 187, 208
+src\tenxyte\conf\social.py                                       53     17    68%   13, 21, 26, 31, 36, 41, 46, 51, 60, 65, 70, 75, 84, 89, 94, 103, 108
+src\tenxyte\core\__init__.py                                     11     11     0%   3-69
+src\tenxyte\core\cache_service.py                               104    104     0%   8-335
+src\tenxyte\core\email_service.py                                63     63     0%   8-339
+src\tenxyte\core\env_provider.py                                 51     51     0%   9-211
+src\tenxyte\core\jwt_service.py                                 190    190     0%   8-677
+src\tenxyte\core\magic_link_service.py                          121    121     0%   7-356
+src\tenxyte\core\middleware.py                                  157    157     0%   12-455
+src\tenxyte\core\schemas.py                                     145    145     0%   8-327
+src\tenxyte\core\session_service.py                              63     63     0%   8-199
+src\tenxyte\core\settings.py                                    133    133     0%   8-370
+src\tenxyte\core\totp_service.py                                222    222     0%   8-557
+src\tenxyte\core\webauthn_service.py                            163    163     0%   12-481
+src\tenxyte\decorators.py                                       313    313     0%   1-746
+src\tenxyte\device_info.py                                      200    185     8%   93-126, 146-163, 183-210, 230-262, 285-296, 316-424
+src\tenxyte\docs\__init__.py                                      0      0   100%
+src\tenxyte\docs\schemas.py                                      56     56     0%   7-488
+src\tenxyte\filters.py                                          121    121     0%   15-371
+src\tenxyte\management\__init__.py                                0      0   100%
+src\tenxyte\management\commands\__init__.py                       0      0   100%
+src\tenxyte\management\commands\tenxyte_cleanup.py               79     79     0%   1-115
+src\tenxyte\management\commands\tenxyte_purge_audit_logs.py      27     27     0%   13-77
+src\tenxyte\management\commands\tenxyte_quickstart.py            68     68     0%   10-115
+src\tenxyte\middleware.py                                       202    202     0%   1-431
+src\tenxyte\models\__init__.py                                   13      0   100%
+src\tenxyte\models\agent.py                                      69      6    91%   80, 85, 95-96, 101, 129
+src\tenxyte\models\application.py                                52     22    58%   51, 56-57, 62-66, 69-71, 78-85, 92-96
+src\tenxyte\models\auth.py                                      299    170    43%   35, 90, 94-97, 101-105, 135, 138, 142, 255-283, 289, 294, 298, 302, 320-322, 325-327, 330-335, 339, 343, 350-387, 391-393, 396, 409-416, 428-439, 451-452, 466-488, 502-525, 537-543, 555, 567, 575, 579, 583, 587-603, 607-628, 632, 636, 640, 644, 648-656, 660-668, 672-677
+src\tenxyte\models\base.py                                       57     17    70%   20-21, 23-26, 50-53, 65-68, 80-83, 95-98
+src\tenxyte\models\gdpr.py                                       82     45    45%   81, 101-122, 126-131, 135-168, 172-174, 178-180, 185
+src\tenxyte\models\magic_link.py                                 58     30    48%   55, 65-79, 90-119, 123-125, 128
+src\tenxyte\models\operational.py                                99     35    65%   53, 57-64, 67, 70-99, 140, 151-163, 179-180, 185, 188, 196-197, 222, 232-233, 237
+src\tenxyte\models\organization.py                              179     71    60%   76, 90-97, 109-118, 127-130, 140-145, 150, 159-161, 165, 169-171, 215, 219-226, 278, 282, 286, 342, 359-362, 368, 372, 384-411, 415-416, 476-479, 484-487, 492-495
+src\tenxyte\models\security.py                                  103     51    50%   44, 49-55, 62-74, 79-80, 166, 182-220, 235, 240-241, 322-346
+src\tenxyte\models\social.py                                     26      3    88%   61, 84-97
+src\tenxyte\models\tenant.py                                     29     14    52%   26-49, 56, 93-106
+src\tenxyte\models\webauthn.py                                   47      9    81%   46, 49-51, 87-88, 99, 102-103
+src\tenxyte\pagination.py                                        16     16     0%   10-109
+src\tenxyte\ports\__init__.py                                     2      2     0%   3-21
+src\tenxyte\ports\repositories.py                               177    177     0%   8-425
+src\tenxyte\serializers\__init__.py                              10     10     0%   9-94
+src\tenxyte\serializers\application_serializers.py               16     16     0%   5-34
+src\tenxyte\serializers\auth_serializers.py                      77     77     0%   5-177
+src\tenxyte\serializers\gdpr_admin_serializers.py                14     14     0%   5-43
+src\tenxyte\serializers\organization_serializers.py              82     82     0%   5-172
+src\tenxyte\serializers\otp_serializers.py                        5      5     0%   5-13
+src\tenxyte\serializers\password_serializers.py                  13     13     0%   5-38
+src\tenxyte\serializers\rbac_serializers.py                      79     79     0%   5-122
+src\tenxyte\serializers\security_serializers.py                  56     56     0%   7-135
+src\tenxyte\serializers\twofa_serializers.py                     16     16     0%   5-37
+src\tenxyte\serializers\user_admin_serializers.py                39     39     0%   5-117
+src\tenxyte\services\__init__.py                                 10      0   100%
+src\tenxyte\services\account_deletion_service.py                 95     95     0%   5-461
+src\tenxyte\services\agent_service.py                           180    157    13%   13, 16, 35-118, 126-158, 167-189, 193-198, 202-212, 216-222, 226-235, 239-243, 249-288, 293-295, 306-318, 322-334, 343-360
+src\tenxyte\services\auth_service.py                            194    165    15%   25-31, 35-44, 48, 52, 56, 62-68, 268-313, 331-346, 353-362, 456-495, 540-607, 616-733, 740-785, 799-802
+src\tenxyte\services\breach_check_service.py                      9      9     0%   14-113
+src\tenxyte\services\email_service.py                           105      0   100%
+src\tenxyte\services\jwt_service.py                              79     63    20%   19-45, 56-74, 82-84, 98-119, 125, 131-134, 140-143, 157-179
+src\tenxyte\services\magic_link_service.py                       50     35    30%   33-40, 57-94, 105-144
+src\tenxyte\services\organization_service.py                    176    176     0%   12-606
+src\tenxyte\services\otp_service.py                              73     61    16%   23-25, 41-43, 61-78, 84-101, 139-152, 168-190
+src\tenxyte\services\social_auth_service.py                     185    126    32%   61, 66, 71, 75-83, 87-95, 111, 115-136, 139-142, 145, 157, 181, 184-202, 212, 237, 240-245, 255, 281, 284-300, 310, 335-345, 365, 383-499
+src\tenxyte\services\stats_service.py                            95     95     0%   7-339
+src\tenxyte\services\totp_service.py                            167      0   100%
+src\tenxyte\services\webauthn_service.py                        110     91    17%   25-28, 52, 60, 63, 66-69, 82-120, 131-177, 194-227, 243-300, 308-309, 322-327
+src\tenxyte\signals.py                                           44     17    61%   87-108, 127, 130, 135-143
+src\tenxyte\tasks\__init__.py                                     0      0   100%
+src\tenxyte\tasks\agent_tasks.py                                 24     24     0%   1-46
+src\tenxyte\tenant_context.py                                     7      2    71%   26, 36
+src\tenxyte\throttles.py                                        130    130     0%   11-344
+src\tenxyte\urls.py                                              14     14     0%   1-253
+src\tenxyte\validators.py                                        34     34     0%   11-301
+src\tenxyte\views\__init__.py                                     9      9     0%   1-58
+src\tenxyte\views\account_deletion_views.py                      51     51     0%   5-493
+src\tenxyte\views\agent_views.py                                132    132     0%   1-614
+src\tenxyte\views\application_views.py                           90     90     0%   1-382
+src\tenxyte\views\auth_views.py                                 160    160     0%   8-1243
+src\tenxyte\views\auth_views_legacy.py                           71     71     0%   1-711
+src\tenxyte\views\dashboard_views.py                             36     36     0%   7-194
+src\tenxyte\views\gdpr_admin_views.py                            82     82     0%   11-377
+src\tenxyte\views\magic_link_views.py                            83     83     0%   8-350
+src\tenxyte\views\magic_link_views_legacy.py                     33     33     0%   5-249
+src\tenxyte\views\organization_views.py                         140    140     0%   8-1065
+src\tenxyte\views\otp_views.py                                   36     36     0%   1-224
+src\tenxyte\views\password_views.py                              49     49     0%   8-501
+src\tenxyte\views\password_views_legacy.py                       25     25     0%   1-413
+src\tenxyte\views\rbac_views.py                                 263    263     0%   1-929
+src\tenxyte\views\security_views.py                             138    138     0%   8-597
+src\tenxyte\views\social_auth_views.py                           78     78     0%   8-388
+src\tenxyte\views\twofa_views.py                                 93     93     0%   8-453
+src\tenxyte\views\twofa_views_legacy.py                          46     46     0%   1-344
+src\tenxyte\views\user_views.py                                 214    214     0%   8-896
+src\tenxyte\views\user_views_legacy.py                          159    159     0%   1-789
+src\tenxyte\views\webauthn_views.py                              55     55     0%   16-494
+src\tenxyte\views\webauthn_views_legacy.py                       20     20     0%   13-388
+-------------------------------------------------------------------------------------------
+TOTAL                                                          9026   7372    18%
+Coverage HTML written to dir htmlcov
+FAIL Required test coverage of 90% not reached. Total coverage: 18.32%
+====================== 45 passed, 47 warnings in 31.48s =======================

@@ -726,3 +726,279 @@ class TestExtraCoverage:
         with patch("tenxyte.models.User.objects.get", side_effect=mock_get):
             resp = _authed_post(UserUnlockView, f"/auth/admin/users/{target.id}/unlock/", admin, app, user_id=str(target.id))
             assert resp.status_code == 404
+
+# ---------------------------------------------------------------------------
+# Extra Coverage Tests (second block – kept for coverage completeness)
+# ---------------------------------------------------------------------------
+from django.core.files.uploadedfile import SimpleUploadedFile  # noqa: E402
+
+class TestExtraCoverage:
+    def test_get_core_settings(self):
+        # 52-54
+        s = get_core_settings()
+        assert s is not None
+
+    @pytest.mark.django_db
+    def test_patch_profile_phone_number_only(self):
+        # 261-264
+        app = _app("Extra1")
+        user = _user("extra1@test.com")
+        user.phone_number = "111"
+        user.save()
+        resp = _authed_patch(MeView, "/auth/me/", user, app, data={"phone_number": "222"})
+        assert resp.status_code == 200
+
+    @pytest.mark.django_db
+    def test_patch_profile_phone_country_code_only(self):
+        # 268
+        app = _app("Extra2")
+        user = _user("extra2@test.com")
+        user.phone_country_code = "33"
+        user.save()
+        resp = _authed_patch(MeView, "/auth/me/", user, app, data={"phone_country_code": "44"})
+        assert resp.status_code == 200
+
+    @pytest.mark.django_db
+    def test_patch_profile_user_not_found_core(self):
+        # 275
+        app = _app("Extra3")
+        user = _user("extra3@test.com")
+        token = _jwt_token(user, app)
+        factory = APIRequestFactory()
+        req = factory.patch("/auth/me/", data={"first_name": "x"}, format="json", HTTP_AUTHORIZATION=f"Bearer {token}")
+        req.application = app
+        req.user = user
+        with patch("tenxyte.adapters.django.repositories.DjangoUserRepository.get_by_id", return_value=None):
+            resp = MeView.as_view()(req)
+            assert resp.status_code == 404
+
+    @pytest.mark.django_db
+    def test_avatar_upload_missing_file(self):
+        # 375-378
+        app = _app("Av1")
+        user = _user("av1@test.com")
+        resp = _authed_post(AvatarUploadView, "/auth/me/avatar/", user, app, data={})
+        assert resp.status_code == 400
+
+    @pytest.mark.django_db
+    def test_avatar_upload_invalid_type(self):
+        # 383-388
+        app = _app("Av2")
+        user = _user("av2@test.com")
+        file = SimpleUploadedFile("test.txt", b"file_content", content_type="text/plain")
+        token = _jwt_token(user, app)
+        factory = APIRequestFactory()
+        req = factory.post("/auth/me/avatar/", data={"avatar": file}, format="multipart",
+                           HTTP_AUTHORIZATION=f"Bearer {token}")
+        req.application = app
+        req.user = user
+        resp = AvatarUploadView.as_view()(req)
+        assert resp.status_code == 400
+
+    @pytest.mark.django_db
+    def test_avatar_upload_too_large(self):
+        # 391-396
+        app = _app("Av3")
+        user = _user("av3@test.com")
+        # 5MB + 1 byte
+        file = SimpleUploadedFile("test.jpg", b"0" * (5 * 1024 * 1024 + 1), content_type="image/jpeg")
+        token = _jwt_token(user, app)
+        factory = APIRequestFactory()
+        req = factory.post("/auth/me/avatar/", data={"avatar": file}, format="multipart",
+                           HTTP_AUTHORIZATION=f"Bearer {token}")
+        req.application = app
+        req.user = user
+        resp = AvatarUploadView.as_view()(req)
+        assert resp.status_code == 413
+
+    @pytest.mark.django_db
+    def test_avatar_upload_success(self):
+        # 398-402
+        app = _app("Av4")
+        user = _user("av4@test.com")
+        file = SimpleUploadedFile("test.jpg", b"fakeimg", content_type="image/jpeg")
+        token = _jwt_token(user, app)
+        factory = APIRequestFactory()
+        req = factory.post("/auth/me/avatar/", data={"avatar": file}, format="multipart",
+                           HTTP_AUTHORIZATION=f"Bearer {token}")
+        req.application = app
+        req.user = user
+        resp = AvatarUploadView.as_view()(req)
+        assert resp.status_code == 200
+
+    @pytest.mark.django_db
+    def test_user_detail_get_core_deleted_but_django_exist(self):
+        # 576, 591-592: patch core repo → 404; patch Django User.objects.get → falls through to 200
+        app = _app("Udt1")
+        admin = _user("udt1_admin@test.com", "users.update")
+        target = _user("udt1_target@test.com")
+
+        token = _jwt_token(admin, app)
+        factory = APIRequestFactory()
+        req = factory.patch(
+            f"/auth/admin/users/{target.id}/", data={"first_name": "x"},
+            format="json", HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        req.application = app
+        req.user = admin
+
+        # Case 1: Core repo returns None → 404
+        with patch("tenxyte.adapters.django.repositories.DjangoUserRepository.get_by_id", return_value=None):
+            resp = UserDetailView.as_view()(req, user_id=str(target.id))
+            assert resp.status_code == 404
+
+        # Case 2: Core exists, but Django User.objects.get raises DoesNotExist after update.
+        # view/patch falls into `except User.DoesNotExist` -> returns 200 {"message": "User updated"}
+        req2 = factory.patch(
+            f"/auth/admin/users/{target.id}/", data={"first_name": "x"},
+            format="json", HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        req2.application = app
+        req2.user = admin  # bypass JWT middleware user-lookup
+
+        orig_get = User.objects.get
+
+        # We need a fake CoreUser-like object so the repo's get_by_id check passes.
+        class _FakeCoreUser:
+            pass
+        fake_core = _FakeCoreUser()
+
+        # Selective mock: only raises for the target user's ID (view-level post-update lookup),
+        # passes through for admin lookup done by @require_jwt.
+        def selective_mock(*args, **kwargs):
+            lookup_id = kwargs.get("id")
+            if lookup_id is not None and str(lookup_id) == str(target.id):
+                raise User.DoesNotExist
+            return orig_get(*args, **kwargs)
+
+        with patch("tenxyte.adapters.django.repositories.DjangoUserRepository.get_by_id",
+                   return_value=fake_core):
+            with patch("tenxyte.adapters.django.repositories.DjangoUserRepository.update_user",
+                       return_value=fake_core):
+                with patch("tenxyte.models.User.objects.get", side_effect=selective_mock):
+                    resp = UserDetailView.as_view()(req2, user_id=str(target.id))
+                    assert resp.status_code == 200
+
+    @pytest.mark.django_db
+    def test_delete_user_not_found_core(self):
+        # 606-607: core repo returns None → 404
+        app = _app("Udt2")
+        admin = _user("udt2_admin@test.com", "users.delete")
+        target = _user("udt2_target@test.com")
+        token = _jwt_token(admin, app)
+        factory = APIRequestFactory()
+
+        req = factory.delete(
+            f"/auth/admin/users/{target.id}/",
+            HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        req.application = app
+        req.user = admin
+
+        with patch("tenxyte.adapters.django.repositories.DjangoUserRepository.get_by_id", return_value=None):
+            resp = UserDetailView.as_view()(req, user_id=str(target.id))
+            assert resp.status_code == 404
+
+    @pytest.mark.django_db
+    def test_ban_user_not_found_django(self):
+        # 708-709: core exists, Django User.objects.get raises → 404
+        app = _app("Ban1")
+        admin = _user("ban1_admin@test.com", "users.ban")
+        target = _user("ban1_target@test.com")
+        token = _jwt_token(admin, app)
+        factory = APIRequestFactory()
+        req = factory.post(
+            f"/auth/admin/users/{target.id}/ban/",
+            format="json", HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        req.application = app
+        req.user = admin
+
+        orig_get = User.objects.get
+        def selective_mock(*args, **kwargs):
+            lookup_id = kwargs.get("id")
+            if lookup_id is not None and str(lookup_id) == str(target.id):
+                raise User.DoesNotExist
+            return orig_get(*args, **kwargs)
+
+        with patch("tenxyte.models.User.objects.get", side_effect=selective_mock):
+            resp = UserBanView.as_view()(req, user_id=str(target.id))
+            assert resp.status_code == 404
+
+    @pytest.mark.django_db
+    def test_unban_user_not_found_django(self):
+        # 743-744
+        app = _app("Uban1")
+        admin = _user("uban1_admin@test.com", "users.ban")
+        target = _user("uban1_target@test.com")
+        token = _jwt_token(admin, app)
+        factory = APIRequestFactory()
+        req = factory.post(
+            f"/auth/admin/users/{target.id}/unban/",
+            format="json", HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        req.application = app
+        req.user = admin
+
+        orig_get = User.objects.get
+        def selective_mock(*args, **kwargs):
+            lookup_id = kwargs.get("id")
+            if lookup_id is not None and str(lookup_id) == str(target.id):
+                raise User.DoesNotExist
+            return orig_get(*args, **kwargs)
+
+        with patch("tenxyte.models.User.objects.get", side_effect=selective_mock):
+            resp = UserUnbanView.as_view()(req, user_id=str(target.id))
+            assert resp.status_code == 404
+
+    @pytest.mark.django_db
+    def test_lock_user_not_found_django(self):
+        # 839-840
+        app = _app("Lock1")
+        admin = _user("lock1_admin@test.com", "users.lock")
+        target = _user("lock1_target@test.com")
+        token = _jwt_token(admin, app)
+        factory = APIRequestFactory()
+        req = factory.post(
+            f"/auth/admin/users/{target.id}/lock/",
+            format="json", HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        req.application = app
+        req.user = admin
+
+        orig_get = User.objects.get
+        def selective_mock(*args, **kwargs):
+            lookup_id = kwargs.get("id")
+            if lookup_id is not None and str(lookup_id) == str(target.id):
+                raise User.DoesNotExist
+            return orig_get(*args, **kwargs)
+
+        with patch("tenxyte.models.User.objects.get", side_effect=selective_mock):
+            resp = UserLockView.as_view()(req, user_id=str(target.id))
+            assert resp.status_code == 404
+
+    @pytest.mark.django_db
+    def test_unlock_user_not_found_django(self):
+        # 881-882
+        app = _app("Ulock1")
+        admin = _user("ulock1_admin@test.com", "users.lock")
+        target = _user("ulock1_target@test.com")
+        token = _jwt_token(admin, app)
+        factory = APIRequestFactory()
+        req = factory.post(
+            f"/auth/admin/users/{target.id}/unlock/",
+            format="json", HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        req.application = app
+        req.user = admin
+
+        orig_get = User.objects.get
+        def selective_mock(*args, **kwargs):
+            lookup_id = kwargs.get("id")
+            if lookup_id is not None and str(lookup_id) == str(target.id):
+                raise User.DoesNotExist
+            return orig_get(*args, **kwargs)
+
+        with patch("tenxyte.models.User.objects.get", side_effect=selective_mock):
+            resp = UserUnlockView.as_view()(req, user_id=str(target.id))
+            assert resp.status_code == 404

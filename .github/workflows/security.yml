@@ -4,7 +4,11 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
+    paths:
+      - "**.py"
+      - "pyproject.toml"
+      - "requirements*.txt"
   schedule:
     # Every Monday at 08:00 UTC (SCA weekly scan)
     - cron: '0 8 * * 1'
