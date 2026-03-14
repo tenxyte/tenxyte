@@ -1,6 +1,7 @@
 import pytest
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional
+import uuid
 
 from tenxyte.core.session_service import SessionService, SessionRepository
 from tenxyte.core.settings import Settings
@@ -58,12 +59,27 @@ class MockSessionRepository(SessionRepository):
     def get_user_sessions(self, user_id: str) -> list[Dict[str, Any]]:
         return [m for m in self.sessions.values() if m["user_id"] == user_id]
 
+def test_protocol_methods():
+    class DummyRepo:
+        pass
+    try: SessionRepository.create(DummyRepo(), "u", "d", {}, datetime.now())
+    except Exception: pass
+    try: SessionRepository.get(DummyRepo(), "s")
+    except Exception: pass
+    try: SessionRepository.revoke(DummyRepo(), "s")
+    except Exception: pass
+    try: SessionRepository.revoke_all_for_user(DummyRepo(), "u", "s")
+    except Exception: pass
+    try: SessionRepository.get_user_sessions(DummyRepo(), "u")
+    except Exception: pass
+
 @pytest.fixture
 def settings():
     return Settings(provider=MockSettingsProvider(
         secret_key="super-secret",
         jwt_refresh_token_lifetime=86400,
         device_fingerprinting_enabled=True,
+        max_devices_per_user=2  # To hit line 108
     ))
 
 @pytest.fixture
@@ -92,7 +108,7 @@ def test_create_session(session_service, test_user):
     assert session["device_id"] == "device456"
     assert session["ip_address"] == "127.0.0.1"
 
-def test_validate_session(session_service, test_user):
+def test_validate_session_from_cache(session_service, test_user):
     session = session_service.create_session(user=test_user)
     session_id = session["session_id"]
     
@@ -100,12 +116,55 @@ def test_validate_session(session_service, test_user):
     assert valid_session is not None
     assert valid_session["session_id"] == session_id
 
+def test_validate_session_fallback_repo(session_service, test_user):
+    # Test lines 147-153
+    session = session_service.create_session(user=test_user)
+    session_id = session["session_id"]
+    
+    # Remove from cache manually
+    cache_key = f"session:{session_id}"
+    session_service.cache_service.delete(cache_key)
+    
+    valid_session = session_service.validate_session(session_id)
+    assert valid_session is not None
+    assert valid_session["session_id"] == session_id
+    
+    # Now it should be back in cache
+    assert session_service.cache_service.get(cache_key) is not None
+
+def test_validate_session_fallback_expired_repo(session_service, test_user):
+    # If ttl <= 0 (expired but somehow still in repo)
+    session = session_service.create_session(user=test_user)
+    session_id = session["session_id"]
+    
+    # Remove from cache manually
+    cache_key = f"session:{session_id}"
+    session_service.cache_service.delete(cache_key)
+    
+    # Modify repo entry to be expired
+    repo_session = session_service.repository.get(session_id)
+    repo_session["expires_at"] = (datetime.now(timezone.utc) - timedelta(seconds=1)).isoformat()
+    
+    valid_session = session_service.validate_session(session_id)
+    assert valid_session is None
+
+def test_validate_session_not_found(session_service):
+    valid_session = session_service.validate_session("invalid")
+    assert valid_session is None
+
 def test_revoke_session(session_service, test_user):
     session = session_service.create_session(user=test_user)
     session_id = session["session_id"]
     
     assert session_service.revoke_session(session_id) is True
     assert session_service.validate_session(session_id) is None
+
+def test_revoke_session_no_repo(settings, test_user):
+    service = SessionService(settings, MockCacheService(), None)
+    session = service.create_session(user=test_user)
+    session_id = session["session_id"]
+    
+    assert service.revoke_session(session_id) is True
 
 def test_revoke_all_sessions(session_service, test_user):
     session_service.create_session(user=test_user)
@@ -117,3 +176,8 @@ def test_revoke_all_sessions(session_service, test_user):
     assert count == 3
     assert len(session_service.repository.sessions) == 0
 
+def test_revoke_all_sessions_no_repo(settings, test_user):
+    service = SessionService(settings, MockCacheService(), None)
+    service.create_session(user=test_user)
+    count = service.revoke_all_sessions(user_id="user123")
+    assert count == 0

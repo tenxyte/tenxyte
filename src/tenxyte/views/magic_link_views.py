@@ -18,7 +18,7 @@ from ..device_info import build_device_info_from_user_agent
 from ..throttles import MagicLinkRequestThrottle, MagicLinkVerifyThrottle
 
 # Core imports
-from tenxyte.adapters.django.repositories import DjangoUserRepository
+from tenxyte.adapters.django.repositories import DjangoUserRepository, DjangoMagicLinkRepository
 from tenxyte.adapters.django.cache_service import DjangoCacheService
 from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
 from tenxyte.adapters.django.email_service import DjangoEmailService
@@ -26,6 +26,7 @@ from tenxyte.core import MagicLinkService, JWTService, Settings
 
 # Global Core services (lazy initialization)
 _core_user_repo = None
+_core_magic_link_repo = None
 _core_cache = None
 _core_settings = None
 _core_email_service = None
@@ -61,13 +62,20 @@ def get_core_email_service():
     return _core_email_service
 
 
+def get_core_magic_link_repo():
+    global _core_magic_link_repo
+    if _core_magic_link_repo is None:
+        _core_magic_link_repo = DjangoMagicLinkRepository()
+    return _core_magic_link_repo
+
+
 def get_core_magic_link_service():
     global _core_magic_link_service
     if _core_magic_link_service is None:
         _core_magic_link_service = MagicLinkService(
             settings=get_core_settings(),
-            storage=get_core_cache(),
-            user_repo=get_core_user_repo(),
+            repo=get_core_magic_link_repo(),
+            user_lookup=get_core_user_repo(),
             email_service=get_core_email_service()
         )
     return _core_magic_link_service
@@ -164,7 +172,7 @@ class MagicLinkRequestView(APIView):
 
         if not validation_url:
             return Response(
-                {"error": "VALIDATION URL is required", "code": "VALIDATION_URL_REQUIRED"},
+                {"error": "Validation URL is required", "code": "VALIDATION_URL_REQUIRED"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -176,13 +184,18 @@ class MagicLinkRequestView(APIView):
         app_name_str = app_name.name if app_name and hasattr(app_name, "name") else "Tenxyte"
 
         service = get_core_magic_link_service()
-        success = service.request_magic_link(
+        success, error_msg = service.request_magic_link(
             email=email,
             validation_url=validation_url,
-            app_name=app_name_str,
             ip_address=ip_address,
             device_info=device_info
         )
+
+        if not success:
+            return Response(
+                {"error": "Service unavailable", "code": "SERVICE_UNAVAILABLE"},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
 
         # Toujours retourner 200 même si l'email n'existe pas (sécurité)
         return Response({"message": "If this email is registered, a magic link has been sent."})
@@ -280,7 +293,7 @@ class MagicLinkVerifyView(APIView):
             ),
         ],
     )
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         """Verify magic link using Core service."""
         token = request.query_params.get("token", "").strip()
         if not token:
@@ -301,10 +314,17 @@ class MagicLinkVerifyView(APIView):
             device_info=device_info
         )
 
+        if not auth_result.success:
+            return Response(
+                {"error": auth_result.error, "code": "MAGIC_LINK_INVALID"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
         # Generate JWT tokens via Core service
         jwt_service = get_core_jwt_service()
-        access_token = jwt_service.generate_access_token(auth_result.user_id)
-        refresh_token = jwt_service.generate_refresh_token(auth_result.user_id, device_info=device_info)
+        app_id = str(request.application.id) if hasattr(request, 'application') and request.application else "default"
+        access_token = jwt_service.generate_access_token(auth_result.user_id, application_id=app_id)
+        refresh_token = jwt_service.generate_refresh_token(auth_result.user_id, application_id=app_id, device_info=device_info)
 
         # Get user for response
         from ..models import get_user_model
@@ -321,6 +341,8 @@ class MagicLinkVerifyView(APIView):
             "refresh": refresh_token,
             "user": user_data,
             "message": "Magic link verified successfully",
+            "session_id": auth_result.session_id if hasattr(auth_result, 'session_id') else None,
+            "device_id": auth_result.device_id if hasattr(auth_result, 'device_id') else None,
         }
 
         response = Response(response_data)

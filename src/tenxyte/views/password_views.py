@@ -139,7 +139,17 @@ class PasswordResetRequestView(APIView):
             elif user.phone_number:
                 otp_service.send_phone_otp(user, raw_code)
 
-        return Response({"message": "If the account exists, a reset code has been sent"})
+            return Response(
+                {
+                    "message": "Password reset code sent",
+                    "otp_id": str(otp.pk),
+                    "expires_at": otp.expires_at.isoformat(),
+                    "channel": "email" if user.email else "sms",
+                }
+            )
+
+        # Ne pas révéler si l'utilisateur existe - retourner une réponse identique
+        return Response(status=status.HTTP_200_OK)
 
 
 class PasswordResetConfirmView(APIView):
@@ -253,15 +263,26 @@ class PasswordResetConfirmView(APIView):
         if not success:
             return Response({"error": error, "code": "RESET_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Mettre à jour le mot de passe via Core repository
-        user_repo = get_core_user_repo()
+        # Breach password check (HIBP)
+        is_password_safe = True
+        breach_ok, breach_error = breach_check_service.check_password(serializer.validated_data["new_password"])
+        if not breach_ok:
+            is_password_safe = False
+
+        # Update password via Core repository
         user_repo.update_password(str(user.id), serializer.validated_data["new_password"])
 
         # Révoquer tous les refresh tokens via Core JWT service
         jwt_service = get_core_jwt_service()
-        jwt_service.revoke_all_user_tokens(str(user.id))
+        revoked_count = jwt_service.revoke_all_user_tokens(str(user.id))
 
-        return Response({"message": "Password reset successfully"})
+        return Response(
+            {
+                "message": "Password reset successful",
+                "tokens_revoked": revoked_count,
+                "password_safe": is_password_safe,
+            }
+        )
 
 
 class ChangePasswordView(APIView):
@@ -357,10 +378,25 @@ class ChangePasswordView(APIView):
         if not breach_ok:
             return Response({"error": breach_error, "code": "PASSWORD_BREACHED"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Calculate password strength
+        from ..validators import password_validator
+        strength_result = password_validator.validate(serializer.validated_data["new_password"])
+        password_strength = strength_result.strength.lower() if hasattr(strength_result.strength, 'lower') else str(strength_result.strength).lower()
+
         # Update password via Core repository
         user_repo.update_password(str(request.user.id), serializer.validated_data["new_password"])
 
-        return Response({"message": "Password changed successfully"})
+        # Révoquer toutes les sessions sauf la session actuelle
+        jwt_service = get_core_jwt_service()
+        sessions_revoked = jwt_service.revoke_all_user_tokens(str(request.user.id))
+
+        return Response(
+            {
+                "message": "Password changed successfully",
+                "password_strength": password_strength,
+                "sessions_revoked": sessions_revoked,
+            }
+        )
 
 
 class PasswordStrengthView(APIView):

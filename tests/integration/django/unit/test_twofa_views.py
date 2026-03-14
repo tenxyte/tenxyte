@@ -10,6 +10,7 @@ from unittest.mock import patch, MagicMock
 from rest_framework.test import APIRequestFactory
 
 from tenxyte.models import User, Application
+from tenxyte.core.totp_service import TOTPSetupResult
 from tenxyte.views.twofa_views import (
     TwoFactorStatusView, TwoFactorSetupView, TwoFactorConfirmView,
     TwoFactorDisableView, TwoFactorBackupCodesView,
@@ -119,14 +120,14 @@ class TestTwoFactorSetupView:
         app = _app("2FASetup1")
         user = _user("setup2fa1@test.com", twofa=False)
 
-        setup_data = {
-            "secret": "JBSWY3DPEHPK3PXP",
-            "qr_code": "data:image/png;base64,abc",
-            "provisioning_uri": "otpauth://totp/...",
-            "backup_codes": ["code1", "code2"],
-        }
-        with patch("tenxyte.services.totp_service") as mock_svc:
-            mock_svc.setup_2fa.return_value = setup_data
+        setup_data = TOTPSetupResult(
+            secret="JBSWY3DPEHPK3PXP",
+            qr_code="data:image/png;base64,abc",
+            provisioning_uri="otpauth://totp/...",
+            backup_codes=["code1", "code2"],
+        )
+        with patch("tenxyte.views.twofa_views.get_core_totp_service") as mock_svc:
+            mock_svc.return_value.setup_2fa.return_value = setup_data
             resp = _authed_post(TwoFactorSetupView, "/auth/2fa/setup/", user, app)
 
         assert resp.status_code == 200
@@ -162,8 +163,8 @@ class TestTwoFactorConfirmView:
         app = _app("2FAConfirm1")
         user = _user("confirm2fa1@test.com", twofa=False)
 
-        with patch("tenxyte.services.totp_service") as mock_svc:
-            mock_svc.confirm_2fa.return_value = (True, "")
+        with patch("tenxyte.views.twofa_views.get_core_totp_service") as mock_svc:
+            mock_svc.return_value.confirm_2fa_setup.return_value = (True, "")
             resp = _authed_post(TwoFactorConfirmView, "/auth/2fa/confirm/", user, app,
                                 {"code": "123456"})
 
@@ -175,8 +176,8 @@ class TestTwoFactorConfirmView:
         app = _app("2FAConfirm2")
         user = _user("confirm2fa2@test.com", twofa=False)
 
-        with patch("tenxyte.services.totp_service") as mock_svc:
-            mock_svc.confirm_2fa.return_value = (False, "Invalid TOTP code")
+        with patch("tenxyte.views.twofa_views.get_core_totp_service") as mock_svc:
+            mock_svc.return_value.confirm_2fa_setup.return_value = (False, "Invalid TOTP code")
             resp = _authed_post(TwoFactorConfirmView, "/auth/2fa/confirm/", user, app,
                                 {"code": "000000"})
 
@@ -210,8 +211,8 @@ class TestTwoFactorDisableView:
         app = _app("2FADisable1")
         user = _user("disable2fa1@test.com", twofa=True)
 
-        with patch("tenxyte.services.totp_service") as mock_svc:
-            mock_svc.disable_2fa.return_value = (True, "")
+        with patch("tenxyte.views.twofa_views.get_core_totp_service") as mock_svc:
+            mock_svc.return_value.disable_2fa.return_value = (True, "")
             resp = _authed_post(TwoFactorDisableView, "/auth/2fa/disable/", user, app,
                                 {"code": "123456"})
 
@@ -223,8 +224,8 @@ class TestTwoFactorDisableView:
         app = _app("2FADisable2")
         user = _user("disable2fa2@test.com", twofa=True)
 
-        with patch("tenxyte.services.totp_service") as mock_svc:
-            mock_svc.disable_2fa.return_value = (False, "Invalid code")
+        with patch("tenxyte.views.twofa_views.get_core_totp_service") as mock_svc:
+            mock_svc.return_value.disable_2fa.return_value = (False, "Invalid code")
             resp = _authed_post(TwoFactorDisableView, "/auth/2fa/disable/", user, app,
                                 {"code": "000000"})
 
@@ -259,8 +260,8 @@ class TestTwoFactorBackupCodesView:
         user = _user("backup2fa1@test.com", twofa=True)
         new_codes = ["new1", "new2", "new3", "new4", "new5"]
 
-        with patch("tenxyte.services.totp_service") as mock_svc:
-            mock_svc.regenerate_backup_codes.return_value = (True, new_codes, "")
+        with patch("tenxyte.views.twofa_views.get_core_totp_service") as mock_svc:
+            mock_svc.return_value.regenerate_backup_codes.return_value = (True, new_codes, "")
             resp = _authed_post(TwoFactorBackupCodesView, "/auth/2fa/backup-codes/", user, app,
                                 {"code": "123456"})
 
@@ -273,8 +274,8 @@ class TestTwoFactorBackupCodesView:
         app = _app("2FABackup2")
         user = _user("backup2fa2@test.com", twofa=True)
 
-        with patch("tenxyte.services.totp_service") as mock_svc:
-            mock_svc.regenerate_backup_codes.return_value = (False, None, "Invalid TOTP")
+        with patch("tenxyte.views.twofa_views.get_core_totp_service") as mock_svc:
+            mock_svc.return_value.regenerate_backup_codes.return_value = (False, None, "Invalid TOTP")
             resp = _authed_post(TwoFactorBackupCodesView, "/auth/2fa/backup-codes/", user, app,
                                 {"code": "000000"})
 

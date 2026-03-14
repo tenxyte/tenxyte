@@ -291,10 +291,9 @@ class TestBruteForceProtection:
             'password': 'TestPassword123!',
         })
 
-        # Devrait être refusé (401, 403, ou 429 si throttled)
+        # Devrait être refusé avec 423 (Locked) ou 429 si throttled
         assert response.status_code in [
-            status.HTTP_401_UNAUTHORIZED,
-            status.HTTP_403_FORBIDDEN,
+            status.HTTP_423_LOCKED,
             status.HTTP_429_TOO_MANY_REQUESTS,
         ]
 

@@ -23,7 +23,7 @@ from ..serializers import (
     UserSerializer,
 )
 from ..decorators import require_jwt, get_client_ip
-from ..device_info import build_device_info_from_user_agent
+from ..device_info import build_device_info_from_user_agent, get_device_summary
 from ..throttles import (
     LoginThrottle,
     LoginHourlyThrottle,
@@ -332,20 +332,24 @@ class RegisterView(APIView):
         if login_after:
             # Generate tokens using Core JWT service
             jwt_service = get_core_jwt_service()
-            tokens = jwt_service.generate_token_pair(
+            tokens = jwt_service.generate_new_token_pair(
                 user_id=user.id,
-                email=user.email,
+                application_id="default",
                 extra_claims={
                     'device_info': device_info,
                     'ip_address': ip_address
                 }
             )
             response_data.update({
-                'access': tokens.access_token,
-                'refresh': tokens.refresh_token,
+                'access_token': tokens.access_token,
+                'refresh_token': tokens.refresh_token,
+                'token_type': 'Bearer',
+                'expires_in': get_core_settings().jwt_access_token_lifetime,
             })
 
-def authenticate_by_email_with_core(email, password, ip_address=None, device_info=""):
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
+def authenticate_by_email_with_core(email, password, ip_address=None, device_info="", application=None):
     """
     Authenticate user by email using Core repository.
     Returns (success, data_dict_or_none, error_message_or_none)
@@ -357,37 +361,143 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
     
     user = user_repo.get_by_email(email)
     if not user:
+        # Record failed attempt for non-existent user
+        try:
+            from tenxyte.models import LoginAttempt
+            LoginAttempt.record(
+                identifier=email,
+                ip_address=ip_address or '127.0.0.1',
+                application=application,
+                success=False,
+                failure_reason='User not found'
+            )
+        except Exception:
+            pass
         return False, None, "Invalid email or password"
+    
+    # Check if user is active
+    if not user.is_active:
+        # Record failed attempt for inactive user
+        try:
+            from tenxyte.models import LoginAttempt
+            LoginAttempt.record(
+                identifier=email,
+                ip_address=ip_address or '127.0.0.1',
+                application=application,
+                success=False,
+                failure_reason='Account inactive'
+            )
+        except Exception:
+            pass
+        return False, None, "Account is inactive"
+    
+    # Check if user is banned (stored in metadata)
+    if user.metadata and user.metadata.get('is_banned'):
+        # Record failed attempt for banned user
+        try:
+            from tenxyte.models import LoginAttempt
+            LoginAttempt.record(
+                identifier=email,
+                ip_address=ip_address or '127.0.0.1',
+                application=application,
+                success=False,
+                failure_reason='Account banned'
+            )
+        except Exception:
+            pass
+        return False, None, "Account has been banned"
     
     # Check if account is locked
     if user_repo.is_account_locked(user.id):
-        return False, None, "Account is locked due to too many failed attempts"
+        # Record failed attempt for locked account
+        try:
+            from tenxyte.models import LoginAttempt
+            LoginAttempt.record(
+                identifier=email,
+                ip_address=ip_address or '127.0.0.1',
+                application=application,
+                success=False,
+                failure_reason='Account locked'
+            )
+        except Exception:
+            pass
+        return False, None, "Account has been locked due to too many failed login attempts"
     
     # Verify password
     if not user_repo.check_password(user.id, password):
         # Record failed attempt
+        try:
+            from tenxyte.models import LoginAttempt
+            LoginAttempt.record(
+                identifier=email,
+                ip_address=ip_address or '127.0.0.1',
+                application=application,
+                success=False,
+                failure_reason='Invalid password'
+            )
+        except Exception:
+            pass
+        # Record failed attempt via repository for account locking
         user_repo.record_failed_login(user.id)
         return False, None, "Invalid email or password"
     
     # Update last login
     user_repo.update_last_login(user.id, datetime.now(timezone.utc))
     
+    # Get application ID for token generation
+    app_id = str(application.id) if application else "default"
+    
     # Generate tokens
-    tokens = jwt_service.generate_token_pair(
+    tokens = jwt_service.generate_new_token_pair(
         user_id=user.id,
-        email=user.email,
+        application_id=app_id,
         extra_claims={
+            'email': user.email,
             'device_info': device_info,
             'ip_address': ip_address
         }
     )
     
-    # Build response data
+    # Store refresh token in database for validation during refresh
+    try:
+        from tenxyte.models import RefreshToken
+        from django.utils import timezone as django_timezone
+        from datetime import timedelta
+        
+        RefreshToken.objects.create(
+            user_id=user.id,
+            application_id=application.id if application else None,
+            token=RefreshToken._hash_token(tokens.refresh_token),
+            expires_at=django_timezone.now() + timedelta(days=7),  # 7 days
+            ip_address=ip_address,
+            device_info=device_info
+        )
+    except Exception:
+        pass  # Don't fail login if refresh token storage fails
+    
+    # Build response data - Convert Core User to Django User for serialization
+    try:
+        from ..models import get_user_model
+        UserModel = get_user_model()
+        django_user = UserModel.objects.get(id=user.id)
+        user_data = UserSerializer(django_user).data
+    except Exception:
+        # Fallback to basic user info if serialization fails
+        user_data = {
+            'id': user.id,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        }
+    
     data = {
-        'access': tokens.access_token,
-        'refresh': tokens.refresh_token,
-        'user': user,
-        '_user': user,  # Internal field for 2FA check
+        'access_token': tokens.access_token,
+        'refresh_token': tokens.refresh_token,
+        'token_type': 'Bearer',
+        'expires_in': get_core_settings().jwt_access_token_lifetime,
+        'device_summary': get_device_summary(device_info) if device_info else 'Unknown device',
+        'user': user_data,
+        '_user': user,  # Internal field for 2FA check (not serialized)
         'requires_2fa': user.mfa_type != MFAType.NONE,
         'session_id': tokens.session_id if hasattr(tokens, 'session_id') else None,
         'device_id': tokens.device_id if hasattr(tokens, 'device_id') else None,
@@ -396,7 +506,7 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
     return True, data, None
 
 
-def authenticate_by_phone_with_core(country_code, phone_number, password, ip_address=None, device_info=""):
+def authenticate_by_phone_with_core(country_code, phone_number, password, ip_address=None, device_info="", application=None):
     """
     Authenticate user by phone using Django ORM lookup + Core validation.
     Note: Phone lookup is Django-specific extension.
@@ -426,7 +536,7 @@ def authenticate_by_phone_with_core(country_code, phone_number, password, ip_add
     
     # Check if account is locked
     if user_repo.is_account_locked(user.id):
-        return False, None, "Account is locked due to too many failed attempts"
+        return False, None, "Account has been locked due to too many failed login attempts"
     
     # Verify password
     if not user_repo.check_password(user.id, password):
@@ -436,21 +546,56 @@ def authenticate_by_phone_with_core(country_code, phone_number, password, ip_add
     # Update last login
     user_repo.update_last_login(user.id, datetime.now(timezone.utc))
     
+    # Get application ID for token generation
+    app_id = str(application.id) if application else "default"
+    
     # Generate tokens
-    tokens = jwt_service.generate_token_pair(
+    tokens = jwt_service.generate_new_token_pair(
         user_id=user.id,
-        email=user.email,
+        application_id=app_id,
         extra_claims={
+            'email': user.email,
             'device_info': device_info,
             'ip_address': ip_address
         }
     )
     
+    # Store refresh token in database for validation during refresh
+    try:
+        from tenxyte.models import RefreshToken
+        from django.utils import timezone as django_timezone
+        from datetime import timedelta
+        
+        RefreshToken.objects.create(
+            user_id=user.id,
+            application_id=application.id if application else None,
+            token=tokens.refresh_token,
+            expires_at=django_timezone.now() + timedelta(days=7),
+            ip_address=ip_address,
+            device_info=device_info
+        )
+    except Exception:
+        pass
+    
+    # Convert Core User to Django User for serialization
+    try:
+        user_data = UserSerializer(django_user).data
+    except Exception:
+        user_data = {
+            'id': user.id,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        }
+    
     data = {
-        'access': tokens.access_token,
-        'refresh': tokens.refresh_token,
-        'user': user,
-        '_user': user,
+        'access_token': tokens.access_token,
+        'refresh_token': tokens.refresh_token,
+        'token_type': 'Bearer',
+        'expires_in': get_core_settings().jwt_access_token_lifetime,
+        'device_summary': get_device_summary(device_info) if device_info else 'Unknown device',
+        'user': user_data,
+        '_user': user,  # Internal field for 2FA check
         'requires_2fa': user.mfa_type != MFAType.NONE,
         'session_id': tokens.session_id if hasattr(tokens, 'session_id') else None,
         'device_id': tokens.device_id if hasattr(tokens, 'device_id') else None,
@@ -564,22 +709,41 @@ class LoginEmailView(APIView):
             password=serializer.validated_data["password"],
             ip_address=ip_address,
             device_info=device_info,
+            application=getattr(request, 'application', None),
         )
 
         if not success:
+            # Check if account is locked for 423 status
+            if error and "locked due to too many failed login attempts" in error:
+                return Response(
+                    {
+                        "error": "Account locked",
+                        "details": error,
+                        "code": "ACCOUNT_LOCKED",
+                        "retry_after": get_core_settings().lockout_duration,
+                    },
+                    status=status.HTTP_423_LOCKED,
+                )
             return Response({"error": error, "code": "LOGIN_FAILED"}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Vérifier 2FA si activé ou obligatoire pour ce profil
         user = data.get("_user")
         if user:
             is_admin = user.is_superuser or user.is_staff
-            if is_admin and user.mfa_type.value == 'none':
+            # Get MFA type - handle both Core User (mfa_type) and Django User (is_2fa_enabled)
+            mfa_type_value = 'none'
+            if hasattr(user, 'mfa_type'):
+                mfa_type_value = user.mfa_type.value if hasattr(user.mfa_type, 'value') else str(user.mfa_type)
+            elif getattr(user, 'is_2fa_enabled', False):
+                mfa_type_value = 'totp'
+            
+            if is_admin and mfa_type_value == 'none':
                 return Response(
                     {"error": "Administrators must have 2FA enabled to login.", "code": "ADMIN_2FA_SETUP_REQUIRED"},
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
-            if user.mfa_type.value != 'none':
+            if mfa_type_value != 'none':
                 from tenxyte.core import TOTPService
                 
                 totp_code = serializer.validated_data.get("totp_code", "")
@@ -708,22 +872,41 @@ class LoginPhoneView(APIView):
             password=serializer.validated_data["password"],
             ip_address=ip_address,
             device_info=device_info,
+            application=getattr(request, 'application', None),
         )
 
         if not success:
+            # Check if account is locked for 423 status
+            if error and "locked due to too many failed login attempts" in error:
+                return Response(
+                    {
+                        "error": "Account locked",
+                        "details": error,
+                        "code": "ACCOUNT_LOCKED",
+                        "retry_after": get_core_settings().lockout_duration,
+                    },
+                    status=status.HTTP_423_LOCKED,
+                )
             return Response({"error": error, "code": "LOGIN_FAILED"}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Vérifier 2FA si activé
         user = data.get("_user")
         if user:
             is_admin = user.is_superuser or user.is_staff
-            if is_admin and user.mfa_type.value == 'none':
+            # Get MFA type - handle both Core User (mfa_type) and Django User (is_2fa_enabled)
+            mfa_type_value = 'none'
+            if hasattr(user, 'mfa_type'):
+                mfa_type_value = user.mfa_type.value if hasattr(user.mfa_type, 'value') else str(user.mfa_type)
+            elif getattr(user, 'is_2fa_enabled', False):
+                mfa_type_value = 'totp'
+            
+            if is_admin and mfa_type_value == 'none':
                 return Response(
                     {"error": "Administrators must have 2FA enabled to login.", "code": "ADMIN_2FA_SETUP_REQUIRED"},
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
-            if user.mfa_type.value != 'none':
+            if mfa_type_value != 'none':
                 from tenxyte.core import TOTPService
                 
                 totp_code = serializer.validated_data.get("totp_code", "")
@@ -783,8 +966,10 @@ class RefreshTokenView(APIView):
             200: {
                 "type": "object",
                 "properties": {
-                    "access": {"type": "string"},
-                    "refresh": {"type": "string", "description": "Nouveau refresh token (rotation)"},
+                    "access_token": {"type": "string"},
+                    "refresh_token": {"type": "string", "description": "Nouveau refresh token (rotation)"},
+                    "token_type": {"type": "string"},
+                    "expires_in": {"type": "integer"},
                     "user": {"$ref": "#/components/schemas/User"},
                 },
             },
@@ -845,19 +1030,27 @@ class RefreshTokenView(APIView):
                 )
             
             data = {
-                'access': result.access_token,
-                'refresh': result.refresh_token,
+                'access_token': result.access_token,
+                'refresh_token': result.refresh_token,
+                'token_type': 'Bearer',
+                'expires_in': get_core_settings().jwt_access_token_lifetime,
             }
             
             # Convert user to serialized format
-            if result.user_id:
-                from ..models import get_user_model
-                UserModel = get_user_model()
-                try:
-                    django_user = UserModel.objects.get(id=result.user_id)
-                    data['user'] = UserSerializer(django_user).data
-                except Exception:
-                    pass
+            # Note: The refresh result may not include user_id directly
+            # We need to decode the access token to get user info
+            try:
+                decoded = jwt_service.decode_token(result.access_token, check_blacklist=False)
+                if decoded and decoded.user_id:
+                    from ..models import get_user_model
+                    UserModel = get_user_model()
+                    try:
+                        django_user = UserModel.objects.get(id=decoded.user_id)
+                        data['user'] = UserSerializer(django_user).data
+                    except Exception:
+                        pass
+            except Exception:
+                pass
             
             return Response(data)
             
@@ -930,31 +1123,43 @@ class LogoutView(APIView):
 
         jwt_service = get_core_jwt_service()
         
-        # Blacklist refresh token
+        # Revoke refresh token (DB-backed or JWT)
         try:
-            decoded = jwt_service.decode_token(serializer.validated_data["refresh_token"], token_type='refresh')
-            if decoded:
-                jwt_service.blacklist_token(
-                    jti=decoded.jti,
-                    expires_at=decoded.expires_at,
-                    user_id=decoded.user_id,
-                    reason='logout'
-                )
+            # First try as a DB opaque token
+            from tenxyte.models import RefreshToken
+            token_obj = RefreshToken.get_by_raw_token(serializer.validated_data["refresh_token"])
+            if hasattr(token_obj, 'revoke'):
+                token_obj.revoke()
+            else:
+                token_obj.is_revoked = True
+                token_obj.save(update_fields=['is_revoked'])
         except Exception:
-            pass
-        
-        # Blacklist access token if provided
-        if access_token:
+            # If not in DB, try to blacklist as a JWT refresh token
             try:
-                decoded = jwt_service.decode_token(access_token, token_type='access')
+                decoded = jwt_service.decode_token(serializer.validated_data["refresh_token"])
                 if decoded:
                     jwt_service.blacklist_token(
                         jti=decoded.jti,
-                        expires_at=decoded.expires_at,
+                        expires_at=decoded.exp,
                         user_id=decoded.user_id,
                         reason='logout'
                     )
             except Exception:
+                pass
+        
+        # Blacklist access token if provided
+        if access_token:
+            try:
+                decoded = jwt_service.decode_token(access_token)
+                if decoded:
+                    jwt_service.blacklist_token(
+                        jti=decoded.jti,
+                        expires_at=decoded.exp,
+                        user_id=decoded.user_id,
+                        reason='logout'
+                    )
+            except Exception as e:
+                print(f"Exception blacklisting access token: {repr(e)}")
                 pass
 
         return Response({"message": "Logged out successfully"})
@@ -1010,19 +1215,29 @@ class LogoutAllView(APIView):
         # Blacklist current access token
         if access_token:
             try:
-                decoded = jwt_service.decode_token(access_token, token_type='access')
+                decoded = jwt_service.decode_token(access_token)
                 if decoded:
                     jwt_service.blacklist_token(
                         jti=decoded.jti,
-                        expires_at=decoded.expires_at,
+                        expires_at=decoded.exp,
                         user_id=decoded.user_id,
                         reason='logout_all'
                     )
             except Exception:
                 pass
         
-        # Note: Full implementation would track and revoke all active sessions
-        # For now, invalidate current session only
-        count = 1  # Indicates current session was invalidated
+        # Revoke all active sessions in database
+        count = 1
+        try:
+            from tenxyte.models import RefreshToken
+            # getattr avoids issues if User model structure differs between apps
+            user_id = getattr(request.user, 'id', None)
+            if user_id:
+                count = RefreshToken.objects.filter(user_id=user_id, is_revoked=False).update(is_revoked=True)
+            else:
+                # If no user.id available, we only invalidated current session via blacklist
+                pass
+        except Exception:
+            pass
 
         return Response({"message": f"Logged out from {count} devices"})
