@@ -63,6 +63,6 @@
 
 - [ ] **Issue 9: Async Support and Background Task Abstraction**
   - [x] Sub-issue 9.1: Add async/await support to Core services for FastAPI compatibility.
-  - [ ] Sub-issue 9.2: Create `TaskService` port for background job abstraction.
+  - [x] Sub-issue 9.2: Create `TaskService` port for background job abstraction.
   - [ ] Sub-issue 9.3: Implement Django adapter (Celery/RQ integration).
   - [ ] Sub-issue 9.4: Implement FastAPI adapter (asyncio background tasks).

@@ -81,6 +81,7 @@ class MagicLinkRepository(Protocol):
         """Mark token as used."""
         ...  # pragma: no cover
 
+
 @runtime_checkable
 class AsyncMagicLinkRepository(MagicLinkRepository, Protocol):
     """Protocol for async magic link token storage."""
@@ -94,17 +95,16 @@ class AsyncMagicLinkRepository(MagicLinkRepository, Protocol):
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
         expiry_minutes: int = 15,
-    ) -> MagicLinkToken:
-        ...  # pragma: no cover
+    ) -> MagicLinkToken: ...  # pragma: no cover
 
-    async def get_by_token_async(self, token: str) -> Optional[MagicLinkToken]:
-        ...  # pragma: no cover
+    async def get_by_token_async(self, token: str) -> Optional[MagicLinkToken]: ...  # pragma: no cover
 
-    async def invalidate_user_tokens_async(self, user_id: str, application_id: Optional[str] = None) -> int:
-        ...  # pragma: no cover
+    async def invalidate_user_tokens_async(
+        self, user_id: str, application_id: Optional[str] = None
+    ) -> int: ...  # pragma: no cover
 
-    async def consume_async(self, token_id: str) -> bool:
-        ...  # pragma: no cover
+    async def consume_async(self, token_id: str) -> bool: ...  # pragma: no cover
+
 
 @runtime_checkable
 class UserLookup(Protocol):
@@ -122,28 +122,16 @@ class UserLookup(Protocol):
         """Check if user account is locked."""
         ...  # pragma: no cover
 
+
 @runtime_checkable
 class AsyncUserLookup(UserLookup, Protocol):
     """Protocol for async user lookup operations."""
 
-    async def get_by_email_async(self, email: str) -> Optional[Dict[str, Any]]:
-        ...  # pragma: no cover
+    async def get_by_email_async(self, email: str) -> Optional[Dict[str, Any]]: ...  # pragma: no cover
 
-    async def is_active_async(self, user_id: str) -> bool:
-        ...  # pragma: no cover
+    async def is_active_async(self, user_id: str) -> bool: ...  # pragma: no cover
 
-    async def is_locked_async(self, user_id: str) -> bool:
-        ...  # pragma: no cover
-    """Protocol for async user lookup operations."""
-
-    async def get_by_email_async(self, email: str) -> Optional[Dict[str, Any]]:
-        ...  # pragma: no cover
-
-    async def is_active_async(self, user_id: str) -> bool:
-        ...  # pragma: no cover
-
-    async def is_locked_async(self, user_id: str) -> bool:
-        ...  # pragma: no cover
+    async def is_locked_async(self, user_id: str) -> bool: ...  # pragma: no cover
 
 
 class MagicLinkService:
@@ -362,7 +350,7 @@ class MagicLinkService:
             )
 
         magic_url = f"{validation_url}?token={raw_token}" if validation_url else None
-        
+
         try:
             if hasattr(self.email_service, "send_magic_link_async"):
                 await self.email_service.send_magic_link_async(
@@ -494,7 +482,7 @@ class MagicLinkService:
             is_active = await self.user_lookup.is_active_async(token_instance.user_id)
         else:
             is_active = await asyncio.to_thread(self.user_lookup.is_active, token_instance.user_id)
-            
+
         if not is_active:
             return MagicLinkResult(success=False, error="Account is disabled")
 
@@ -502,7 +490,7 @@ class MagicLinkService:
             is_locked = await self.user_lookup.is_locked_async(token_instance.user_id)
         else:
             is_locked = await asyncio.to_thread(self.user_lookup.is_locked, token_instance.user_id)
-            
+
         if is_locked:
             return MagicLinkResult(success=False, error="Account is locked")
 

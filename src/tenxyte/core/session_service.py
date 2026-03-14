@@ -189,9 +189,13 @@ class SessionService:
         # Also cache the session for fast validation
         cache_key = f"session:{session_id}"
         if hasattr(self.cache_service, "set_async"):
-            await self.cache_service.set_async(cache_key, session_data, timeout=self.settings.jwt_refresh_token_lifetime)
+            await self.cache_service.set_async(
+                cache_key, session_data, timeout=self.settings.jwt_refresh_token_lifetime
+            )
         else:
-            await asyncio.to_thread(self.cache_service.set, cache_key, session_data, timeout=self.settings.jwt_refresh_token_lifetime)
+            await asyncio.to_thread(
+                self.cache_service.set, cache_key, session_data, timeout=self.settings.jwt_refresh_token_lifetime
+            )
 
         return session_data
 
@@ -246,7 +250,7 @@ class SessionService:
                 session_data = await self.repository.get_async(session_id)
             else:
                 session_data = await asyncio.to_thread(self.repository.get, session_id)
-                
+
             if session_data:
                 # Re-cache for future requests
                 from datetime import datetime
