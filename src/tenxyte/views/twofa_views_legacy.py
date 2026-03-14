@@ -1,10 +1,3 @@
-"""
-2FA Views - Django DRF Facades for Tenxyte Core.
-
-These views act as adapters between Django/DRF and the framework-agnostic Core.
-They maintain 100% backward compatibility with existing endpoints and responses.
-"""
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -13,78 +6,6 @@ from rest_framework import serializers
 from drf_spectacular.types import OpenApiTypes
 
 from ..decorators import require_jwt
-
-# Core imports
-from tenxyte.adapters.django.repositories import DjangoUserRepository
-from tenxyte.adapters.django.cache_service import DjangoCacheService
-from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
-from tenxyte.adapters.django.crypto_service import DjangoCryptoService
-from tenxyte.adapters.django.totp_storage import DjangoTOTPStorage
-from tenxyte.adapters.django.email_service import DjangoEmailService
-from tenxyte.core import TOTPService, Settings
-
-# Global Core services (lazy initialization)
-_core_user_repo = None
-_core_cache = None
-_core_settings = None
-_core_crypto = None
-_core_totp_storage = None
-_core_email = None
-_core_totp_service = None
-
-
-def get_core_user_repo():
-    global _core_user_repo
-    if _core_user_repo is None:
-        _core_user_repo = DjangoUserRepository()
-    return _core_user_repo
-
-
-def get_core_cache():
-    global _core_cache
-    if _core_cache is None:
-        _core_cache = DjangoCacheService()
-    return _core_cache
-
-
-def get_core_settings():
-    global _core_settings
-    if _core_settings is None:
-        _core_settings = Settings(DjangoSettingsProvider())
-    return _core_settings
-
-
-def get_core_crypto():
-    global _core_crypto
-    if _core_crypto is None:
-        _core_crypto = DjangoCryptoService(get_core_settings())
-    return _core_crypto
-
-
-def get_core_totp_storage():
-    global _core_totp_storage
-    if _core_totp_storage is None:
-        _core_totp_storage = DjangoTOTPStorage()
-    return _core_totp_storage
-
-
-def get_core_email():
-    global _core_email
-    if _core_email is None:
-        _core_email = DjangoEmailService()
-    return _core_email
-
-
-def get_core_totp_service():
-    global _core_totp_service
-    if _core_totp_service is None:
-        _core_totp_service = TOTPService(
-            settings=get_core_settings(),
-            crypto=get_core_crypto(),
-            storage=get_core_totp_storage(),
-            email=get_core_email()
-        )
-    return _core_totp_service
 
 
 class TwoFactorStatusView(APIView):
@@ -152,23 +73,22 @@ class TwoFactorSetupView(APIView):
     )
     @require_jwt
     def post(self, request):
-        """Setup 2FA using Core TOTPService."""
+        from ..services import totp_service
+
         if request.user.is_2fa_enabled:
             return Response(
                 {"error": "2FA is already enabled", "code": "2FA_ALREADY_ENABLED"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Use Core TOTP service
-        totp_service = get_core_totp_service()
-        setup_result = totp_service.setup_2fa(str(request.user.id), request.user.email or str(request.user.id))
+        setup_data = totp_service.setup_2fa(request.user)
 
         return Response(
             {
                 "message": "Scan the QR code with your authenticator app, then confirm with a code.",
-                "secret": setup_result.secret,
-                "qr_code": setup_result.qr_code,
-                "provisioning_uri": setup_result.provisioning_uri,
-                "backup_codes": setup_result.backup_codes,
+                "secret": setup_data["secret"],
+                "qr_code": setup_data["qr_code"],
+                "provisioning_uri": setup_data["provisioning_uri"],
+                "backup_codes": setup_data["backup_codes"],
                 "warning": "Save the backup codes securely. They will not be shown again.",
             }
         )
@@ -235,21 +155,16 @@ class TwoFactorConfirmView(APIView):
     )
     @require_jwt
     def post(self, request):
-        """Confirm 2FA using Core TOTPService."""
+        from ..services import totp_service
+
         code = request.data.get("code", "")
         if not code:
             return Response({"error": "Code is required", "code": "CODE_REQUIRED"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Use Core TOTP service
-        totp_service = get_core_totp_service()
-        is_valid = totp_service.verify_totp(str(request.user.id), code)
+        success, error = totp_service.confirm_2fa(request.user, code)
 
-        if not is_valid:
-            return Response({"error": "Invalid TOTP code", "code": "INVALID_CODE"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Enable 2FA via Core user repository
-        user_repo = get_core_user_repo()
-        user_repo.enable_mfa(str(request.user.id), mfa_type="totp")
+        if not success:
+            return Response({"error": error, "code": "INVALID_CODE"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"message": "2FA enabled successfully", "is_enabled": True})
 
@@ -316,25 +231,16 @@ class TwoFactorDisableView(APIView):
     )
     @require_jwt
     def post(self, request):
-        """Disable 2FA using Core TOTPService."""
+        from ..services import totp_service
+
         code = request.data.get("code", "")
         if not code:
             return Response({"error": "Code is required", "code": "CODE_REQUIRED"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Use Core TOTP service to verify code
-        totp_service = get_core_totp_service()
-        is_valid = totp_service.verify_totp(str(request.user.id), code)
-        
-        # Also check backup codes if TOTP fails
-        if not is_valid:
-            is_valid = totp_service.verify_backup_code(str(request.user.id), code)
+        success, error = totp_service.disable_2fa(request.user, code)
 
-        if not is_valid:
-            return Response({"error": "Invalid code", "code": "INVALID_CODE"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Disable 2FA via Core user repository
-        user_repo = get_core_user_repo()
-        user_repo.disable_mfa(str(request.user.id))
+        if not success:
+            return Response({"error": error, "code": "INVALID_CODE"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"message": "2FA disabled successfully", "is_enabled": False})
 
@@ -422,22 +328,18 @@ class TwoFactorBackupCodesView(APIView):
     )
     @require_jwt
     def post(self, request):
-        """Regenerate backup codes using Core TOTPService."""
+        from ..services import totp_service
+
         code = request.data.get("code", "")
         if not code:
             return Response(
                 {"error": "TOTP code is required", "code": "CODE_REQUIRED"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Use Core TOTP service
-        totp_service = get_core_totp_service()
-        is_valid = totp_service.verify_totp(str(request.user.id), code)
+        success, new_codes, error = totp_service.regenerate_backup_codes(request.user, code)
 
-        if not is_valid:
-            return Response({"error": "Invalid TOTP code", "code": "INVALID_CODE"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Generate new backup codes
-        new_codes = totp_service.generate_backup_codes(str(request.user.id))
+        if not success:
+            return Response({"error": error, "code": "INVALID_CODE"}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
             {

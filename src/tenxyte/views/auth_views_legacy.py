@@ -1,13 +1,3 @@
-"""
-Auth Views - Django DRF Facades for Tenxyte Core.
-
-These views act as adapters between Django/DRF and the framework-agnostic Core.
-They maintain 100% backward compatibility with existing endpoints and responses.
-"""
-
-import uuid
-from datetime import datetime, timezone
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -22,6 +12,8 @@ from ..serializers import (
     RefreshTokenSerializer,
     UserSerializer,
 )
+from ..services import AuthService, OTPService
+from ..services.breach_check_service import breach_check_service
 from ..decorators import require_jwt, get_client_ip
 from ..device_info import build_device_info_from_user_agent
 from ..throttles import (
@@ -31,58 +23,6 @@ from ..throttles import (
     RegisterDailyThrottle,
     RefreshTokenThrottle,
 )
-from ..conf import auth_settings
-
-# Core imports
-from tenxyte.core import JWTService, TOTPService, Settings, TokenPair
-from tenxyte.adapters.django.repositories import DjangoUserRepository
-from tenxyte.adapters.django.cache_service import DjangoCacheService
-from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
-
-# Lazy imports for legacy services still in use
-def get_breach_check_service():
-    from ..services.breach_check_service import breach_check_service
-    return breach_check_service
-
-
-def get_email_service():
-    from ..services.email_service import EmailService
-    return EmailService()
-
-
-def get_otp_service():
-    from ..services import OTPService
-    return OTPService()
-
-
-# Global Core service instances (lazy initialization)
-_core_settings = None
-_core_jwt_service = None
-_core_user_repo = None
-
-
-def get_core_settings():
-    global _core_settings
-    if _core_settings is None:
-        _core_settings = Settings(DjangoSettingsProvider())
-    return _core_settings
-
-
-def get_core_jwt_service():
-    global _core_jwt_service
-    if _core_jwt_service is None:
-        _core_jwt_service = JWTService(
-            settings=get_core_settings(),
-            blacklist_service=DjangoCacheService()
-        )
-    return _core_jwt_service
-
-
-def get_core_user_repo():
-    global _core_user_repo
-    if _core_user_repo is None:
-        _core_user_repo = DjangoUserRepository()
-    return _core_user_repo
 
 
 def get_application_from_request(request):
@@ -95,7 +35,12 @@ def get_application_from_request(request):
 
 
 def validate_application_required(request):
-    """Validate that an application is present when required."""
+    """
+    Validate that an application is present when APPLICATION_AUTH_ENABLED is True.
+    Returns a Response with error if validation fails, None otherwise.
+    """
+    from ..conf import auth_settings
+
     if auth_settings.APPLICATION_AUTH_ENABLED:
         application = get_application_from_request(request)
         if not application:
@@ -108,61 +53,6 @@ def validate_application_required(request):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
     return None
-
-
-def register_user_with_core(**kwargs):
-    """
-    Register a new user using Core repository.
-    Returns (success, user_or_none, error_message_or_none)
-    """
-    from tenxyte.ports.repositories import User, UserStatus
-    
-    user_repo = get_core_user_repo()
-    email = kwargs.get('email')
-    
-    # Check if email exists (for anti-enumeration)
-    existing = user_repo.get_by_email(email)
-    if existing:
-        return False, None, "Email already registered"
-    
-    # Check phone if provided
-    phone_country_code = kwargs.get('phone_country_code')
-    phone_number = kwargs.get('phone_number')
-    if phone_country_code and phone_number:
-        # Phone uniqueness check requires Django ORM for now
-        from ..models import get_user_model
-        UserModel = get_user_model()
-        if UserModel.objects.filter(
-            phone_country_code=phone_country_code,
-            phone_number=phone_number,
-            is_deleted=False
-        ).exists():
-            return False, None, "Phone number already registered"
-    
-    # Create Core User dataclass
-    user_data = User(
-        id="",  # Will be set by repository
-        email=email,
-        password_hash="",  # Will be set after creation
-        first_name=kwargs.get('first_name', ''),
-        last_name=kwargs.get('last_name', ''),
-        is_active=True,
-        is_superuser=False,
-        is_staff=False,
-        status=UserStatus.ACTIVE,
-        email_verified=False,
-    )
-    
-    # Create via Core repository
-    created_user = user_repo.create(user_data)
-    
-    # Set password
-    password = kwargs.get('password')
-    if password:
-        user_repo.set_password(created_user.id, password)
-        created_user = user_repo.get_by_id(created_user.id)  # Reload with hash
-    
-    return True, created_user, None
 
 
 class RegisterView(APIView):
@@ -245,6 +135,7 @@ class RegisterView(APIView):
                 {"error": "Validation error", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
+        auth_service = AuthService()
         login_after = serializer.validated_data.pop("login", False)
         device_info = serializer.validated_data.pop("device_info", "") or build_device_info_from_user_agent(
             request.META.get("HTTP_USER_AGENT", "")
@@ -252,15 +143,22 @@ class RegisterView(APIView):
         ip_address = get_client_ip(request)
 
         # Breach password check (HIBP)
-        breach_ok, breach_error = get_breach_check_service().check_password(serializer.validated_data.get("password", ""))
+        breach_ok, breach_error = breach_check_service.check_password(serializer.validated_data.get("password", ""))
         if not breach_ok:
             return Response({"error": breach_error, "code": "PASSWORD_BREACHED"}, status=status.HTTP_400_BAD_REQUEST)
 
-        success, user, error = register_user_with_core(**serializer.validated_data)
+        success, user, error = auth_service.register_user(
+            **serializer.validated_data,
+            ip_address=ip_address,
+            application=get_application_from_request(request),
+            device_info=device_info,
+        )
 
         if not success:
             if error in ["Email already registered", "Phone number already registered"]:
                 # VULN-002 Mitigation: Anti-enumeration. Return a generic success to hide account existence.
+                import uuid
+
                 response_data = {
                     "message": "Registration successful",
                     "user": {
@@ -286,14 +184,16 @@ class RegisterView(APIView):
                 # Send a security alert to the existing owner
                 if error == "Email already registered":
                     try:
-                        existing_user = get_core_user_repo().get_by_email(serializer.validated_data["email"])
-                        if existing_user:
-                            get_email_service().send_security_alert_email(
-                                to_email=existing_user.email,
-                                alert_type="duplicate_registration",
-                                details={"ip": ip_address},
-                                first_name=existing_user.first_name,
-                            )
+                        from ..models import get_user_model
+                        from ..services.email_service import EmailService
+
+                        existing_user = get_user_model().objects.get(email__iexact=serializer.validated_data["email"])
+                        EmailService().send_security_alert_email(
+                            to_email=existing_user.email,
+                            alert_type="duplicate_registration",
+                            details={"ip": ip_address},
+                            first_name=existing_user.first_name,
+                        )
                     except Exception:
                         pass
 
@@ -302,161 +202,35 @@ class RegisterView(APIView):
 
             return Response({"error": error, "code": "REGISTRATION_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Generate and send OTPs for verification (using legacy OTPService for now)
-        # Convert Core user to Django user for legacy compatibility
-        from ..models import get_user_model
-        UserModel = get_user_model()
-        try:
-            django_user = UserModel.objects.get(id=user.id)
-            otp_service = get_otp_service()
-            
-            if django_user.email:
-                otp, raw_code = otp_service.generate_email_verification_otp(django_user)
-                otp_service.send_email_otp(django_user, raw_code, otp.otp_type)
+        # Générer et envoyer les OTP de vérification
+        otp_service = OTPService()
+        if user.email:
+            otp, raw_code = otp_service.generate_email_verification_otp(user)
+            otp_service.send_email_otp(user, raw_code, otp.otp_type)
 
-            if serializer.validated_data.get("phone_country_code") and serializer.validated_data.get("phone_number"):
-                otp, raw_code = otp_service.generate_phone_verification_otp(django_user)
-                otp_service.send_phone_otp(django_user, raw_code)
-        except Exception:
-            pass  # OTP sending failure shouldn't block registration
+        if serializer.validated_data.get("phone_country_code") and serializer.validated_data.get("phone_number"):
+            otp, raw_code = otp_service.generate_phone_verification_otp(user)
+            otp_service.send_phone_otp(user, raw_code)
 
         response_data = {
             "message": "Registration successful",
-            "user": UserSerializer(django_user).data,
+            "user": UserSerializer(user).data,
             "verification_required": {
-                "email": bool(django_user.email and not django_user.is_email_verified),
-                "phone": bool(django_user.phone_number and not django_user.is_phone_verified),
+                "email": bool(user.email and not user.is_email_verified),
+                "phone": bool(user.phone_number and not user.is_phone_verified),
             },
         }
 
         if login_after:
-            # Generate tokens using Core JWT service
-            jwt_service = get_core_jwt_service()
-            tokens = jwt_service.generate_token_pair(
-                user_id=user.id,
-                email=user.email,
-                extra_claims={
-                    'device_info': device_info,
-                    'ip_address': ip_address
-                }
+            tokens = auth_service.generate_tokens_for_user(
+                user=user,
+                application=get_application_from_request(request),
+                ip_address=ip_address,
+                device_info=device_info,
             )
-            response_data.update({
-                'access': tokens.access_token,
-                'refresh': tokens.refresh_token,
-            })
+            response_data.update(tokens)
 
-def authenticate_by_email_with_core(email, password, ip_address=None, device_info=""):
-    """
-    Authenticate user by email using Core repository.
-    Returns (success, data_dict_or_none, error_message_or_none)
-    """
-    from tenxyte.ports.repositories import MFAType
-    
-    user_repo = get_core_user_repo()
-    jwt_service = get_core_jwt_service()
-    
-    user = user_repo.get_by_email(email)
-    if not user:
-        return False, None, "Invalid email or password"
-    
-    # Check if account is locked
-    if user_repo.is_account_locked(user.id):
-        return False, None, "Account is locked due to too many failed attempts"
-    
-    # Verify password
-    if not user_repo.check_password(user.id, password):
-        # Record failed attempt
-        user_repo.record_failed_login(user.id)
-        return False, None, "Invalid email or password"
-    
-    # Update last login
-    user_repo.update_last_login(user.id, datetime.now(timezone.utc))
-    
-    # Generate tokens
-    tokens = jwt_service.generate_token_pair(
-        user_id=user.id,
-        email=user.email,
-        extra_claims={
-            'device_info': device_info,
-            'ip_address': ip_address
-        }
-    )
-    
-    # Build response data
-    data = {
-        'access': tokens.access_token,
-        'refresh': tokens.refresh_token,
-        'user': user,
-        '_user': user,  # Internal field for 2FA check
-        'requires_2fa': user.mfa_type != MFAType.NONE,
-        'session_id': tokens.session_id if hasattr(tokens, 'session_id') else None,
-        'device_id': tokens.device_id if hasattr(tokens, 'device_id') else None,
-    }
-    
-    return True, data, None
-
-
-def authenticate_by_phone_with_core(country_code, phone_number, password, ip_address=None, device_info=""):
-    """
-    Authenticate user by phone using Django ORM lookup + Core validation.
-    Note: Phone lookup is Django-specific extension.
-    """
-    from tenxyte.ports.repositories import MFAType
-    
-    # Phone lookup requires Django ORM for now
-    from ..models import get_user_model
-    UserModel = get_user_model()
-    
-    try:
-        django_user = UserModel.objects.get(
-            phone_country_code=country_code,
-            phone_number=phone_number,
-            is_deleted=False
-        )
-    except UserModel.DoesNotExist:
-        return False, None, "Invalid phone number or password"
-    
-    # Use Core repository for user operations
-    user_repo = get_core_user_repo()
-    jwt_service = get_core_jwt_service()
-    
-    user = user_repo.get_by_id(str(django_user.id))
-    if not user:
-        return False, None, "Invalid phone number or password"
-    
-    # Check if account is locked
-    if user_repo.is_account_locked(user.id):
-        return False, None, "Account is locked due to too many failed attempts"
-    
-    # Verify password
-    if not user_repo.check_password(user.id, password):
-        user_repo.record_failed_login(user.id)
-        return False, None, "Invalid phone number or password"
-    
-    # Update last login
-    user_repo.update_last_login(user.id, datetime.now(timezone.utc))
-    
-    # Generate tokens
-    tokens = jwt_service.generate_token_pair(
-        user_id=user.id,
-        email=user.email,
-        extra_claims={
-            'device_info': device_info,
-            'ip_address': ip_address
-        }
-    )
-    
-    data = {
-        'access': tokens.access_token,
-        'refresh': tokens.refresh_token,
-        'user': user,
-        '_user': user,
-        'requires_2fa': user.mfa_type != MFAType.NONE,
-        'session_id': tokens.session_id if hasattr(tokens, 'session_id') else None,
-        'device_id': tokens.device_id if hasattr(tokens, 'device_id') else None,
-    }
-    
-    return True, data, None
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 class LoginEmailView(APIView):
@@ -555,15 +329,16 @@ class LoginEmailView(APIView):
                 {"error": "Validation error", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
+        auth_service = AuthService()
         ip_address = get_client_ip(request)
-        device_info = serializer.validated_data.get("device_info", "") \
-            or build_device_info_from_user_agent(request.META.get("HTTP_USER_AGENT", ""))
 
-        success, data, error = authenticate_by_email_with_core(
+        success, data, error = auth_service.authenticate_by_email(
             email=serializer.validated_data["email"],
             password=serializer.validated_data["password"],
+            application=get_application_from_request(request),
             ip_address=ip_address,
-            device_info=device_info,
+            device_info=serializer.validated_data.get("device_info", "")
+            or build_device_info_from_user_agent(request.META.get("HTTP_USER_AGENT", "")),
         )
 
         if not success:
@@ -572,16 +347,16 @@ class LoginEmailView(APIView):
         # Vérifier 2FA si activé ou obligatoire pour ce profil
         user = data.get("_user")
         if user:
-            is_admin = user.is_superuser or user.is_staff
-            if is_admin and user.mfa_type.value == 'none':
+            is_admin = getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)
+            if is_admin and not getattr(user, "is_2fa_enabled", False):
                 return Response(
                     {"error": "Administrators must have 2FA enabled to login.", "code": "ADMIN_2FA_SETUP_REQUIRED"},
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
-            if user.mfa_type.value != 'none':
-                from tenxyte.core import TOTPService
-                
+            if getattr(user, "is_2fa_enabled", False):
+                from ..services import totp_service
+
                 totp_code = serializer.validated_data.get("totp_code", "")
                 if not totp_code:
                     return Response(
@@ -589,16 +364,7 @@ class LoginEmailView(APIView):
                         status=status.HTTP_401_UNAUTHORIZED,
                     )
 
-                # Use Core TOTP service
-                totp_service = TOTPService(
-                    settings=get_core_settings(),
-                    replay_protection=DjangoCacheService()
-                )
-                is_valid, error_msg = totp_service.verify_2fa(
-                    user_id=user.id,
-                    code=totp_code,
-                    storage=get_core_user_repo()
-                )
+                is_valid, error_msg = totp_service.verify_2fa(user, totp_code)
                 if not is_valid:
                     return Response(
                         {"error": error_msg, "code": "INVALID_2FA_CODE"}, status=status.HTTP_401_UNAUTHORIZED
@@ -607,16 +373,6 @@ class LoginEmailView(APIView):
         # Retirer l'user de la réponse (on ne veut pas l'exposer)
         if "_user" in data:
             del data["_user"]
-
-        # Convert user to serialized format
-        if "user" in data and data["user"]:
-            from ..models import get_user_model
-            UserModel = get_user_model()
-            try:
-                django_user = UserModel.objects.get(id=data["user"].id)
-                data["user"] = UserSerializer(django_user).data
-            except Exception:
-                pass
 
         return Response(data)
 
@@ -688,6 +444,7 @@ class LoginPhoneView(APIView):
         ],
     )
     def post(self, request):
+        # Validate application is present if required
         app_error = validate_application_required(request)
         if app_error:
             return app_error
@@ -698,34 +455,35 @@ class LoginPhoneView(APIView):
                 {"error": "Validation error", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
+        auth_service = AuthService()
         ip_address = get_client_ip(request)
-        device_info = serializer.validated_data.get("device_info", "") \
-            or build_device_info_from_user_agent(request.META.get("HTTP_USER_AGENT", ""))
 
-        success, data, error = authenticate_by_phone_with_core(
+        success, data, error = auth_service.authenticate_by_phone(
             country_code=serializer.validated_data["phone_country_code"],
             phone_number=serializer.validated_data["phone_number"],
             password=serializer.validated_data["password"],
+            application=get_application_from_request(request),
             ip_address=ip_address,
-            device_info=device_info,
+            device_info=serializer.validated_data.get("device_info", "")
+            or build_device_info_from_user_agent(request.META.get("HTTP_USER_AGENT", "")),
         )
 
         if not success:
             return Response({"error": error, "code": "LOGIN_FAILED"}, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Vérifier 2FA si activé
+        # Vérifier 2FA si activé ou obligatoire pour ce profil
         user = data.get("_user")
         if user:
-            is_admin = user.is_superuser or user.is_staff
-            if is_admin and user.mfa_type.value == 'none':
+            is_admin = getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)
+            if is_admin and not getattr(user, "is_2fa_enabled", False):
                 return Response(
                     {"error": "Administrators must have 2FA enabled to login.", "code": "ADMIN_2FA_SETUP_REQUIRED"},
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
-            if user.mfa_type.value != 'none':
-                from tenxyte.core import TOTPService
-                
+            if getattr(user, "is_2fa_enabled", False):
+                from ..services import totp_service
+
                 totp_code = serializer.validated_data.get("totp_code", "")
                 if not totp_code:
                     return Response(
@@ -733,32 +491,15 @@ class LoginPhoneView(APIView):
                         status=status.HTTP_401_UNAUTHORIZED,
                     )
 
-                totp_service = TOTPService(
-                    settings=get_core_settings(),
-                    replay_protection=DjangoCacheService()
-                )
-                is_valid, error_msg = totp_service.verify_2fa(
-                    user_id=user.id,
-                    code=totp_code,
-                    storage=get_core_user_repo()
-                )
+                is_valid, error_msg = totp_service.verify_2fa(user, totp_code)
                 if not is_valid:
                     return Response(
                         {"error": error_msg, "code": "INVALID_2FA_CODE"}, status=status.HTTP_401_UNAUTHORIZED
                     )
 
+        # Retirer l'user de la réponse
         if "_user" in data:
             del data["_user"]
-
-        # Convert user to serialized format
-        if "user" in data and data["user"]:
-            from ..models import get_user_model
-            UserModel = get_user_model()
-            try:
-                django_user = UserModel.objects.get(id=data["user"].id)
-                data["user"] = UserSerializer(django_user).data
-            except Exception:
-                pass
 
         return Response(data)
 
@@ -824,6 +565,7 @@ class RefreshTokenView(APIView):
         ],
     )
     def post(self, request):
+        # Validate application is present if required
         app_error = validate_application_required(request)
         if app_error:
             return app_error
@@ -834,35 +576,16 @@ class RefreshTokenView(APIView):
                 {"error": "Validation error", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        jwt_service = get_core_jwt_service()
-        
-        try:
-            result = jwt_service.refresh_tokens(serializer.validated_data["refresh_token"])
-            if not result:
-                return Response(
-                    {"error": "Invalid or expired refresh token", "code": "REFRESH_FAILED"},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-            
-            data = {
-                'access': result.access_token,
-                'refresh': result.refresh_token,
-            }
-            
-            # Convert user to serialized format
-            if result.user_id:
-                from ..models import get_user_model
-                UserModel = get_user_model()
-                try:
-                    django_user = UserModel.objects.get(id=result.user_id)
-                    data['user'] = UserSerializer(django_user).data
-                except Exception:
-                    pass
-            
-            return Response(data)
-            
-        except Exception as e:
-            return Response({"error": str(e), "code": "REFRESH_FAILED"}, status=status.HTTP_401_UNAUTHORIZED)
+        auth_service = AuthService()
+        success, data, error = auth_service.refresh_access_token(
+            refresh_token_str=serializer.validated_data["refresh_token"],
+            application=get_application_from_request(request),
+        )
+
+        if not success:
+            return Response({"error": error, "code": "REFRESH_FAILED"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        return Response(data)
 
 
 class LogoutView(APIView):
@@ -928,34 +651,11 @@ class LogoutView(APIView):
         if auth_header.startswith("Bearer "):
             access_token = auth_header[7:]
 
-        jwt_service = get_core_jwt_service()
-        
-        # Blacklist refresh token
-        try:
-            decoded = jwt_service.decode_token(serializer.validated_data["refresh_token"], token_type='refresh')
-            if decoded:
-                jwt_service.blacklist_token(
-                    jti=decoded.jti,
-                    expires_at=decoded.expires_at,
-                    user_id=decoded.user_id,
-                    reason='logout'
-                )
-        except Exception:
-            pass
-        
-        # Blacklist access token if provided
-        if access_token:
-            try:
-                decoded = jwt_service.decode_token(access_token, token_type='access')
-                if decoded:
-                    jwt_service.blacklist_token(
-                        jti=decoded.jti,
-                        expires_at=decoded.expires_at,
-                        user_id=decoded.user_id,
-                        reason='logout'
-                    )
-            except Exception:
-                pass
+        auth_service = AuthService()
+        auth_service.logout(
+            serializer.validated_data["refresh_token"],
+            access_token=access_token,
+        )
 
         return Response({"message": "Logged out successfully"})
 
@@ -1005,24 +705,7 @@ class LogoutAllView(APIView):
         if auth_header.startswith("Bearer "):
             access_token = auth_header[7:]
 
-        jwt_service = get_core_jwt_service()
-        
-        # Blacklist current access token
-        if access_token:
-            try:
-                decoded = jwt_service.decode_token(access_token, token_type='access')
-                if decoded:
-                    jwt_service.blacklist_token(
-                        jti=decoded.jti,
-                        expires_at=decoded.expires_at,
-                        user_id=decoded.user_id,
-                        reason='logout_all'
-                    )
-            except Exception:
-                pass
-        
-        # Note: Full implementation would track and revoke all active sessions
-        # For now, invalidate current session only
-        count = 1  # Indicates current session was invalidated
+        auth_service = AuthService()
+        count = auth_service.logout_all_devices(request.user, access_token=access_token)
 
         return Response({"message": f"Logged out from {count} devices"})

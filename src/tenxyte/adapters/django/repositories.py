@@ -516,7 +516,155 @@ class DjangoOrganizationRepository(OrganizationRepository):
             return False
 
 
+class DjangoRoleRepository(RoleRepository):
+    """
+    Django ORM implementation of RoleRepository.
+    """
+    
+    def _to_core_role(self, django_role) -> Optional[Role]:
+        if django_role is None:
+            return None
+            
+        permissions = list(django_role.permissions.values_list('code', flat=True))
+        
+        return Role(
+            id=str(django_role.id),
+            name=django_role.name,
+            slug=django_role.code,
+            description=django_role.description,
+            permissions=permissions,
+            is_system=getattr(django_role, 'is_default', False),
+            created_at=getattr(django_role, 'created_at', None)
+        )
+        
+    def get_by_id(self, role_id: str) -> Optional[Role]:
+        from tenxyte.models import get_role_model
+        RoleModel = get_role_model()
+        try:
+            return self._to_core_role(RoleModel.objects.get(id=role_id))
+        except RoleModel.DoesNotExist:
+            return None
+            
+    def get_by_slug(self, slug: str, org_id: Optional[str] = None) -> Optional[Role]:
+        from tenxyte.models import get_role_model
+        RoleModel = get_role_model()
+        try:
+            return self._to_core_role(RoleModel.objects.get(code=slug))
+        except RoleModel.DoesNotExist:
+            return None
+            
+    def create(self, role: Role) -> Role:
+        from tenxyte.models import get_role_model
+        RoleModel = get_role_model()
+        django_role = RoleModel.objects.create(
+            code=role.slug,
+            name=role.name,
+            description=role.description or "",
+            is_default=role.is_system
+        )
+        return self._to_core_role(django_role)
+        
+    def update(self, role: Role) -> Role:
+        from tenxyte.models import get_role_model
+        RoleModel = get_role_model()
+        try:
+            django_role = RoleModel.objects.get(id=role.id)
+            django_role.name = role.name
+            django_role.description = role.description or ""
+            django_role.save()
+            return self._to_core_role(django_role)
+        except RoleModel.DoesNotExist:
+            raise ValueError(f"Role not found")
+            
+    def delete(self, role_id: str) -> bool:
+        from tenxyte.models import get_role_model
+        RoleModel = get_role_model()
+        try:
+            RoleModel.objects.get(id=role_id).delete()
+            return True
+        except RoleModel.DoesNotExist:
+            return False
+            
+    def list_by_organization(self, org_id: Optional[str] = None, skip: int = 0, limit: int = 100) -> List[Role]:
+        from tenxyte.models import get_role_model
+        RoleModel = get_role_model()
+        roles = RoleModel.objects.all()[skip:skip+limit]
+        return [self._to_core_role(r) for r in roles]
+        
+    def get_user_roles(self, user_id: str, org_id: Optional[str] = None) -> List[Role]:
+        from tenxyte.models import get_user_model
+        UserModel = get_user_model()
+        try:
+            user = UserModel.objects.prefetch_related('roles').get(id=user_id)
+            return [self._to_core_role(r) for r in user.roles.all()]
+        except (UserModel.DoesNotExist, AttributeError):
+            return []
+
+
+class DjangoAuditLogRepository(AuditLogRepository):
+    """
+    Django ORM implementation of AuditLogRepository.
+    """
+    
+    def _to_core_audit(self, django_audit) -> Optional[AuditLog]:
+        if django_audit is None:
+            return None
+            
+        return AuditLog(
+            id=str(django_audit.id),
+            user_id=str(django_audit.user_id) if django_audit.user_id else None,
+            action=django_audit.action,
+            ip_address=django_audit.ip_address,
+            user_agent=django_audit.user_agent,
+            metadata=django_audit.details,
+            created_at=django_audit.created_at
+        )
+        
+    def create(self, entry: AuditLog) -> AuditLog:
+        from tenxyte.models import AuditLog as AuditLogModel
+        django_audit = AuditLogModel.objects.create(
+            user_id=entry.user_id,
+            action=entry.action,
+            ip_address=entry.ip_address,
+            user_agent=entry.user_agent or "",
+            details=entry.metadata or {}
+        )
+        return self._to_core_audit(django_audit)
+        
+    def get_by_id(self, entry_id: str) -> Optional[AuditLog]:
+        from tenxyte.models import AuditLog as AuditLogModel
+        try:
+            return self._to_core_audit(AuditLogModel.objects.get(id=entry_id))
+        except AuditLogModel.DoesNotExist:
+            return None
+            
+    def list_by_user(self, user_id: str, skip: int = 0, limit: int = 100) -> List[AuditLog]:
+        from tenxyte.models import AuditLog as AuditLogModel
+        logs = AuditLogModel.objects.filter(user_id=user_id).order_by('-created_at')[skip:skip+limit]
+        return [self._to_core_audit(l) for l in logs]
+        
+    def list_by_organization(self, org_id: str, skip: int = 0, limit: int = 100) -> List[AuditLog]:
+        # Implementation depends on how orgs are linked to audit logs
+        return []
+        
+    def list_by_resource(self, resource_type: str, resource_id: str, skip: int = 0, limit: int = 100) -> List[AuditLog]:
+        return []
+        
+    def delete_old_entries(self, before_date: datetime) -> int:
+        from tenxyte.models import AuditLog as AuditLogModel
+        count, _ = AuditLogModel.objects.filter(created_at__lt=before_date).delete()
+        return count
+        
+    def count_by_action(self, action: str, since: Optional[datetime] = None) -> int:
+        from tenxyte.models import AuditLog as AuditLogModel
+        qs = AuditLogModel.objects.filter(action=action)
+        if since:
+            qs = qs.filter(created_at__gte=since)
+        return qs.count()
+
 __all__ = [
     'DjangoUserRepository',
     'DjangoOrganizationRepository',
+    'DjangoRoleRepository',
+    'DjangoAuditLogRepository',
 ]

@@ -1,8 +1,12 @@
 """
 Service Magic Link pour l'authentification sans mot de passe.
+
+.. deprecated::
+    This Django-specific MagicLinkService is deprecated. Use tenxyte.core.MagicLinkService instead.
 """
 
 import logging
+import warnings
 from typing import Optional, Tuple, Dict, Any
 
 from ..models import get_user_model, get_application_model
@@ -20,9 +24,18 @@ logger = logging.getLogger(__name__)
 class MagicLinkService:
     """
     Gère la génération, l'envoi et la validation des magic links.
+
+    .. deprecated::
+        This Django-specific MagicLinkService is deprecated. Use tenxyte.core.MagicLinkService instead.
     """
 
     def __init__(self):
+        warnings.warn(
+            "tenxyte.services.magic_link_service.MagicLinkService is deprecated. "
+            "Use tenxyte.core.MagicLinkService with Django adapters instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         self.auth_service = AuthService()
         self.email_service = EmailService()
 

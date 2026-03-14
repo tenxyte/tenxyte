@@ -11,10 +11,10 @@
   - [x] Sub-issue 2.2: Define interfaces for RBAC (Role-Based Access Control) and B2B organizations (`OrganizationRepository`, `RoleRepository`).
   - [x] Sub-issue 2.3: Define an interface for generating and writing Audit Logs without depending on the Django model.
 
-- [ ] **Issue 3: Isolate Django Implementation in an "Adapter" Module (Zero Breaking Changes)**
-  - [ ] Sub-issue 3.1: Transform current Views and Serializers into facades that call the Core, **without modifying Endpoints, Payloads, or JSON Responses**.
-  - [ ] Sub-issue 3.2: Implement the Repositories defined in Issue 2 by wrapping the current Django ORM (**no changes to models or DB**).
-  - [ ] Sub-issue 3.3: **[Backward Compatibility]** If views are moved, keep import pointers in old files (e.g., `tenxyte/views.py`) with a `DeprecationWarning` for v2.0.
+- [x] **Issue 3: Isolate Django Implementation in an "Adapter" Module (Zero Breaking Changes)**
+  - [x] Sub-issue 3.1: Transform current Views and Serializers into facades that call the Core, **without modifying Endpoints, Payloads, or JSON Responses**.
+  - [x] Sub-issue 3.2: Implement the Repositories defined in Issue 2 by wrapping the current Django ORM (**no changes to models or DB**).
+  - [x] Sub-issue 3.3: **[Backward Compatibility]** If views are moved, keep import pointers in old files (e.g., `tenxyte/views.py`) with a `DeprecationWarning` for v2.0.
 
 - [ ] **Issue 4: Re-architect Testing Suite (Sanctification)**
   - [ ] Sub-issue 4.1: Set up pure unit tests for `tenxyte.core` (without `pytest-django`).
@@ -38,7 +38,7 @@
   - [x] Sub-issue 7.2: Create a `CacheService` port to abstract the cache system and implement the Django adapter (`DjangoCacheService` using `django.core.cache`).
   - [x] Sub-issue 7.3: Extract business logic from middlewares (`ApplicationAuthMiddleware`, audit logging) to the Core using defined ports. Django middlewares become wrappers.
   - [x] Sub-issue 7.4: Create an agnostic validation system (Pydantic) for the Core, independent of DRF serializers.
-  - [ ] Sub-issue 7.5: Abstract session and refresh token management independently of the framework.
+  - [x] Sub-issue 7.5: Abstract session and refresh token management independently of the framework.
 
 - [ ] **Issue 8: Dependency Management and Modular Packaging**
   - [x] Sub-issue 8.1: Restructure `pyproject.toml` with hierarchical optional extras:
