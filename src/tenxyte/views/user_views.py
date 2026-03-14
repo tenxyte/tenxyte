@@ -29,7 +29,6 @@ from ..filters import apply_user_filters
 
 # Core imports
 from tenxyte.adapters.django.repositories import DjangoUserRepository
-from tenxyte.adapters.django.cache_service import DjangoCacheService
 from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
 from tenxyte.core import Settings
 
@@ -259,39 +258,44 @@ class MeView(APIView):
         phone_changed = False
         if "phone" in request.data:
             new_phone = request.data["phone"]
-            current_phone = f"+{request.user.phone_country_code}{request.user.phone_number}" if request.user.phone_country_code else request.user.phone_number
+            current_phone = (
+                f"+{request.user.phone_country_code}{request.user.phone_number}"
+                if request.user.phone_country_code
+                else request.user.phone_number
+            )
             if new_phone != current_phone:
                 phone_changed = True
         elif "phone_number" in request.data and request.data["phone_number"] != request.user.phone_number:
             phone_changed = True
-        elif "phone_country_code" in request.data and request.data["phone_country_code"] != request.user.phone_country_code:
+        elif (
+            "phone_country_code" in request.data
+            and request.data["phone_country_code"] != request.user.phone_country_code
+        ):
             phone_changed = True
 
         # Use Core repository for update
         user_repo = get_core_user_repo()
         core_user = user_repo.get_by_id(str(request.user.id))
-        
+
         if not core_user:
-            return Response(
-                {"error": "User not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND
-            )
-        
+            return Response({"error": "User not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
+
         # Update fields via repository
-        from tenxyte.ports.repositories import User, UserStatus
         update_data = {
-            'first_name': serializer.validated_data.get('first_name', core_user.first_name),
-            'last_name': serializer.validated_data.get('last_name', core_user.last_name),
-            'email': serializer.validated_data.get('email', core_user.email),
-            'email_verified': core_user.email_verified if not email_changed else False,
+            "first_name": serializer.validated_data.get("first_name", core_user.first_name),
+            "last_name": serializer.validated_data.get("last_name", core_user.last_name),
+            "email": serializer.validated_data.get("email", core_user.email),
+            "email_verified": core_user.email_verified if not email_changed else False,
         }
-        
-        updated_user = user_repo.update_user(str(request.user.id), update_data)
-        
+
+        user_repo.update_user(str(request.user.id), update_data)
+
         # Refresh user from database to get updated values
         from tenxyte.models import get_user_model
+
         UserModel = get_user_model()
         user = UserModel.objects.get(id=request.user.id)
-        
+
         # VULN-005 Mitigation: Reset verification flags if contact info is updated
         if email_changed:
             user.is_email_verified = False
@@ -567,7 +571,7 @@ class UserDetailView(APIView):
         """Update user via Core repository."""
         user_repo = get_core_user_repo()
         core_user = user_repo.get_by_id(str(user_id))
-        
+
         if not core_user:
             return Response({"error": "User not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -581,9 +585,9 @@ class UserDetailView(APIView):
         update_data = {}
         for attr, value in serializer.validated_data.items():
             update_data[attr] = value
-        
-        updated_user = user_repo.update_user(str(user_id), update_data)
-        
+
+        user_repo.update_user(str(user_id), update_data)
+
         # Get Django user for serialization
         try:
             user = User.objects.get(id=user_id)
@@ -602,7 +606,7 @@ class UserDetailView(APIView):
         """Soft delete user via Core repository."""
         user_repo = get_core_user_repo()
         core_user = user_repo.get_by_id(str(user_id))
-        
+
         if not core_user:
             return Response({"error": "User not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -694,7 +698,7 @@ class UserBanView(APIView):
         """Ban user via Core repository."""
         user_repo = get_core_user_repo()
         core_user = user_repo.get_by_id(str(user_id))
-        
+
         if not core_user:
             return Response({"error": "User not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -731,7 +735,7 @@ class UserUnbanView(APIView):
         """Unban user via Core repository."""
         user_repo = get_core_user_repo()
         core_user = user_repo.get_by_id(str(user_id))
-        
+
         if not core_user:
             return Response({"error": "User not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -739,7 +743,9 @@ class UserUnbanView(APIView):
         try:
             django_user = User.objects.get(id=user_id)
             if not django_user.is_banned:
-                return Response({"error": "User is not banned", "code": "NOT_BANNED"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "User is not banned", "code": "NOT_BANNED"}, status=status.HTTP_400_BAD_REQUEST
+                )
         except User.DoesNotExist:
             return Response({"error": "User not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -825,7 +831,7 @@ class UserLockView(APIView):
         """Lock user account via Core repository."""
         user_repo = get_core_user_repo()
         core_user = user_repo.get_by_id(str(user_id))
-        
+
         if not core_user:
             return Response({"error": "User not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -843,7 +849,7 @@ class UserLockView(APIView):
         serializer.is_valid(raise_exception=True)
 
         duration = serializer.validated_data.get("duration_minutes", 30)
-        
+
         # Lock via Core repository
         user_repo.lock(str(user_id), duration_minutes=duration, reason=serializer.validated_data.get("reason", ""))
 
@@ -869,7 +875,7 @@ class UserUnlockView(APIView):
         """Unlock user account via Core repository."""
         user_repo = get_core_user_repo()
         core_user = user_repo.get_by_id(str(user_id))
-        
+
         if not core_user:
             return Response({"error": "User not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -877,7 +883,9 @@ class UserUnlockView(APIView):
         try:
             django_user = User.objects.get(id=user_id)
             if not django_user.is_locked:
-                return Response({"error": "User is not locked", "code": "NOT_LOCKED"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "User is not locked", "code": "NOT_LOCKED"}, status=status.HTTP_400_BAD_REQUEST
+                )
         except User.DoesNotExist:
             return Response({"error": "User not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -984,7 +992,7 @@ class DeleteAccountView(APIView):
         # Vérifier le mot de passe via Core repository
         user_repo = get_core_user_repo()
         is_valid = user_repo.check_password(str(request.user.id), password)
-        
+
         if not is_valid:
             return Response(
                 {"error": "Invalid password", "code": "INVALID_PASSWORD"}, status=status.HTTP_400_BAD_REQUEST

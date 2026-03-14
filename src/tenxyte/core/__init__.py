@@ -93,6 +93,8 @@ __all__ = [
     "LoginRequest",
     "TokenResponse",
     "OrganizationBase",
+    "OrganizationCreate",
+    "OrganizationResponse",
     # Services - JWT
     "JWTService",
     "TokenPair",
