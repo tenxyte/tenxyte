@@ -11,13 +11,14 @@ from enum import Enum
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 
-
 # ============================================================
 # Enums
 # ============================================================
 
+
 class UserStatus(str, Enum):
     """User account status."""
+
     ACTIVE = "active"
     INACTIVE = "inactive"
     SUSPENDED = "suspended"
@@ -26,6 +27,7 @@ class UserStatus(str, Enum):
 
 class MFAType(str, Enum):
     """Multi-factor authentication type."""
+
     NONE = "none"
     TOTP = "totp"
     WEBAUTHN = "webauthn"
@@ -37,16 +39,19 @@ class MFAType(str, Enum):
 # Base Schemas
 # ============================================================
 
+
 class BaseSchema(BaseModel):
     """Base schema with common configuration."""
+
     model_config = ConfigDict(
         from_attributes=True,
-        extra='ignore',
+        extra="ignore",
     )
 
 
 class TimestampMixin(BaseSchema):
     """Mixin for timestamp fields."""
+
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -55,8 +60,10 @@ class TimestampMixin(BaseSchema):
 # User Schemas
 # ============================================================
 
+
 class UserBase(BaseSchema):
     """Base user schema."""
+
     email: EmailStr
     first_name: Optional[str] = Field(None, max_length=150)
     last_name: Optional[str] = Field(None, max_length=150)
@@ -69,19 +76,21 @@ class UserBase(BaseSchema):
 
 class UserCreate(UserBase):
     """Schema for creating a user."""
+
     password: str = Field(..., min_length=6, max_length=128)
-    
-    @field_validator('password')
+
+    @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
         """Validate password meets minimum requirements."""
         if len(v) < 6:
-            raise ValueError('Password must be at least 6 characters')
+            raise ValueError("Password must be at least 6 characters")
         return v
 
 
 class UserUpdate(BaseSchema):
     """Schema for updating a user."""
+
     email: Optional[EmailStr] = None
     first_name: Optional[str] = Field(None, max_length=150)
     last_name: Optional[str] = Field(None, max_length=150)
@@ -92,21 +101,22 @@ class UserUpdate(BaseSchema):
 
 class UserResponse(UserBase, TimestampMixin):
     """Schema for user response (no sensitive data)."""
+
     id: str
     last_login: Optional[datetime] = None
     mfa_type: MFAType = MFAType.NONE
     mfa_enabled: bool = False
-    
+
     # Computed properties
     full_name: Optional[str] = None
-    
-    @field_validator('full_name', mode='before')
+
+    @field_validator("full_name", mode="before")
     @classmethod
     def compute_full_name(cls, v, values) -> str:
         """Compute full name from first and last name."""
         data = values.data
-        first = data.get('first_name', '')
-        last = data.get('last_name', '')
+        first = data.get("first_name", "")
+        last = data.get("last_name", "")
         if first and last:
             return f"{first} {last}"
         return first or last or ""
@@ -114,6 +124,7 @@ class UserResponse(UserBase, TimestampMixin):
 
 class UserInDB(UserResponse):
     """Schema for user with internal fields (for DB operations)."""
+
     password_hash: Optional[str] = None
     mfa_secret: Optional[str] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -123,8 +134,10 @@ class UserInDB(UserResponse):
 # Authentication Schemas
 # ============================================================
 
+
 class LoginRequest(BaseSchema):
     """Login request schema."""
+
     email: EmailStr
     password: str
     mfa_code: Optional[str] = Field(None, min_length=6, max_length=6)
@@ -133,6 +146,7 @@ class LoginRequest(BaseSchema):
 
 class TokenResponse(BaseSchema):
     """Token response schema."""
+
     access_token: str
     refresh_token: str
     token_type: str = "Bearer"
@@ -142,39 +156,43 @@ class TokenResponse(BaseSchema):
 
 class RefreshTokenRequest(BaseSchema):
     """Refresh token request schema."""
+
     refresh_token: str
 
 
 class PasswordResetRequest(BaseSchema):
     """Password reset request schema."""
+
     email: EmailStr
 
 
 class PasswordResetConfirm(BaseSchema):
     """Password reset confirmation schema."""
+
     token: str
     new_password: str = Field(..., min_length=6, max_length=128)
-    
-    @field_validator('new_password')
+
+    @field_validator("new_password")
     @classmethod
     def validate_new_password(cls, v: str) -> str:
         """Validate password meets minimum requirements."""
         if len(v) < 6:
-            raise ValueError('Password must be at least 6 characters')
+            raise ValueError("Password must be at least 6 characters")
         return v
 
 
 class ChangePasswordRequest(BaseSchema):
     """Change password request schema."""
+
     current_password: str
     new_password: str = Field(..., min_length=6, max_length=128)
-    
-    @field_validator('new_password')
+
+    @field_validator("new_password")
     @classmethod
     def validate_new_password(cls, v: str) -> str:
         """Validate password meets minimum requirements."""
         if len(v) < 6:
-            raise ValueError('Password must be at least 6 characters')
+            raise ValueError("Password must be at least 6 characters")
         return v
 
 
@@ -182,8 +200,10 @@ class ChangePasswordRequest(BaseSchema):
 # 2FA Schemas
 # ============================================================
 
+
 class TOTPSetupResponse(BaseSchema):
     """TOTP setup response schema."""
+
     secret: str
     qr_code_uri: str
     backup_codes: List[str]
@@ -191,11 +211,13 @@ class TOTPSetupResponse(BaseSchema):
 
 class TOTPVerifyRequest(BaseSchema):
     """TOTP verification request schema."""
+
     code: str = Field(..., min_length=6, max_length=6)
 
 
 class MFAStatusResponse(BaseSchema):
     """MFA status response schema."""
+
     enabled: bool
     type: MFAType
     methods_available: List[MFAType]
@@ -205,8 +227,10 @@ class MFAStatusResponse(BaseSchema):
 # Organization Schemas
 # ============================================================
 
+
 class OrganizationBase(BaseSchema):
     """Base organization schema."""
+
     name: str = Field(..., min_length=1, max_length=255)
     slug: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
@@ -216,11 +240,13 @@ class OrganizationBase(BaseSchema):
 
 class OrganizationCreate(OrganizationBase):
     """Schema for creating an organization."""
+
     owner_id: Optional[str] = None
 
 
 class OrganizationUpdate(BaseSchema):
     """Schema for updating an organization."""
+
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
     is_active: Optional[bool] = None
@@ -229,6 +255,7 @@ class OrganizationUpdate(BaseSchema):
 
 class OrganizationResponse(OrganizationBase, TimestampMixin):
     """Schema for organization response."""
+
     id: str
     owner_id: Optional[str] = None
     parent_id: Optional[str] = None
@@ -240,8 +267,10 @@ class OrganizationResponse(OrganizationBase, TimestampMixin):
 # Role & Permission Schemas
 # ============================================================
 
+
 class RoleBase(BaseSchema):
     """Base role schema."""
+
     name: str = Field(..., min_length=1, max_length=100)
     slug: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
@@ -251,11 +280,13 @@ class RoleBase(BaseSchema):
 
 class RoleCreate(RoleBase):
     """Schema for creating a role."""
+
     organization_id: Optional[str] = None
 
 
 class RoleResponse(RoleBase, TimestampMixin):
     """Schema for role response."""
+
     id: str
     organization_id: Optional[str] = None
 
@@ -264,8 +295,10 @@ class RoleResponse(RoleBase, TimestampMixin):
 # Audit Log Schemas
 # ============================================================
 
+
 class AuditLogEntry(BaseSchema):
     """Audit log entry schema."""
+
     id: str
     user_id: Optional[str] = None
     action: str
@@ -282,13 +315,16 @@ class AuditLogEntry(BaseSchema):
 # Magic Link Schemas
 # ============================================================
 
+
 class MagicLinkRequest(BaseSchema):
     """Magic link request schema."""
+
     email: EmailStr
 
 
 class MagicLinkResponse(BaseSchema):
     """Magic link response (for admin/debug only)."""
+
     token: str
     expires_at: datetime
 
@@ -297,8 +333,10 @@ class MagicLinkResponse(BaseSchema):
 # Error Response Schemas
 # ============================================================
 
+
 class ErrorDetail(BaseSchema):
     """Error detail schema."""
+
     field: Optional[str] = None
     message: str
     code: Optional[str] = None
@@ -306,6 +344,7 @@ class ErrorDetail(BaseSchema):
 
 class ErrorResponse(BaseSchema):
     """Standard error response schema."""
+
     error: str
     code: str
     details: Optional[List[ErrorDetail]] = None
@@ -316,8 +355,10 @@ class ErrorResponse(BaseSchema):
 # Pagination Schema
 # ============================================================
 
+
 class PaginatedResponse(BaseSchema):
     """Paginated response wrapper."""
+
     items: List[Any]
     total: int
     page: int

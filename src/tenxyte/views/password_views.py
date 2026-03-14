@@ -270,6 +270,7 @@ class PasswordResetConfirmView(APIView):
             is_password_safe = False
 
         # Update password via Core repository
+        user_repo = get_core_user_repo()
         user_repo.update_password(str(user.id), serializer.validated_data["new_password"])
 
         # Révoquer tous les refresh tokens via Core JWT service
@@ -366,7 +367,7 @@ class ChangePasswordView(APIView):
         # Verify current password via Core repository
         user_repo = get_core_user_repo()
         is_valid = user_repo.check_password(str(request.user.id), serializer.validated_data["current_password"])
-        
+
         if not is_valid:
             return Response(
                 {"error": "Current password is incorrect", "code": "INVALID_PASSWORD"},
@@ -380,8 +381,13 @@ class ChangePasswordView(APIView):
 
         # Calculate password strength
         from ..validators import password_validator
+
         strength_result = password_validator.validate(serializer.validated_data["new_password"])
-        password_strength = strength_result.strength.lower() if hasattr(strength_result.strength, 'lower') else str(strength_result.strength).lower()
+        password_strength = (
+            strength_result.strength.lower()
+            if hasattr(strength_result.strength, "lower")
+            else str(strength_result.strength).lower()
+        )
 
         # Update password via Core repository
         user_repo.update_password(str(request.user.id), serializer.validated_data["new_password"])
