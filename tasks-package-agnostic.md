@@ -30,7 +30,7 @@
   - [x] Sub-issue 6.1: Update `README.md` (change "Complete Django authentication" to "Framework-Agnostic Python Authentication").
   - [x] Sub-issue 6.2: Add an Architecture section to the documentation explaining Core vs Adapters.
   - [x] Sub-issue 6.3: Write a detailed Migration Guide for current Django projects to transition smoothly from v0.9 to v0.9.3.
-  - [ ] Sub-issue 6.4: Document how to create custom adapters and extend the package.
+  - [x] Sub-issue 6.4: Document how to create custom adapters and extend the package.
   - [ ] Sub-issue 6.5: Create a troubleshooting guide for common migration issues.
 
 - [x] **Issue 7: Abstract Cross-cutting Services (Critical)**

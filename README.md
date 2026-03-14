@@ -476,6 +476,10 @@ AUTH_USER_MODEL = 'myapp.CustomUser'
 
 Same pattern for `TENXYTE_ROLE_MODEL`, `TENXYTE_PERMISSION_MODEL`, `TENXYTE_APPLICATION_MODEL`. Always inherit the parent `Meta` and set a custom `db_table`.
 
+### Creating Custom Framework Adapters
+
+Because Tenxyte is framework-agnostic, you can write your own Database adapters, Cache adapters, or Email adapters using the core `Ports`. See the **[Custom Adapters Guide](docs/custom_adapters.md)** for detailed instructions on extending the core.
+
 ---
 
 ## Configuration Reference
