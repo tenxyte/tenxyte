@@ -11,7 +11,7 @@ from django.utils import timezone
 
 _is_mongodb = 'mongodb' in settings.DATABASES.get('default', {}).get('ENGINE', '')
 
-from tenxyte.models import (
+from tenxyte.models import (  # noqa: E402
     User, Application, Permission, Role,
     RefreshToken, OTPCode, LoginAttempt,
     BlacklistedToken, AuditLog, PasswordHistory,

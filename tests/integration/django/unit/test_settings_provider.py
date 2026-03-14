@@ -2,7 +2,6 @@
 Tests for DjangoSettingsProvider - targeting 100% coverage of
 src/tenxyte/adapters/django/settings_provider.py
 """
-import pytest
 from unittest.mock import patch, MagicMock
 
 from tenxyte.adapters.django.settings_provider import (

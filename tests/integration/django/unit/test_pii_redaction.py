@@ -2,7 +2,6 @@ import pytest
 import json
 from django.http import JsonResponse
 from tenxyte.middleware import PIIRedactionMiddleware
-from tenxyte.models.agent import AgentToken
 from django.test import RequestFactory
 from django.contrib.auth import get_user_model
 

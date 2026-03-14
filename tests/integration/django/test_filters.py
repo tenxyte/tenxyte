@@ -4,15 +4,15 @@ Tests pour les filtres et la pagination.
 from tenxyte.conf import auth_settings
 api_prefix = auth_settings.API_PREFIX
 
-import pytest
-from unittest.mock import Mock
-from django.contrib.auth import get_user_model
-from rest_framework import status
+import pytest  # noqa: E402
+from unittest.mock import Mock  # noqa: E402
+from django.contrib.auth import get_user_model  # noqa: E402
+from rest_framework import status  # noqa: E402
 
-from tenxyte.models import Permission, Role, Application
-from tenxyte.pagination import TenxytePagination
-from tenxyte.filters import (
-    apply_search, apply_ordering, apply_date_range, apply_boolean_filter,
+from tenxyte.models import Permission, Role, Application  # noqa: E402
+from tenxyte.pagination import TenxytePagination  # noqa: E402
+from tenxyte.filters import (  # noqa: E402
+    apply_search, apply_ordering, apply_boolean_filter,
     apply_permission_filters, apply_role_filters, apply_application_filters,
 )
 

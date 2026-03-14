@@ -8,8 +8,6 @@ Coverage cible : views/user_views.py (41% → 80%)
 import pytest
 from unittest.mock import patch
 from rest_framework.test import APIRequestFactory
-from django.utils import timezone
-from datetime import timedelta
 
 from tenxyte.models import User, Application, Permission
 from tenxyte.views.user_views import (
@@ -522,7 +520,7 @@ class TestUserLockUnlockView:
 # ---------------------------------------------------------------------------
 # Extra Coverage Tests
 # ---------------------------------------------------------------------------
-from tenxyte.views.user_views import get_core_settings, get_core_user_repo, AvatarUploadView
+from tenxyte.views.user_views import get_core_settings, AvatarUploadView  # noqa: E402
 
 class TestExtraCoverage:
     def test_get_core_settings(self):

@@ -1,5 +1,4 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from tenxyte.docs.schemas import (
     standard_extend_schema,
@@ -35,7 +34,7 @@ def test_standard_extend_schema_with_custom_responses_and_params(mock_extend):
     mock_extend.return_value = 'mock_decorator'
     
     custom_responses = {200: 'custom'}
-    result = standard_extend_schema(responses=custom_responses, parameters=['param1'])
+    standard_extend_schema(responses=custom_responses, parameters=['param1'])
     
     call_args, call_kwargs = mock_extend.call_args
     assert call_kwargs['responses'] == custom_responses
@@ -43,14 +42,14 @@ def test_standard_extend_schema_with_custom_responses_and_params(mock_extend):
 
 @patch('tenxyte.docs.schemas.extend_schema')
 def test_org_extend_schema(mock_extend):
-    result = org_extend_schema()
+    org_extend_schema()
     call_args, call_kwargs = mock_extend.call_args
     assert ORG_HEADER in call_kwargs['parameters']
 
 @patch('tenxyte.docs.schemas.extend_schema')
 def test_paginated_extend_schema(mock_extend):
     # Test with existing parameters
-    result = paginated_extend_schema(parameters=['existing'])
+    paginated_extend_schema(parameters=['existing'])
     call_args, call_kwargs = mock_extend.call_args
     assert 'existing' in call_kwargs['parameters']
     for param in PAGINATION_PARAMS:
@@ -58,7 +57,7 @@ def test_paginated_extend_schema(mock_extend):
 
 @patch('tenxyte.docs.schemas.extend_schema')
 def test_searchable_extend_schema(mock_extend):
-    result = searchable_extend_schema()
+    searchable_extend_schema()
     call_args, call_kwargs = mock_extend.call_args
     for param in SEARCH_PARAMS:
         assert param in call_kwargs['parameters']

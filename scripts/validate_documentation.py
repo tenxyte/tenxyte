@@ -12,26 +12,22 @@ This script validates the completeness and quality of API documentation:
 Usage:
     python scripts/validate_documentation.py
 """
-import io
 
-import os
 import sys
 import json
-import re
 import ast
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List
 from collections import defaultdict
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.tenxyte.docs.schemas import (
+from src.tenxyte.docs.schemas import (  # noqa: E402
     AUTH_EXAMPLES,
     ERROR_EXAMPLES,
-    SUCCESS_EXAMPLES,
-    SECURITY_EXAMPLES
+    SUCCESS_EXAMPLES
 )
 
 
@@ -318,7 +314,7 @@ def print_report(report: Dict):
     
     # Summary
     summary = report['summary']
-    print(f"\n📊 SUMMARY:")
+    print("\n📊 SUMMARY:")
     print(f"   Total Issues: {summary['total_issues']}")
     print(f"   Critical Issues: {summary['critical_issues']}")
     print(f"   Warnings: {summary['warnings']}")
@@ -328,7 +324,7 @@ def print_report(report: Dict):
     
     # Statistics
     stats = report['statistics']
-    print(f"\n📈 STATISTICS:")
+    print("\n📈 STATISTICS:")
     print(f"   @extend_schema decorators: {stats.get('extend_schema_decorators', 0)}")
     print(f"   OpenApiExample instances: {stats.get('openapi_examples', 0)}")
     print(f"   Error examples: {stats.get('error_examples', 0)}")
@@ -336,7 +332,7 @@ def print_report(report: Dict):
     
     # Coverage
     coverage = report['coverage']
-    print(f"\n🎯 COVERAGE:")
+    print("\n🎯 COVERAGE:")
     print(f"   Endpoints ({len(coverage['endpoints'])}):")
     for endpoint in sorted(list(coverage['endpoints']))[:10]:  # Show first 10
         print(f"     - {endpoint}")
@@ -353,19 +349,19 @@ def print_report(report: Dict):
     
     # Issues
     if report['issues']:
-        print(f"\n⚠️  ISSUES:")
+        print("\n⚠️  ISSUES:")
         for issue in report['issues']:
             icon = "🚨" if issue['severity'] == 'error' else "⚠️"
             print(f"   {icon} {issue['message']}")
     
     # Recommendations
     recommendations = report['recommendations']
-    print(f"\n💡 RECOMMENDATIONS:")
+    print("\n💡 RECOMMENDATIONS:")
     for i, rec in enumerate(recommendations, 1):
         print(f"   {i}. {rec}")
     
     # Overall assessment
-    print(f"\n🏆 OVERALL ASSESSMENT:")
+    print("\n🏆 OVERALL ASSESSMENT:")
     if summary['critical_issues'] == 0 and summary['endpoint_coverage'] > 80:
         print("   ✅ Documentation is in good shape!")
     elif summary['critical_issues'] > 0:

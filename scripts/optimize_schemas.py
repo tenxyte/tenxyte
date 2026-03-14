@@ -19,7 +19,7 @@ import json
 import sys
 import hashlib
 from pathlib import Path
-from typing import Dict, List, Set, Tuple, Any
+from typing import Dict, List, Any
 from collections import defaultdict
 
 # Add project root to path
@@ -550,7 +550,7 @@ def print_report(report: Dict):
     
     # Summary
     summary = report['summary']
-    print(f"\n📊 SUMMARY:")
+    print("\n📊 SUMMARY:")
     print(f"   Original Size: {summary['original_size_bytes']:,} bytes")
     print(f"   Optimized Size: {summary['optimized_size_bytes']:,} bytes")
     print(f"   Size Reduction: {summary['size_reduction_bytes']:,} bytes ({summary['reduction_percentage']}%)")
@@ -561,18 +561,18 @@ def print_report(report: Dict):
     
     # Optimizations
     if report['optimizations']:
-        print(f"\n🔧 OPTIMIZATIONS APPLIED:")
+        print("\n🔧 OPTIMIZATIONS APPLIED:")
         for opt in report['optimizations']:
             print(f"   ✅ {opt}")
     
     # Recommendations
     recommendations = report['recommendations']
-    print(f"\n💡 RECOMMENDATIONS:")
+    print("\n💡 RECOMMENDATIONS:")
     for i, rec in enumerate(recommendations, 1):
         print(f"   {i}. {rec}")
     
     # Overall assessment
-    print(f"\n🏆 OVERALL ASSESSMENT:")
+    print("\n🏆 OVERALL ASSESSMENT:")
     if summary['reduction_percentage'] > 10:
         print("   ✅ Significant optimization achieved!")
     elif summary['reduction_percentage'] > 0:

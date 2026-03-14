@@ -1,6 +1,6 @@
 import pytest
-from datetime import datetime, timezone, timedelta
-from typing import Dict, Any
+from datetime import datetime
+from typing import Any
 
 from tenxyte.core.jwt_service import JWTService
 from tenxyte.core.settings import Settings
@@ -41,9 +41,6 @@ class MockTokenBlacklist:
         self.blacklist.add(token_jti)
         return True
         
-    def is_blacklisted(self, token_jti: str):
-        return token_jti in self.blacklist
-
 @pytest.fixture
 def settings():
     return Settings(provider=MockSettingsProvider(

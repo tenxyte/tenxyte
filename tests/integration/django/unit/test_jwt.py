@@ -2,7 +2,6 @@
 Tests unitaires pour le service JWT.
 """
 import pytest
-from datetime import datetime, timedelta
 
 from tenxyte.services import JWTService
 

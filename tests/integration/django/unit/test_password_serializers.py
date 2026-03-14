@@ -1,4 +1,3 @@
-import pytest
 from tenxyte.serializers.password_serializers import (
     PasswordSerializer,
     PasswordResetRequestSerializer,

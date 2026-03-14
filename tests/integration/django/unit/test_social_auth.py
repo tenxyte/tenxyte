@@ -297,25 +297,6 @@ class TestGitHubOAuthProvider:
             res = provider.get_user_info('fake')
             assert res is None
 
-    def test_provider_name(self):
-        assert GitHubOAuthProvider().provider_name == 'github'
-
-    def test_abstract_get_non_200(self):
-        provider = GitHubOAuthProvider()
-        mock_resp = MagicMock()
-        mock_resp.status_code = 400
-        with patch('requests.get', return_value=mock_resp):
-            # This calls abstract _get
-            res = provider.get_user_info('fake')
-            assert res is None
-
-    def test_abstract_get_exception(self):
-        provider = GitHubOAuthProvider()
-        with patch('requests.get', side_effect=Exception("Get error")):
-            res = provider.get_user_info('fake')
-            assert res is None
-
-
 class TestMicrosoftOAuthProvider:
 
     def test_get_user_info_success(self):

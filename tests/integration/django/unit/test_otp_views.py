@@ -8,7 +8,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from rest_framework.test import APIRequestFactory
 
-from tenxyte.models import User, Application, Permission
+from tenxyte.models import User, Application
 from tenxyte.views.otp_views import RequestOTPView, VerifyEmailOTPView, VerifyPhoneOTPView
 
 

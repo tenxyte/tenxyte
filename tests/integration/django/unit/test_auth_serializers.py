@@ -1,5 +1,4 @@
 import pytest
-from rest_framework.exceptions import ValidationError
 
 from tenxyte.serializers.auth_serializers import (
     RegisterSerializer,

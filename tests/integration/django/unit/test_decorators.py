@@ -9,7 +9,7 @@ from tenxyte.decorators import (
     require_role, require_any_role, require_all_roles,
     require_permission, require_any_permission, require_all_permissions
 )
-from tenxyte.models import User, Application
+from tenxyte.models import User
 
 def test_extract_request_fallback():
     # Line 31 fallback
@@ -308,7 +308,7 @@ class TestOrgDecorators:
             assert resp.status_code == 200
             assert hasattr(req_owner_ok, 'org_membership')
 
-from tenxyte.decorators import rate_limit, get_client_ip
+from tenxyte.decorators import rate_limit, get_client_ip  # noqa: E402
 
 class CBVTest:
     @require_jwt

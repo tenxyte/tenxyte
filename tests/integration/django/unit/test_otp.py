@@ -8,7 +8,6 @@ from django.utils import timezone
 from django.test import override_settings
 
 from tenxyte.services.otp_service import OTPService
-from tenxyte.models import User, OTPCode
 
 
 class TestOTPService:
@@ -165,7 +164,6 @@ class TestOTPService:
 
         # Créer un premier OTP
         otp1, raw_code1 = otp_service.generate_email_verification_otp(user)
-        otp1_id = otp1.id
 
         # Créer un second OTP (devrait invalider le premier)
         otp2, raw_code2 = otp_service.generate_email_verification_otp(user)

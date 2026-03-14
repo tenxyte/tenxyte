@@ -56,20 +56,20 @@ classifiers = [
 # Default dependencies include Django stack for backward compatibility
 # Install with [core] for minimal dependencies
 dependencies = [
-    "django>=5.0",
-    "djangorestframework>=3.14",
-    "django-cors-headers>=4.0",
-    "drf-spectacular>=0.27",
+    "django>=6.0",
+    "djangorestframework>=3.16",
+    "django-cors-headers>=4.9",
+    "drf-spectacular>=0.28",
     "PyJWT>=2.12.0",
-    "bcrypt>=4.0",
+    "bcrypt>=4.2",
     "pyotp>=2.9",
     "qrcode[pil]>=8.0",
-    "google-auth>=2.20",
-    "google-auth-oauthlib>=1.0",
+    "google-auth>=2.49",
+    "google-auth-oauthlib>=1.2",
     "django-cryptography>=1.1",
-    "Pillow>=10.3.0",
-    "requests>=2.31.0",
-    "pydantic>=2.0",
+    "Pillow>=11.0",
+    "requests>=2.32",
+    "pydantic>=2.12",
 ]
 
 [project.optional-dependencies]
@@ -78,32 +78,33 @@ dependencies = [
 # Use for custom integrations or when you bring your own framework
 core = [
     "PyJWT>=2.12.0",
-    "bcrypt>=4.0",
+    "bcrypt>=4.2",
     "pyotp>=2.9",
     "qrcode[pil]>=8.0",
-    "Pillow>=10.3.0",
-    "requests>=2.31.0",
-    "pydantic>=2.0",
+    "Pillow>=11.0",
+    "requests>=2.32",
+    "pydantic>=2.12",
 ]
 
 # Django stack (adds Django-specific dependencies)
 # Included by default for backward compatibility
 django = [
-    "django>=5.0",
-    "djangorestframework>=3.14",
-    "django-cors-headers>=4.0",
-    "drf-spectacular>=0.27",
+    "django>=6.0",
+    "djangorestframework>=3.16",
+    "django-cors-headers>=4.9",
+    "drf-spectacular>=0.28",
     "django-cryptography>=1.1",
-    "google-auth>=2.20",
-    "google-auth-oauthlib>=1.0",
+    "google-auth>=2.49",
+    "google-auth-oauthlib>=1.2",
 ]
 
 # FastAPI stack
 fastapi = [
-    "fastapi>=0.100",
-    "uvicorn>=0.23",
-    "python-multipart>=0.0.6",
-    "pydantic>=2.0",
+    "fastapi>=0.135",
+    "uvicorn>=0.40",
+    "sqlalchemy>=2.0",
+    "python-multipart>=0.0.9",
+    "pydantic>=2.12",
 ]
 
 # ===== DATABASE ADAPTERS =====
@@ -122,17 +123,17 @@ mongodb = [
 # ===== FEATURE-SPECIFIC EXTRAS =====
 # SMS support via Twilio
 twilio = [
-    "twilio>=9.0",
+    "twilio>=9.5",
 ]
 
 # Email support via SendGrid
 sendgrid = [
-    "sendgrid>=6.10",
+    "sendgrid>=6.12",
 ]
 
 # WebAuthn/FIDO2 support
 webauthn = [
-    "webauthn>=2.0.0",
+    "webauthn>=2.7.0",
 ]
 
 # ===== META EXTRAS =====
@@ -148,13 +149,13 @@ all = [
 
 # Development dependencies
 dev = [
-    "pytest>=7.0",
-    "pytest-django>=4.5",
-    "pytest-cov>=4.0",
-    "pytest-asyncio>=0.21",
-    "black>=23.0",
-    "ruff>=0.1",
-    "mypy>=1.0",
+    "pytest>=8.0",
+    "pytest-django>=4.9",
+    "pytest-cov>=6.0",
+    "pytest-asyncio>=0.24",
+    "black>=25.0",
+    "ruff>=0.9",
+    "mypy>=1.15",
 ]
 
 [project.urls]

@@ -4,11 +4,10 @@ Tests pour les vues admin User CRUD.
 from tenxyte.conf import auth_settings
 api_prefix = auth_settings.API_PREFIX
 
-import pytest
-from django.contrib.auth import get_user_model
-from rest_framework import status
+import pytest  # noqa: E402
+from django.contrib.auth import get_user_model  # noqa: E402
+from rest_framework import status  # noqa: E402
 
-from tenxyte.models import Permission, Role
 
 User = get_user_model()
 

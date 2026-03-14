@@ -14,12 +14,11 @@ Couvre :
 from tenxyte.conf import auth_settings
 api_prefix = auth_settings.API_PREFIX
 
-import json
 NONEXISTENT_ID = 999999999  # ID entier qui n'existera jamais en DB (BigAutoField)
-import pytest
-from rest_framework.test import APIRequestFactory
+import pytest  # noqa: E402
+from rest_framework.test import APIRequestFactory  # noqa: E402
 
-from tenxyte.views.rbac_views import (
+from tenxyte.views.rbac_views import (  # noqa: E402
     PermissionListView,
     PermissionDetailView,
     RoleListView,
@@ -56,7 +55,8 @@ def _create_user_with_perms(email, app, *codes):
     """Crée un user actif avec les permissions indiquées."""
     from tenxyte.models import User, Permission
     user = User.objects.create(email=email, is_active=True)
-    user.set_password("pass"); user.save()
+    user.set_password("pass")
+    user.save()
     for code in codes:
         perm, _ = Permission.objects.get_or_create(code=code, defaults={"name": code})
         user.direct_permissions.add(perm)
@@ -596,7 +596,7 @@ class TestRolePermissionsView:
 
     @pytest.mark.django_db
     def test_safe_add_permissions_type_error(self):
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import patch
         from tenxyte.models import Role, Permission
         app = _app("RPSafeAdd")
         user = _create_user_with_perms("rpsafeadd@t.com", app, "roles.manage_permissions")
@@ -655,7 +655,8 @@ class TestUserRolesView:
         app = _app("URGetApp")
         admin = _create_user_with_perms("urget_admin@t.com", app, "users.roles.view")
         target = User.objects.create(email="urget_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
         role = Role.objects.create(code="ur_get_role_v2", name="UR Get Role V2")
         target.roles.add(role)
 
@@ -682,7 +683,8 @@ class TestUserRolesView:
         app = _app("URAssignApp")
         admin = _create_user_with_perms("urassign_admin@t.com", app, "users.roles.assign")
         target = User.objects.create(email="urassign_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
         Role.objects.create(code="ur_assign_role_v2", name="UR Assign Role V2")
 
         req = _authed_request(
@@ -701,7 +703,8 @@ class TestUserRolesView:
         app = _app("URAssignBad")
         admin = _create_user_with_perms("urassign_bad@t.com", app, "users.roles.assign")
         target = User.objects.create(email="urassign_bad_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
 
         req = _authed_request(
             "post", f"{api_prefix}/auth/users/{target.id}/roles/", admin, app,
@@ -717,7 +720,8 @@ class TestUserRolesView:
         app = _app("URRemoveApp")
         admin = _create_user_with_perms("urremove_admin@t.com", app, "users.roles.remove")
         target = User.objects.create(email="urremove_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
         role = Role.objects.create(code="ur_remove_role_v2", name="UR Remove Role V2")
         target.roles.add(role)
 
@@ -738,7 +742,8 @@ class TestUserRolesView:
         app = _app("URRemoveBad")
         admin = _create_user_with_perms("urremove_bad@t.com", app, "users.roles.remove")
         target = User.objects.create(email="urremove_bad_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
 
         # Pas de query param role_code
         req = _authed_request("delete", f"{api_prefix}/auth/users/{target.id}/roles/", admin, app)
@@ -753,7 +758,8 @@ class TestUserRolesView:
         app = _app("URGetNoPerm")
         admin = _create_user_with_perms("urget_noperm@t.com", app)  # pas la permission
         target = User.objects.create(email="urget_noperm_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
 
         req = _authed_request("get", f"{api_prefix}/auth/users/{target.id}/roles/", admin, app)
         response = UserRolesView.as_view()(req, user_id=str(target.id))
@@ -773,7 +779,8 @@ class TestUserDirectPermissionsView:
         app = _app("UDPGetApp")
         admin = _create_user_with_perms("udpget_admin@t.com", app, "users.permissions.view")
         target = User.objects.create(email="udpget_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
         perm = Permission.objects.create(code="udp.test.perm.v2", name="UDP Test Perm V2")
         target.direct_permissions.add(perm)
 
@@ -799,7 +806,8 @@ class TestUserDirectPermissionsView:
         app = _app("UDPAddApp")
         admin = _create_user_with_perms("udpadd_admin@t.com", app, "users.permissions.assign")
         target = User.objects.create(email="udpadd_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
         Permission.objects.create(code="udp.add.perm.v2", name="UDP Add Perm V2")
 
         req = _authed_request(
@@ -817,7 +825,8 @@ class TestUserDirectPermissionsView:
         app = _app("UDPAddBad")
         admin = _create_user_with_perms("udpadd_bad@t.com", app, "users.permissions.assign")
         target = User.objects.create(email="udpadd_bad_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
 
         req = _authed_request(
             "post", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
@@ -833,7 +842,8 @@ class TestUserDirectPermissionsView:
         app = _app("UDPRemoveApp")
         admin = _create_user_with_perms("udpremove_admin@t.com", app, "users.permissions.remove")
         target = User.objects.create(email="udpremove_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
         perm = Permission.objects.create(code="udp.remove.perm.v2", name="UDP Remove Perm V2")
         target.direct_permissions.add(perm)
 
@@ -852,7 +862,8 @@ class TestUserDirectPermissionsView:
         app = _app("UDPRemoveBad")
         admin = _create_user_with_perms("udpremove_bad@t.com", app, "users.permissions.remove")
         target = User.objects.create(email="udpremove_bad_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
 
         req = _authed_request(
             "delete", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
@@ -868,7 +879,8 @@ class TestUserDirectPermissionsView:
         app = _app("UDPIdempApp")
         admin = _create_user_with_perms("udpidemp_admin@t.com", app, "users.permissions.assign")
         target = User.objects.create(email="udpidemp_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
         perm = Permission.objects.create(code="udp.idemp.perm.v2", name="UDP Idemp Perm V2")
         target.direct_permissions.add(perm)  # déjà assignée
 
@@ -887,7 +899,8 @@ class TestUserDirectPermissionsView:
         app = _app("UDPGetNoPerm")
         admin = _create_user_with_perms("udpget_noperm@t.com", app)  # pas la permission
         target = User.objects.create(email="udpget_noperm_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
 
         req = _authed_request("get", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app)
         response = UserDirectPermissionsView.as_view()(req, user_id=str(target.id))
@@ -907,7 +920,8 @@ class TestUserDirectPermissionsView:
         app = _app("UDPAddVal")
         admin = _create_user_with_perms("udpadd_val_ad@t.com", app, "users.permissions.assign")
         target = User.objects.create(email="udpadd_val_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
 
         req = _authed_request(
             "post", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
@@ -930,7 +944,8 @@ class TestUserDirectPermissionsView:
         app = _app("UDPRmVal")
         admin = _create_user_with_perms("udprm_val_ad@t.com", app, "users.permissions.remove")
         target = User.objects.create(email="udprm_val_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
 
         req = _authed_request(
             "delete", f"{api_prefix}/auth/users/{target.id}/permissions/", admin, app,
@@ -945,7 +960,8 @@ class TestUserDirectPermissionsView:
         app = _app("UDPRmNot")
         admin = _create_user_with_perms("udprm_not_ad@t.com", app, "users.permissions.remove")
         target = User.objects.create(email="udprm_not_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
         Permission.objects.create(code="udp.not_assigned.perm.v2", name="Not Assigned UDP")
 
         req = _authed_request(
@@ -958,12 +974,13 @@ class TestUserDirectPermissionsView:
 
     @pytest.mark.django_db
     def test_safe_add_direct_permissions_type_error(self):
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import patch
         from tenxyte.models import User, Permission
         app = _app("UDPSafeAdd")
         admin = _create_user_with_perms("udpsafeadd_ad@t.com", app, "users.permissions.assign")
         target = User.objects.create(email="udpsafeadd_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
         Permission.objects.create(code="udp.safe.add.perm1", name="UDP Safe Add Perm 1")
         Permission.objects.create(code="udp.safe.add.perm2", name="UDP Safe Add Perm 2")
 
@@ -987,7 +1004,8 @@ class TestUserDirectPermissionsView:
         app = _app("UDPSafeRm")
         admin = _create_user_with_perms("udpsaferm_ad@t.com", app, "users.permissions.remove")
         target = User.objects.create(email="udpsaferm_target@t.com", is_active=True)
-        target.set_password("pass"); target.save()
+        target.set_password("pass")
+        target.save()
         perm = Permission.objects.create(code="udp.safe.rm.perm", name="UDP Safe Rm Perm")
         target.direct_permissions.add(perm)
 

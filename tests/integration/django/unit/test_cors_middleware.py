@@ -8,11 +8,11 @@ selon la configuration dans settings.py.
 from tenxyte.conf import auth_settings
 api_prefix = auth_settings.API_PREFIX
 
-import pytest
-from django.http import HttpResponse
-from django.test import RequestFactory, override_settings
+import pytest  # noqa: E402
+from django.http import HttpResponse  # noqa: E402
+from django.test import RequestFactory, override_settings  # noqa: E402
 
-from tenxyte.middleware import CORSMiddleware, SecurityHeadersMiddleware
+from tenxyte.middleware import CORSMiddleware, SecurityHeadersMiddleware  # noqa: E402
 
 
 @pytest.fixture

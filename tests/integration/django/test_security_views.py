@@ -4,13 +4,13 @@ Tests pour les vues admin Security.
 from tenxyte.conf import auth_settings
 api_prefix = auth_settings.API_PREFIX
 
-import pytest
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-from datetime import timedelta
-from rest_framework import status
+import pytest  # noqa: E402
+from django.contrib.auth import get_user_model  # noqa: E402
+from django.utils import timezone  # noqa: E402
+from datetime import timedelta  # noqa: E402
+from rest_framework import status  # noqa: E402
 
-from tenxyte.models import AuditLog, BlacklistedToken, RefreshToken, LoginAttempt, Application
+from tenxyte.models import AuditLog, BlacklistedToken, RefreshToken, LoginAttempt  # noqa: E402
 
 User = get_user_model()
 
@@ -166,7 +166,7 @@ class TestRefreshTokenViews:
     def test_refresh_token_no_value_exposed(self, authenticated_admin_client, admin_user, user, application):
         """La valeur du token ne doit jamais être exposée."""
         # Créer un refresh token
-        refresh_token = RefreshToken.objects.create(
+        RefreshToken.objects.create(
             user=user,
             application=application,
             token='secret-token-value',

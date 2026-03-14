@@ -12,7 +12,7 @@ def user(db):
 @pytest.mark.django_db
 def test_account_deletion_request_str(user):
     req = AccountDeletionRequest.create_request(user=user)
-    assert str(req) == f"Deletion request for gdpr_test@test.com - pending"
+    assert str(req) == "Deletion request for gdpr_test@test.com - pending"
 
 @pytest.mark.django_db
 def test_send_confirmation_email_success(user):

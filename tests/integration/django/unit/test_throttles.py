@@ -9,13 +9,11 @@ Tests Phase 4 - Throttles:
 from tenxyte.conf import auth_settings
 api_prefix = auth_settings.API_PREFIX
 
-import pytest
-from unittest.mock import MagicMock, patch
-from django.test import override_settings
-from django.core.cache import cache
+from unittest.mock import MagicMock, patch  # noqa: E402
+from django.test import override_settings  # noqa: E402
+from django.core.cache import cache  # noqa: E402
 
-from tenxyte.throttles import (
-    IPBasedThrottle,
+from tenxyte.throttles import (  # noqa: E402
     LoginThrottle,
     RegisterThrottle,
     ProgressiveLoginThrottle,

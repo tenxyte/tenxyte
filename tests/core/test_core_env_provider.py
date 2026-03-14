@@ -29,7 +29,7 @@ def test_init_with_dotenv_available():
     # More direct approach: patch the import inside __init__
     mock_dotenv = MagicMock()
     with patch("builtins.__import__", side_effect=lambda name, *a, **kw: mock_dotenv if name == "dotenv" else __import__(name, *a, **kw)):
-        provider = EnvSettingsProvider(dotenv_path="/tmp/test.env")
+        EnvSettingsProvider(dotenv_path="/tmp/test.env")
     mock_dotenv.load_dotenv.assert_called_once()
 
 

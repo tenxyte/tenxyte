@@ -44,7 +44,7 @@ class TestPermissionHierarchyModel:
     def test_get_all_children_include_self(self):
         """get_all_children(include_self=True) inclut la permission elle-même."""
         parent = Permission.objects.create(code="content", name="Content")
-        child = Permission.objects.create(code="content.view", name="View", parent=parent)
+        Permission.objects.create(code="content.view", name="View", parent=parent)
 
         result = parent.get_all_children(include_self=True)
         codes = [p.code for p in result]
@@ -67,7 +67,7 @@ class TestPermissionHierarchyModel:
         """get_all_children() descend récursivement dans la hiérarchie."""
         root = Permission.objects.create(code="users", name="Users")
         mid = Permission.objects.create(code="users.roles", name="User Roles", parent=root)
-        leaf = Permission.objects.create(code="users.roles.assign", name="Assign", parent=mid)
+        Permission.objects.create(code="users.roles.assign", name="Assign", parent=mid)
 
         result = root.get_all_children(include_self=True)
         codes = [p.code for p in result]
@@ -143,7 +143,7 @@ class TestHasPermissionHierarchy:
         """Avoir la permission parent donne accès aux enfants (hiérarchie)."""
         user = User.objects.create_user(email="h2@test.com", password="Test123!@#")
         parent = Permission.objects.create(code="users", name="Users")
-        child = Permission.objects.create(code="users.view", name="View Users", parent=parent)
+        Permission.objects.create(code="users.view", name="View Users", parent=parent)
 
         role = Role.objects.create(code="user_admin", name="User Admin")
         role.permissions.add(parent)  # Seulement le parent
@@ -160,7 +160,7 @@ class TestHasPermissionHierarchy:
         user = User.objects.create_user(email="h3@test.com", password="Test123!@#")
         root = Permission.objects.create(code="users", name="Users")
         mid = Permission.objects.create(code="users.roles", name="User Roles", parent=root)
-        leaf = Permission.objects.create(code="users.roles.assign", name="Assign", parent=mid)
+        Permission.objects.create(code="users.roles.assign", name="Assign", parent=mid)
 
         role = Role.objects.create(code="full_user_admin", name="Full User Admin")
         role.permissions.add(root)  # Seulement la racine
@@ -195,8 +195,8 @@ class TestHasPermissionHierarchy:
         """get_all_permissions() inclut les enfants des permissions parentes."""
         user = User.objects.create_user(email="h6@test.com", password="Test123!@#")
         parent = Permission.objects.create(code="content", name="Content")
-        child1 = Permission.objects.create(code="content.view", name="View", parent=parent)
-        child2 = Permission.objects.create(code="content.edit", name="Edit", parent=parent)
+        Permission.objects.create(code="content.view", name="View", parent=parent)
+        Permission.objects.create(code="content.edit", name="Edit", parent=parent)
 
         role = Role.objects.create(code="content_mgr", name="Content Manager")
         role.permissions.add(parent)

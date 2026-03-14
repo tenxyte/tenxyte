@@ -3,7 +3,9 @@
 Documentation Site Generator — driven by DESIGN_SPEC.json
 Principles: Simplicité · Élégance · Modernité · Accessibilité · DRY
 """
-import json, re, sys
+import json
+import re
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
  
@@ -382,9 +384,12 @@ class DocumentationSiteGenerator:
                     f'<div class="response-item">{self._status_badge(str(code))} '
                     f'<span>{resp.get("description", "")}</span>{rb}</div>')
             inner = ""
-            if desc:   inner += f'<p class="op__desc">{desc}</p>'
-            if params: inner += f'<h4 class="op__subtitle">Paramètres</h4>{params}'
-            if req:    inner += f'<h4 class="op__subtitle">Corps de la requête</h4>{req}'
+            if desc:
+                inner += f'<p class="op__desc">{desc}</p>'
+            if params:
+                inner += f'<h4 class="op__subtitle">Paramètres</h4>{params}'
+            if req:
+                inner += f'<h4 class="op__subtitle">Corps de la requête</h4>{req}'
             if resps:
                 inner += (f'<h4 class="op__subtitle">Réponses</h4>'
                           f'<div class="responses">{"".join(resps)}</div>')
