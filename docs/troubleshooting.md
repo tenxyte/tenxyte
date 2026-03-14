@@ -4,6 +4,37 @@ Common issues and solutions when integrating Tenxyte.
 
 ---
 
+## Migrating to v0.9.3 (Core Re-architecture)
+
+### `DeprecationWarning: Importing X from tenxyte.Y is deprecated`
+
+**Symptom:** Your console shows warnings when starting the server or running tests.
+
+**Cause:** In v0.9.3, the project was restructured into a Core and Adapters architecture. Many internal Django views and services were moved to `tenxyte.adapters.django`.
+
+**Fix:** Update your imports. 
+Instead of:
+```python
+from tenxyte.views import LoginView
+```
+Use:
+```python
+from tenxyte.adapters.django.views import LoginView
+```
+*(Note: The old imports will continue to work until v1.0.0).*
+
+---
+
+### Custom Adapters not being used
+
+**Symptom:** You wrote a custom adapter (e.g., CacheService), but the system continues to use the default Django Cache.
+
+**Cause:** If you want to replace a core Port implementation globally while using the Django adapter, you must ensure you instantiate the `AuthService` with your custom adapter and wire it into the dependency injection.
+
+**Fix:** Follow the initialization steps detailed in the [Custom Adapters Guide](custom_adapters.md) to ensure your custom adapter instances are passed into the Core services.
+
+---
+
 ## Installation & Settings
 
 ### `tenxyte.setup()` has no effect
