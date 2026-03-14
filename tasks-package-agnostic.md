@@ -22,7 +22,7 @@
   - [x] Sub-issue 4.3: **[Backward Compatibility]** Run the entire current Django test suite **without modifying behavior or assertions** to guarantee absolute zero regression.
 
 - [ ] **Issue 5: [Proof of Concept] Develop a second adapter (FastAPI)**
-  - [ ] Sub-issue 5.1: Create an abstract data model (e.g., Pydantic or SQLAlchemy) to represent users within the FastAPI context.
+  - [x] Sub-issue 5.1: Create an abstract data model (e.g., Pydantic or SQLAlchemy) to represent users within the FastAPI context.
   - [ ] Sub-issue 5.2: Implement the Repositories for the FastAPI adapter.
   - [ ] Sub-issue 5.3: Expose 1 or 2 routes (e.g., Login, Magic Link) via FastAPI + Tenxyte Core.
 
