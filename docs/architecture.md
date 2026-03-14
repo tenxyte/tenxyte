@@ -29,7 +29,7 @@ Tenxyte provides pre-built "Primary Adapters" (Driving Adapters) that wrap the c
 ### Infrastructure Adapters
 These "Secondary Adapters" (Driven Adapters) connect to external infrastructure:
 - **Databases**: Supported via the specific ORM used by your web framework (e.g., Django ORM integrations).
-- **Communication**: implementations such as `TwilioSMSAdapter`, `SendGridEmailAdapter`, or simple built-in Django Mail adapters.
+- **Communication**: Implementations such as `DjangoEmailService` (using `django.core.mail`), `ConsoleEmailService` (for development), or custom adapters you write yourself.
 
 ## Benefits
 1. **Framework Portability**: Switch from Django to FastAPI (or others in the future) while using the exact same authentication business logic.

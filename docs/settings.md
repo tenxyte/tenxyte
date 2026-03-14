@@ -24,7 +24,7 @@
 - [Swappable Models](#swappable-models) (4)
 
 All Tenxyte settings are prefixed with `TENXYTE_` and have sensible defaults.
-Override them in your Django `settings.py`.
+Override them in your Django `settings.py`. The Django adapter's `DjangoSettingsProvider` automatically reads these values and feeds them to the framework-agnostic Core — no additional configuration is required.
 
 ---
 

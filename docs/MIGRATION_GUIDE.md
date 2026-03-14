@@ -51,14 +51,14 @@ pip install "tenxyte[django,twilio]"
 
 ### Deprecation Warnings
 
-While your code will continue to work, some deep internal imports have been structurally moved. For instance, if you were directly importing Views or Services instead of using the REST endpoints, you may see `DeprecationWarning`s.
+While your code will continue to work, some deep internal imports have been structurally moved. For instance, if you were directly importing Services instead of using the REST endpoints, you may see `DeprecationWarning`s.
 
 ```python
 # Old import (still works in v0.9.3 but raises a DeprecationWarning)
-from tenxyte.views import LoginView
+from tenxyte.services.auth_service import AuthService
 
-# Recommended new import
-from tenxyte.adapters.django.views import LoginView
+# Recommended: use tenxyte.core services with adapters instead
+from tenxyte.core.jwt_service import JWTService
 ```
 
 These aliased imports will be kept until v1.0.0, giving you plenty of time to update any customized overrides.

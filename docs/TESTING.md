@@ -65,8 +65,10 @@ Tenxyte organizes tests by category:
 
 ```
 tests/
-├── unit/                 # Unit tests (Services, Validators)
-├── integration/          # Integration tests (Models, Signals)
+├── unit/                 # Unit tests (Core Services, Validators)
+├── integration/
+│   ├── django/           # Django adapter integration tests (Models, Signals, Views)
+│   └── fastapi/          # FastAPI adapter tests (Models, Repositories, Routers)
 ├── security/             # Security-specific tests (Timing attacks, BREACH, etc.)
 ├── multidb/              # Multi-database support tests
 ├── conftest.py           # Shared fixtures
@@ -92,10 +94,15 @@ Defined in `tests/conftest.py`:
 ## Test Categories
 
 ### 1. Unit Tests (`tests/unit/`)
-Service-layer logic tests (JWT, OTP, TOTP, Breach Check). Fast and isolated.
+Core service-layer logic tests (JWT, OTP, TOTP, Breach Check, Cache, Email). Fast, isolated, and framework-agnostic.
 
 ### 2. Integration Tests (`tests/integration/`)
-Testing model interactions, database constraints, and signals.
+
+#### Django (`tests/integration/django/`)
+Testing Django adapter components: model interactions, database constraints, signals, views, and serializers.
+
+#### FastAPI (`tests/integration/fastapi/`)
+Testing FastAPI adapter components: Pydantic models, repositories, and routers.
 
 ### 3. Security Tests (`tests/security/`)
 Vulnerability-specific tests including:

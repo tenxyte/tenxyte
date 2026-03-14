@@ -33,6 +33,8 @@ nav:
       - 'Settings Reference': settings.md
       - 'API Endpoints': endpoints.md
       - 'Data Schemas': schemas.md
+      - 'Architecture Guide': architecture.md
+      - 'Custom Adapters': custom_adapters.md
       - 'AIRs Reference': airs.md
       - 'Admin Accounts': admin.md
       - 'Applications Guide': applications.md
