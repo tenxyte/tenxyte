@@ -23,6 +23,7 @@
 - [Quickstart (Dev vs Prod)](#quickstart--development)
 - [Request & Response Examples](#request--response-examples)
 - [Endpoints & Documentation](#endpoints--documentation)
+- [Architecture: Core & Adapters](#architecture-core--adapters)
 - [Supported Databases](#supported-databases)
 - [Periodic Maintenance](#periodic-maintenance)
 - [Customization & Extension](#customization--extension)
@@ -313,6 +314,20 @@ python manage.py runserver
 | **Profile** | `me/`, `me/roles/` |
 | **RBAC** | `roles/`, `permissions/`, `users/{id}/roles/`, `users/{id}/permissions/` |
 | **Applications** | `applications/` (CRUD + regenerate) |
+
+---
+
+## Architecture: Core & Adapters
+
+Tenxyte is built around a **Framework-Agnostic Core** utilizing a Ports and Adapters (Hexagonal) architecture. 
+
+- **Core**: Contains pure Python authentication, JWT, and RBAC logic (zero framework dependencies).
+- **Ports**: Defines abstract interfaces for external operations (e.g., Repositories, EmalServices, CacheServices).
+- **Adapters**: Concrete implementations tailored to frameworks (Django, FastAPI) or libraries.
+
+This design guarantees that existing Django deployments run with **zero breaking changes**, while natively opening support for modern async frameworks like FastAPI.
+
+Read more in our detailed **[Architecture Guide](docs/architecture.md)**.
 
 ---
 
