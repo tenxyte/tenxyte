@@ -60,7 +60,7 @@ dependencies = [
     "djangorestframework>=3.14",
     "django-cors-headers>=4.0",
     "drf-spectacular>=0.27",
-    "PyJWT>=2.8",
+    "PyJWT>=2.12.0",
     "bcrypt>=4.0",
     "pyotp>=2.9",
     "qrcode[pil]>=8.0",
@@ -77,7 +77,7 @@ dependencies = [
 # Core-only (minimal dependencies, no framework)
 # Use for custom integrations or when you bring your own framework
 core = [
-    "PyJWT>=2.8",
+    "PyJWT>=2.12.0",
     "bcrypt>=4.0",
     "pyotp>=2.9",
     "qrcode[pil]>=8.0",
