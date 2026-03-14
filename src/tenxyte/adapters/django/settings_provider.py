@@ -79,10 +79,10 @@ def get_django_settings() -> 'Settings':
         settings = get_django_settings()
         print(settings.jwt_access_token_lifetime)
     """
-    from tenxyte.core.settings import Settings, _settings
+    from tenxyte.core.settings import Settings, _settings, init
     
     if _settings is None:
         provider = DjangoSettingsProvider()
-        return Settings(provider=provider)
+        return init(provider=provider)
     
     return _settings
