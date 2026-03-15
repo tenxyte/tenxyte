@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
 from enum import Enum
+import asyncio
 
 
 class EmailTemplate(str, Enum):
@@ -68,6 +69,30 @@ class EmailService(ABC):
         """
         pass
 
+    async def send_async(
+        self,
+        to_email: str,
+        subject: str,
+        body: str,
+        html_body: Optional[str] = None,
+        from_email: Optional[str] = None,
+        cc: Optional[List[str]] = None,
+        bcc: Optional[List[str]] = None,
+        attachments: Optional[List[EmailAttachment]] = None,
+    ) -> bool:
+        """Asynchronous version of send."""
+        return await asyncio.to_thread(
+            self.send,
+            to_email,
+            subject,
+            body,
+            html_body,
+            from_email,
+            cc,
+            bcc,
+            attachments,
+        )
+
     def send_magic_link(
         self,
         to_email: str,
@@ -111,6 +136,38 @@ If you didn't request this link, you can safely ignore this email.
 """
         return self.send(to_email, subject, body, html_body, from_email)
 
+    async def send_magic_link_async(
+        self,
+        to_email: str,
+        magic_link_url: str,
+        expires_in_minutes: int = 15,
+        from_email: Optional[str] = None,
+    ) -> bool:
+        """Asynchronous version of send_magic_link."""
+        subject = "Your magic sign-in link"
+        body = f"""
+Hello,
+
+Click the link below to sign in. This link will expire in {expires_in_minutes} minutes.
+
+{magic_link_url}
+
+If you didn't request this link, you can safely ignore this email.
+"""
+        html_body = f"""
+<!DOCTYPE html>
+<html>
+<body>
+    <p>Hello,</p>
+    <p>Click the button below to sign in. This link will expire in {expires_in_minutes} minutes.</p>
+    <p><a href="{magic_link_url}" style="padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 4px;">Sign In</a></p>
+    <p>Or copy this link: {magic_link_url}</p>
+    <p>If you didn't request this link, you can safely ignore this email.</p>
+</body>
+</html>
+"""
+        return await self.send_async(to_email, subject, body, html_body, from_email)
+
     def send_two_factor_code(
         self,
         to_email: str,
@@ -153,6 +210,38 @@ If you didn't request this code, please secure your account immediately.
 </html>
 """
         return self.send(to_email, subject, body, html_body, from_email)
+
+    async def send_two_factor_code_async(
+        self,
+        to_email: str,
+        code: str,
+        method: str = "email",
+        from_email: Optional[str] = None,
+    ) -> bool:
+        """Asynchronous version of send_two_factor_code."""
+        subject = "Your verification code"
+        body = f"""
+Hello,
+
+Your verification code is: {code}
+
+This code will expire in 10 minutes.
+
+If you didn't request this code, please secure your account immediately.
+"""
+        html_body = f"""
+<!DOCTYPE html>
+<html>
+<body>
+    <p>Hello,</p>
+    <p>Your verification code is:</p>
+    <h1 style="font-size: 32px; letter-spacing: 4px;">{code}</h1>
+    <p>This code will expire in 10 minutes.</p>
+    <p>If you didn't request this code, please secure your account immediately.</p>
+</body>
+</html>
+"""
+        return await self.send_async(to_email, subject, body, html_body, from_email)
 
     def send_password_reset(
         self,
@@ -198,6 +287,40 @@ If you didn't request a password reset, you can safely ignore this email.
 </html>
 """
         return self.send(to_email, subject, body, html_body, from_email)
+
+    async def send_password_reset_async(
+        self,
+        to_email: str,
+        reset_url: str,
+        expires_in_hours: int = 24,
+        from_email: Optional[str] = None,
+    ) -> bool:
+        """Asynchronous version of send_password_reset."""
+        subject = "Password reset request"
+        body = f"""
+Hello,
+
+We received a request to reset your password. Click the link below to set a new password:
+
+{reset_url}
+
+This link will expire in {expires_in_hours} hours.
+
+If you didn't request a password reset, you can safely ignore this email.
+"""
+        html_body = f"""
+<!DOCTYPE html>
+<html>
+<body>
+    <p>Hello,</p>
+    <p>We received a request to reset your password. Click the button below to set a new password:</p>
+    <p><a href="{reset_url}" style="padding: 12px 24px; background: #dc3545; color: white; text-decoration: none; border-radius: 4px;">Reset Password</a></p>
+    <p>This link will expire in {expires_in_hours} hours.</p>
+    <p>If you didn't request a password reset, you can safely ignore this email.</p>
+</body>
+</html>
+"""
+        return await self.send_async(to_email, subject, body, html_body, from_email)
 
     def send_welcome(
         self,
@@ -251,6 +374,47 @@ If you have any questions, please don't hesitate to contact us.
 """
         return self.send(to_email, subject, body, html_body, from_email)
 
+    async def send_welcome_async(
+        self,
+        to_email: str,
+        first_name: Optional[str] = None,
+        login_url: Optional[str] = None,
+        from_email: Optional[str] = None,
+    ) -> bool:
+        """Asynchronous version of send_welcome."""
+        greeting = f"Hello {first_name}," if first_name else "Hello,"
+        subject = "Welcome!"
+
+        login_section = f"\nYou can sign in at: {login_url}\n" if login_url else ""
+
+        body = f"""
+{greeting}
+
+Welcome! Your account has been created successfully.
+{login_section}
+
+If you have any questions, please don't hesitate to contact us.
+"""
+
+        login_html = (
+            f'<p><a href="{login_url}" style="padding: 12px 24px; background: #28a745; color: white; text-decoration: none; border-radius: 4px;">Sign In</a></p>'
+            if login_url
+            else ""
+        )
+
+        html_body = f"""
+<!DOCTYPE html>
+<html>
+<body>
+    <p>{greeting}</p>
+    <p>Welcome! Your account has been created successfully.</p>
+    {login_html}
+    <p>If you have any questions, please don't hesitate to contact us.</p>
+</body>
+</html>
+"""
+        return await self.send_async(to_email, subject, body, html_body, from_email)
+
     def send_security_alert(
         self,
         to_email: str,
@@ -302,6 +466,47 @@ If this was you, you can ignore this email. If you don't recognize this activity
 </html>
 """
         return self.send(to_email, subject, body, html_body, from_email)
+
+    async def send_security_alert_async(
+        self,
+        to_email: str,
+        alert_type: str,
+        details: Dict[str, Any],
+        from_email: Optional[str] = None,
+    ) -> bool:
+        """Asynchronous version of send_security_alert."""
+        subject = f"Security alert: {alert_type}"
+
+        details_text = "\n".join([f"{k}: {v}" for k, v in details.items()])
+
+        body = f"""
+Hello,
+
+We detected a security event on your account:
+
+Event: {alert_type}
+{details_text}
+
+If this was you, you can ignore this email. If you don't recognize this activity, please secure your account immediately.
+"""
+
+        details_html = "\n".join([f"<tr><td><strong>{k}:</strong></td><td>{v}</td></tr>" for k, v in details.items()])
+
+        html_body = f"""
+<!DOCTYPE html>
+<html>
+<body>
+    <p>Hello,</p>
+    <p>We detected a security event on your account:</p>
+    <table>
+        <tr><td><strong>Event:</strong></td><td>{alert_type}</td></tr>
+        {details_html}
+    </table>
+    <p>If this was you, you can ignore this email. If you don't recognize this activity, please secure your account immediately.</p>
+</body>
+</html>
+"""
+        return await self.send_async(to_email, subject, body, html_body, from_email)
 
 
 class ConsoleEmailService(EmailService):
