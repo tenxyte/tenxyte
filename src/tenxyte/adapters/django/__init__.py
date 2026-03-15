@@ -3,6 +3,7 @@
 from .settings_provider import DjangoSettingsProvider, get_django_settings
 from .email_service import DjangoEmailService, get_email_service
 from .cache_service import DjangoCacheService, get_cache_service
+from .task_service import CeleryTaskService, RQTaskService, SyncThreadTaskService
 from .middleware import (
     DjangoRequestIDMiddleware,
     DjangoApplicationAuthMiddleware,
@@ -28,6 +29,9 @@ __all__ = [
     "get_email_service",
     "DjangoCacheService",
     "get_cache_service",
+    "CeleryTaskService",
+    "RQTaskService",
+    "SyncThreadTaskService",
     # Middleware (new names)
     "DjangoRequestIDMiddleware",
     "DjangoApplicationAuthMiddleware",
