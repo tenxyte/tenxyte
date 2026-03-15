@@ -4,11 +4,11 @@
 
 # Tenxyte Auth
 
-> Production-ready Django authentication in minutes — JWT, RBAC, 2FA, Magic Links, Passkeys, Social Login, Breach Check, Organizations (B2B), multi-application support.
+> Framework-Agnostic Python Authentication in minutes — JWT, RBAC, 2FA, Magic Links, Passkeys, Social Login, Breach Check, Organizations (B2B), multi-application support.
 
 [![PyPI version](https://badge.fury.io/py/tenxyte.svg)](https://badge.fury.io/py/tenxyte)
 [![Python versions](https://img.shields.io/pypi/pyversions/tenxyte.svg)](https://pypi.org/project/tenxyte/)
-[![Django versions](https://img.shields.io/badge/django-5.0%2B-blue.svg)](https://www.djangoproject.com/)
+[![Django versions](https://img.shields.io/badge/django-6.0%2B-blue.svg)](https://www.djangoproject.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Coverage](https://codecov.io/gh/tenxyte/tenxyte/graph/badge.svg)](https://codecov.io/gh/tenxyte/tenxyte)
 [![Tests](https://github.com/tenxyte/tenxyte/actions/workflows/ci.yml/badge.svg)](https://github.com/tenxyte/tenxyte/actions/workflows/ci.yml)
@@ -23,6 +23,7 @@
 - [Quickstart (Dev vs Prod)](#quickstart--development)
 - [Request & Response Examples](#request--response-examples)
 - [Endpoints & Documentation](#endpoints--documentation)
+- [Architecture: Core & Adapters](#architecture-core--adapters)
 - [Supported Databases](#supported-databases)
 - [Periodic Maintenance](#periodic-maintenance)
 - [Customization & Extension](#customization--extension)
@@ -64,23 +65,26 @@
 
 ## Prerequisites
 
-- Python 3.11+ (recommended)
+- Python 3.10+ (3.11+ recommended)
 - `pip` and a virtual environment
-- Django 5.0+
+- **Django 6.0+** (for the Django adapter) or **FastAPI 0.135+** (for the FastAPI adapter)
 - Database (PostgreSQL recommended for production)
 
 ## Installation
 
 ```bash
-pip install tenxyte
+pip install tenxyte              # Includes Django adapter (backward compatible)
+pip install tenxyte[core]        # Core only — no framework, bring your own
+pip install tenxyte[fastapi]     # FastAPI adapter + Core
 
-# Optional Extras
-pip install tenxyte[twilio]    # SMS via Twilio
-pip install tenxyte[sendgrid]  # Email via SendGrid
-pip install tenxyte[mongodb]   # MongoDB support
-pip install tenxyte[postgres]  # PostgreSQL
-pip install tenxyte[mysql]     # MySQL/MariaDB
-pip install tenxyte[all]       # Everything included
+# Optional Extras (work with any adapter)
+pip install tenxyte[twilio]      # SMS via Twilio
+pip install tenxyte[sendgrid]    # Email via SendGrid
+pip install tenxyte[mongodb]     # MongoDB support
+pip install tenxyte[postgres]    # PostgreSQL
+pip install tenxyte[mysql]       # MySQL/MariaDB
+pip install tenxyte[webauthn]    # Passkeys / FIDO2
+pip install tenxyte[all]         # Everything included
 ```
 
 ## Quickstart — Development
@@ -316,6 +320,20 @@ python manage.py runserver
 
 ---
 
+## Architecture: Core & Adapters
+
+Tenxyte is built around a **Framework-Agnostic Core** utilizing a Ports and Adapters (Hexagonal) architecture. 
+
+- **Core**: Contains pure Python authentication, JWT, and RBAC logic (zero framework dependencies).
+- **Ports**: Defines abstract interfaces for external operations (e.g., Repositories, EmailServices, CacheServices).
+- **Adapters**: Concrete implementations tailored to frameworks (Django, FastAPI) or libraries.
+
+This design guarantees that existing Django deployments run with **zero breaking changes**, while natively opening support for modern async frameworks like FastAPI.
+
+Read more in our detailed **[Architecture Guide](docs/architecture.md)**.
+
+---
+
 ## Supported Databases
 
 - ✅ **SQLite** — development
@@ -460,6 +478,10 @@ AUTH_USER_MODEL = 'myapp.CustomUser'
 ```
 
 Same pattern for `TENXYTE_ROLE_MODEL`, `TENXYTE_PERMISSION_MODEL`, `TENXYTE_APPLICATION_MODEL`. Always inherit the parent `Meta` and set a custom `db_table`.
+
+### Creating Custom Framework Adapters
+
+Because Tenxyte is framework-agnostic, you can write your own Database adapters, Cache adapters, or Email adapters using the core `Ports`. See the **[Custom Adapters Guide](docs/custom_adapters.md)** for detailed instructions on extending the core.
 
 ---
 

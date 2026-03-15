@@ -12,7 +12,6 @@ from tenxyte.adapters.django.webauthn_storage import (
 )
 from tenxyte.core.webauthn_service import (
     WebAuthnCredential as CoreWebAuthnCredential,
-    WebAuthnChallenge as CoreWebAuthnChallenge,
 )
 
 

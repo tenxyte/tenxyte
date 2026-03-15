@@ -6,7 +6,7 @@ Coverage cible : views/twofa_views.py (46% → 80%)
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from rest_framework.test import APIRequestFactory
 
 from tenxyte.models import User, Application

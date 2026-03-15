@@ -19,7 +19,7 @@ import sys
 import json
 import argparse
 from pathlib import Path
-from typing import Dict, List, Set, Tuple, Any
+from typing import Dict, List, Any
 from collections import defaultdict
 
 # Add project root and src to path
@@ -35,8 +35,6 @@ except ImportError:
 _django_available = False
 try:
     import django
-    from django.conf import settings
-    from django.test import Client
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.settings')
     django.setup()
     from drf_spectacular.generators import SchemaGenerator
@@ -520,7 +518,7 @@ def print_report(report: Dict):
     
     # Summary
     summary = report['summary']
-    print(f"\n📊 SUMMARY:")
+    print("\n📊 SUMMARY:")
     print(f"   Quality Score: {summary['quality_score']}/100")
     print(f"   Total Issues: {summary['total_issues']}")
     print(f"   Critical Issues: {summary['critical_issues']}")
@@ -531,7 +529,7 @@ def print_report(report: Dict):
     # Schema info
     schema_info = report.get('schema_info', {})
     if schema_info:
-        print(f"\n📜 SCHEMA INFO:")
+        print("\n📜 SCHEMA INFO:")
         print(f"   Version: {schema_info['version']}")
         print(f"   Title: {schema_info['title']}")
         print(f"   Paths: {schema_info['paths_count']}")
@@ -540,37 +538,37 @@ def print_report(report: Dict):
     # Statistics
     stats = report.get('statistics', {})
     if stats:
-        print(f"\n📈 STATISTICS:")
+        print("\n📈 STATISTICS:")
         for key, value in stats.items():
             print(f"   {key}: {value}")
     
     # Issues
     if report['issues']:
-        print(f"\n⚠️  ISSUES:")
+        print("\n⚠️  ISSUES:")
         for issue in report['issues']:
             icon = "🚨" if issue['severity'] == 'error' else "⚠️" if issue['severity'] == 'warning' else "ℹ️"
             print(f"   {icon} {issue['message']}")
     
     # Performance issues
     if report['performance_issues']:
-        print(f"\n⚡ PERFORMANCE ISSUES:")
+        print("\n⚡ PERFORMANCE ISSUES:")
         for issue in report['performance_issues']:
             print(f"   ⚡ {issue}")
     
     # Duplicates
     if report['duplicates']:
-        print(f"\n🔄 DUPLICATES:")
+        print("\n🔄 DUPLICATES:")
         for hash_val, names in report['duplicates'].items():
             print(f"   🔄 {', '.join(names)}")
     
     # Recommendations
     recommendations = report['recommendations']
-    print(f"\n💡 RECOMMENDATIONS:")
+    print("\n💡 RECOMMENDATIONS:")
     for i, rec in enumerate(recommendations, 1):
         print(f"   {i}. {rec}")
     
     # Overall assessment
-    print(f"\n🏆 OVERALL ASSESSMENT:")
+    print("\n🏆 OVERALL ASSESSMENT:")
     score = summary['quality_score']
     if score >= 90:
         print("   ✅ Excellent! Ready for production")

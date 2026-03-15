@@ -4,12 +4,11 @@ Tests d'intégration pour les vues (API endpoints).
 from tenxyte.conf import auth_settings
 api_prefix = auth_settings.API_PREFIX
 
-import pytest
-from unittest.mock import Mock, patch
-from django.urls import reverse
-from rest_framework import status
+import pytest  # noqa: E402
+from unittest.mock import Mock, patch  # noqa: E402
+from rest_framework import status  # noqa: E402
 
-from tenxyte.models import User, Application, Role, Permission
+from tenxyte.models import Role, Permission  # noqa: E402
 
 
 class TestAuthViews:

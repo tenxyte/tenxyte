@@ -12,8 +12,6 @@ from rest_framework.test import APIRequestFactory
 
 from tenxyte.models import Application, User
 from tenxyte.models.organization import (
-    Organization,
-    OrganizationRole,
     OrganizationMembership,
 )
 from tenxyte.services.organization_service import OrganizationService

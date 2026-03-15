@@ -1,5 +1,4 @@
 import pytest
-from django.utils import timezone
 from tenxyte.serializers.user_admin_serializers import (
     AdminUserListSerializer,
     AdminUserDetailSerializer,

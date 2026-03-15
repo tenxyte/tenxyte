@@ -4,15 +4,14 @@ Tests unitaires pour les backends SMS et Email.
 from tenxyte.conf import auth_settings
 api_prefix = auth_settings.API_PREFIX
 
-import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: E402
 
-from tenxyte.backends.sms import (
+from tenxyte.backends.sms import (  # noqa: E402
     ConsoleBackend as SMSConsoleBackend,
     NGHBackend,
     get_sms_backend
 )
-from tenxyte.backends.email import (
+from tenxyte.backends.email import (  # noqa: E402
     ConsoleBackend as EmailConsoleBackend,
     DjangoBackend,
     get_email_backend

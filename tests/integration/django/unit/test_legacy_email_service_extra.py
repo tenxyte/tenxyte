@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from tenxyte.services.email_service import EmailService
 from tenxyte.models import User, AccountDeletionRequest
 

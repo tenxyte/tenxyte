@@ -42,7 +42,7 @@ class TOTPService:
             "tenxyte.services.totp_service.TOTPService is deprecated. "
             "Use tenxyte.core.TOTPService with Django adapters instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         encryption_key = os.environ.get("TENXYTE_TOTP_ENCRYPTION_KEY")
         if encryption_key:

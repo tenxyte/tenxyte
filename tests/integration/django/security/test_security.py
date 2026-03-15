@@ -16,17 +16,17 @@ Couvre:
 from tenxyte.conf import auth_settings
 api_prefix = auth_settings.API_PREFIX
 
-import pytest
-import jwt
-import json
-from datetime import datetime, timedelta, timezone as dt_timezone
-from django.utils import timezone
-from django.core.cache import cache
-from rest_framework import status
-from rest_framework.test import APIClient
+import pytest  # noqa: E402
+import jwt  # noqa: E402
+import json  # noqa: E402
+from datetime import datetime, timedelta, timezone as dt_timezone  # noqa: E402
+from django.utils import timezone  # noqa: E402
+from django.core.cache import cache  # noqa: E402
+from rest_framework import status  # noqa: E402
+from rest_framework.test import APIClient  # noqa: E402
 
-from tenxyte.models import User, Application, RefreshToken
-from tenxyte.services import JWTService, AuthService
+from tenxyte.models import User, Application, RefreshToken  # noqa: E402
+from tenxyte.services import JWTService, AuthService  # noqa: E402
 
 
 @pytest.fixture(autouse=True)

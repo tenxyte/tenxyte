@@ -20,7 +20,7 @@ class JWTService:
             "tenxyte.services.jwt_service.JWTService is deprecated. "
             "Use tenxyte.core.JWTService with Django adapters instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         self.algorithm = auth_settings.JWT_ALGORITHM
         self.is_asymmetric = self.algorithm.startswith(("RS", "PS", "ES"))

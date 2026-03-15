@@ -79,8 +79,7 @@ def get_core_totp_service():
     global _core_totp_service
     if _core_totp_service is None:
         _core_totp_service = TOTPService(
-            settings=get_core_settings(),
-            replay_protection=get_core_cache()  # Use cache for replay protection
+            settings=get_core_settings(), replay_protection=get_core_cache()  # Use cache for replay protection
         )
     return _core_totp_service
 
@@ -160,9 +159,7 @@ class TwoFactorSetupView(APIView):
         totp_service = get_core_totp_service()
         storage = get_core_totp_storage()
         setup_result = totp_service.setup_2fa(
-            user_id=str(request.user.id),
-            email=request.user.email or str(request.user.id),
-            storage=storage
+            user_id=str(request.user.id), email=request.user.email or str(request.user.id), storage=storage
         )
 
         return Response(
@@ -246,14 +243,12 @@ class TwoFactorConfirmView(APIView):
         # Use Core TOTP service with storage
         totp_service = get_core_totp_service()
         storage = get_core_totp_storage()
-        is_valid, error_msg = totp_service.confirm_2fa_setup(
-            user_id=str(request.user.id),
-            code=code,
-            storage=storage
-        )
+        is_valid, error_msg = totp_service.confirm_2fa_setup(user_id=str(request.user.id), code=code, storage=storage)
 
         if not is_valid:
-            return Response({"error": error_msg or "Invalid TOTP code", "code": "INVALID_CODE"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": error_msg or "Invalid TOTP code", "code": "INVALID_CODE"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Enable 2FA via Core user repository
         user_repo = get_core_user_repo()
@@ -332,14 +327,12 @@ class TwoFactorDisableView(APIView):
         # Use Core TOTP service with storage
         totp_service = get_core_totp_service()
         storage = get_core_totp_storage()
-        is_valid, error_msg = totp_service.disable_2fa(
-            user_id=str(request.user.id),
-            code=code,
-            storage=storage
-        )
+        is_valid, error_msg = totp_service.disable_2fa(user_id=str(request.user.id), code=code, storage=storage)
 
         if not is_valid:
-            return Response({"error": error_msg or "Invalid code", "code": "INVALID_CODE"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": error_msg or "Invalid code", "code": "INVALID_CODE"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Disable 2FA via Core user repository
         user_repo = get_core_user_repo()
@@ -442,13 +435,13 @@ class TwoFactorBackupCodesView(APIView):
         totp_service = get_core_totp_service()
         storage = get_core_totp_storage()
         is_valid, plain_codes, error_msg = totp_service.regenerate_backup_codes(
-            user_id=str(request.user.id),
-            code=code,
-            storage=storage
+            user_id=str(request.user.id), code=code, storage=storage
         )
 
         if not is_valid:
-            return Response({"error": error_msg or "Invalid TOTP code", "code": "INVALID_CODE"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": error_msg or "Invalid TOTP code", "code": "INVALID_CODE"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         return Response(
             {

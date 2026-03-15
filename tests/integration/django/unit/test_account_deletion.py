@@ -707,7 +707,6 @@ class TestExportUserDataView:
     @pytest.mark.django_db
     def test_export_data_success(self):
         from tenxyte.views.account_deletion_views import export_user_data
-        from tenxyte.models import AuditLog
         app = _app("ExportApp")
         user = _user("view_export@test.com")
 

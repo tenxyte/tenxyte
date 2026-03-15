@@ -6,7 +6,7 @@ Coverage cible : views/dashboard_views.py (0% → 80%)
 """
 
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from rest_framework.test import APIRequestFactory
 from django.utils import timezone
 from datetime import timedelta
@@ -103,7 +103,7 @@ class TestDashboardGlobalView:
         app = _app("DashGlobal4")
         admin = _user("dashglobal4@test.com", "dashboard.view")
         # Create some users with different states
-        u1 = _user("dashglobal4_active@test.com")
+        _user("dashglobal4_active@test.com")
         u2 = _user("dashglobal4_banned@test.com")
         u2.is_banned = True
         u2.save()
@@ -408,7 +408,7 @@ class TestStatsService:
 
     @pytest.mark.django_db
     def test_user_stats_counts(self):
-        u1 = _user("stats_u1@test.com")
+        _user("stats_u1@test.com")
         u2 = _user("stats_u2@test.com")
         u2.is_locked = True
         u2.save()
@@ -436,7 +436,7 @@ class TestStatsService:
         u1 = _user("stats_2fa1@test.com")
         u1.is_2fa_enabled = True
         u1.save()
-        u2 = _user("stats_2fa2@test.com")
+        _user("stats_2fa2@test.com")
 
         service = StatsService()
         rate = service._2fa_rate()

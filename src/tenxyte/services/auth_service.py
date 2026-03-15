@@ -26,7 +26,7 @@ class AuthService:
             "tenxyte.services.auth_service.AuthService is deprecated. "
             "Use tenxyte.core services (JWTService, UserRepository) with Django adapters instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         self.jwt_service = JWTService()
 

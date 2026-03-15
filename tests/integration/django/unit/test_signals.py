@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from django.conf import settings
 from tenxyte.models import User
 from tenxyte.services.auth_service import AuthService
 from tenxyte.services.agent_service import AgentTokenService
@@ -34,7 +33,6 @@ class TestSecuritySignals:
         if not auth_settings.RATE_LIMITING_ENABLED:
             pytest.skip("Rate limiting disabled")
             
-        from tenxyte.models import LoginAttempt
         for _ in range(service.max_login_attempts + 1):
             service.authenticate_by_email("unknown@test.com", "wrong", mock_app, "1.1.1.1")
             
@@ -352,7 +350,7 @@ class TestSignalHandlers:
             
             with patch('tenxyte.models.AuditLog') as mock_audit_log:
                 # Create user with is_locked=True (should not trigger locking logic)
-                user = User.objects.create(
+                User.objects.create(
                     email="locked@test.com", 
                     is_active=True,
                     is_locked=True,

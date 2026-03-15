@@ -8,7 +8,7 @@ Tests Phase 4 - AuthService edge cases:
 """
 import pytest
 from django.utils import timezone
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from datetime import timedelta
 
 
@@ -54,7 +54,6 @@ class TestLogoutAllDevices:
         _make_refresh_token(user, app, "device2")
 
         from tenxyte.services.auth_service import AuthService
-        from tenxyte.services.auth_service import AuthService
         svc = AuthService()
         count = svc.logout_all_devices(user, ip_address="1.2.3.4", application=app)
 
@@ -65,10 +64,9 @@ class TestLogoutAllDevices:
 
     @pytest.mark.django_db
     def test_returns_zero_when_no_active_tokens(self):
-        app = _make_app()
+        _make_app()
         user = _make_user("logout_none@test.com")
 
-        from tenxyte.services.auth_service import AuthService
         from tenxyte.services.auth_service import AuthService
         svc = AuthService()
         count = svc.logout_all_devices(user)
@@ -114,14 +112,12 @@ class TestEnforceSessionLimit:
     @pytest.mark.django_db
     def test_revoke_oldest_when_limit_reached(self):
         from django.test import override_settings
-        from tenxyte.models import RefreshToken
         app = _make_app()
         user = _make_user("sess_revoke@test.com")
         user.max_sessions = 1
         user.save()
         old_rt = _make_refresh_token(user, app, "device_old")
 
-        from tenxyte.services.auth_service import AuthService
         from tenxyte.services.auth_service import AuthService
         svc = AuthService()
         with override_settings(TENXYTE_DEFAULT_SESSION_LIMIT_ACTION='revoke_oldest'):
@@ -139,7 +135,6 @@ class TestEnforceSessionLimit:
         user = _make_user("sess_disabled@test.com")
 
         from tenxyte.services.auth_service import AuthService
-        from tenxyte.services.auth_service import AuthService
         svc = AuthService()
         with override_settings(TENXYTE_SESSION_LIMIT_ENABLED=False):
             result = svc._enforce_session_limit(user, app, "1.2.3.4")
@@ -149,7 +144,6 @@ class TestEnforceSessionLimit:
     @pytest.mark.django_db
     def test_expired_zombies_purged_before_counting(self):
         from django.test import override_settings
-        from tenxyte.models import RefreshToken
         app = _make_app()
         user = _make_user("sess_zombie@test.com")
         user.max_sessions = 1
@@ -180,7 +174,6 @@ class TestEnforceDeviceLimit:
         _make_refresh_token(user, app, device_info='v=1|os=android|device=mobile')
 
         from tenxyte.services.auth_service import AuthService
-        from tenxyte.services.auth_service import AuthService
         svc = AuthService()
         with override_settings(TENXYTE_DEVICE_LIMIT_ACTION='deny'):
             result = svc._enforce_device_limit(
@@ -198,7 +191,6 @@ class TestEnforceDeviceLimit:
         app = _make_app()
         user = _make_user("dev_disabled@test.com")
 
-        from tenxyte.services.auth_service import AuthService
         from tenxyte.services.auth_service import AuthService
         svc = AuthService()
         with override_settings(TENXYTE_DEVICE_LIMIT_ENABLED=False):
@@ -341,7 +333,6 @@ class TestAuthServiceAdditionalEdgeCases:
 
     @pytest.mark.django_db
     def test_enforce_device_limit_revoke_oldest(self):
-        from textwrap import dedent
         from django.utils import timezone
         import datetime
         app = _make_app()
@@ -359,7 +350,7 @@ class TestAuthServiceAdditionalEdgeCases:
         rt2.created_at = timezone.now() - datetime.timedelta(days=1)
         rt2.save()
         
-        rt3 = _make_refresh_token(user, app, device_info="") # Unknown device
+        _make_refresh_token(user, app, device_info="") # Unknown device
         # Created now, so it's the newest.
         
         from django.test import override_settings

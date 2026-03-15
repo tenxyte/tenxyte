@@ -1,9 +1,8 @@
 """
 Tests unitaires pour les validateurs.
 """
-import pytest
 
-from tenxyte.validators import PasswordValidator, PasswordValidationResult
+from tenxyte.validators import PasswordValidator
 
 
 class TestPasswordValidator:

@@ -3,7 +3,7 @@ Tests for auto-dev preset activation, JWT auto-generation, and preset override b
 """
 import pytest
 import warnings
-from unittest.mock import patch, PropertyMock
+from unittest.mock import patch
 from django.core.exceptions import ImproperlyConfigured
 
 

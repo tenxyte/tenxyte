@@ -6,13 +6,14 @@ with any adapter (Django, FastAPI, etc.).
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
 from enum import Enum
 
 
 class EmailTemplate(str, Enum):
     """Built-in email templates."""
+
     MAGIC_LINK = "magic_link"
     TWO_FACTOR_CODE = "two_factor_code"
     PASSWORD_RESET = "password_reset"
@@ -23,6 +24,7 @@ class EmailTemplate(str, Enum):
 @dataclass
 class EmailAttachment:
     """Email attachment data."""
+
     filename: str
     content: bytes
     content_type: str
@@ -31,11 +33,11 @@ class EmailAttachment:
 class EmailService(ABC):
     """
     Abstract base class for email services.
-    
+
     Implementations must provide concrete methods for sending emails
     regardless of the underlying email backend (SMTP, SendGrid, AWS SES, etc.).
     """
-    
+
     @abstractmethod
     def send(
         self,
@@ -50,7 +52,7 @@ class EmailService(ABC):
     ) -> bool:
         """
         Send a basic email.
-        
+
         Args:
             to_email: Recipient email address
             subject: Email subject
@@ -60,12 +62,12 @@ class EmailService(ABC):
             cc: Carbon copy recipients
             bcc: Blind carbon copy recipients
             attachments: List of attachments
-            
+
         Returns:
             True if email was sent successfully
         """
         pass
-    
+
     def send_magic_link(
         self,
         to_email: str,
@@ -75,13 +77,13 @@ class EmailService(ABC):
     ) -> bool:
         """
         Send a magic link email for passwordless authentication.
-        
+
         Args:
             to_email: Recipient email address
             magic_link_url: Full URL of the magic link
             expires_in_minutes: How long the link is valid
             from_email: Sender email
-            
+
         Returns:
             True if email was sent successfully
         """
@@ -108,7 +110,7 @@ If you didn't request this link, you can safely ignore this email.
 </html>
 """
         return self.send(to_email, subject, body, html_body, from_email)
-    
+
     def send_two_factor_code(
         self,
         to_email: str,
@@ -118,13 +120,13 @@ If you didn't request this link, you can safely ignore this email.
     ) -> bool:
         """
         Send a 2FA verification code.
-        
+
         Args:
             to_email: Recipient email address
             code: The verification code
             method: 2FA method (email, sms backup, etc.)
             from_email: Sender email
-            
+
         Returns:
             True if email was sent successfully
         """
@@ -151,7 +153,7 @@ If you didn't request this code, please secure your account immediately.
 </html>
 """
         return self.send(to_email, subject, body, html_body, from_email)
-    
+
     def send_password_reset(
         self,
         to_email: str,
@@ -161,13 +163,13 @@ If you didn't request this code, please secure your account immediately.
     ) -> bool:
         """
         Send a password reset email.
-        
+
         Args:
             to_email: Recipient email address
             reset_url: Full URL for password reset
             expires_in_hours: How long the link is valid
             from_email: Sender email
-            
+
         Returns:
             True if email was sent successfully
         """
@@ -196,7 +198,7 @@ If you didn't request a password reset, you can safely ignore this email.
 </html>
 """
         return self.send(to_email, subject, body, html_body, from_email)
-    
+
     def send_welcome(
         self,
         to_email: str,
@@ -206,21 +208,21 @@ If you didn't request a password reset, you can safely ignore this email.
     ) -> bool:
         """
         Send a welcome email to new users.
-        
+
         Args:
             to_email: Recipient email address
             first_name: User's first name for personalization
             login_url: Optional login URL to include
             from_email: Sender email
-            
+
         Returns:
             True if email was sent successfully
         """
         greeting = f"Hello {first_name}," if first_name else "Hello,"
         subject = "Welcome!"
-        
+
         login_section = f"\nYou can sign in at: {login_url}\n" if login_url else ""
-        
+
         body = f"""
 {greeting}
 
@@ -229,9 +231,13 @@ Welcome! Your account has been created successfully.
 
 If you have any questions, please don't hesitate to contact us.
 """
-        
-        login_html = f'<p><a href="{login_url}" style="padding: 12px 24px; background: #28a745; color: white; text-decoration: none; border-radius: 4px;">Sign In</a></p>' if login_url else ""
-        
+
+        login_html = (
+            f'<p><a href="{login_url}" style="padding: 12px 24px; background: #28a745; color: white; text-decoration: none; border-radius: 4px;">Sign In</a></p>'
+            if login_url
+            else ""
+        )
+
         html_body = f"""
 <!DOCTYPE html>
 <html>
@@ -244,7 +250,7 @@ If you have any questions, please don't hesitate to contact us.
 </html>
 """
         return self.send(to_email, subject, body, html_body, from_email)
-    
+
     def send_security_alert(
         self,
         to_email: str,
@@ -254,20 +260,20 @@ If you have any questions, please don't hesitate to contact us.
     ) -> bool:
         """
         Send a security alert email.
-        
+
         Args:
             to_email: Recipient email address
             alert_type: Type of security event (login, password_change, etc.)
             details: Dictionary with event details
             from_email: Sender email
-            
+
         Returns:
             True if email was sent successfully
         """
         subject = f"Security alert: {alert_type}"
-        
+
         details_text = "\n".join([f"{k}: {v}" for k, v in details.items()])
-        
+
         body = f"""
 Hello,
 
@@ -278,9 +284,9 @@ Event: {alert_type}
 
 If this was you, you can ignore this email. If you don't recognize this activity, please secure your account immediately.
 """
-        
+
         details_html = "\n".join([f"<tr><td><strong>{k}:</strong></td><td>{v}</td></tr>" for k, v in details.items()])
-        
+
         html_body = f"""
 <!DOCTYPE html>
 <html>
@@ -301,13 +307,13 @@ If this was you, you can ignore this email. If you don't recognize this activity
 class ConsoleEmailService(EmailService):
     """
     Email service that prints emails to console.
-    
+
     Useful for development and testing.
     """
-    
+
     def __init__(self, prefix: str = "[EMAIL]"):
         self.prefix = prefix
-    
+
     def send(
         self,
         to_email: str,

@@ -4,17 +4,16 @@ Tests pour les vues Dashboard.
 from tenxyte.conf import auth_settings
 api_prefix = auth_settings.API_PREFIX
 
-import pytest
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-from datetime import timedelta
-from rest_framework import status
+import pytest  # noqa: E402
+from django.contrib.auth import get_user_model  # noqa: E402
+from django.utils import timezone  # noqa: E402
+from datetime import timedelta  # noqa: E402
+from rest_framework import status  # noqa: E402
 
-from tenxyte.models import (
+from tenxyte.models import (  # noqa: E402
     AuditLog, LoginAttempt, BlacklistedToken,
-    RefreshToken, Application, AccountDeletionRequest,
 )
-from tenxyte.services.stats_service import StatsService
+from tenxyte.services.stats_service import StatsService  # noqa: E402
 
 User = get_user_model()
 

@@ -112,8 +112,10 @@ pytest --lf            # Re-run only last failures
 
 ```
 tests/
-├── unit/                 # Services, Validators — fast and isolated
-├── integration/          # Models, Signals, DB constraints
+├── unit/                 # Core Services, Validators — fast and isolated
+├── integration/
+│   ├── django/           # Django adapter: Models, Signals, Views, DB constraints
+│   └── fastapi/          # FastAPI adapter: Models, Repositories, Routers
 ├── security/             # Timing attacks, breach detection, rate limiting
 ├── multidb/              # Multi-database backend compatibility
 ├── conftest.py           # Shared fixtures
@@ -259,8 +261,11 @@ Documentation is organized in the `docs/` directory:
 | `organizations.md` | Multi-tenant Organizations |
 | `security.md` | Security architecture |
 | `schemas.md` | Database schemas |
+| `architecture.md` | Core & Adapters architecture |
+| `custom_adapters.md` | Creating custom adapters |
 | `TESTING.md` | Testing guide |
 | `MIGRATION_GUIDE.md` | Migration from other packages |
+| `troubleshooting.md` | Common issues and solutions |
 
 When adding or changing a feature, update the relevant documentation file(s).
 

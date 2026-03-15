@@ -255,7 +255,7 @@ class TestMagicLinkService:
 
     @override_settings(TENXYTE_MAGIC_LINK_ENABLED=True)
     def test_request_magic_link_success(self):
-        user = _user("service@example.com")
+        _user("service@example.com")
         service = MagicLinkService()
         with patch.object(service.email_service, 'send_magic_link_email', return_value=True):
             success, error = service.request_magic_link(
@@ -298,7 +298,7 @@ class TestMagicLinkService:
 
     @override_settings(TENXYTE_MAGIC_LINK_ENABLED=True)
     def test_request_magic_link_email_failure(self):
-        user = _user("emailfail@example.com")
+        _user("emailfail@example.com")
         service = MagicLinkService()
         with patch.object(service.email_service, 'send_magic_link_email', return_value=False):
             success, error = service.request_magic_link(
@@ -403,7 +403,7 @@ class TestMagicLinkRequestView:
 
     @override_settings(TENXYTE_MAGIC_LINK_ENABLED=True)
     def test_request_returns_200_for_valid_email(self):
-        user = _user("view_req@example.com")
+        _user("view_req@example.com")
         app = _app("ReqViewApp")
         with patch('tenxyte.core.magic_link_service.MagicLinkService.request_magic_link', return_value=(True, '')):
             resp = _post(MagicLinkRequestView, '/magic-link/request/', {'email': 'view_req@example.com', 'validation_url': 'http://test.com/verify'}, app=app)

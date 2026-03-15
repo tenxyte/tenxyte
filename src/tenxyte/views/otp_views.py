@@ -301,11 +301,8 @@ class VerifyPhoneOTPView(APIView):
             return Response({"error": error, "code": "OTP_VERIFICATION_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
 
         verified_at = timezone.now().isoformat()
-        phone_changed = False
         if "phone" in serializer.validated_data:
-            new_phone = serializer.validated_data["phone"]
-            current_phone = f"{request.user.phone_country_code}{request.user.phone_number}"
-            phone_changed = new_phone != current_phone
+            serializer.validated_data["phone"]
         phone_display = (
             f"+{request.user.phone_country_code}{request.user.phone_number}"
             if request.user.phone_country_code

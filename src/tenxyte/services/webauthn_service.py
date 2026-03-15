@@ -53,7 +53,7 @@ class WebAuthnService:
             "tenxyte.services.webauthn_service.WebAuthnService is deprecated. "
             "Use tenxyte.core.WebAuthnService with Django adapters instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
 
     def _get_rp_id(self) -> str:

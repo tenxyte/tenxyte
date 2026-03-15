@@ -2,7 +2,7 @@
 Tests for tenxyte_quickstart management command.
 """
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from io import StringIO
 from django.core.management import call_command
 

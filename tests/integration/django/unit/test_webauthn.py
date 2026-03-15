@@ -359,7 +359,7 @@ class TestWebAuthnService:
     def test_complete_authentication_success(self):
         app = _app("AuthSvcApp")
         user = _user("svc_auth_ok@example.com")
-        cred = _credential(user, cred_id="auth_cred_ok")
+        _credential(user, cred_id="auth_cred_ok")
         instance, _ = _challenge(user, operation='authenticate')
 
         service = WebAuthnService()
@@ -468,7 +468,7 @@ class TestWebAuthnService:
         user = _user("svc_comp_auth_inactive@example.com")
         user.is_active = False
         user.save()
-        cred = _credential(user, cred_id="auth_cred_inactive")
+        _credential(user, cred_id="auth_cred_inactive")
         instance, _ = _challenge(user, operation='authenticate')
         service = WebAuthnService()
         success, data, error = service.complete_authentication({'id': 'auth_cred_inactive'}, instance.id)
@@ -482,7 +482,7 @@ class TestWebAuthnService:
         user.is_locked = True
         user.locked_until = timezone.now() + datetime.timedelta(hours=1)
         user.save()
-        cred = _credential(user, cred_id="auth_cred_locked")
+        _credential(user, cred_id="auth_cred_locked")
         instance, _ = _challenge(user, operation='authenticate')
         service = WebAuthnService()
         success, data, error = service.complete_authentication({'id': 'auth_cred_locked'}, instance.id)
@@ -492,7 +492,7 @@ class TestWebAuthnService:
     @override_settings(TENXYTE_WEBAUTHN_ENABLED=True)
     def test_complete_authentication_verification_failure(self):
         user = _user("svc_comp_auth_ver_fail@example.com")
-        cred = _credential(user, cred_id="auth_cred_fail")
+        _credential(user, cred_id="auth_cred_fail")
         instance, _ = _challenge(user, operation='authenticate')
         service = WebAuthnService()
         mock_webauthn = MagicMock()

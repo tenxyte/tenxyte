@@ -8,12 +8,9 @@ Coverage targets:
 - Invalid mode warning
 """
 import warnings
-import pytest
 from unittest.mock import patch, MagicMock
-from django.test import override_settings
-from django.conf import settings as django_settings
 
-from tenxyte.conf import auth_settings, TenxyteSettings, SECURE_MODE_PRESETS, VALID_SECURE_MODES
+from tenxyte.conf import TenxyteSettings, SECURE_MODE_PRESETS, VALID_SECURE_MODES
 
 
 def _settings_with_mode(mode: str, **extra):

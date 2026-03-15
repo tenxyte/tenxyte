@@ -152,7 +152,7 @@ class TestDirectPermissionsWithHierarchy:
         """Une permission parente assignée directement donne accès aux enfants."""
         user = User.objects.create_user(email="dh1@test.com", password="Test123!@#")
         parent = Permission.objects.create(code="mgmt", name="Management")
-        child = Permission.objects.create(code="mgmt.users", name="Manage Users", parent=parent)
+        Permission.objects.create(code="mgmt.users", name="Manage Users", parent=parent)
 
         user.direct_permissions.add(parent)
 
@@ -164,8 +164,8 @@ class TestDirectPermissionsWithHierarchy:
         """get_all_permissions() inclut les enfants des permissions directes parentes."""
         user = User.objects.create_user(email="dh2@test.com", password="Test123!@#")
         parent = Permission.objects.create(code="ops", name="Operations")
-        child1 = Permission.objects.create(code="ops.deploy", name="Deploy", parent=parent)
-        child2 = Permission.objects.create(code="ops.monitor", name="Monitor", parent=parent)
+        Permission.objects.create(code="ops.deploy", name="Deploy", parent=parent)
+        Permission.objects.create(code="ops.monitor", name="Monitor", parent=parent)
 
         user.direct_permissions.add(parent)
 

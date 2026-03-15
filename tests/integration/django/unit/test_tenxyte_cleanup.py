@@ -31,14 +31,14 @@ def cleanup_data(db):
     old_attempt.created_at = now - timedelta(days=100)
     old_attempt.save()
 
-    recent_attempt = LoginAttempt.objects.create(identifier="recent", ip_address="1.1.1.1", application=app, success=False)
+    LoginAttempt.objects.create(identifier="recent", ip_address="1.1.1.1", application=app, success=False)
 
     # 5. AuditLog (older than 365 days)
     old_log = AuditLog.objects.create(user=user, action="login", ip_address="1.1.1.1", details={})
     old_log.created_at = now - timedelta(days=400)
     old_log.save()
 
-    recent_log = AuditLog.objects.create(user=user, action="login", ip_address="1.1.1.1", details={})
+    AuditLog.objects.create(user=user, action="login", ip_address="1.1.1.1", details={})
 
     return user, app
 
@@ -82,7 +82,7 @@ def test_tenxyte_cleanup_custom_days_and_skip_audit(cleanup_data):
     assert AuditLog.objects.count() == 2  # Not deleted!
     assert LoginAttempt.objects.count() == 2  # Not deleted!
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: E402
 
 @pytest.mark.django_db
 @patch('tenxyte.models.security.BlacklistedToken.cleanup_expired', side_effect=Exception('Test BL Error'))

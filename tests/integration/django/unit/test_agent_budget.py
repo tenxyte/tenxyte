@@ -1,9 +1,7 @@
 import pytest
-from django.utils import timezone
 from tenxyte.models.agent import AgentToken
 from tenxyte.services.agent_service import AgentTokenService
 from tenxyte.models import get_application_model, get_user_model
-from django.core.exceptions import PermissionDenied
 
 User = get_user_model()
 Application = get_application_model()

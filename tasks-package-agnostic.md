@@ -27,11 +27,11 @@
   - [x] Sub-issue 5.3: Expose 1 or 2 routes (e.g., Login, Magic Link) via FastAPI + Tenxyte Core.
 
 - [ ] **Issue 6: Update Documentation (Readme & Docs)**
-  - [ ] Sub-issue 6.1: Update `README.md` (change "Complete Django authentication" to "Framework-Agnostic Python Authentication").
-  - [ ] Sub-issue 6.2: Add an Architecture section to the documentation explaining Core vs Adapters.
-  - [ ] Sub-issue 6.3: Write a detailed Migration Guide for current Django projects to transition smoothly from v0.9 to v1.0.
-  - [ ] Sub-issue 6.4: Document how to create custom adapters and extend the package.
-  - [ ] Sub-issue 6.5: Create a troubleshooting guide for common migration issues.
+  - [x] Sub-issue 6.1: Update `README.md` (change "Complete Django authentication" to "Framework-Agnostic Python Authentication").
+  - [x] Sub-issue 6.2: Add an Architecture section to the documentation explaining Core vs Adapters.
+  - [x] Sub-issue 6.3: Write a detailed Migration Guide for current Django projects to transition smoothly from v0.9 to v0.9.3.
+  - [x] Sub-issue 6.4: Document how to create custom adapters and extend the package.
+  - [x] Sub-issue 6.5: Create a troubleshooting guide for common migration issues.
 
 - [x] **Issue 7: Abstract Cross-cutting Services (Critical)**
   - [x] Sub-issue 7.1: Create an `EmailService` port to abstract email sending and implement the Django adapter (`DjangoEmailService` using `django.core.mail`).
