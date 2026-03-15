@@ -6,7 +6,6 @@ Uses ConsoleEmailService as the concrete impl to test
 the abstract EmailService's template methods.
 """
 import pytest
-from unittest.mock import patch
 
 from tenxyte.core.email_service import (
     ConsoleEmailService,

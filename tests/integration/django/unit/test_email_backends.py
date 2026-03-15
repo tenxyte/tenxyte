@@ -9,7 +9,7 @@ sys.modules['sendgrid'] = MagicMock()
 sys.modules['sendgrid.helpers'] = MagicMock()
 sys.modules['sendgrid.helpers.mail'] = MagicMock()
 
-from tenxyte.backends.email import (
+from tenxyte.backends.email import (  # noqa: E402
     ConsoleBackend,
     DjangoBackend,
     TemplateEmailBackend,

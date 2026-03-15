@@ -2,7 +2,6 @@
 Django settings for testing Tenxyte.
 """
 
-import os
 
 SECRET_KEY = 'test-secret-key-for-testing-only'
 

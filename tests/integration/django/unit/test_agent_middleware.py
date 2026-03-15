@@ -1,9 +1,7 @@
 import pytest
-from unittest.mock import Mock
 from django.http import JsonResponse
 from django.test import RequestFactory
 from tenxyte.middleware import AgentTokenMiddleware
-from tenxyte.models.agent import AgentToken
 from tenxyte.services.agent_service import AgentTokenService
 from tenxyte.models.base import get_user_model, get_application_model
 

@@ -4,11 +4,10 @@ src/tenxyte/core/magic_link_service.py
 """
 import pytest
 from datetime import datetime, timedelta, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from tenxyte.core.magic_link_service import (
     MagicLinkToken,
-    MagicLinkResult,
     MagicLinkService,
     MagicLinkRepository,
     UserLookup,

@@ -6,7 +6,7 @@ All Django ORM calls are mocked so no database is needed.
 """
 import pytest
 from datetime import datetime, timezone, timedelta
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 from tenxyte.adapters.django.repositories import (
     DjangoUserRepository,
@@ -193,7 +193,7 @@ class TestDjangoUserRepository:
         u = User(id="", email="new@x.com", password_hash="hashed", is_active=True,
                  is_superuser=False, is_staff=False, email_verified=True,
                  mfa_type=MFAType.TOTP, mfa_secret="totp_sec")
-        result = repo.create(u)
+        repo.create(u)
         mock_created.save.assert_called()
 
     # -- update --

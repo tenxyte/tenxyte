@@ -76,7 +76,7 @@ def get_core_magic_link_service():
             settings=get_core_settings(),
             repo=get_core_magic_link_repo(),
             user_lookup=get_core_user_repo(),
-            email_service=get_core_email_service()
+            email_service=get_core_email_service(),
         )
     return _core_magic_link_service
 
@@ -181,20 +181,17 @@ class MagicLinkRequestView(APIView):
             request.META.get("HTTP_USER_AGENT", "")
         )
         app_name = getattr(request, "application", None)
-        app_name_str = app_name.name if app_name and hasattr(app_name, "name") else "Tenxyte"
+        app_name.name if app_name and hasattr(app_name, "name") else "Tenxyte"
 
         service = get_core_magic_link_service()
         success, error_msg = service.request_magic_link(
-            email=email,
-            validation_url=validation_url,
-            ip_address=ip_address,
-            device_info=device_info
+            email=email, validation_url=validation_url, ip_address=ip_address, device_info=device_info
         )
 
         if not success:
             return Response(
                 {"error": "Service unavailable", "code": "SERVICE_UNAVAILABLE"},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
         # Toujours retourner 200 même si l'email n'existe pas (sécurité)
@@ -308,27 +305,25 @@ class MagicLinkVerifyView(APIView):
 
         # Verify magic link via Core service
         service = get_core_magic_link_service()
-        auth_result = service.verify_magic_link(
-            token=token,
-            ip_address=ip_address,
-            device_info=device_info
-        )
+        auth_result = service.verify_magic_link(token=token, ip_address=ip_address, device_info=device_info)
 
         if not auth_result.success:
             return Response(
-                {"error": auth_result.error, "code": "MAGIC_LINK_INVALID"},
-                status=status.HTTP_401_UNAUTHORIZED
+                {"error": auth_result.error, "code": "MAGIC_LINK_INVALID"}, status=status.HTTP_401_UNAUTHORIZED
             )
 
         # Generate JWT tokens via Core service
         jwt_service = get_core_jwt_service()
-        app_id = str(request.application.id) if hasattr(request, 'application') and request.application else "default"
+        app_id = str(request.application.id) if hasattr(request, "application") and request.application else "default"
         access_token = jwt_service.generate_access_token(auth_result.user_id, application_id=app_id)
-        refresh_token = jwt_service.generate_refresh_token(auth_result.user_id, application_id=app_id, device_info=device_info)
+        refresh_token = jwt_service.generate_refresh_token(
+            auth_result.user_id, application_id=app_id, device_info=device_info
+        )
 
         # Get user for response
         from ..models import get_user_model
         from ..serializers import UserSerializer
+
         User = get_user_model()
         try:
             user = User.objects.get(id=auth_result.user_id)
@@ -341,8 +336,8 @@ class MagicLinkVerifyView(APIView):
             "refresh": refresh_token,
             "user": user_data,
             "message": "Magic link verified successfully",
-            "session_id": auth_result.session_id if hasattr(auth_result, 'session_id') else None,
-            "device_id": auth_result.device_id if hasattr(auth_result, 'device_id') else None,
+            "session_id": auth_result.session_id if hasattr(auth_result, "session_id") else None,
+            "device_id": auth_result.device_id if hasattr(auth_result, "device_id") else None,
         }
 
         response = Response(response_data)

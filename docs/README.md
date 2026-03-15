@@ -1,6 +1,6 @@
 # Tenxyte Documentation
 
-Welcome to the comprehensive documentation for the Tenxyte Django authentication package.
+Welcome to the comprehensive documentation for the Tenxyte Framework-Agnostic Python Authentication package.
 
 ## Table of Contents
 
@@ -31,6 +31,8 @@ Welcome to the comprehensive documentation for the Tenxyte Django authentication
 - [**Migration Guide**](MIGRATION_GUIDE.md) - Migration from dj-rest-auth, simplejwt
 
 ### 🔧 **Technical Documentation**
+- [**Architecture Guide**](architecture.md) - Core & Adapters (Hexagonal) architecture
+- [**Custom Adapters Guide**](custom_adapters.md) - Creating custom adapters
 - [**Schemas Reference**](schemas.md) - Reusable schema components
 - [**Testing Guide**](TESTING.md) - Testing strategies and examples
 - [**Periodic Tasks**](periodic_tasks.md) - Scheduled maintenance and cleanup tasks
@@ -109,9 +111,9 @@ pip install tenxyte[all]
 
 ### 2. Basic Configuration
 ```python
-# settings.py — add these 2 lines
+# settings.py — Add this at the END of the file (after INSTALLED_APPS, MIDDLEWARE, etc.)
 import tenxyte
-tenxyte.setup()  # auto-configures INSTALLED_APPS, AUTH_USER_MODEL, REST_FRAMEWORK, MIDDLEWARE
+tenxyte.setup(globals())  # auto-configures INSTALLED_APPS, AUTH_USER_MODEL, REST_FRAMEWORK, MIDDLEWARE
 ```
 
 ### 3. URL Configuration

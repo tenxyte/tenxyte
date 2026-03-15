@@ -1,9 +1,7 @@
 """
 Tests for lazy loading optimizations in middleware.
 """
-import pytest
 import sys
-import importlib
 
 
 class TestLazyLoading:
@@ -12,7 +10,7 @@ class TestLazyLoading:
     def test_middleware_module_does_not_import_models_eagerly(self):
         """Importing middleware module should not eagerly import tenxyte.models.Application."""
         # Save the current state
-        modules_before = set(sys.modules.keys())
+        set(sys.modules.keys())
 
         # Force re-import of the middleware module
         if 'tenxyte.middleware' in sys.modules:
@@ -34,7 +32,7 @@ class TestLazyLoading:
                     module_level_imports.append(stripped)
 
             # Verify no eager model imports at module level
-            model_imports = [l for l in module_level_imports if '.models' in l]
+            model_imports = [line for line in module_level_imports if '.models' in line]
             assert len(model_imports) == 0, f"Found eager model imports: {model_imports}"
 
     def test_middleware_module_does_not_import_jwt_service_eagerly(self):
@@ -53,7 +51,7 @@ class TestLazyLoading:
             if not in_class and stripped.startswith(('from ', 'import ')):
                 module_level_imports.append(stripped)
 
-        jwt_imports = [l for l in module_level_imports if 'jwt_service' in l.lower() or 'JWTService' in l]
+        jwt_imports = [line for line in module_level_imports if 'jwt_service' in line.lower() or 'JWTService' in line]
         assert len(jwt_imports) == 0, f"Found eager JWTService imports: {jwt_imports}"
 
     def test_jwt_middleware_lazy_service_initialization(self):

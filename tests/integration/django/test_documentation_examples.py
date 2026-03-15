@@ -17,14 +17,14 @@ src_dir = os.path.join(project_root, 'src')
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
-import json
-import pytest
-from rest_framework.test import APITestCase
-from rest_framework import status
-from django.urls import reverse
-from django.contrib.auth import get_user_model
+import json  # noqa: E402
+import pytest  # noqa: E402
+from rest_framework.test import APITestCase  # noqa: E402
+from rest_framework import status  # noqa: E402
+from django.urls import reverse  # noqa: E402
+from django.contrib.auth import get_user_model  # noqa: E402
 
-from tenxyte.docs.schemas import (
+from tenxyte.docs.schemas import (  # noqa: E402
     LOGIN_SUCCESS_EXAMPLE,
     LOGIN_RATE_LIMITED_EXAMPLE,
     VALIDATION_ERROR_EXAMPLE,
@@ -34,10 +34,7 @@ from tenxyte.docs.schemas import (
     FILE_UPLOAD_SUCCESS_EXAMPLE,
     FILE_TOO_LARGE_EXAMPLE,
     GDPR_DELETION_CONFIRMED_EXAMPLE,
-    PAGINATED_RESPONSE_EXAMPLE,
-    ERROR_RESPONSE_SCHEMA,
-    JWT_TOKEN_SCHEMA,
-    PAGINATED_RESPONSE_SCHEMA
+    PAGINATED_RESPONSE_EXAMPLE
 )
 
 User = get_user_model()
@@ -320,21 +317,13 @@ class DocumentationCoverageTestCase(APITestCase):
                 url = reverse(endpoint)
                 # Verify endpoint exists and is documented
                 assert url is not None
-            except:
+            except Exception:
                 pytest.fail(f"Endpoint {endpoint} not found or not documented")
 
     def test_error_code_coverage(self):
         """Test that all documented error codes have examples."""
         # This would check that for each documented error code
         # there exists a corresponding example
-        documented_codes = {
-            'VALIDATION_ERROR',
-            'NOT_FOUND',
-            'PERMISSION_DENIED', 
-            'RATE_LIMITED',
-            'UNAUTHORIZED',
-            'FORBIDDEN'
-        }
         
         # Implementation would check each code has an example
         pass

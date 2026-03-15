@@ -210,7 +210,7 @@ class TestAgentTokenService:
         service = AgentTokenService()
         # R9: store hash in DB so get_by_raw_token("inactive_token") can find it
         raw = "inactive_token"
-        token = AgentToken.objects.create(
+        AgentToken.objects.create(
             token=AgentToken._hash_token(raw), agent_id="test", triggered_by=test_user,
             application=test_app, expires_at=timezone.now() + timedelta(days=1),
             status=AgentToken.Status.REVOKED

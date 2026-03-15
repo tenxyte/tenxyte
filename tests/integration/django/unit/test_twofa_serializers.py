@@ -1,4 +1,3 @@
-import pytest
 from tenxyte.serializers.twofa_serializers import (
     TwoFactorSetupSerializer,
     TwoFactorVerifySerializer,

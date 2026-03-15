@@ -103,7 +103,7 @@ class TestUserModel:
         assert user.remove_role("missing") is False
 
         # assign_default_role
-        role_def = Role.objects.create(code="def", name="Def", is_default=True)
+        Role.objects.create(code="def", name="Def", is_default=True)
         user.assign_default_role()
         assert user.has_role("def") is True
 
@@ -386,7 +386,6 @@ class TestOTPCodeModel:
     @pytest.mark.django_db
     def test_otp_verify_with_hash(self, user):
         """Test que verify() compare correctement le hash SHA-256."""
-        from django.utils import timezone
         otp, raw_code = OTPCode.generate(user, 'email_verification', validity_minutes=10)
 
         # Le code stocké est un hash, pas le code en clair
@@ -399,7 +398,6 @@ class TestOTPCodeModel:
     @pytest.mark.django_db
     def test_otp_verify_wrong_code(self, user):
         """Test que verify() rejette un mauvais code."""
-        from django.utils import timezone
         otp, raw_code = OTPCode.generate(user, 'email_verification', validity_minutes=10)
 
         assert otp.verify('000000') is False

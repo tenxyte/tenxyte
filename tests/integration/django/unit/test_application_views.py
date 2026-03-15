@@ -14,15 +14,13 @@ Couvre :
 from tenxyte.conf import auth_settings
 api_prefix = auth_settings.API_PREFIX
 
-import json
 
 NONEXISTENT_ID = 999999999  # ID entier qui n'existera jamais en DB (BigAutoField)
-import pytest
-from unittest.mock import patch, MagicMock
-from django.test import RequestFactory
-from rest_framework.test import APIRequestFactory
+import pytest  # noqa: E402
+from unittest.mock import patch  # noqa: E402
+from rest_framework.test import APIRequestFactory  # noqa: E402
 
-from tenxyte.views.application_views import (
+from tenxyte.views.application_views import (  # noqa: E402
     ApplicationListView,
     ApplicationDetailView,
     ApplicationRegenerateView,
@@ -67,7 +65,8 @@ def _setup_user_with_permissions(email, app, *permission_codes):
     """Crée un user actif avec les permissions listées et le retourne."""
     from tenxyte.models import User, Permission
     user = User.objects.create(email=email, is_active=True)
-    user.set_password("pass"); user.save()
+    user.set_password("pass")
+    user.save()
     for code in permission_codes:
         perm, _ = Permission.objects.get_or_create(code=code, defaults={"name": code})
         user.direct_permissions.add(perm)

@@ -216,7 +216,7 @@ class TestRegisterViewBreachCheck:
         app = _app("RegDisabledApp")
         factory = APIRequestFactory()
         with patch('rest_framework.throttling.SimpleRateThrottle.allow_request', return_value=True), \
-             patch.object(breach_check_service, 'check_password', return_value=(True, '')) as mock_check, \
+             patch.object(breach_check_service, 'check_password', return_value=(True, '')), \
              patch('tenxyte.services.otp_service.OTPService.send_email_otp', return_value=True):
             req = factory.post('/register/', {
                 'email': 'nodisabled@example.com',

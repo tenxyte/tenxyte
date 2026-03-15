@@ -51,7 +51,7 @@ class EmailService:
             "tenxyte.services.email_service.EmailService is deprecated. "
             "Use tenxyte.adapters.django.email_service.DjangoEmailService instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         self.backend = get_email_backend()
 

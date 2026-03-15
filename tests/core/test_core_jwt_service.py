@@ -280,7 +280,7 @@ class TestJWTService:
         """Lines 415-418: user-level revocation."""
         token, _, _ = svc.generate_access_token("u1", "app1")
         # Revoke all tokens (sets revocation time to now)
-        import time; time.sleep(0.01)
+        time.sleep(0.01)
         svc.blacklist_service.revoke_all_user_tokens("u1")
         decoded = svc.decode_token(token)
         assert decoded.is_blacklisted
@@ -441,7 +441,7 @@ class TestJWTService:
         mock_model.get_by_raw_token.side_effect = Exception()
 
         with patch.dict("sys.modules", {"tenxyte.models": MagicMock()}):
-            with patch("tenxyte.core.jwt_service.JWTService.refresh_tokens") as orig:
+            with patch("tenxyte.core.jwt_service.JWTService.refresh_tokens"):
                 # We need to actually call through; let's just test the method directly
                 pass
 

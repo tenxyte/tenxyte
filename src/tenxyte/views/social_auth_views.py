@@ -204,7 +204,7 @@ class SocialAuthView(APIView):
         # Add provider and message to response (per documentation)
         data["provider"] = provider_name
         data["message"] = "Authentication successful"
-        
+
         # Remove device_summary from POST /social/ response per documentation
         data.pop("device_summary", None)
 

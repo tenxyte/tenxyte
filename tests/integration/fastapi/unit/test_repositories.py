@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from tenxyte.adapters.fastapi.models import Base, UserDB
+from tenxyte.adapters.fastapi.models import Base
 from tenxyte.adapters.fastapi.repositories import FastAPIUserRepository
 from tenxyte.ports.repositories import User, UserStatus, MFAType
 

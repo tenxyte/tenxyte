@@ -1,6 +1,7 @@
 """
 FastAPI (SQLAlchemy) implementation of Tenxyte repositories.
 """
+
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 
@@ -13,7 +14,7 @@ from tenxyte.adapters.fastapi.models import UserDB
 
 class FastAPIUserRepository(UserRepository):
     """SQLAlchemy implementation of the UserRepository."""
-    
+
     def __init__(self, session: Session):
         self.session = session
 
@@ -44,7 +45,7 @@ class FastAPIUserRepository(UserRepository):
             created_at=user.created_at,
             updated_at=user.updated_at,
             last_login=user.last_login,
-            user_metadata=user.metadata
+            user_metadata=user.metadata,
         )
         self.session.add(db_user)
         self.session.commit()
@@ -56,7 +57,7 @@ class FastAPIUserRepository(UserRepository):
         db_user = self.session.execute(stmt).scalar_one_or_none()
         if not db_user:
             raise ValueError(f"User with ID {user.id} not found")
-        
+
         db_user.email = user.email
         db_user.password_hash = user.password_hash
         db_user.first_name = user.first_name
@@ -85,21 +86,16 @@ class FastAPIUserRepository(UserRepository):
             return True
         return False
 
-    def list_all(
-        self, 
-        skip: int = 0, 
-        limit: int = 100,
-        filters: Optional[Dict[str, Any]] = None
-    ) -> List[User]:
+    def list_all(self, skip: int = 0, limit: int = 100, filters: Optional[Dict[str, Any]] = None) -> List[User]:
         stmt = select(UserDB)
         if filters:
-            if 'is_active' in filters:
-                stmt = stmt.where(UserDB.is_active == filters['is_active'])
-            if 'status' in filters:
-                stmt = stmt.where(UserDB.status == filters['status'])
-            if 'email' in filters:
-                stmt = stmt.where(UserDB.email == filters['email'])
-                
+            if "is_active" in filters:
+                stmt = stmt.where(UserDB.is_active == filters["is_active"])
+            if "status" in filters:
+                stmt = stmt.where(UserDB.status == filters["status"])
+            if "email" in filters:
+                stmt = stmt.where(UserDB.email == filters["email"])
+
         stmt = stmt.offset(skip).limit(limit)
         db_users = self.session.execute(stmt).scalars().all()
         return [user.to_port_model() for user in db_users]
@@ -107,12 +103,12 @@ class FastAPIUserRepository(UserRepository):
     def count(self, filters: Optional[Dict[str, Any]] = None) -> int:
         stmt = select(func.count(UserDB.id))
         if filters:
-            if 'is_active' in filters:
-                stmt = stmt.where(UserDB.is_active == filters['is_active'])
-            if 'status' in filters:
-                stmt = stmt.where(UserDB.status == filters['status'])
-            if 'email' in filters:
-                stmt = stmt.where(UserDB.email == filters['email'])
+            if "is_active" in filters:
+                stmt = stmt.where(UserDB.is_active == filters["is_active"])
+            if "status" in filters:
+                stmt = stmt.where(UserDB.status == filters["status"])
+            if "email" in filters:
+                stmt = stmt.where(UserDB.email == filters["email"])
         return self.session.execute(stmt).scalar_one()
 
     def update_last_login(self, user_id: str, timestamp: datetime) -> bool:

@@ -8,9 +8,8 @@ Coverage cible : views/auth_views.py (37% → 80%)
 import pytest
 from unittest.mock import patch, MagicMock
 from rest_framework.test import APIRequestFactory
-from django.test import override_settings
 
-from tenxyte.models import User, Application, Permission, RefreshToken
+from tenxyte.models import User, Application, RefreshToken
 from tenxyte.views.auth_views import (
     RegisterView, LoginEmailView, LoginPhoneView,
     RefreshTokenView, LogoutView, LogoutAllView,

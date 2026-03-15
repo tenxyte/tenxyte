@@ -6,21 +6,18 @@ from datetime import timedelta
 from unittest.mock import patch, MagicMock
 
 from tenxyte.admin import (
-    UserAdmin, RoleAdmin, PermissionAdmin, ApplicationAdmin,
-    RefreshTokenAdmin, LoginAttemptAdmin, OTPCodeAdmin, AuditLogAdmin,
-    PasswordHistoryAdmin, BlacklistedTokenAdmin, AccountDeletionRequestAdmin
+    UserAdmin, RefreshTokenAdmin, BlacklistedTokenAdmin, AccountDeletionRequestAdmin
 )
 from tenxyte.models import (
     get_user_model, get_role_model, get_permission_model, get_application_model,
-    RefreshToken, LoginAttempt, OTPCode, AuditLog, PasswordHistory,
-    BlacklistedToken, AccountDeletionRequest
+    RefreshToken, AuditLog, BlacklistedToken, AccountDeletionRequest
 )
 from tenxyte.conf import org_settings
 
 # Conditional Organization Imports
 if org_settings.ORGANIZATIONS_ENABLED:
     from tenxyte.admin import (
-        OrganizationAdmin, OrganizationRoleAdmin, OrganizationMembershipAdmin, OrganizationInvitationAdmin
+        OrganizationAdmin, OrganizationMembershipAdmin, OrganizationInvitationAdmin
     )
     from tenxyte.models import (
         get_organization_model, get_organization_role_model, get_organization_membership_model, OrganizationInvitation
@@ -56,7 +53,7 @@ def superuser(db):
 class TestUserAdmin:
     def test_ban_users(self, admin_site, rf, superuser):
         user1 = User.objects.create_user(email='user1@example.com', password='password')
-        user2 = User.objects.create_user(email='user2@example.com', password='password', is_banned=True)
+        User.objects.create_user(email='user2@example.com', password='password', is_banned=True)
         
         request = rf.post('/')
         request.user = superuser

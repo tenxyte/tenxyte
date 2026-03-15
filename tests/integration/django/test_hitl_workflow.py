@@ -1,8 +1,7 @@
 import pytest
 import json
 from django.urls import reverse
-from rest_framework.test import APIClient
-from tenxyte.models.agent import AgentToken, AgentPendingAction
+from tenxyte.models.agent import AgentPendingAction
 from tenxyte.models.base import get_permission_model
 from django.urls import path
 from django.http import JsonResponse
@@ -14,7 +13,7 @@ Permission = get_permission_model()
 def dummy_critical_view(request):
     return JsonResponse({'status': 'boom deleted'})
 
-from tenxyte.urls import urlpatterns
+from tenxyte.urls import urlpatterns  # noqa: E402
 urlpatterns.append(path('api/test-critical-delete/', dummy_critical_view, name='test_critical_delete'))
 
 @pytest.fixture

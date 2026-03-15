@@ -5,12 +5,9 @@ Coverage cible : organization_service.py (0% → ~80%)
 """
 
 import pytest
-from django.utils import timezone
-from datetime import timedelta
 
 from tenxyte.models import Application, User
 from tenxyte.models.organization import (
-    Organization,
     OrganizationRole,
     OrganizationMembership,
     OrganizationInvitation,
@@ -97,7 +94,7 @@ class TestInitializeSystemRoles:
     @pytest.mark.django_db
     def test_idempotent_on_second_call(self, service):
         service.initialize_system_roles()
-        roles = service.initialize_system_roles()
+        service.initialize_system_roles()
         assert OrganizationRole.objects.count() == 4
 
     @pytest.mark.django_db

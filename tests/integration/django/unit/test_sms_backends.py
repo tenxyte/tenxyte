@@ -1,13 +1,10 @@
 import json
-import pytest
 import sys
 from unittest.mock import patch, MagicMock
 from django.test import override_settings
 
 try:
-    import twilio
-    import twilio.rest
-    import twilio.base.exceptions
+    import twilio  # noqa: F401
 except ImportError:
     class MockTwilioRestException(Exception):
         def __init__(self, status, uri, msg=""):

@@ -1,8 +1,8 @@
 -r requirements-core.txt
-django>=5.0
-djangorestframework>=3.14
-django-cors-headers>=4.0
-drf-spectacular>=0.27
+django>=6.0
+djangorestframework>=3.16
+django-cors-headers>=4.9
+drf-spectacular>=0.28
 django-cryptography>=1.1
-google-auth>=2.20
-google-auth-oauthlib>=1.0
+google-auth>=2.49
+google-auth-oauthlib>=1.2

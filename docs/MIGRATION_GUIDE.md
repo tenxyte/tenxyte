@@ -5,6 +5,7 @@ This guide helps you migrate from common Django authentication libraries to Tenx
 
 ## Table of Contents
 
+- [Migrating from Tenxyte v0.9.x to v0.9.3 (Core Re-architecture)](#migrating-from-tenxyte-v09x-to-v093-core-re-architecture)
 - [Migrating from `djangorestframework-simplejwt`](#migrating-from-djangorestframework-simplejwt)
   - [Settings Mapping](#settings-mapping)
   - [Authentication Class](#authentication-class)
@@ -23,6 +24,46 @@ This guide helps you migrate from common Django authentication libraries to Tenx
 
 ---
 
+## Migrating from Tenxyte v0.9.x to v0.9.3 (Core Re-architecture)
+
+Tenxyte v0.9.3 introduces a major underlying architecture change: business logic has been extracted into a framework-agnostic `tenxyte.core`. However, for existing Django projects, this update is designed to have **zero breaking changes**.
+
+### What you need to know
+
+1. **No changes to `settings.py`**: All your existing `TENXYTE_*` settings will continue to work exactly as before. The new Django Adapter reads `django.conf.settings` and feeds them automatically to the Core.
+2. **No changes to Models or Database**: The Tenxyte database schema remains strictly identical. You do **not** need to run `makemigrations` or `migrate` when upgrading.
+3. **No changes to API Endpoints**: All URLs, JSON request payloads, and JSON responses remain exactly the same.
+4. **No changes to Tokens**: Existing JWTs, Refresh Tokens, and Passkeys will continue to function without any interruption.
+
+### How to Upgrade
+
+Simply upgrade the package via pip:
+
+```bash
+pip install tenxyte==0.9.3
+```
+
+*(If you are using specific extras like Twilio or SendGrid, you might want to switch to the new hierarchical extras syntax, though the default `pip install tenxyte` continues to install the full Django stack.)*
+
+```bash
+pip install "tenxyte[django,twilio]"
+```
+
+### Deprecation Warnings
+
+While your code will continue to work, some deep internal imports have been structurally moved. For instance, if you were directly importing Services instead of using the REST endpoints, you may see `DeprecationWarning`s.
+
+```python
+# Old import (still works in v0.9.3 but raises a DeprecationWarning)
+from tenxyte.services.auth_service import AuthService
+
+# Recommended: use tenxyte.core services with adapters instead
+from tenxyte.core.jwt_service import JWTService
+```
+
+These aliased imports will be kept until v1.0.0, giving you plenty of time to update any customized overrides.
+
+---
 
 ## Migrating from `djangorestframework-simplejwt`
 

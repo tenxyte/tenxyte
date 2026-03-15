@@ -1,8 +1,6 @@
 import pytest
 from unittest.mock import patch, PropertyMock
-from django.utils import timezone
 from datetime import timedelta
-from django.test import override_settings
 
 from tenxyte.services.auth_service import AuthService
 from tenxyte.models import Application, User, RefreshToken
@@ -42,7 +40,7 @@ class TestAuthServiceCoverage:
 
     def test_generate_tokens_for_user_device_claim(self, user, application):
         service = AuthService()
-        data = service.generate_tokens_for_user(
+        service.generate_tokens_for_user(
             user=user,
             application=application,
             ip_address="10.0.0.1",

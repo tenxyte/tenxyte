@@ -1,4 +1,3 @@
-import pytest
 from datetime import datetime
 from tenxyte.ports.repositories import UserStatus, MFAType
 from tenxyte.adapters.fastapi.models import UserDB

@@ -1,4 +1,3 @@
-import pytest
 from tenxyte.device_info import (
     build_device_info,
     parse_device_info,

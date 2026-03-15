@@ -67,7 +67,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
-        django-version: ["5.0", "5.1", "5.2"]
+        django-version: ["6.0"]
 
     steps:
       - uses: actions/checkout@v4
@@ -95,13 +95,13 @@ jobs:
         run: |
           pytest tests/integration/django/ --no-cov -q
 
-      - name: Run tests with coverage (Python 3.12, Django 5.2 only)
-        if: matrix.python-version == '3.12' && matrix.django-version == '5.2'
+      - name: Run tests with coverage (Python 3.12, Django 6.0 only)
+        if: matrix.python-version == '3.12' && matrix.django-version == '6.0'
         run: |
           pytest tests/integration/django/ --cov=tenxyte --cov-report=xml:coverage-django.xml --cov-report=term -q
 
       - name: Upload Django coverage
-        if: matrix.python-version == '3.12' && matrix.django-version == '5.2'
+        if: matrix.python-version == '3.12' && matrix.django-version == '6.0'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-django

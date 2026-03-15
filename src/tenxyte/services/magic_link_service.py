@@ -34,7 +34,7 @@ class MagicLinkService:
             "tenxyte.services.magic_link_service.MagicLinkService is deprecated. "
             "Use tenxyte.core.MagicLinkService with Django adapters instead.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         self.auth_service = AuthService()
         self.email_service = EmailService()

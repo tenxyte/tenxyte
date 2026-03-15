@@ -1,22 +1,16 @@
 import pytest
 from django.test import RequestFactory
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, models, connection
-from django.apps import apps
 from django.http import HttpResponse
-from unittest.mock import patch, MagicMock
-from asgiref.sync import sync_to_async
-import asyncio
+from unittest.mock import patch
 
-from tenxyte.models import Organization, BaseTenantModel, Application
+from tenxyte.models import Organization
 from tenxyte.tenant_context import (
     set_current_organization,
     get_current_organization,
     set_INTERNAL_bypass_tenant_filtering,
-    get_INTERNAL_bypass_tenant_filtering,
 )
 from tenxyte.middleware import OrganizationContextMiddleware
-from tenxyte.conf import org_settings
 
 
 @pytest.fixture

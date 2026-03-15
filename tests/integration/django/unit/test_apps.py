@@ -1,9 +1,8 @@
 import pytest
 import warnings
-from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from tenxyte.apps import TenxyteConfig
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 class TestTenxyteConfig:
     def test_config_attributes(self):

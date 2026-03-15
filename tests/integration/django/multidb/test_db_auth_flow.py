@@ -6,14 +6,13 @@ fonctionne correctement quel que soit le backend DB.
 """
 import pytest
 from django.conf import settings
-from django.core.cache import cache
 
 _is_mongodb = 'mongodb' in settings.DATABASES.get('default', {}).get('ENGINE', '')
 
-from tenxyte.models import User, Application, RefreshToken
-from tenxyte.services import AuthService, JWTService
-from tenxyte.services.otp_service import OTPService
-from tenxyte.services import TOTPService
+from tenxyte.models import User, Application, RefreshToken  # noqa: E402
+from tenxyte.services import AuthService, JWTService  # noqa: E402
+from tenxyte.services.otp_service import OTPService  # noqa: E402
+from tenxyte.services import TOTPService  # noqa: E402
 
 
 @pytest.mark.django_db
