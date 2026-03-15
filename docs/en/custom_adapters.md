@@ -143,6 +143,105 @@ class CustomUserRepository(UserRepository):
         pass
 ```
 
+## Example 4: Custom Task Service
+
+The `TaskService` ABC (defined in `tenxyte.core.task_service`) provides an interface for background job execution. It requires implementing the `enqueue` method for synchronous execution, and optionally `_enqueue_async_native` for native async support.
+
+### Basic Sync-Only Adapter
+
+```python
+from tenxyte.core.task_service import TaskService
+from typing import Any, Callable
+import my_task_queue
+
+class CustomTaskService(TaskService):
+    """
+    Adapter for a custom task queue (e.g., Huey, ARQ, or custom implementation).
+    """
+    
+    def __init__(self, queue_url: str):
+        self.client = my_task_queue.Client(queue_url)
+    
+    def enqueue(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> str:
+        """
+        Enqueue a synchronous function to run in the background.
+        Must return a task ID string.
+        """
+        job = self.client.submit(func, args=args, kwargs=kwargs)
+        return job.id
+```
+
+### Full Async Adapter
+
+For optimal performance in async applications (FastAPI), implement native async support:
+
+```python
+from tenxyte.core.task_service import TaskService
+from typing import Any, Callable, Coroutine, Union
+import asyncio
+
+class AsyncCustomTaskService(TaskService):
+    """
+    Full async task service adapter with native coroutine support.
+    """
+    
+    def __init__(self, queue_url: str):
+        self.sync_client = my_task_queue.Client(queue_url)
+        self.async_client = my_task_queue.AsyncClient(queue_url)
+    
+    def enqueue(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> str:
+        """Sync enqueue - runs in background worker."""
+        job = self.sync_client.submit(func, args=args, kwargs=kwargs)
+        return job.id
+    
+    async def _enqueue_async_native(
+        self, 
+        func: Union[Callable[..., Coroutine[Any, Any, Any]], Callable[..., Any]], 
+        *args: Any, 
+        **kwargs: Any
+    ) -> str:
+        """
+        Native async enqueue - used by enqueue_async() automatically.
+        This method is called by the base class when available.
+        """
+        if asyncio.iscoroutinefunction(func):
+            # It's an async function - create the coroutine and submit
+            coro = func(*args, **kwargs)
+            job = await self.async_client.submit_coro(coro)
+        else:
+            # It's a sync function - submit to async client
+            job = await self.async_client.submit(func, args=args, kwargs=kwargs)
+        return job.id
+```
+
+### Usage Example
+
+```python
+# Initialize your custom adapter
+task_service = AsyncCustomTaskService("https://queue.example.com")
+
+# Enqueue sync function
+job_id = task_service.enqueue(send_email, user_id=123, subject="Welcome")
+
+# Enqueue async function (works in async context)
+await task_service.enqueue_async(async_webhook_call, payload=data)
+
+# Both work transparently with Tenxyte services
+from tenxyte.core.magic_link_service import MagicLinkService
+
+magic_link_service = MagicLinkService(
+    settings=settings,
+    email_service=email_service,
+    repo=repo,
+    user_lookup=user_lookup,
+    task_service=task_service  # Injected for async email sending
+)
+```
+
+> **Note:** If you only implement `enqueue()`, the base class `enqueue_async()` will automatically fall back to running `enqueue()` in a thread pool using `asyncio.to_thread()`. Implementing `_enqueue_async_native()` is optional but recommended for better performance in async applications.
+
+---
+
 ## Wiring it all together
 
 Once you have your custom adapters, you pass them into the Core services when initializing your application. Each Core service (e.g., `JWTService`, `TOTPService`, `MagicLinkService`) accepts specific dependencies in its constructor.

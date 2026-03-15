@@ -8,6 +8,7 @@ with any adapter (Django, FastAPI, Redis, etc.).
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 import time
+import asyncio
 
 
 class CacheService(ABC):
@@ -119,6 +120,34 @@ class CacheService(ABC):
         """
         pass
 
+    async def get_async(self, key: str) -> Optional[Any]:
+        """Asynchronous version of get."""
+        return await asyncio.to_thread(self.get, key)
+
+    async def set_async(self, key: str, value: Any, timeout: Optional[int] = None) -> bool:
+        """Asynchronous version of set."""
+        return await asyncio.to_thread(self.set, key, value, timeout)
+
+    async def delete_async(self, key: str) -> bool:
+        """Asynchronous version of delete."""
+        return await asyncio.to_thread(self.delete, key)
+
+    async def exists_async(self, key: str) -> bool:
+        """Asynchronous version of exists."""
+        return await asyncio.to_thread(self.exists, key)
+
+    async def increment_async(self, key: str, delta: int = 1) -> int:
+        """Asynchronous version of increment."""
+        return await asyncio.to_thread(self.increment, key, delta)
+
+    async def expire_async(self, key: str, timeout: int) -> bool:
+        """Asynchronous version of expire."""
+        return await asyncio.to_thread(self.expire, key, timeout)
+
+    async def ttl_async(self, key: str) -> int:
+        """Asynchronous version of ttl."""
+        return await asyncio.to_thread(self.ttl, key)
+
     # Token Blacklist Methods
 
     def add_to_blacklist(self, token_jti: str, expires_in: int) -> bool:
@@ -160,6 +189,21 @@ class CacheService(ABC):
         """
         key = f"token_blacklist:{token_jti}"
         return self.delete(key)
+
+    async def add_to_blacklist_async(self, token_jti: str, expires_in: int) -> bool:
+        """Asynchronous version of add_to_blacklist."""
+        key = f"token_blacklist:{token_jti}"
+        return await self.set_async(key, True, timeout=expires_in)
+
+    async def is_blacklisted_async(self, token_jti: str) -> bool:
+        """Asynchronous version of is_blacklisted."""
+        key = f"token_blacklist:{token_jti}"
+        return await self.exists_async(key)
+
+    async def remove_from_blacklist_async(self, token_jti: str) -> bool:
+        """Asynchronous version of remove_from_blacklist."""
+        key = f"token_blacklist:{token_jti}"
+        return await self.delete_async(key)
 
     # Rate Limiting Methods
 
@@ -205,6 +249,31 @@ class CacheService(ABC):
             True if reset
         """
         return self.delete(key)
+
+    async def check_rate_limit_async(self, key: str, max_requests: int, window_seconds: int) -> tuple[bool, int, int]:
+        """Asynchronous version of check_rate_limit."""
+        current_count = await self.get_async(key) or 0
+
+        if current_count >= max_requests:
+            # Rate limit exceeded
+            ttl = max(0, await self.ttl_async(key))
+            return False, 0, ttl
+
+        # Increment counter
+        new_count = await self.increment_async(key)
+
+        # Set expiration on first request
+        if new_count == 1:
+            await self.expire_async(key, window_seconds)
+
+        remaining = max(0, max_requests - new_count)
+        ttl = max(0, await self.ttl_async(key))
+
+        return True, remaining, ttl
+
+    async def reset_rate_limit_async(self, key: str) -> bool:
+        """Asynchronous version of reset_rate_limit."""
+        return await self.delete_async(key)
 
 
 class InMemoryCacheService(CacheService):

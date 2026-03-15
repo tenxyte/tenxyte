@@ -1,5 +1,3 @@
-[Lire cette documentation en Français](README.fr.md)
-
 ![# TENXYTE • AI-Ready Backend Framework](https://tenxyte-graphics.s3.us-east-1.amazonaws.com/tenxyte-graphics/baniere_github.jpg)
 
 # Tenxyte Auth
@@ -268,7 +266,7 @@ curl http://localhost:8000/api/v1/auth/me/ \
   -H "Authorization: Bearer <access_token>"
 ```
 
-For more complete examples with responses, see: [docs/en/endpoints.md](docs/en/endpoints.md)
+For more complete examples with responses, see: [endpoints.md](endpoints.md)
 
 ---
 
@@ -302,9 +300,9 @@ python manage.py runserver
 # Schema:     http://localhost:8000/api/v1/docs/schema/
 ```
 
-- [**Static Site**](docs_site/index.html) — Full documentation
-- [**Postman Collection**](tenxyte_api_collection.postman_collection.json) — Ready-to-use collection
-- [**Endpoint Reference**](docs/en/endpoints.md) — All endpoints with curl examples
+- [**Static Site**](../docs_site/index.html) — Full documentation
+- [**Postman Collection**](../../tenxyte_api_collection.postman_collection.json) — Ready-to-use collection
+- [**Endpoint Reference**](endpoints.md) — All endpoints with curl examples
 
 ### Endpoint Overview
 
@@ -326,28 +324,28 @@ python manage.py runserver
 ## 📚 Documentation Structure
 
 ### 📖 **Developer Guides**
-- [**Quickstart**](docs/en/quickstart.md) - Get started in 2 minutes with Django
-- [**FastAPI Quickstart**](docs/en/fastapi_quickstart.md) - Get started with FastAPI
-- [**Settings Reference**](docs/en/settings.md) - All 95+ configuration options
-- [**API Endpoints**](docs/en/endpoints.md) - Full endpoint reference with examples
-- [**Admin Accounts**](docs/en/admin.md) - Manage Superusers and RBAC Admins
-- [**Applications Guide**](docs/en/applications.md) - Manage API clients and credentials
-- [**RBAC Guide**](docs/en/rbac.md) - Roles, permissions, and decorators
-- [**Security Guide**](docs/en/security.md) - Security features and best practices
-- [**Organizations Guide**](docs/en/organizations.md) - B2B multi-tenant setup
-- [**AIRS Guide**](docs/en/airs.md) - AI Responsibility & Security
-- [**Migration Guide**](docs/en/MIGRATION_GUIDE.md) - Migration from dj-rest-auth, simplejwt
+- [**Quickstart**](quickstart.md) - Get started in 2 minutes with Django
+- [**FastAPI Quickstart**](fastapi_quickstart.md) - Get started with FastAPI
+- [**Settings Reference**](settings.md) - All 95+ configuration options
+- [**API Endpoints**](endpoints.md) - Full endpoint reference with examples
+- [**Admin Accounts**](admin.md) - Manage Superusers and RBAC Admins
+- [**Applications Guide**](applications.md) - Manage API clients and credentials
+- [**RBAC Guide**](rbac.md) - Roles, permissions, and decorators
+- [**Security Guide**](security.md) - Security features and best practices
+- [**Organizations Guide**](organizations.md) - B2B multi-tenant setup
+- [**AIRS Guide**](airs.md) - AI Responsibility & Security
+- [**Migration Guide**](MIGRATION_GUIDE.md) - Migration from dj-rest-auth, simplejwt
 
 ### 🔧 **Technical Documentation**
-- [**Architecture Guide**](docs/en/architecture.md) - Core & Adapters (Hexagonal) architecture
-- [**Async Guide**](docs/en/async_guide.md) - Async/await patterns and best practices
-- [**Task Service**](docs/en/task_service.md) - Background job processing
-- [**Custom Adapters Guide**](docs/en/custom_adapters.md) - Creating custom adapters
-- [**Schemas Reference**](docs/en/schemas.md) - Reusable schema components
-- [**Testing Guide**](docs/en/TESTING.md) - Testing strategies and examples
-- [**Periodic Tasks**](docs/en/periodic_tasks.md) - Scheduled maintenance and cleanup tasks
-- [**Troubleshooting**](docs/en/troubleshooting.md) - Common issues and solutions
-- [**Contributing**](docs/en/CONTRIBUTING.md) - How to contribute to Tenxyte
+- [**Architecture Guide**](architecture.md) - Core & Adapters (Hexagonal) architecture
+- [**Async Guide**](async_guide.md) - Async/await patterns and best practices
+- [**Task Service**](task_service.md) - Background job processing
+- [**Custom Adapters Guide**](custom_adapters.md) - Creating custom adapters
+- [**Schemas Reference**](schemas.md) - Reusable schema components
+- [**Testing Guide**](TESTING.md) - Testing strategies and examples
+- [**Periodic Tasks**](periodic_tasks.md) - Scheduled maintenance and cleanup tasks
+- [**Troubleshooting**](troubleshooting.md) - Common issues and solutions
+- [**Contributing**](CONTRIBUTING.md) - How to contribute to Tenxyte
 
 ---
 
@@ -401,7 +399,7 @@ Tenxyte is built around a **Framework-Agnostic Core** utilizing a Ports and Adap
 
 This design guarantees that existing Django deployments run with **zero breaking changes**, while natively opening support for modern async frameworks like FastAPI.
 
-Read more in our detailed **[Architecture Guide](docs/en/architecture.md)**.
+Read more in our detailed **[Architecture Guide](architecture.md)**.
 
 ---
 
@@ -550,13 +548,13 @@ Same pattern for `TENXYTE_ROLE_MODEL`, `TENXYTE_PERMISSION_MODEL`, `TENXYTE_APPL
 
 ### Creating Custom Framework Adapters
 
-Because Tenxyte is framework-agnostic, you can write your own Database adapters, Cache adapters, or Email adapters using the core `Ports`. See the **[Custom Adapters Guide](docs/en/custom_adapters.md)** for detailed instructions on extending the core.
+Because Tenxyte is framework-agnostic, you can write your own Database adapters, Cache adapters, or Email adapters using the core `Ports`. See the **[Custom Adapters Guide](custom_adapters.md)** for detailed instructions on extending the core.
 
 ---
 
 ## Configuration Reference
 
-All 115+ settings documented in [docs/en/settings.md](docs/en/settings.md).
+All 115+ settings documented in [settings.md](settings.md).
 
 Useful toggles for development:
 
@@ -634,11 +632,11 @@ Contributions are welcome! A few simple rules:
 2. Fork → branch `feature/xxx` → PR with tests and changelog.
 3. Respect commit conventions and add unit tests.
 
-See [docs/en/CONTRIBUTING.md](docs/en/CONTRIBUTING.md) for more details.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](../../LICENSE).
 
 ## Support
 
@@ -648,4 +646,4 @@ MIT — see [LICENSE](LICENSE).
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md) for release history.
+See [CHANGELOG.md](../../CHANGELOG.md) for release history.
