@@ -540,21 +540,6 @@ class JWTService:
                 error=f"Invalid token: {str(e)}",
             )
 
-        except jwt.ExpiredSignatureError:
-            return None
-        except jwt.InvalidTokenError as e:
-            return DecodedToken(
-                user_id="",
-                app_id="",
-                jti="",
-                exp=datetime.now(timezone.utc),
-                iat=datetime.now(timezone.utc),
-                type="error",
-                claims={},
-                is_valid=False,
-                error=f"Invalid token: {str(e)}",
-            )
-
     def is_token_valid(self, token: str) -> bool:
         """Check if a token is valid (not expired, not blacklisted)."""
         result = self.decode_token(token)
