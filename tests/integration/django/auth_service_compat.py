@@ -507,6 +507,33 @@ class AuthService:
                 **user_data
             )
             
+            # Create Default Organization if Multi-Tenancy feature is enabled
+            from django.conf import settings
+            
+            orgs_enabled = getattr(settings, 'TENXYTE_ORGANIZATIONS_ENABLED', False)
+            create_default = getattr(settings, 'TENXYTE_CREATE_DEFAULT_ORGANIZATION', True)
+            
+            if orgs_enabled and create_default:
+                try:
+                    from tenxyte.services.organization_service import OrganizationService
+                    
+                    org_service = OrganizationService()
+                    
+                    # Use first_name if provided, otherwise email prefix
+                    name_part = kwargs.get('first_name') or (email.split('@')[0] if email else 'Personal')
+                    org_name = f"{name_part.capitalize()}'s Workspace"
+                    
+                    org_service.create_organization(
+                        name=org_name,
+                        created_by=user,
+                        description=f"Default workspace for {user.email}",
+                    )
+                except Exception as org_error:
+                    import logging
+                    logging.getLogger("tenxyte").error(
+                        f"Failed to create default organization for user {user.id}: {org_error}"
+                    )
+            
             return True, user, ""
             
         except Exception as e:
