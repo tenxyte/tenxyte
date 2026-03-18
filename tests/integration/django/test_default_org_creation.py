@@ -2,7 +2,7 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from tenxyte.models import Organization, Application
-from tenxyte.services.auth_service import AuthService
+from tests.integration.django.auth_service_compat import AuthService
 from tenxyte.services.social_auth_service import SocialAuthService
 
 User = get_user_model()

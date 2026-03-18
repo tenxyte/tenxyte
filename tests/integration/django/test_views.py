@@ -346,7 +346,7 @@ class Test2FAViews:
     @pytest.mark.django_db
     def test_2fa_disable(self, api_client, user_with_2fa, application):
         """Test de désactivation 2FA."""
-        from tenxyte.services import AuthService
+        from tests.integration.django.auth_service_compat import AuthService
 
         # Authentifier user_with_2fa (bypass 2FA en utilisant le service directement)
         auth_service = AuthService()

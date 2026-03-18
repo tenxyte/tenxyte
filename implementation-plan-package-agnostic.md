@@ -4,7 +4,7 @@
 > **Major Constraint: Zero Breaking Changes**
 > This entire refactoring must guarantee **100% backward compatibility** for current Tenxyte users working with Django.
 > - **API Endpoints (DRF)**: URLs, request payloads, and JSON responses must remain strictly identical.
-> - **Configuration**: Variables in `settings.py` (e.g., `TENXYTE_JWT_SECRET`, etc.) must continue to work without any modifications on the user's end.
+> - **Configuration**: Variables in `settings.py` (e.g., `TENXYTE_JWT_SECRET_KEY`, etc.) must continue to work without any modifications on the user's end.
 > - **Models and DB**: No database migrations should be required for users upgrading the package.
 > - **Features**: No regressions are tolerated on existing features (JWT, 2FA, RBAC, Passkeys).
 

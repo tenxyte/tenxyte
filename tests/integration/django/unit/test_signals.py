@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 from tenxyte.models import User
-from tenxyte.services.auth_service import AuthService
+from tests.integration.django.auth_service_compat import AuthService
 from tenxyte.services.agent_service import AgentTokenService
 from tenxyte.signals import (
     brute_force_detected,

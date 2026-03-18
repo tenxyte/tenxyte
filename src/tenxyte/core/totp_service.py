@@ -183,12 +183,32 @@ class TOTPService:
 
         # Setup encryption for TOTP secrets
         if encryption_key:
-            self.totp_key = Fernet(encryption_key.encode("utf-8"))
+            try:
+                self.totp_key = Fernet(encryption_key.encode("utf-8"))
+            except ValueError as e:
+                logger.error(
+                    f"Invalid encryption_key format: {e}\n"
+                    "Generate a valid key with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+                )
+                raise ValueError(
+                    "encryption_key must be a valid Fernet key (32 url-safe base64-encoded bytes). "
+                    "Generate one with: from cryptography.fernet import Fernet; Fernet.generate_key().decode()"
+                ) from e
         else:
-            # Try from environment or settings
-            env_key = os.environ.get("TENXYTE_TOTP_ENCRYPTION_KEY")
-            if env_key:
-                self.totp_key = Fernet(env_key.encode("utf-8"))
+            # Try from settings provider first, then environment
+            settings_key = settings.totp_encryption_key
+            if settings_key:
+                try:
+                    self.totp_key = Fernet(settings_key.encode("utf-8"))
+                except ValueError as e:
+                    logger.error(
+                        f"Invalid TENXYTE_TOTP_ENCRYPTION_KEY format: {e}\n"
+                        "Generate a valid key with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+                    )
+                    raise ValueError(
+                        "TENXYTE_TOTP_ENCRYPTION_KEY must be a valid Fernet key (32 url-safe base64-encoded bytes). "
+                        "Generate one with: from cryptography.fernet import Fernet; Fernet.generate_key().decode()"
+                    ) from e
             else:
                 self.totp_key = None
                 logger.warning(

@@ -33,12 +33,8 @@ def _user(email, *perm_codes):
 
 
 def _jwt_token(user, app):
-    from tenxyte.services.jwt_service import JWTService
-    return JWTService().generate_token_pair(
-        user_id=str(user.id),
-        application_id=str(app.id),
-        refresh_token_str="testrefresh",
-    )["access_token"]
+    from tests.integration.django.test_helpers import create_jwt_token
+    return create_jwt_token(user, app)["access_token"]
 
 
 def _authed_request(method, path, user, app, data=None, params=None):

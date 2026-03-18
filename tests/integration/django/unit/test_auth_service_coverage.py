@@ -2,8 +2,10 @@ import pytest
 from unittest.mock import patch, PropertyMock
 from datetime import timedelta
 
-from tenxyte.services.auth_service import AuthService
+# AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
 from tenxyte.models import Application, User, RefreshToken
+from tests.integration.django.auth_service_compat import AuthService
 
 @pytest.fixture
 def user(db):

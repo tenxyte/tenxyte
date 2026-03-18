@@ -35,12 +35,8 @@ from tenxyte.views.rbac_views import (  # noqa: E402
 
 def _authed_request(method, path, user, app, data=None):
     """Construit une requête DRF authentifiée par JWT."""
-    from tenxyte.services.jwt_service import JWTService
-    token = JWTService().generate_token_pair(
-        user_id=str(user.id),
-        application_id=str(app.id),
-        refresh_token_str="testrefresh",
-    )["access_token"]
+    from tests.integration.django.test_helpers import create_jwt_token
+    token = create_jwt_token(user, app)["access_token"]
 
     factory = APIRequestFactory()
     kwargs = {}

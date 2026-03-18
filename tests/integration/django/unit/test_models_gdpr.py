@@ -17,7 +17,7 @@ def test_account_deletion_request_str(user):
 @pytest.mark.django_db
 def test_send_confirmation_email_success(user):
     req = AccountDeletionRequest.create_request(user=user)
-    with patch("tenxyte.services.email_service.EmailService") as MockService:
+    with patch("tenxyte.adapters.django.email_service.DjangoEmailService") as MockService:
         result = req.send_confirmation_email()
         assert result is True
         assert req.status == 'confirmation_sent'
@@ -26,7 +26,7 @@ def test_send_confirmation_email_success(user):
 @pytest.mark.django_db
 def test_send_confirmation_email_failure(user):
     req = AccountDeletionRequest.create_request(user=user)
-    with patch("tenxyte.services.email_service.EmailService") as MockService:
+    with patch("tenxyte.adapters.django.email_service.DjangoEmailService") as MockService:
         MockService.return_value.send_account_deletion_confirmation.side_effect = Exception("Email failed")
         result = req.send_confirmation_email()
         assert result is False
@@ -47,7 +47,7 @@ def test_execute_deletion_success_and_email_success(user):
     req.confirm_request()
     
     with patch.object(user, 'soft_delete', return_value=True):
-        with patch("tenxyte.services.email_service.EmailService") as MockService:
+        with patch("tenxyte.adapters.django.email_service.DjangoEmailService") as MockService:
             result = req.execute_deletion()
             assert result is True
             assert req.status == 'completed'
@@ -59,7 +59,7 @@ def test_execute_deletion_success_email_failure(user):
     req.confirm_request()
     
     with patch.object(user, 'soft_delete', return_value=True):
-        with patch("tenxyte.services.email_service.EmailService") as MockService:
+        with patch("tenxyte.adapters.django.email_service.DjangoEmailService") as MockService:
             MockService.return_value.send_account_deletion_completed.side_effect = Exception("Failed")
             result = req.execute_deletion()
             assert result is True

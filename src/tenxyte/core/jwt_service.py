@@ -243,13 +243,13 @@ class JWTService:
         """
         if not self.signing_key:
             raise ValueError(
-                f"JWT signing key is required for algorithm {self.algorithm}. " f"Set TENXYTE_JWT_SECRET in settings."
+                f"JWT signing key is required for algorithm {self.algorithm}. " f"Set TENXYTE_JWT_SECRET_KEY in settings."
             )
 
         if self.is_asymmetric and not self.private_key:  # pragma: no cover
             raise ValueError(
                 f"JWT private key is required for asymmetric algorithm {self.algorithm}. "
-                f"Set TENXYTE_JWT_SECRET (private key) in settings."
+                f"Set TENXYTE_JWT_PRIVATE_KEY in settings."
             )
 
         now = datetime.now(timezone.utc)
@@ -378,7 +378,7 @@ class JWTService:
         if not self.verifying_key:
             raise ValueError(
                 f"JWT verifying key is required for algorithm {self.algorithm}. "
-                f"Set TENXYTE_JWT_SECRET or TENXYTE_JWT_PUBLIC_KEY in settings."
+                f"Set TENXYTE_JWT_SECRET_KEY or TENXYTE_JWT_PUBLIC_KEY in settings."
             )
 
         try:
@@ -459,7 +459,7 @@ class JWTService:
         if not self.verifying_key:
             raise ValueError(
                 f"JWT verifying key is required for algorithm {self.algorithm}. "
-                f"Set TENXYTE_JWT_SECRET or TENXYTE_JWT_PUBLIC_KEY in settings."
+                f"Set TENXYTE_JWT_SECRET_KEY or TENXYTE_JWT_PUBLIC_KEY in settings."
             )
 
         try:

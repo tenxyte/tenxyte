@@ -101,9 +101,14 @@ class JWTAuthMiddleware:
     def jwt_service(self):
         """Lazy-initialize JWTService on first access."""
         if self._jwt_service is None:
-            from .services.jwt_service import JWTService
+            from tenxyte.core.jwt_service import JWTService
+            from tenxyte.adapters.django import get_django_settings
+            from tenxyte.adapters.django.cache_service import DjangoCacheService
 
-            self._jwt_service = JWTService()
+            self._jwt_service = JWTService(
+                settings=get_django_settings(),
+                blacklist_service=DjangoCacheService()
+            )
         return self._jwt_service
 
     def __call__(self, request):
@@ -114,9 +119,9 @@ class JWTAuthMiddleware:
             token = auth_header[7:]
             payload = self.jwt_service.decode_token(token)
 
-            if payload:
+            if payload and payload.is_valid:
                 request.jwt_payload = payload
-                request.user_id = payload.get("user_id")
+                request.user_id = payload.user_id
             else:
                 request.jwt_payload = None
                 request.user_id = None

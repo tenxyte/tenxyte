@@ -115,20 +115,20 @@ class TestOTPService:
         assert error == ''
 
     @pytest.mark.django_db
-    @patch('tenxyte.services.email_service.get_email_backend')
-    def test_send_email_otp(self, mock_get_backend, user):
+    def test_send_email_otp(self, user):
         """Test d'envoi d'OTP par email."""
-        mock_backend = Mock()
-        mock_backend.send_email.return_value = True
-        mock_get_backend.return_value = mock_backend
+        with patch('tenxyte.services.email_service.EmailService') as mock_email_service_class:
+            mock_email_service = Mock()
+            mock_email_service.send_otp_email.return_value = True
+            mock_email_service_class.return_value = mock_email_service
 
-        otp_service = OTPService()
-        otp, raw_code = otp_service.generate_email_verification_otp(user)
+            otp_service = OTPService()
+            otp, raw_code = otp_service.generate_email_verification_otp(user)
 
-        result = otp_service.send_email_otp(user, raw_code, otp.otp_type)
+            result = otp_service.send_email_otp(user, raw_code, otp.otp_type)
 
-        assert result is True
-        mock_backend.send_email.assert_called_once()
+            assert result is True
+            mock_email_service.send_otp_email.assert_called_once()
 
     @pytest.mark.django_db
     @override_settings(TENXYTE_SMS_ENABLED=True)
@@ -248,7 +248,10 @@ class TestOTPService:
     def test_send_email_otp_exception(self, user):
         """Test d'envoi d'OTP email avec exception."""
         otp_service = OTPService()
-        with patch('tenxyte.services.email_service.EmailService.send_otp_email', side_effect=Exception('Email Error')):
+        with patch('tenxyte.services.email_service.EmailService') as mock_email_service_class:
+            mock_email_service = Mock()
+            mock_email_service.send_otp_email.side_effect = Exception('Email Error')
+            mock_email_service_class.return_value = mock_email_service
             assert otp_service.send_email_otp(user, "123456") is False
 
     @pytest.mark.django_db

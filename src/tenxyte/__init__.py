@@ -146,6 +146,10 @@ def setup(settings_module=None):
         rf["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
         changed_rf = True
 
+    if "EXCEPTION_HANDLER" not in rf:
+        rf["EXCEPTION_HANDLER"] = "tenxyte.exceptions.custom_exception_handler"
+        changed_rf = True
+
     if changed_rf:
         set_setting("REST_FRAMEWORK", rf)
 

@@ -181,7 +181,7 @@ class Settings:
     @property
     def jwt_secret(self) -> str:
         """Secret key for JWT signing (HS256) or private key (RS256)."""
-        return self._get("JWT_SECRET", "")
+        return self._get("JWT_SECRET_KEY", "")
 
     @property
     def jwt_public_key(self) -> Optional[str]:
@@ -271,6 +271,11 @@ class Settings:
         """TOTP issuer name displayed in authenticator apps."""
         return self._get("TOTP_ISSUER_NAME", "Tenxyte")
 
+    @property
+    def totp_encryption_key(self) -> Optional[str]:
+        """Encryption key for TOTP secrets (Fernet key format)."""
+        return self._get("TOTP_ENCRYPTION_KEY", None)
+
     # ============================================================
     # Application Auth Settings
     # ============================================================
@@ -345,6 +350,35 @@ class Settings:
     def simple_throttle_rules(self) -> Dict[str, str]:
         """Simple throttle rules by URL prefix."""
         return self._get("SIMPLE_THROTTLE_RULES", {})
+
+    # ============================================================
+    # WebAuthn Settings
+    # ============================================================
+
+    @property
+    def webauthn_enabled(self) -> bool:
+        """Whether WebAuthn is enabled."""
+        return self._get("TENXYTE_WEBAUTHN_ENABLED", True)
+
+    @property
+    def webauthn_rp_id(self) -> str:
+        """WebAuthn Relying Party ID."""
+        return self._get("TENXYTE_WEBAUTHN_RP_ID", "localhost")
+
+    @property
+    def webauthn_rp_name(self) -> str:
+        """WebAuthn Relying Party Name."""
+        return self._get("TENXYTE_WEBAUTHN_RP_NAME", "Tenxyte")
+
+    @property
+    def magic_link_enabled(self) -> bool:
+        """Whether Magic Link authentication is enabled."""
+        return self._get("MAGIC_LINK_ENABLED", True)
+
+    @property
+    def magic_link_expiry_minutes(self) -> int:
+        """Magic link expiry time in minutes."""
+        return self._get("MAGIC_LINK_EXPIRY_MINUTES", 15)
 
 
 # Global settings instance (will be initialized by framework adapters)

@@ -33,8 +33,8 @@ def _user(email, password="Pass123!"):
 
 
 def _jwt_token(user, app):
-    from tenxyte.services.jwt_service import JWTService
-    return JWTService().generate_token_pair(
+    from tests.integration.django.test_helpers import create_jwt_token
+    return create_jwt_token(
         user_id=str(user.id),
         application_id=str(app.id),
         refresh_token_str="testrefresh",

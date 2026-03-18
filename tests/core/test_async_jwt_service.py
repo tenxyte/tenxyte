@@ -22,7 +22,7 @@ from tenxyte.core.settings import Settings
 class DummyProvider:
     def get(self, name, default=None):
         defaults = {
-            "TENXYTE_JWT_SECRET": "test-secret-key-at-least-32-chars-long",
+            "TENXYTE_JWT_SECRET_KEY": "test-secret-key-at-least-32-chars-long",
         }
         return defaults.get(name, default)
 

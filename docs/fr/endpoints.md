@@ -1,13 +1,13 @@
-# Référence des Points de Terminaison de l'API
+# Référence des Points de Terminaison (Endpoints)
 
-## Sommaire
+## Table des Matières
 
-- [Référence des Points de Terminaison de l'API](#référence-des-points-de-terminaison-de-lapi)
+- [Référence des Points de Terminaison](#référence-des-points-de-terminaison)
   - [Authentification](#authentification)
     - [`POST /register/`](#post-register)
     - [`POST /login/email/`](#post-loginemail)
     - [`POST /login/phone/`](#post-loginphone)
-  - [Connexion Sociale (Multi-Fournisseur)](#connexion-sociale-multi-fournisseur)
+  - [Connexion Sociale (Multi-Fournisseurs)](#connexion-sociale-multi-fournisseurs)
     - [`POST /social/<provider>/`](#post-socialprovider)
     - [`GET /social/<provider>/callback/`](#get-socialprovidercallback)
   - [Lien Magique (Sans mot de passe)](#lien-magique-sans-mot-de-passe)
@@ -50,7 +50,7 @@
     - [`DELETE /roles/<id>/`  `roles.manage`](#delete-rolesid-rolesmanage)
     - [`GET /roles/<id>/permissions/`  `roles.view`](#get-rolesidpermissions-rolesview)
     - [`POST /roles/<id>/permissions/`  `roles.manage`](#post-rolesidpermissions-rolesmanage)
-  - [RBAC — Rôles et Permissions de l'Utilisateur](#rbac--rôles-et-permissions-de-lutilisateur)
+  - [RBAC — Rôles et Permissions Utilisateur](#rbac--rôles-et-permissions-utilisateur)
     - [`GET /users/<id>/roles/`  `users.manage`](#get-usersidroles-usersmanage)
     - [`POST /users/<id>/roles/`  `users.manage`](#post-usersidroles-usersmanage)
     - [`DELETE /users/<id>/roles/`  `users.manage`](#delete-usersidroles-usersmanage)
@@ -89,7 +89,7 @@
     - [`POST /cancel-account-deletion/` ](#post-cancel-account-deletion)
     - [`GET /account-deletion-status/` ](#get-account-deletion-status)
     - [`POST /export-user-data/` ](#post-export-user-data)
-  - [Dashboard](#dashboard)
+  - [Tableau de Bord](#tableau-de-bord)
     - [`GET /dashboard/stats/`  `dashboard.view`](#get-dashboardstats-dashboardview)
     - [`GET /dashboard/auth/`  `dashboard.view`](#get-dashboardauth-dashboardview)
     - [`GET /dashboard/security/`  `dashboard.view`](#get-dashboardsecurity-dashboardview)
@@ -124,8 +124,8 @@ Tous les points de terminaison sont préfixés par votre chemin de base configur
 
 Chaque requête **doit** inclure les identifiants de l'application :
 ```
-X-Access-Key: <your-access-key>
-X-Access-Secret: <your-access-secret>
+X-Access-Key: <votre-access-key>
+X-Access-Secret: <votre-access-secret>
 ```
 
 Les points de terminaison authentifiés nécessitent en plus :
@@ -135,7 +135,7 @@ Authorization: Bearer <access_token>
 
 Les points de terminaison multi-locataires (organisations) nécessitent :
 ```
-X-Org-Slug: <organization-slug>
+X-Org-Slug: <slug-organisation>
 ```
 
 ---
@@ -152,34 +152,45 @@ Enregistrer un nouvel utilisateur.
   "phone_country_code": "+1",
   "phone_number": "5551234567",
   "password": "SecurePass123!",
-  "first_name": "John",
-  "last_name": "Doe",
+  "first_name": "Jean",
+  "last_name": "Dupont",
   "login": false,
   "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
 `email` ou `phone_country_code` + `phone_number` est requis.
-`login` : Si vrai, retourne les jetons JWT pour une connexion immédiate.
-`device_info` : Informations facultatives d'empreinte numérique de l'appareil.
+`login` : Si vrai, renvoie des jetons JWT pour une connexion immédiate.
+`device_info` : Informations optionnelles sur l'empreinte numérique de l'appareil (device fingerprinting).
 
 **Réponse `201` :**
 ```json
 {
-  "message": "Registration successful",
+  "message": "Enregistrement réussi",
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
-    "phone_country_code": "+1",
-    "phone_number": "5551234567",
-    "first_name": "John",
-    "last_name": "Doe",
+    "username": null,
+    "phone": "+15551234567",
+    "avatar": null,
+    "bio": null,
+    "timezone": null,
+    "language": null,
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "is_active": true,
     "is_email_verified": false,
     "is_phone_verified": false,
     "is_2fa_enabled": false,
-    "roles": [],
-    "permissions": [],
     "created_at": "2023-10-01T12:00:00Z",
-    "last_login": null
+    "last_login": null,
+    "custom_fields": null,
+    "preferences": {
+      "email_notifications": true,
+      "sms_notifications": false,
+      "marketing_emails": false
+    },
+    "roles": [],
+    "permissions": []
   },
   "verification_required": {
     "email": true,
@@ -194,14 +205,16 @@ Si `login: true` dans la requête, inclut également :
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600
+  "expires_in": 3600,
+  "refresh_expires_in": 86400,
+  "device_summary": "Windows 11 Desktop"
 }
 ```
 
 ---
 
 ### `POST /login/email/`
-Connexion avec e-mail + mot de passe.
+Connexion avec email + mot de passe.
 
 **Requête :**
 ```json
@@ -213,7 +226,7 @@ Connexion avec e-mail + mot de passe.
 }
 ```
 `totp_code` n'est requis que si la 2FA est activée.
-`device_info` : Informations facultatives d'empreinte numérique de l'appareil.
+`device_info` : Informations optionnelles sur l'empreinte numérique de l'appareil (device fingerprinting).
 
 **Réponse `200` :**
 ```json
@@ -222,16 +235,33 @@ Connexion avec e-mail + mot de passe.
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
   "expires_in": 3600,
+  "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
+    "username": null,
     "phone": "+15551234567",
-    "first_name": "John",
-    "last_name": "Doe",
+    "avatar": "https://cdn.example.com/avatars/user.jpg",
+    "bio": null,
+    "timezone": "Europe/Paris",
+    "language": "fr",
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "is_active": true,
     "is_email_verified": true,
     "is_phone_verified": false,
-    "is_2fa_enabled": false
+    "is_2fa_enabled": false,
+    "created_at": "2023-10-01T12:00:00Z",
+    "last_login": "2023-10-02T08:30:00Z",
+    "custom_fields": null,
+    "preferences": {
+      "email_notifications": true,
+      "sms_notifications": false,
+      "marketing_emails": false
+    },
+    "roles": [],
+    "permissions": []
   }
 }
 ```
@@ -239,7 +269,7 @@ Connexion avec e-mail + mot de passe.
 **Réponse `401` (2FA requise) :**
 ```json
 {
-  "error": "2FA code required",
+  "error": "Code 2FA requis",
   "code": "2FA_REQUIRED",
   "requires_2fa": true
 }
@@ -248,7 +278,7 @@ Connexion avec e-mail + mot de passe.
 **Réponse `401` (Identifiants invalides) :**
 ```json
 {
-  "error": "Invalid credentials",
+  "error": "Identifiants invalides",
   "code": "LOGIN_FAILED"
 }
 ```
@@ -256,7 +286,7 @@ Connexion avec e-mail + mot de passe.
 **Réponse `403` (2FA administrateur requise) :**
 ```json
 {
-  "error": "Administrators must have 2FA enabled to login.",
+  "error": "Les administrateurs doivent avoir la 2FA activée pour se connecter.",
   "code": "ADMIN_2FA_SETUP_REQUIRED"
 }
 ```
@@ -264,19 +294,18 @@ Connexion avec e-mail + mot de passe.
 **Réponse `409` (Limite de sessions dépassée) :**
 ```json
 {
-  "error": "Session limit exceeded",
-  "details": "Maximum concurrent sessions (1) already reached. Please logout from other devices.",
-  "code": "SESSION_LIMIT_EXCEEDED"
+  "error": "Limite de sessions dépassée",
+  "code": "SESSION_LIMIT_EXCEEDED",
+  "details": {}
 }
 ```
 
 **Réponse `423` (Compte verrouillé) :**
 ```json
 {
-  "error": "Account locked",
-  "details": "Account has been locked due to too many failed login attempts.",
+  "error": "Compte verrouillé suite à trop de tentatives de connexion échouées",
   "code": "ACCOUNT_LOCKED",
-  "retry_after": 1800
+  "details": {}
 }
 ```
 
@@ -296,7 +325,7 @@ Connexion avec numéro de téléphone + mot de passe.
 }
 ```
 `totp_code` n'est requis que si la 2FA est activée.
-`device_info` : Informations facultatives d'empreinte numérique de l'appareil.
+`device_info` : Informations optionnelles sur l'empreinte numérique de l'appareil.
 
 **Réponse `200` :**
 ```json
@@ -305,16 +334,33 @@ Connexion avec numéro de téléphone + mot de passe.
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
   "expires_in": 3600,
+  "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
+    "username": null,
     "phone": "+15551234567",
-    "first_name": "John",
-    "last_name": "Doe",
+    "avatar": "https://cdn.example.com/avatars/user.jpg",
+    "bio": null,
+    "timezone": "Europe/Paris",
+    "language": "fr",
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "is_active": true,
     "is_email_verified": true,
     "is_phone_verified": false,
-    "is_2fa_enabled": false
+    "is_2fa_enabled": false,
+    "created_at": "2023-10-01T12:00:00Z",
+    "last_login": "2023-10-02T08:30:00Z",
+    "custom_fields": null,
+    "preferences": {
+      "email_notifications": true,
+      "sms_notifications": false,
+      "marketing_emails": false
+    },
+    "roles": [],
+    "permissions": []
   }
 }
 ```
@@ -322,10 +368,10 @@ Connexion avec numéro de téléphone + mot de passe.
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "phone_country_code": ["Invalid country code format. Use +XX format."],
-    "phone_number": ["Phone number must be 9-15 digits."]
+    "phone_country_code": ["Format de code pays invalide. Utilisez le format +XX."],
+    "phone_number": ["Le numéro de téléphone doit comporter entre 9 et 15 chiffres."]
   }
 }
 ```
@@ -333,7 +379,7 @@ Connexion avec numéro de téléphone + mot de passe.
 **Réponse `401` (2FA requise) :**
 ```json
 {
-  "error": "2FA code required",
+  "error": "Code 2FA requis",
   "code": "2FA_REQUIRED",
   "requires_2fa": true
 }
@@ -342,7 +388,7 @@ Connexion avec numéro de téléphone + mot de passe.
 **Réponse `401` (Identifiants invalides) :**
 ```json
 {
-  "error": "Invalid credentials",
+  "error": "Identifiants invalides",
   "code": "LOGIN_FAILED"
 }
 ```
@@ -350,33 +396,32 @@ Connexion avec numéro de téléphone + mot de passe.
 **Réponse `403` (2FA administrateur requise) :**
 ```json
 {
-  "error": "Administrators must have 2FA enabled to login.",
+  "error": "Les administrateurs doivent avoir la 2FA activée pour se connecter.",
   "code": "ADMIN_2FA_SETUP_REQUIRED"
 }
 ```
 
-**Réponse `409` (Limite de sessions dépassée) :**
+**Response `409` (Session limit exceeded):**
 ```json
 {
   "error": "Session limit exceeded",
-  "details": "Maximum concurrent sessions (1) already reached. Please logout from other devices.",
-  "code": "SESSION_LIMIT_EXCEEDED"
+  "code": "SESSION_LIMIT_EXCEEDED",
+  "details": {}
 }
 ```
 
-**Réponse `423` (Compte verrouillé) :**
+**Response `423` (Account locked):**
 ```json
 {
-  "error": "Account locked",
-  "details": "Account has been locked due to too many failed login attempts.",
+  "error": "Account locked due to too many failed login attempts",
   "code": "ACCOUNT_LOCKED",
-  "retry_after": 1800
+  "details": {}
 }
 ```
 
 ---
 
-## Connexion Sociale (Multi-Fournisseur)
+## Connexion Sociale (Multi-Fournisseurs)
 
 Nécessite une configuration du fournisseur social (Google, GitHub, Microsoft, Facebook).
 
@@ -396,20 +441,20 @@ S'authentifier via un fournisseur OAuth2.
 **Requête (code d'autorisation) :**
 ```json
 {
-  "code": "<authorization-code>",
-  "redirect_uri": "https://yourapp.com/auth/callback",
+  "code": "<code-d-autorisation>",
+  "redirect_uri": "https://votre-app.com/auth/callback",
   "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
 
-**Requête (jeton d'ID Google) :**
+**Requête (Google ID token) :**
 ```json
 {
   "id_token": "<google-id-token>",
   "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
-`device_info` : Informations facultatives d'empreinte numérique de l'appareil.
+`device_info` : Informations optionnelles sur l'empreinte numérique de l'appareil (device fingerprinting).
 
 **Réponse `200` :**
 ```json
@@ -418,18 +463,35 @@ S'authentifier via un fournisseur OAuth2.
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
   "expires_in": 3600,
+  "refresh_expires_in": 86400,
+  "device_summary": "Windows 11 Desktop",
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
-    "first_name": "John",
-    "last_name": "Doe",
+    "username": null,
+    "phone": null,
+    "avatar": "https://lh3.googleusercontent.com/a/...",
+    "bio": null,
+    "timezone": null,
+    "language": null,
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "is_active": true,
     "is_email_verified": true,
     "is_phone_verified": false,
     "is_2fa_enabled": false,
+    "created_at": "2023-10-01T12:00:00Z",
+    "last_login": "2023-10-02T08:30:00Z",
+    "custom_fields": null,
+    "preferences": {
+      "email_notifications": true,
+      "sms_notifications": false,
+      "marketing_emails": false
+    },
     "roles": [],
     "permissions": []
   },
-  "message": "Authentication successful",
+  "message": "Authentification réussie",
   "provider": "google",
   "is_new_user": false
 }
@@ -438,16 +500,16 @@ S'authentifier via un fournisseur OAuth2.
 **Réponse `400` (Fournisseur invalide) :**
 ```json
 {
-  "error": "Unsupported provider",
+  "error": "Fournisseur non supporté",
   "code": "INVALID_PROVIDER",
   "supported_providers": ["google", "github", "microsoft", "facebook"]
 }
 ```
 
-**Réponse `401` (Échec de l'authentification du fournisseur) :**
+**Réponse `401` (Échec de l'authentification fournisseur) :**
 ```json
 {
-  "error": "Provider authentication failed",
+  "error": "L'authentification du fournisseur a échoué",
   "code": "PROVIDER_AUTH_FAILED"
 }
 ```
@@ -455,7 +517,7 @@ S'authentifier via un fournisseur OAuth2.
 **Réponse `401` (Échec de l'authentification sociale) :**
 ```json
 {
-  "error": "Social authentication failed",
+  "error": "L'authentification sociale a échoué",
   "code": "SOCIAL_AUTH_FAILED"
 }
 ```
@@ -463,12 +525,12 @@ S'authentifier via un fournisseur OAuth2.
 ---
 
 ### `GET /social/<provider>/callback/`
-Point de terminaison de rappel OAuth2 pour le flux de code d'autorisation.
+Point de terminaison de rappel (callback) OAuth2 pour le flux de code d'autorisation.
 
 **Paramètres de requête :**
 - `code` (requis) : Code d'autorisation du fournisseur
 - `redirect_uri` (requis) : URI de redirection d'origine
-- `state` (facultatif) : Paramètre CSRF/état
+- `state` (optionnel) : Paramètre d'état/CSRF
 
 **Réponse `200` :**
 ```json
@@ -477,15 +539,31 @@ Point de terminaison de rappel OAuth2 pour le flux de code d'autorisation.
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
   "expires_in": 3600,
+  "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
-    "first_name": "John",
-    "last_name": "Doe",
+    "username": null,
+    "phone": null,
+    "avatar": "https://lh3.googleusercontent.com/a/...",
+    "bio": null,
+    "timezone": null,
+    "language": null,
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "is_active": true,
     "is_email_verified": true,
     "is_phone_verified": false,
     "is_2fa_enabled": false,
+    "created_at": "2023-10-01T12:00:00Z",
+    "last_login": "2023-10-02T08:30:00Z",
+    "custom_fields": null,
+    "preferences": {
+      "email_notifications": true,
+      "sms_notifications": false,
+      "marketing_emails": false
+    },
     "roles": [],
     "permissions": []
   },
@@ -496,13 +574,13 @@ Point de terminaison de rappel OAuth2 pour le flux de code d'autorisation.
 
 **Réponse `302` (Redirection avec jetons) :**
 ```
-Location: https://yourapp.com/auth/callback?access_token=eyJ...&refresh_token=eyJ...
+Location: https://votre-app.com/auth/callback?access_token=eyJ...&refresh_token=eyJ...
 ```
 
 **Réponse `400` (Fournisseur invalide) :**
 ```json
 {
-  "error": "Provider 'xyz' is not supported.",
+  "error": "Le fournisseur 'xyz' n'est pas supporté.",
   "code": "PROVIDER_NOT_SUPPORTED"
 }
 ```
@@ -510,7 +588,7 @@ Location: https://yourapp.com/auth/callback?access_token=eyJ...&refresh_token=ey
 **Réponse `400` (Code manquant) :**
 ```json
 {
-  "error": "Authorization code is required",
+  "error": "Le code d'autorisation est requis",
   "code": "MISSING_CODE"
 }
 ```
@@ -518,7 +596,7 @@ Location: https://yourapp.com/auth/callback?access_token=eyJ...&refresh_token=ey
 **Réponse `400` (redirect_uri manquant) :**
 ```json
 {
-  "error": "redirect_uri is required",
+  "error": "redirect_uri est requis",
   "code": "MISSING_REDIRECT_URI"
 }
 ```
@@ -526,24 +604,24 @@ Location: https://yourapp.com/auth/callback?access_token=eyJ...&refresh_token=ey
 **Réponse `400` (Erreur de rappel) :**
 ```json
 {
-  "error": "OAuth2 callback processing failed",
+  "error": "Échec du traitement du rappel OAuth2",
   "code": "CALLBACK_ERROR",
-  "details": "An unexpected error occurred during authentication."
+  "details": {}
 }
 ```
 
 **Réponse `401` (Échec de l'échange de code) :**
 ```json
 {
-  "error": "Failed to exchange authorization code",
+  "error": "Échec de l'échange du code d'autorisation",
   "code": "CODE_EXCHANGE_FAILED"
 }
 ```
 
-**Réponse `401` (Échec de l'authentification du fournisseur) :**
+**Réponse `401` (Échec de l'authentification fournisseur) :**
 ```json
 {
-  "error": "Could not retrieve user data from google",
+  "error": "Impossible de récupérer les données utilisateur de google",
   "code": "PROVIDER_AUTH_FAILED"
 }
 ```
@@ -551,7 +629,7 @@ Location: https://yourapp.com/auth/callback?access_token=eyJ...&refresh_token=ey
 **Réponse `401` (Échec de l'authentification sociale) :**
 ```json
 {
-  "error": "Social authentication failed",
+  "error": "L'authentification sociale a échoué",
   "code": "SOCIAL_AUTH_FAILED"
 }
 ```
@@ -563,7 +641,7 @@ Location: https://yourapp.com/auth/callback?access_token=eyJ...&refresh_token=ey
 Nécessite `TENXYTE_MAGIC_LINK_ENABLED = True`.
 
 ### `POST /magic-link/request/`
-Demander un lien magique envoyé par e-mail.
+Demander un lien magique envoyé par email.
 
 **Requête :**
 ```json
@@ -576,14 +654,14 @@ Demander un lien magique envoyé par e-mail.
 **Réponse `200` :**
 ```json
 {
-  "message": "If this email is registered, a magic link has been sent."
+  "message": "Si cet email est enregistré, un lien magique a été envoyé."
 }
 ```
 
 **Réponse `400` (URL de validation manquante) :**
 ```json
 {
-  "error": "Validation URL is required",
+  "error": "L'URL de validation est requise",
   "code": "VALIDATION_URL_REQUIRED"
 }
 ```
@@ -591,7 +669,7 @@ Demander un lien magique envoyé par e-mail.
 **Réponse `429` (Limite de débit atteinte) :**
 ```json
 {
-  "error": "Too many magic link requests",
+  "error": "Trop de requêtes de liens magiques",
   "retry_after": 3600
 }
 ```
@@ -599,20 +677,44 @@ Demander un lien magique envoyé par e-mail.
 ---
 
 ### `GET /magic-link/verify/?token=<token>`
-Vérifier un jeton de lien magique et recevoir les jetons JWT.
+Vérifier un jeton de lien magique et recevoir des jetons JWT.
 
 **Réponse `200` :**
 ```json
 {
-  "access": "eyJ...",
-  "refresh": "eyJ...",
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "refresh_expires_in": 86400,
+  "device_summary": null,
   "user": {
-    "id": 42,
+    "id": "uuid-string",
     "email": "user@example.com",
-    "first_name": "John",
-    "last_name": "Doe"
+    "username": null,
+    "phone": null,
+    "avatar": "https://cdn.example.com/avatars/user.jpg",
+    "bio": null,
+    "timezone": "Europe/Paris",
+    "language": "fr",
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "is_active": true,
+    "is_email_verified": true,
+    "is_phone_verified": false,
+    "is_2fa_enabled": false,
+    "created_at": "2023-10-01T12:00:00Z",
+    "last_login": "2023-10-02T08:30:00Z",
+    "custom_fields": null,
+    "preferences": {
+      "email_notifications": true,
+      "sms_notifications": false,
+      "marketing_emails": false
+    },
+    "roles": [],
+    "permissions": []
   },
-  "message": "Magic link verified successfully",
+  "message": "Lien magique vérifié avec succès",
   "session_id": "uuid-string",
   "device_id": "uuid-string"
 }
@@ -621,7 +723,7 @@ Vérifier un jeton de lien magique et recevoir les jetons JWT.
 **Réponse `400` (Jeton manquant) :**
 ```json
 {
-  "error": "Token is required",
+  "error": "Le jeton est requis",
   "code": "TOKEN_REQUIRED"
 }
 ```
@@ -629,9 +731,9 @@ Vérifier un jeton de lien magique et recevoir les jetons JWT.
 **Réponse `401` (Jeton invalide/utilisé/expiré) :**
 ```json
 {
-  "error": "Invalid magic link token",
-  "details": "The token provided is not valid",
-  "code": "INVALID_TOKEN"
+  "error": "Jeton de lien magique invalide",
+  "code": "INVALID_TOKEN",
+  "details": {}
 }
 ```
 
@@ -651,16 +753,18 @@ Rafraîchir le jeton d'accès.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600
+  "expires_in": 3600,
+  "refresh_expires_in": 86400,
+  "device_summary": null
 }
 ```
 
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "refresh_token": ["This field is required."]
+    "refresh_token": ["Ce champ est obligatoire."]
   }
 }
 ```
@@ -668,7 +772,7 @@ Rafraîchir le jeton d'accès.
 **Réponse `401` (Jeton de rafraîchissement invalide/expiré) :**
 ```json
 {
-  "error": "Refresh token expired or revoked",
+  "error": "Le jeton de rafraîchissement a expiré ou a été révoqué",
   "code": "REFRESH_FAILED"
 }
 ```
@@ -683,22 +787,22 @@ Déconnexion (révoque le jeton de rafraîchissement + met le jeton d'accès sur
 { "refresh_token": "eyJ..." }
 ```
 
-**En-têtes (facultatif) :**
+**En-têtes (optionnels) :**
 ```
 Authorization: Bearer <access_token>
 ```
 
 **Réponse `200` :**
 ```json
-{ "message": "Logged out successfully" }
+{ "message": "Déconnexion réussie" }
 ```
 
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "refresh_token": ["This field is required."]
+    "refresh_token": ["Ce champ est obligatoire."]
   }
 }
 ```
@@ -706,7 +810,7 @@ Authorization: Bearer <access_token>
 ---
 
 ### `POST /logout/all/` 
-Déconnexion de tous les appareils.
+Se déconnecter de tous les appareils.
 
 **En-têtes (requis) :**
 ```
@@ -715,23 +819,25 @@ Authorization: Bearer <access_token>
 
 **Réponse `200` :**
 ```json
-{ "message": "Logged out from 3 devices" }
+{ "message": "Déconnecté de 3 appareils" }
 ```
 
 **Réponse `401` (Non autorisé) :**
 ```json
 {
-  "error": "Authentication credentials were not provided",
-  "details": "JWT token is required"
+  "error": "Les identifiants d'authentification n'ont pas été fournis",
+  "code": "UNAUTHORIZED",
+  "details": {}
 }
 ```
+
 
 ---
 
 ## Vérification OTP
 
 ### `POST /otp/request/` 
-Demander un code OTP (vérification d'e-mail ou de téléphone).
+Demander un code OTP (vérification d'email ou de téléphone).
 
 **En-têtes (requis) :**
 ```
@@ -747,7 +853,7 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "OTP verification code sent",
+  "message": "Code de vérification OTP envoyé",
   "otp_id": "uuid-string",
   "expires_at": "2024-01-01T12:00:00Z",
   "channel": "email",
@@ -758,9 +864,9 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "otp_type": ["Enter a valid choice."]
+    "otp_type": ["Entrez un choix valide."]
   }
 }
 ```
@@ -768,7 +874,7 @@ Authorization: Bearer <access_token>
 **Réponse `429` (Limite de débit atteinte) :**
 ```json
 {
-  "error": "Too many OTP requests",
+  "error": "Trop de requêtes OTP",
   "retry_after": 300
 }
 ```
@@ -776,7 +882,7 @@ Authorization: Bearer <access_token>
 ---
 
 ### `POST /otp/verify/email/` 
-Vérifier l'e-mail avec le code OTP.
+Vérifier l'email avec le code OTP.
 
 **En-têtes (requis) :**
 ```
@@ -791,7 +897,7 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "Email verified successfully",
+  "message": "Email vérifié avec succès",
   "email_verified": true,
   "verified_at": "2024-01-01T12:00:00Z"
 }
@@ -800,9 +906,9 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "code": ["Ensure this field has no more than 6 characters."]
+    "code": ["Assurez-vous que ce champ n'a pas plus de 6 caractères."]
   }
 }
 ```
@@ -810,9 +916,9 @@ Authorization: Bearer <access_token>
 **Réponse `401` (Code invalide/expiré) :**
 ```json
 {
-  "error": "Invalid OTP code",
-  "details": "The code provided is incorrect or has expired",
-  "code": "INVALID_OTP"
+  "error": "Code OTP invalide",
+  "code": "INVALID_OTP",
+  "details": {}
 }
 ```
 
@@ -834,7 +940,7 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "Phone verified successfully",
+  "message": "Téléphone vérifié avec succès",
   "phone_verified": true,
   "verified_at": "2024-01-01T12:00:00Z",
   "phone_number": "+33612345678"
@@ -844,9 +950,9 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "code": ["Ensure this field has no more than 6 characters."]
+    "code": ["Assurez-vous que ce champ n'a pas plus de 6 caractères."]
   }
 }
 ```
@@ -854,9 +960,9 @@ Authorization: Bearer <access_token>
 **Réponse `401` (Code invalide/expiré) :**
 ```json
 {
-  "error": "Invalid OTP code",
-  "details": "The code provided is incorrect or has expired",
-  "code": "INVALID_OTP"
+  "error": "Code OTP invalide",
+  "code": "INVALID_OTP",
+  "details": {}
 }
 ```
 
@@ -865,9 +971,9 @@ Authorization: Bearer <access_token>
 ## Gestion des Mots de Passe
 
 ### `POST /password/reset/request/`
-Demander un e-mail de réinitialisation de mot de passe.
+Demander un email de réinitialisation de mot de passe.
 
-**Requête (e-mail) :**
+**Requête (email) :**
 ```json
 { "email": "user@example.com" }
 ```
@@ -883,7 +989,7 @@ Demander un e-mail de réinitialisation de mot de passe.
 **Réponse `200` :**
 ```json
 {
-  "message": "Password reset code sent",
+  "message": "Code de réinitialisation de mot de passe envoyé",
   "otp_id": "uuid-string",
   "expires_at": "2024-01-01T12:00:00Z",
   "channel": "email"
@@ -893,15 +999,18 @@ Demander un e-mail de réinitialisation de mot de passe.
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
-  "details": "Email or phone number is required"
+  "error": "Erreur de validation",
+  "code": "VALIDATION_ERROR",
+  "details": {
+    "non_field_errors": ["L'email ou le numéro de téléphone est requis"]
+  }
 }
 ```
 
 **Réponse `429` (Limite de débit atteinte) :**
 ```json
 {
-  "error": "Too many password reset requests",
+  "error": "Trop de requêtes de réinitialisation de mot de passe",
   "retry_after": 3600
 }
 ```
@@ -911,7 +1020,7 @@ Demander un e-mail de réinitialisation de mot de passe.
 ### `POST /password/reset/confirm/`
 Confirmer la réinitialisation du mot de passe avec le code OTP.
 
-**Requête (e-mail) :**
+**Requête (email) :**
 ```json
 {
   "email": "user@example.com",
@@ -933,7 +1042,7 @@ Confirmer la réinitialisation du mot de passe avec le code OTP.
 **Réponse `200` :**
 ```json
 {
-  "message": "Password reset successful",
+  "message": "Réinitialisation du mot de passe réussie",
   "tokens_revoked": 3,
   "password_safe": true
 }
@@ -942,9 +1051,9 @@ Confirmer la réinitialisation du mot de passe avec le code OTP.
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "new_password": ["Password must be at least 8 characters long."]
+    "new_password": ["Le mot de passe doit comporter au moins 8 caractères."]
   }
 }
 ```
@@ -952,16 +1061,16 @@ Confirmer la réinitialisation du mot de passe avec le code OTP.
 **Réponse `401` (Code invalide/expiré) :**
 ```json
 {
-  "error": "OTP code has expired",
-  "details": "Please request a new password reset code",
-  "code": "OTP_EXPIRED"
+  "error": "Le code OTP a expiré",
+  "code": "OTP_EXPIRED",
+  "details": {}
 }
 ```
 
 ---
 
 ### `POST /password/change/` 
-Changer de mot de passe (nécessite le mot de passe actuel).
+Changer le mot de passe (nécessite le mot de passe actuel).
 
 **En-têtes (requis) :**
 ```
@@ -979,7 +1088,7 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "Password changed successfully",
+  "message": "Mot de passe changé avec succès",
   "password_strength": "strong",
   "sessions_revoked": 2
 }
@@ -988,17 +1097,17 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "new_password": ["Password must be at least 8 characters long."]
+    "new_password": ["Le mot de passe doit comporter au moins 8 caractères."]
   }
 }
 ```
 
-**Réponse `401` (Mot de passe actuel incorrect) :**
+**Réponse `401` (Mot de passe actuel invalide) :**
 ```json
 {
-  "error": "Current password is incorrect",
+  "error": "Le mot de passe actuel est incorrect",
   "code": "INVALID_PASSWORD"
 }
 ```
@@ -1011,7 +1120,7 @@ Vérifier la force du mot de passe sans l'enregistrer.
 **Requête :**
 ```json
 { 
-  "password": "MyPassword123!",
+  "password": "MonMotDePasse123!",
   "email": "user@example.com"
 }
 ```
@@ -1040,9 +1149,9 @@ Vérifier la force du mot de passe sans l'enregistrer.
   "strength": "Weak",
   "is_valid": false,
   "errors": [
-    "Password must be at least 12 characters long.",
-    "Password must contain at least one number.",
-    "Password must contain at least one special character."
+    "Le mot de passe doit comporter au moins 12 caractères.",
+    "Le mot de passe doit contenir au moins un chiffre.",
+    "Le mot de passe doit contenir au moins un caractère spécial."
   ],
   "requirements": {
     "min_length": 12,
@@ -1086,7 +1195,7 @@ Obtenir le profil de l'utilisateur actuel.
 Authorization: Bearer <access_token>
 ```
 
-**En-têtes (facultatif) :**
+**En-têtes (optionnels) :**
 ```
 X-Org-Slug: organization-slug
 ```
@@ -1095,13 +1204,13 @@ X-Org-Slug: organization-slug
 ```json
 {
   "id": 12345,
-  "email": "john.doe@example.com",
-  "first_name": "John",
-  "last_name": "Doe",
-  "username": "johndoe",
+  "email": "jean.dupont@example.com",
+  "first_name": "Jean",
+  "last_name": "Dupont",
+  "username": "jeandupont",
   "phone": "+33612345678",
   "avatar": "https://cdn.example.com/avatars/john.jpg",
-  "bio": "Software developer passionate about security",
+  "bio": "Développeur passionné par la sécurité",
   "timezone": "Europe/Paris",
   "language": "fr",
   "is_active": true,
@@ -1109,7 +1218,7 @@ X-Org-Slug: organization-slug
   "date_joined": "2024-01-15T10:30:00Z",
   "last_login": "2024-01-20T14:22:00Z",
   "custom_fields": {
-    "department": "Engineering",
+    "department": "Ingénierie",
     "employee_id": "EMP001"
   },
   "preferences": {
@@ -1138,7 +1247,7 @@ Mettre à jour le profil de l'utilisateur actuel.
 Authorization: Bearer <access_token>
 ```
 
-**En-têtes (facultatif) :**
+**En-têtes (optionnels) :**
 ```
 X-Org-Slug: organization-slug
 ```
@@ -1146,15 +1255,15 @@ X-Org-Slug: organization-slug
 **Requête :**
 ```json
 {
-  "first_name": "Jane",
-  "last_name": "Doe",
-  "username": "janedoe",
+  "first_name": "Jean",
+  "last_name": "Dupont",
+  "username": "jeandupont",
   "phone": "+33612345678",
-  "bio": "Senior developer",
+  "bio": "Développeur Senior",
   "timezone": "Europe/Paris",
   "language": "fr",
   "custom_fields": {
-    "department": "Engineering"
+    "department": "Ingénierie"
   }
 }
 ```
@@ -1162,16 +1271,16 @@ X-Org-Slug: organization-slug
 **Réponse `200` :**
 ```json
 {
-  "message": "Profile updated successfully",
+  "message": "Profil mis à jour avec succès",
   "updated_fields": ["first_name", "last_name"],
   "user": {
     "id": 12345,
-    "email": "john.doe@example.com",
-    "first_name": "Jane",
-    "last_name": "Doe",
-    "username": "janedoe",
+    "email": "jean.dupont@example.com",
+    "first_name": "Jean",
+    "last_name": "Dupont",
+    "username": "jeandupont",
     "phone": "+33612345678",
-    "bio": "Senior developer",
+    "bio": "Développeur Senior",
     "timezone": "Europe/Paris",
     "language": "fr",
     "is_active": true,
@@ -1189,10 +1298,10 @@ X-Org-Slug: organization-slug
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "phone": ["Invalid phone format"],
-    "username": ["Username already taken"]
+    "phone": ["Format de téléphone invalide"],
+    "username": ["Ce nom d'utilisateur est déjà pris"]
   }
 }
 ```
@@ -1207,7 +1316,7 @@ Obtenir les rôles et permissions de l'utilisateur actuel.
 Authorization: Bearer <access_token>
 ```
 
-**En-têtes (facultatif) :**
+**En-têtes (optionnels) :**
 ```
 X-Org-Slug: organization-slug
 ```
@@ -1222,10 +1331,10 @@ X-Org-Slug: organization-slug
 
 ---
 
-## Authentification à Deux Facteurs (2FA)
+## Authentification à deux facteurs (2FA)
 
 ### `GET /2fa/status/` 
-Obtenir le statut 2FA de l'utilisateur actuel.
+Obtenir le statut 2FA pour l'utilisateur actuel.
 
 **En-têtes (requis) :**
 ```
@@ -1243,7 +1352,7 @@ Authorization: Bearer <access_token>
 ---
 
 ### `POST /2fa/setup/` 
-Initier la configuration de la 2FA. Retourne un code QR et des codes de secours.
+Initier la configuration de la 2FA. Renvoie un code QR et des codes de secours.
 
 **En-têtes (requis) :**
 ```
@@ -1253,19 +1362,19 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "Scan the QR code with your authenticator app, then confirm with a code.",
+  "message": "Scannez le code QR avec votre application d'authentification, puis confirmez avec un code.",
   "secret": "JBSWY3DPEHPK3PXP",
   "qr_code": "data:image/png;base64,...",
   "provisioning_uri": "otpauth://totp/...",
   "backup_codes": ["abc123", "def456", ...],
-  "warning": "Save the backup codes securely. They will not be shown again."
+  "warning": "Conservez les codes de secours en lieu sûr. Ils ne seront plus affichés."
 }
 ```
 
 **Réponse `400` (2FA déjà activée) :**
 ```json
 {
-  "error": "2FA is already enabled",
+  "error": "La 2FA est déjà activée",
   "code": "2FA_ALREADY_ENABLED"
 }
 ```
@@ -1288,7 +1397,7 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "2FA enabled successfully",
+  "message": "2FA activée avec succès",
   "is_enabled": true
 }
 ```
@@ -1296,8 +1405,8 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Code invalide) :**
 ```json
 {
-  "error": "Invalid TOTP code",
-  "details": "The code provided is incorrect or outside the valid time window",
+  "error": "Code TOTP invalide",
+  "details": "Le code fourni est incorrect ou en dehors de la fenêtre temporelle valide",
   "code": "INVALID_CODE"
 }
 ```
@@ -1305,7 +1414,7 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Code manquant) :**
 ```json
 {
-  "error": "Code is required",
+  "error": "Le code est requis",
   "code": "CODE_REQUIRED"
 }
 ```
@@ -1319,7 +1428,7 @@ Désactiver la 2FA (nécessite un code TOTP ou un code de secours).
 ```
 Authorization: Bearer <access_token>
 ```
-
+ 
 **Requête :**
 ```json
 {
@@ -1327,28 +1436,28 @@ Authorization: Bearer <access_token>
   "password": "UserP@ss123!"
 }
 ```
-
+ 
 **Réponse `200` :**
 ```json
 {
-  "message": "2FA disabled successfully",
+  "message": "2FA désactivée avec succès",
   "is_enabled": false
 }
 ```
-
+ 
 **Réponse `400` (Code invalide) :**
 ```json
 {
-  "error": "Invalid TOTP code",
-  "details": "The code provided is incorrect",
+  "error": "Code TOTP invalide",
+  "details": "Le code fourni est incorrect",
   "code": "INVALID_CODE"
 }
 ```
-
+ 
 **Réponse `400` (Code manquant) :**
 ```json
 {
-  "error": "Code is required",
+  "error": "Le code est requis",
   "code": "CODE_REQUIRED"
 }
 ```
@@ -1371,17 +1480,17 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "Backup codes regenerated",
+  "message": "Codes de secours régénérés",
   "backup_codes": ["AB12CD34", "EF56GH78", "IJ90KL12", "MN34OP56", "QR78ST90", "UV12WX34", "YZ56AB78", "CD90EF12", "GH34IJ56", "KL78MN90"],
-  "warning": "Save these codes securely. They will not be shown again."
+  "warning": "Conservez ces codes en lieu sûr. Ils ne seront plus affichés."
 }
 ```
 
 **Réponse `400` (Code invalide) :**
 ```json
 {
-  "error": "Invalid TOTP code",
-  "details": "The TOTP code provided is incorrect",
+  "error": "Code TOTP invalide",
+  "details": "Le code TOTP fourni est incorrect",
   "code": "INVALID_CODE"
 }
 ```
@@ -1389,7 +1498,7 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Code manquant) :**
 ```json
 {
-  "error": "TOTP code is required",
+  "error": "Le code TOTP est requis",
   "code": "CODE_REQUIRED"
 }
 ```
@@ -1406,10 +1515,10 @@ Lister toutes les permissions.
 Authorization: Bearer <access_token>
 ```
 
-**Paramètres de requête (facultatif) :**
+**Paramètres de requête (optionnels) :**
 - `search` : Recherche dans le code, le nom
-- `parent` : Filtrer par parent (null pour les permissions racines, ou ID du parent)
-- `ordering` : Trier par code, nom, date de création (par défaut : code)
+- `parent` : Filtrer par parent (null pour les permissions racines, ou ID parent)
+- `ordering` : Trier par code, nom, created_at (par défaut : code)
 
 **Réponse `200` :**
 ```json
@@ -1421,8 +1530,8 @@ Authorization: Bearer <access_token>
     {
       "id": "1",
       "code": "users.view",
-      "name": "View users",
-      "description": "Can view user list"
+      "name": "Voir les utilisateurs",
+      "description": "Peut voir la liste des utilisateurs"
     }
   ]
 }
@@ -1440,8 +1549,8 @@ Authorization: Bearer <access_token>
 ```json
 {
   "code": "posts.publish",
-  "name": "Publish Posts",
-  "description": "Can publish blog posts",
+  "name": "Publier des articles",
+  "description": "Peut publier des articles de blog",
   "parent_code": "posts.manage"
 }
 ```
@@ -1451,8 +1560,8 @@ Authorization: Bearer <access_token>
 {
   "id": "2",
   "code": "posts.publish",
-  "name": "Publish Posts",
-  "description": "Can publish blog posts",
+  "name": "Publier des articles",
+  "description": "Peut publier des articles de blog",
   "parent": {
     "id": "1",
     "code": "posts.manage"
@@ -1465,9 +1574,9 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "code": ["Permission with this code already exists."]
+    "code": ["Une permission avec ce code existe déjà."]
   }
 }
 ```
@@ -1485,8 +1594,8 @@ Authorization: Bearer <access_token>
 {
   "id": "1",
   "code": "users.view",
-  "name": "View users",
-  "description": "Can view user list",
+  "name": "Voir les utilisateurs",
+  "description": "Peut voir la liste des utilisateurs",
   "parent": null,
   "children": [
     {
@@ -1501,7 +1610,7 @@ Authorization: Bearer <access_token>
 **Réponse `404` (Non trouvée) :**
 ```json
 {
-  "error": "Permission not found",
+  "error": "Permission non trouvée",
   "code": "NOT_FOUND"
 }
 ```
@@ -1517,8 +1626,8 @@ Authorization: Bearer <access_token>
 **Requête :**
 ```json
 {
-  "name": "View all users",
-  "description": "Can view all users in the system",
+  "name": "Voir tous les utilisateurs",
+  "description": "Peut voir tous les utilisateurs du système",
   "parent_code": null
 }
 ```
@@ -1528,8 +1637,8 @@ Authorization: Bearer <access_token>
 {
   "id": "1",
   "code": "users.view",
-  "name": "View all users",
-  "description": "Can view all users in the system",
+  "name": "Voir tous les utilisateurs",
+  "description": "Peut voir tous les utilisateurs du système",
   "parent": null,
   "children": [
     {
@@ -1544,9 +1653,9 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "parent_code": ["Parent permission not found"]
+    "parent_code": ["Permission parente non trouvée"]
   }
 }
 ```
@@ -1554,7 +1663,7 @@ Authorization: Bearer <access_token>
 **Réponse `404` (Non trouvée) :**
 ```json
 {
-  "error": "Permission not found",
+  "error": "Permission non trouvée",
   "code": "NOT_FOUND"
 }
 ```
@@ -1570,14 +1679,14 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "Permission deleted"
+  "message": "Permission supprimée"
 }
 ```
 
 **Réponse `404` (Non trouvée) :**
 ```json
 {
-  "error": "Permission not found",
+  "error": "Permission non trouvée",
   "code": "NOT_FOUND"
 }
 ```
@@ -1594,10 +1703,10 @@ Lister tous les rôles.
 Authorization: Bearer <access_token>
 ```
 
-**Paramètres de requête (facultatif) :**
+**Paramètres de requête (optionnels) :**
 - `search` : Recherche dans le code, le nom
 - `is_default` : Filtrer par is_default (true/false)
-- `ordering` : Trier par code, nom, date de création (par défaut : nom)
+- `ordering` : Trier par code, nom, created_at (par défaut : name)
 
 **Réponse `200` :**
 ```json
@@ -1609,7 +1718,7 @@ Authorization: Bearer <access_token>
     {
       "id": "1",
       "code": "editor",
-      "name": "Editor",
+      "name": "Éditeur",
       "is_default": false
     }
   ]
@@ -1628,8 +1737,8 @@ Authorization: Bearer <access_token>
 ```json
 {
   "code": "editor",
-  "name": "Editor",
-  "description": "Can edit content",
+  "name": "Éditeur",
+  "description": "Peut éditer le contenu",
   "permission_codes": ["posts.edit", "posts.view"],
   "is_default": false
 }
@@ -1640,14 +1749,14 @@ Authorization: Bearer <access_token>
 {
   "id": "1",
   "code": "editor",
-  "name": "Editor",
-  "description": "Can edit content",
+  "name": "Éditeur",
+  "description": "Peut éditer le contenu",
   "permissions": [
     {
       "id": "1",
       "code": "posts.edit",
-      "name": "Edit posts",
-      "description": "Can edit blog posts"
+      "name": "Éditer les articles",
+      "description": "Peut éditer les articles de blog"
     }
   ],
   "is_default": false,
@@ -1659,9 +1768,9 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "code": ["Role with this code already exists."]
+    "code": ["Un rôle avec ce code existe déjà."]
   }
 }
 ```
@@ -1679,14 +1788,14 @@ Authorization: Bearer <access_token>
 {
   "id": "1",
   "code": "editor",
-  "name": "Editor",
-  "description": "Can edit content",
+  "name": "Éditeur",
+  "description": "Peut éditer le contenu",
   "permissions": [
     {
       "id": "1",
       "code": "posts.edit",
-      "name": "Edit posts",
-      "description": "Can edit blog posts"
+      "name": "Éditer les articles",
+      "description": "Peut éditer les articles de blog"
     }
   ],
   "is_default": false,
@@ -1698,7 +1807,7 @@ Authorization: Bearer <access_token>
 **Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "Role not found",
+  "error": "Rôle non trouvé",
   "code": "NOT_FOUND"
 }
 ```
@@ -1714,8 +1823,8 @@ Authorization: Bearer <access_token>
 **Requête :**
 ```json
 {
-  "name": "Senior Editor",
-  "description": "Can edit and publish content",
+  "name": "Éditeur Senior",
+  "description": "Peut éditer et publier du contenu",
   "permission_codes": ["posts.edit", "posts.publish", "posts.view"],
   "is_default": false
 }
@@ -1726,20 +1835,20 @@ Authorization: Bearer <access_token>
 {
   "id": "1",
   "code": "editor",
-  "name": "Senior Editor",
-  "description": "Can edit and publish content",
+  "name": "Éditeur Senior",
+  "description": "Peut éditer et publier du contenu",
   "permissions": [
     {
       "id": "1",
       "code": "posts.edit",
-      "name": "Edit posts",
-      "description": "Can edit blog posts"
+      "name": "Éditer les articles",
+      "description": "Peut éditer les articles de blog"
     },
     {
       "id": "2",
       "code": "posts.publish",
-      "name": "Publish posts",
-      "description": "Can publish blog posts"
+      "name": "Publier les articles",
+      "description": "Peut publier des articles de blog"
     }
   ],
   "is_default": false,
@@ -1751,9 +1860,9 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "permission_codes": ["Permission 'invalid.code' not found"]
+    "permission_codes": ["Permission 'invalid.code' non trouvée"]
   }
 }
 ```
@@ -1761,7 +1870,7 @@ Authorization: Bearer <access_token>
 **Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "Role not found",
+  "error": "Rôle non trouvé",
   "code": "NOT_FOUND"
 }
 ```
@@ -1777,14 +1886,14 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "Role deleted"
+  "message": "Rôle supprimé"
 }
 ```
 
 **Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "Role not found",
+  "error": "Rôle non trouvé",
   "code": "NOT_FOUND"
 }
 ```
@@ -1806,8 +1915,8 @@ Authorization: Bearer <access_token>
     {
       "id": "1",
       "code": "posts.publish",
-      "name": "Publish Posts",
-      "description": "Can publish blog posts",
+      "name": "Publier des articles",
+      "description": "Peut publier des articles de blog",
       "parent": null,
       "children": [],
       "created_at": "2024-01-01T12:00:00Z"
@@ -1819,7 +1928,7 @@ Authorization: Bearer <access_token>
 **Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "Role not found",
+  "error": "Rôle non trouvé",
   "code": "NOT_FOUND"
 }
 ```
@@ -1842,21 +1951,21 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "2 permission(s) added",
+  "message": "2 permission(s) ajoutée(s)",
   "added": ["posts.edit", "posts.publish"],
   "role_code": "editor",
   "permissions": [
     {
       "id": "1",
       "code": "posts.edit",
-      "name": "Edit posts",
-      "description": "Can edit blog posts"
+      "name": "Éditer les articles",
+      "description": "Peut éditer les articles de blog"
     },
     {
       "id": "2",
       "code": "posts.publish",
-      "name": "Publish posts",
-      "description": "Can publish blog posts"
+      "name": "Publier les articles",
+      "description": "Peut publier des articles de blog"
     }
   ]
 }
@@ -1865,7 +1974,7 @@ Authorization: Bearer <access_token>
 **Réponse `200` (Certaines déjà assignées) :**
 ```json
 {
-  "message": "1 permission(s) added",
+  "message": "1 permission(s) ajoutée(s)",
   "added": ["posts.publish"],
   "already_assigned": ["posts.edit"],
   "role_code": "editor",
@@ -1876,9 +1985,9 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "permission_codes": ["This field is required."]
+    "permission_codes": ["Ce champ est requis."]
   }
 }
 ```
@@ -1886,7 +1995,7 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Permissions non trouvées) :**
 ```json
 {
-  "error": "Some permissions not found",
+  "error": "Certaines permissions n'ont pas été trouvées",
   "code": "PERMISSIONS_NOT_FOUND",
   "not_found": ["invalid.permission"]
 }
@@ -1894,7 +2003,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-## RBAC — Rôles et Permissions de l'Utilisateur
+## RBAC — Rôles et Permissions des Utilisateurs
 
 ### `GET /users/<id>/roles/`  `users.manage`
 Lister les rôles assignés à un utilisateur.
@@ -1912,7 +2021,7 @@ Authorization: Bearer <access_token>
     {
       "id": "1",
       "code": "editor",
-      "name": "Editor",
+      "name": "Éditeur",
       "is_default": false
     }
   ]
@@ -1922,7 +2031,7 @@ Authorization: Bearer <access_token>
 **Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "User not found",
+  "error": "Utilisateur non trouvé",
   "code": "NOT_FOUND"
 }
 ```
@@ -1945,7 +2054,7 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "Role assigned",
+  "message": "Rôle assigné",
   "roles": ["editor", "user"]
 }
 ```
@@ -1953,9 +2062,9 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "role_code": ["This field is required."]
+    "role_code": ["Ce champ est requis."]
   }
 }
 ```
@@ -1963,7 +2072,7 @@ Authorization: Bearer <access_token>
 **Réponse `404` (Utilisateur non trouvé) :**
 ```json
 {
-  "error": "User not found",
+  "error": "Utilisateur non trouvé",
   "code": "NOT_FOUND"
 }
 ```
@@ -1971,13 +2080,13 @@ Authorization: Bearer <access_token>
 **Réponse `404` (Rôle non trouvé) :**
 ```json
 {
-  "error": "Role not found",
+  "error": "Rôle non trouvé",
   "code": "ROLE_NOT_FOUND"
 }
 ```
 
 ### `DELETE /users/<id>/roles/`  `users.manage`
-Supprimer un rôle pour un utilisateur.
+Retirer un rôle à un utilisateur.
 
 **En-têtes (requis) :**
 ```
@@ -1985,7 +2094,7 @@ Authorization: Bearer <access_token>
 ```
 
 **Paramètres de requête (requis) :**
-- `role_code` : Code du rôle à supprimer
+- `role_code` : Code du rôle à retirer
 
 **Requête :**
 ```
@@ -1995,7 +2104,7 @@ DELETE /users/123/roles/?role_code=editor
 **Réponse `200` :**
 ```json
 {
-  "message": "Role removed",
+  "message": "Rôle retiré",
   "roles": ["user"]
 }
 ```
@@ -2003,7 +2112,7 @@ DELETE /users/123/roles/?role_code=editor
 **Réponse `400` (Paramètre manquant) :**
 ```json
 {
-  "error": "role_code query parameter required",
+  "error": "Le paramètre de requête role_code est requis",
   "code": "MISSING_PARAM"
 }
 ```
@@ -2011,7 +2120,7 @@ DELETE /users/123/roles/?role_code=editor
 **Réponse `404` (Utilisateur non trouvé) :**
 ```json
 {
-  "error": "User not found",
+  "error": "Utilisateur non trouvé",
   "code": "NOT_FOUND"
 }
 ```
@@ -2019,13 +2128,13 @@ DELETE /users/123/roles/?role_code=editor
 **Réponse `404` (Rôle non trouvé) :**
 ```json
 {
-  "error": "Role not found",
+  "error": "Rôle non trouvé",
   "code": "ROLE_NOT_FOUND"
 }
 ```
 
 ### `GET /users/<id>/permissions/`  `users.manage`
-Lister les permissions directes d'un utilisateur.
+Lister les permissions directes pour un utilisateur.
 
 **En-têtes (requis) :**
 ```
@@ -2036,13 +2145,13 @@ Authorization: Bearer <access_token>
 ```json
 {
   "user_id": "1",
-  "email": "user@example.com",
+  "email": "utilisateur@example.com",
   "direct_permissions": [
     {
       "id": "1",
       "code": "posts.view",
-      "name": "View posts",
-      "description": "Can view blog posts",
+      "name": "Voir les articles",
+      "description": "Peut voir les articles de blog",
       "parent": null,
       "children": [],
       "created_at": "2024-01-01T12:00:00Z"
@@ -2055,7 +2164,7 @@ Authorization: Bearer <access_token>
 **Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "User not found",
+  "error": "Utilisateur non trouvé",
   "code": "NOT_FOUND"
 }
 ```
@@ -2078,21 +2187,21 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "2 permission(s) added",
+  "message": "2 permission(s) ajoutée(s)",
   "added": ["posts.edit", "posts.publish"],
   "user_id": "1",
   "direct_permissions": [
     {
       "id": "1",
       "code": "posts.edit",
-      "name": "Edit posts",
-      "description": "Can edit blog posts"
+      "name": "Éditer les articles",
+      "description": "Peut éditer les articles de blog"
     },
     {
       "id": "2",
       "code": "posts.publish",
-      "name": "Publish posts",
-      "description": "Can publish blog posts"
+      "name": "Publier les articles",
+      "description": "Peut publier des articles de blog"
     }
   ]
 }
@@ -2101,7 +2210,7 @@ Authorization: Bearer <access_token>
 **Réponse `200` (Certaines déjà assignées) :**
 ```json
 {
-  "message": "1 permission(s) added",
+  "message": "1 permission(s) ajoutée(s)",
   "added": ["posts.publish"],
   "already_assigned": ["posts.edit"],
   "user_id": "1",
@@ -2112,9 +2221,9 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "permission_codes": ["This field is required."]
+    "permission_codes": ["Ce champ est requis."]
   }
 }
 ```
@@ -2122,7 +2231,7 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Permissions non trouvées) :**
 ```json
 {
-  "error": "Some permissions not found",
+  "error": "Certaines permissions n'ont pas été trouvées",
   "code": "PERMISSIONS_NOT_FOUND",
   "not_found": ["invalid.permission"]
 }
@@ -2140,10 +2249,10 @@ Lister toutes les applications.
 Authorization: Bearer <access_token>
 ```
 
-**Paramètres de requête (facultatif) :**
+**Paramètres de requête (optionnels) :**
 - `search` : Recherche dans le nom, la description
 - `is_active` : Filtrer par statut actif (true/false)
-- `ordering` : Trier par nom, date de création (par défaut : nom)
+- `ordering` : Trier par nom, created_at (par défaut : name)
 
 **Réponse `200` :**
 ```json
@@ -2154,8 +2263,8 @@ Authorization: Bearer <access_token>
   "results": [
     {
       "id": "app_123",
-      "name": "My Client App",
-      "description": "Frontend application for user dashboard",
+      "name": "Mon App Client",
+      "description": "Application frontend pour le tableau de bord utilisateur",
       "access_key": "ak_abc123def456",
       "is_active": true,
       "created_at": "2024-01-01T12:00:00Z",
@@ -2176,19 +2285,19 @@ Authorization: Bearer <access_token>
 **Requête :**
 ```json
 {
-  "name": "My Next.js App",
-  "description": "Frontend client"
+  "name": "Mon App Next.js",
+  "description": "Client frontend"
 }
 ```
 
 **Réponse `201` :**
 ```json
 {
-  "message": "Application created successfully",
+  "message": "Application créée avec succès",
   "application": {
     "id": "app_124",
-    "name": "My Next.js App",
-    "description": "Frontend client",
+    "name": "Mon App Next.js",
+    "description": "Client frontend",
     "access_key": "ak_abc123def456",
     "is_active": true,
     "created_at": "2024-01-01T12:00:00Z",
@@ -2198,16 +2307,16 @@ Authorization: Bearer <access_token>
     "access_key": "ak_abc123def456",
     "access_secret": "as_def456ghi789"
   },
-  "warning": "Save the access_secret now! It will never be shown again."
+  "warning": "Enregistrez le code secret (access_secret) maintenant ! Il ne sera plus jamais affiché."
 }
 ```
 
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "name": ["This field is required."]
+    "name": ["Ce champ est requis."]
   }
 }
 ```
@@ -2224,8 +2333,8 @@ Authorization: Bearer <access_token>
 ```json
 {
   "id": "app_124",
-  "name": "My Next.js App",
-  "description": "Frontend client application",
+  "name": "Mon App Next.js",
+  "description": "Application client frontend",
   "access_key": "ak_abc123def456",
   "is_active": true,
   "created_at": "2024-01-01T12:00:00Z",
@@ -2233,10 +2342,10 @@ Authorization: Bearer <access_token>
 }
 ```
 
-**Réponse `404` (Non trouvée) :**
+**Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "Application not found",
+  "error": "Application non trouvée",
   "code": "NOT_FOUND"
 }
 ```
@@ -2252,8 +2361,8 @@ Authorization: Bearer <access_token>
 **Requête :**
 ```json
 {
-  "name": "Updated App Name",
-  "description": "Updated description",
+  "name": "Nom de l'app mis à jour",
+  "description": "Description mise à jour",
   "is_active": true
 }
 ```
@@ -2262,8 +2371,8 @@ Authorization: Bearer <access_token>
 ```json
 {
   "id": "app_124",
-  "name": "Updated App Name",
-  "description": "Updated description",
+  "name": "Nom de l'app mis à jour",
+  "description": "Description mise à jour",
   "access_key": "ak_abc123def456",
   "is_active": true,
   "created_at": "2024-01-01T12:00:00Z",
@@ -2274,17 +2383,17 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Validation error",
+  "error": "Erreur de validation",
   "details": {
-    "name": ["This field may not be blank."]
+    "name": ["Ce champ ne peut pas être vide."]
   }
 }
 ```
 
-**Réponse `404` (Non trouvée) :**
+**Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "Application not found",
+  "error": "Application non trouvée",
   "code": "NOT_FOUND"
 }
 ```
@@ -2300,14 +2409,14 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "Application \"My App\" deleted successfully"
+  "message": "L'application \"My App\" a été supprimée avec succès"
 }
 ```
 
-**Réponse `404` (Non trouvée) :**
+**Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "Application not found",
+  "error": "Application non trouvée",
   "code": "NOT_FOUND"
 }
 ```
@@ -2330,11 +2439,11 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "Credentials regenerated successfully",
+  "message": "Identifiants régénérés avec succès",
   "application": {
     "id": "app_124",
-    "name": "My Next.js App",
-    "description": "Frontend client",
+    "name": "Mon App Next.js",
+    "description": "Client frontend",
     "access_key": "ak_new123def456",
     "is_active": true,
     "created_at": "2024-01-01T12:00:00Z",
@@ -2344,7 +2453,7 @@ Authorization: Bearer <access_token>
     "access_key": "ak_new123def456",
     "access_secret": "as_new789ghi012"
   },
-  "warning": "Save the access_secret now! It will never be shown again.",
+  "warning": "Enregistrez le code secret (access_secret) maintenant ! Il ne sera plus jamais affiché.",
   "old_credentials_invalidated": true
 }
 ```
@@ -2352,15 +2461,15 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Confirmation requise) :**
 ```json
 {
-  "error": "Confirmation required",
+  "error": "Confirmation requise",
   "code": "CONFIRMATION_REQUIRED"
 }
 ```
 
-**Réponse `404` (Non trouvée) :**
+**Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "Application not found",
+  "error": "Application non trouvée",
   "code": "NOT_FOUND"
 }
 ```
@@ -2377,18 +2486,18 @@ Lister tous les utilisateurs avec filtrage et pagination.
 Authorization: Bearer <access_token>
 ```
 
-**Paramètres de requête (facultatif) :**
-- `search` : Recherche dans l'e-mail, le prénom, le nom
+**Paramètres de requête (optionnels) :**
+- `search` : Recherche dans l'email, le prénom, le nom
 - `is_active` : Filtrer par statut actif (true/false)
 - `is_locked` : Filtrer par compte verrouillé (true/false)
 - `is_banned` : Filtrer par compte banni (true/false)
 - `is_deleted` : Filtrer par compte supprimé (true/false)
-- `is_email_verified` : Filtrer par e-mail vérifié (true/false)
+- `is_email_verified` : Filtrer par email vérifié (true/false)
 - `is_2fa_enabled` : Filtrer par 2FA activée (true/false)
 - `role` : Filtrer par code de rôle
-- `date_from` : Créé après (AAAA-MM-JJ)
-- `date_to` : Créé avant (AAAA-MM-JJ)
-- `ordering` : Trier par e-mail, date de création, dernière connexion, prénom
+- `date_from` : Créé après (YYYY-MM-DD)
+- `date_to` : Créé avant (YYYY-MM-DD)
+- `ordering` : Trier par email, created_at, last_login, first_name
 - `page` : Numéro de page
 - `page_size` : Éléments par page (max 100)
 
@@ -2401,9 +2510,9 @@ Authorization: Bearer <access_token>
   "results": [
     {
       "id": "1",
-      "email": "user@example.com",
-      "first_name": "John",
-      "last_name": "Doe",
+      "email": "utilisateur@example.com",
+      "first_name": "Jean",
+      "last_name": "Dupont",
       "is_active": true,
       "is_locked": false,
       "is_banned": false,
@@ -2431,11 +2540,11 @@ Authorization: Bearer <access_token>
 ```json
 {
   "id": "1",
-  "email": "user@example.com",
+  "email": "utilisateur@example.com",
   "phone_country_code": "+33",
   "phone_number": "612345678",
-  "first_name": "John",
-  "last_name": "Doe",
+  "first_name": "Jean",
+  "last_name": "Dupont",
   "is_active": true,
   "is_locked": false,
   "locked_until": null,
@@ -2460,7 +2569,7 @@ Authorization: Bearer <access_token>
 **Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "User not found",
+  "error": "Utilisateur non trouvé",
   "code": "NOT_FOUND"
 }
 ```
@@ -2476,19 +2585,19 @@ Authorization: Bearer <access_token>
 **Requête :**
 ```json
 {
-  "reason": "Terms of service violation"
+  "reason": "Violation des conditions d'utilisation"
 }
 ```
 
 **Réponse `200` :**
 ```json
 {
-  "message": "User banned successfully",
+  "message": "Utilisateur banni avec succès",
   "user": {
     "id": "1",
-    "email": "user@example.com",
-    "first_name": "John",
-    "last_name": "Doe",
+    "email": "utilisateur@example.com",
+    "first_name": "Jean",
+    "last_name": "Dupont",
     "is_active": false,
     "is_banned": true,
     "roles": ["user"],
@@ -2501,7 +2610,7 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Déjà banni) :**
 ```json
 {
-  "error": "User already banned",
+  "error": "L'utilisateur est déjà banni",
   "code": "ALREADY_BANNED"
 }
 ```
@@ -2509,7 +2618,7 @@ Authorization: Bearer <access_token>
 **Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "User not found",
+  "error": "Utilisateur non trouvé",
   "code": "NOT_FOUND"
 }
 ```
@@ -2530,12 +2639,12 @@ POST /admin/users/123/unban/
 **Réponse `200` :**
 ```json
 {
-  "message": "User unbanned successfully",
+  "message": "Utilisateur débanni avec succès",
   "user": {
     "id": "1",
-    "email": "user@example.com",
-    "first_name": "John",
-    "last_name": "Doe",
+    "email": "utilisateur@example.com",
+    "first_name": "Jean",
+    "last_name": "Dupont",
     "is_active": true,
     "is_banned": false,
     "roles": ["user"],
@@ -2548,7 +2657,7 @@ POST /admin/users/123/unban/
 **Réponse `400` (Pas banni) :**
 ```json
 {
-  "error": "User is not banned",
+  "error": "L'utilisateur n'est pas banni",
   "code": "NOT_BANNED"
 }
 ```
@@ -2556,13 +2665,13 @@ POST /admin/users/123/unban/
 **Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "User not found",
+  "error": "Utilisateur non trouvé",
   "code": "NOT_FOUND"
 }
 ```
 
 ### `POST /admin/users/<id>/lock/`  `users.lock`
-Verrouiller un compte utilisateur.
+Verrouiller le compte d'un utilisateur.
 
 **En-têtes (requis) :**
 ```
@@ -2573,19 +2682,19 @@ Authorization: Bearer <access_token>
 ```json
 {
   "duration_minutes": 60,
-  "reason": "Suspicious login activity detected"
+  "reason": "Activité de connexion suspecte détectée"
 }
 ```
 
 **Réponse `200` :**
 ```json
 {
-  "message": "User locked for 60 minutes",
+  "message": "Utilisateur verrouillé pendant 60 minutes",
   "user": {
     "id": "1",
-    "email": "user@example.com",
-    "first_name": "John",
-    "last_name": "Doe",
+    "email": "utilisateur@example.com",
+    "first_name": "Jean",
+    "last_name": "Dupont",
     "is_active": true,
     "is_locked": true,
     "locked_until": "2024-01-01T14:00:00Z",
@@ -2599,7 +2708,7 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Déjà verrouillé) :**
 ```json
 {
-  "error": "User already locked",
+  "error": "L'utilisateur est déjà verrouillé",
   "code": "ALREADY_LOCKED"
 }
 ```
@@ -2607,13 +2716,13 @@ Authorization: Bearer <access_token>
 **Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "User not found",
+  "error": "Utilisateur non trouvé",
   "code": "NOT_FOUND"
 }
 ```
 
 ### `POST /admin/users/<id>/unlock/`  `users.lock`
-Déverrouiller un compte utilisateur.
+Déverrouiller le compte d'un utilisateur.
 
 **En-têtes (requis) :**
 ```
@@ -2628,12 +2737,12 @@ POST /admin/users/123/unlock/
 **Réponse `200` :**
 ```json
 {
-  "message": "User unlocked successfully",
+  "message": "Compte utilisateur déverrouillé avec succès",
   "user": {
     "id": "1",
-    "email": "user@example.com",
-    "first_name": "John",
-    "last_name": "Doe",
+    "email": "utilisateur@example.com",
+    "first_name": "Jean",
+    "last_name": "Dupont",
     "is_active": true,
     "is_locked": false,
     "locked_until": null,
@@ -2647,7 +2756,7 @@ POST /admin/users/123/unlock/
 **Réponse `400` (Pas verrouillé) :**
 ```json
 {
-  "error": "User is not locked",
+  "error": "L'utilisateur n'est pas verrouillé",
   "code": "NOT_LOCKED"
 }
 ```
@@ -2655,7 +2764,7 @@ POST /admin/users/123/unlock/
 **Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "User not found",
+  "error": "Utilisateur non trouvé",
   "code": "NOT_FOUND"
 }
 ```
@@ -2672,14 +2781,14 @@ Lister les entrées du journal d'audit.
 Authorization: Bearer <access_token>
 ```
 
-**Paramètres de requête (facultatif) :**
+**Paramètres de requête (optionnels) :**
 - `user_id` : Filtrer par ID utilisateur
 - `action` : Filtrer par action (login, login_failed, password_change, etc.)
 - `ip_address` : Filtrer par adresse IP
 - `application_id` : Filtrer par ID d'application
-- `date_from` : Après la date (AAAA-MM-JJ)
-- `date_to` : Avant la date (AAAA-MM-JJ)
-- `ordering` : Trier par created_at, action, utilisateur
+- `date_from` : Après la date (YYYY-MM-DD)
+- `date_to` : Avant la date (YYYY-MM-DD)
+- `ordering` : Trier par created_at, action, user
 - `page` : Numéro de page
 - `page_size` : Éléments par page (max 100)
 
@@ -2693,12 +2802,12 @@ Authorization: Bearer <access_token>
     {
       "id": "1",
       "user": "123",
-      "user_email": "user@example.com",
+      "user_email": "utilisateur@example.com",
       "action": "login",
       "ip_address": "127.0.0.1",
       "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       "application": "app_456",
-      "application_name": "My Client App",
+      "application_name": "Mon App Client",
       "details": {
         "success": true,
         "method": "password"
@@ -2710,7 +2819,7 @@ Authorization: Bearer <access_token>
 ```
 
 ### `GET /admin/audit-logs/<id>/`  `audit.view`
-Get a single audit log entry.
+Obtenir une entrée unique du journal d'audit.
 
 **En-têtes (requis) :**
 ```
@@ -2722,12 +2831,12 @@ Authorization: Bearer <access_token>
 {
   "id": "1",
   "user": "123",
-  "user_email": "user@example.com",
+  "user_email": "utilisateur@example.com",
   "action": "login",
   "ip_address": "127.0.0.1",
   "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
   "application": "app_456",
-  "application_name": "My Client App",
+  "application_name": "Mon App Client",
   "details": {
     "success": true,
     "method": "password"
@@ -2736,31 +2845,31 @@ Authorization: Bearer <access_token>
 }
 ```
 
-**Réponse `404` (Non trouvée) :**
+**Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "Audit log not found",
+  "error": "Entrée du journal d'audit non trouvée",
   "code": "NOT_FOUND"
 }
 ```
 
 ### `GET /admin/login-attempts/`  `audit.view`
-List login attempts.
+Lister les tentatives de connexion.
 
 **En-têtes (requis) :**
 ```
 Authorization: Bearer <access_token>
 ```
 
-**Paramètres de requête (facultatif) :**
+**Paramètres de requête (optionnels) :**
 - `identifier` : Filtrer par identifiant (email/téléphone)
 - `ip_address` : Filtrer par adresse IP
 - `success` : Filtrer par succès/échec (true/false)
-- `date_from`: After date (YYYY-MM-DD)
-- `date_to`: Before date (YYYY-MM-DD)
-- `ordering`: Trier par created_at, identifier, ip_address
-- `page`: Numéro de page
-- `page_size`: Éléments par page (max 100)
+- `date_from` : Après la date (YYYY-MM-DD)
+- `date_to` : Avant la date (YYYY-MM-DD)
+- `ordering` : Trier par created_at, identifier, ip_address
+- `page` : Numéro de page
+- `page_size` : Éléments par page (max 100)
 
 **Réponse `200` :**
 ```json
@@ -2771,11 +2880,11 @@ Authorization: Bearer <access_token>
   "results": [
     {
       "id": "1",
-      "identifier": "user@example.com",
+      "identifier": "utilisateur@example.com",
       "ip_address": "127.0.0.1",
       "application": "app_456",
       "success": false,
-      "failure_reason": "Invalid password",
+      "failure_reason": "Mot de passe invalide",
       "created_at": "2024-01-01T12:00:00Z"
     }
   ]
@@ -2783,20 +2892,20 @@ Authorization: Bearer <access_token>
 ```
 
 ### `GET /admin/blacklisted-tokens/`  `audit.view`
-List active blacklisted tokens.
+Lister les jetons sur liste noire actifs.
 
 **En-têtes (requis) :**
 ```
 Authorization: Bearer <access_token>
 ```
 
-**Paramètres de requête (facultatif) :**
-- `user_id`: Filtrer par ID utilisateur
-- `reason`: Filtrer par raison (logout, password_change, security)
-- `expired`: Filtrer par expiration (true/false)
-- `ordering`: Trier par blacklisted_at, expires_at
-- `page`: Numéro de page
-- `page_size`: Éléments par page (max 100)
+**Paramètres de requête (optionnels) :**
+- `user_id` : Filtrer par ID utilisateur
+- `reason` : Filtrer par motif (logout, password_change, security)
+- `expired` : Filtrer par expiration (true/false)
+- `ordering` : Trier par blacklisted_at, expires_at
+- `page` : Numéro de page
+- `page_size` : Éléments par page (max 100)
 
 **Réponse `200` :**
 ```json
@@ -2809,7 +2918,7 @@ Authorization: Bearer <access_token>
       "id": "1",
       "token_jti": "jti123456789",
       "user": "123",
-      "user_email": "user@example.com",
+      "user_email": "utilisateur@example.com",
       "blacklisted_at": "2024-01-01T12:00:00Z",
       "expires_at": "2024-01-01T18:00:00Z",
       "reason": "logout",
@@ -2820,7 +2929,7 @@ Authorization: Bearer <access_token>
 ```
 
 ### `POST /admin/blacklisted-tokens/cleanup/`  `security.view`
-Remove expired blacklisted tokens.
+Supprimer les jetons expirés de la liste noire.
 
 **En-têtes (requis) :**
 ```
@@ -2835,27 +2944,27 @@ POST /admin/blacklisted-tokens/cleanup/
 **Réponse `200` :**
 ```json
 {
-  "message": "10 expired tokens cleaned up",
+  "message": "10 jetons expirés ont été nettoyés",
   "deleted_count": 10
 }
 ```
 
 ### `GET /admin/refresh-tokens/`  `audit.view`
-List active refresh tokens.
+Lister les jetons de rafraîchissement actifs.
 
 **En-têtes (requis) :**
 ```
 Authorization: Bearer <access_token>
 ```
 
-**Paramètres de requête (facultatif) :**
-- `user_id`: Filtrer par ID utilisateur
-- `application_id`: Filtrer par ID d'application
-- `is_revoked`: Filtrer par révocation (true/false)
-- `expired`: Filtrer par expiration (true/false)
-- `ordering`: Trier par created_at, expires_at, last_used_at
-- `page`: Numéro de page
-- `page_size`: Éléments par page (max 100)
+**Paramètres de requête (optionnels) :**
+- `user_id` : Filtrer par ID utilisateur
+- `application_id` : Filtrer par ID d'application
+- `is_revoked` : Filtrer par statut révoqué (true/false)
+- `expired` : Filtrer par expiration (true/false)
+- `ordering` : Trier par created_at, expires_at, last_used_at
+- `page` : Numéro de page
+- `page_size` : Éléments par page (max 100)
 
 **Réponse `200` :**
 ```json
@@ -2867,9 +2976,9 @@ Authorization: Bearer <access_token>
     {
       "id": "1",
       "user": "123",
-      "user_email": "user@example.com",
+      "user_email": "utilisateur@example.com",
       "application": "app_456",
-      "application_name": "My Client App",
+      "application_name": "Mon App Client",
       "device_info": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
       "ip_address": "127.0.0.1",
       "is_revoked": false,
@@ -2883,7 +2992,7 @@ Authorization: Bearer <access_token>
 ```
 
 ### `POST /admin/refresh-tokens/<id>/revoke/`  `security.view`
-Revoke a specific refresh token.
+Révoquer un jeton de rafraîchissement spécifique.
 
 **En-têtes (requis) :**
 ```
@@ -2891,20 +3000,22 @@ Authorization: Bearer <access_token>
 ```
 
 **Requête :**
-```
-POST /admin/refresh-tokens/123/revoke/
+```json
+{
+  "confirmation": "REVOKE"
+}
 ```
 
 **Réponse `200` :**
 ```json
 {
-  "message": "Token revoked successfully",
+  "message": "Jeton révoqué avec succès",
   "token": {
     "id": "1",
     "user": "123",
-    "user_email": "user@example.com",
+    "user_email": "utilisateur@example.com",
     "application": "app_456",
-    "application_name": "My Client App",
+    "application_name": "Mon App Client",
     "device_info": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
     "ip_address": "127.0.0.1",
     "is_revoked": true,
@@ -2919,40 +3030,40 @@ POST /admin/refresh-tokens/123/revoke/
 **Réponse `400` (Déjà révoqué) :**
 ```json
 {
-  "error": "Token already revoked",
+  "error": "Le jeton est déjà révoqué",
   "code": "ALREADY_REVOKED"
 }
 ```
 
-**Réponse `404` (Non trouvée) :**
+**Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "Refresh token not found",
+  "error": "Jeton de rafraîchissement non trouvé",
   "code": "NOT_FOUND"
 }
 ```
 
 ---
 
-## Admin — GDPR
+## Admin — RGPD
 
 ### `GET /admin/deletion-requests/`  `gdpr.view`
-List account deletion requests.
+Lister les demandes de suppression de compte.
 
 **En-têtes (requis) :**
 ```
 Authorization: Bearer <access_token>
 ```
 
-**Paramètres de requête (facultatif) :**
-- `user_id`: Filtrer par ID utilisateur
-- `status`: Filtrer par statut (pending, confirmation_sent, confirmed, completed, cancelled)
-- `date_from` : Date de demande après le (AAAA-MM-JJ)
-- `date_to` : Date de demande avant le (AAAA-MM-JJ)
-- `grace_period_expiring`: Filtrer par expiration de la période de grâce (true/false)
-- `ordering`: Trier par requested_at, grace_period_ends_at, status
-- `page`: Numéro de page
-- `page_size`: Éléments par page (max 100)
+**Paramètres de requête (optionnels) :**
+- `user_id` : Filtrer par ID utilisateur
+- `status` : Filtrer par statut (pending, confirmation_sent, confirmed, completed, cancelled)
+- `date_from` : Demandé après la date (YYYY-MM-DD)
+- `date_to` : Demandé avant la date (YYYY-MM-DD)
+- `grace_period_expiring` : Filtrer par période de grâce expirante (true/false)
+- `ordering` : Trier par requested_at, grace_period_ends_at, status
+- `page` : Numéro de page
+- `page_size` : Éléments par page (max 100)
 
 **Réponse `200` :**
 ```json
@@ -2964,14 +3075,14 @@ Authorization: Bearer <access_token>
     {
       "id": "1",
       "user": "123",
-      "user_email": "user@example.com",
+      "user_email": "utilisateur@example.com",
       "status": "pending",
       "requested_at": "2024-01-01T12:00:00Z",
       "confirmed_at": null,
       "grace_period_ends_at": "2024-01-31T12:00:00Z",
       "completed_at": null,
       "ip_address": "127.0.0.1",
-      "reason": "No longer need the account",
+      "reason": "Plus besoin du compte",
       "admin_notes": null,
       "processed_by": null,
       "processed_by_email": null,
@@ -2982,7 +3093,7 @@ Authorization: Bearer <access_token>
 ```
 
 ### `GET /admin/deletion-requests/<id>/`  `gdpr.admin`
-Get a deletion request.
+Obtenir une demande de suppression.
 
 **En-têtes (requis) :**
 ```
@@ -2994,14 +3105,14 @@ Authorization: Bearer <access_token>
 {
   "id": "1",
   "user": "123",
-  "user_email": "user@example.com",
+  "user_email": "utilisateur@example.com",
   "status": "pending",
   "requested_at": "2024-01-01T12:00:00Z",
   "confirmed_at": null,
   "grace_period_ends_at": "2024-01-31T12:00:00Z",
   "completed_at": null,
   "ip_address": "127.0.0.1",
-  "reason": "No longer need the account",
+  "reason": "Plus besoin du compte",
   "admin_notes": null,
   "processed_by": null,
   "processed_by_email": null,
@@ -3009,16 +3120,16 @@ Authorization: Bearer <access_token>
 }
 ```
 
-**Réponse `404` (Non trouvée) :**
+**Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "Deletion request not found",
+  "error": "Demande de suppression non trouvée",
   "code": "NOT_FOUND"
 }
 ```
 
 ### `POST /admin/deletion-requests/<id>/process/`  `gdpr.process`
-Process (execute) a deletion request.
+Traiter (exécuter) une demande de suppression.
 
 **En-têtes (requis) :**
 ```
@@ -3028,15 +3139,15 @@ Authorization: Bearer <access_token>
 **Requête :**
 ```json
 {
-  "confirmation": "PERMANENTLY DELETE",
-  "admin_notes": "Processed per user request - GDPR compliance"
+  "confirmation": "SUPPRIMER DÉFINITIVEMENT",
+  "admin_notes": "Traité suite à la demande de l'utilisateur - conformité RGPD"
 }
 ```
 
 **Réponse `200` :**
 ```json
 {
-  "message": "Account deletion processed successfully",
+  "message": "Suppression du compte traitée avec succès",
   "deletion_completed": true,
   "processed_at": "2024-01-15T10:30:00Z",
   "data_anonymized": true,
@@ -3045,15 +3156,15 @@ Authorization: Bearer <access_token>
   "request": {
     "id": "1",
     "user": "123",
-    "user_email": "user@example.com",
+    "user_email": "utilisateur@example.com",
     "status": "completed",
     "requested_at": "2024-01-01T12:00:00Z",
     "confirmed_at": "2024-01-02T12:00:00Z",
     "grace_period_ends_at": "2024-01-31T12:00:00Z",
     "completed_at": "2024-01-15T10:30:00Z",
     "ip_address": "127.0.0.1",
-    "reason": "No longer need the account",
-    "admin_notes": "Processed per user request - GDPR compliance",
+    "reason": "Plus besoin du compte",
+    "admin_notes": "Traité suite à la demande de l'utilisateur - conformité RGPD",
     "processed_by": "456",
     "processed_by_email": "admin@example.com",
     "is_grace_period_expired": false
@@ -3064,29 +3175,29 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Confirmation requise) :**
 ```json
 {
-  "error": "Explicit confirmation required",
+  "error": "Confirmation explicite requise",
   "code": "CONFIRMATION_REQUIRED"
 }
 ```
 
-**Réponse `400` (Non confirmé) :**
+**Réponse `400` (Non confirmée) :**
 ```json
 {
-  "error": "Cannot process request with status \"pending\". Only confirmed requests can be processed.",
+  "error": "Impossible de traiter la demande avec le statut \"en attente\". Seules les demandes confirmées peuvent être traitées.",
   "code": "REQUEST_NOT_CONFIRMED"
 }
 ```
 
-**Réponse `404` (Non trouvée) :**
+**Réponse `404` (Non trouvé) :**
 ```json
 {
-  "error": "Deletion request not found",
+  "error": "Demande de suppression non trouvée",
   "code": "NOT_FOUND"
 }
 ```
 
 ### `POST /admin/deletion-requests/process-expired/`  `gdpr.process`
-Process all expired grace period deletions.
+Traiter toutes les suppressions dont la période de grâce est expirée.
 
 **En-têtes (requis) :**
 ```
@@ -3101,7 +3212,7 @@ POST /admin/deletion-requests/process-expired/
 **Réponse `200` :**
 ```json
 {
-  "message": "5 deletion(s) processed, 0 failed",
+  "message": "5 suppression(s) traitée(s), 0 échouée(s)",
   "processed": 5,
   "failed": 0
 }
@@ -3109,10 +3220,10 @@ POST /admin/deletion-requests/process-expired/
 
 ---
 
-## User — GDPR
+## Utilisateur — RGPD
 
 ### `POST /request-account-deletion/` 
-Demander la suppression du compte (démarre la période de grâce).
+Demander la suppression du compte (commence la période de grâce).
 
 **En-têtes (requis) :**
 ```
@@ -3122,23 +3233,23 @@ Authorization: Bearer <access_token>
 **Requête :**
 ```json
 {
-  "password": "current_password",
+  "password": "mot_de_passe_actuel",
   "otp_code": "123456",
-  "reason": "No longer using the service"
+  "reason": "N'utilise plus le service"
 }
 ```
 
 **Réponse `201` :**
 ```json
 {
-  "message": "Account deletion request created successfully",
+  "message": "Demande de suppression de compte créée avec succès",
   "deletion_request_id": 123,
   "scheduled_deletion_date": "2024-02-15T10:30:00Z",
   "grace_period_days": 30,
   "cancellation_token": "cancel_abc123def456",
   "data_retention_policy": {
-    "anonymization_after": "30 days",
-    "final_deletion_after": "90 days"
+    "anonymization_after": "30 jours",
+    "final_deletion_after": "90 jours"
   }
 }
 ```
@@ -3146,9 +3257,9 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Mot de passe invalide) :**
 ```json
 {
-  "error": "Invalid password",
+  "error": "Mot de passe invalide",
   "details": {
-    "password": ["Invalid password"]
+    "password": ["Mot de passe invalide"]
   }
 }
 ```
@@ -3156,7 +3267,7 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Déjà en attente) :**
 ```json
 {
-  "error": "Account deletion already pending",
+  "error": "Suppression de compte déjà en attente",
   "code": "DELETION_ALREADY_PENDING",
   "existing_request": {
     "scheduled_deletion_date": "2024-02-15T10:30:00Z",
@@ -3166,7 +3277,7 @@ Authorization: Bearer <access_token>
 ```
 
 ### `POST /confirm-account-deletion/` 
-Confirm account deletion request.
+Confirmer la demande de suppression de compte.
 
 **Requête :**
 ```json
@@ -3178,24 +3289,58 @@ Confirm account deletion request.
 **Réponse `200` :**
 ```json
 {
-  "message": "Account deletion confirmed successfully",
+  "message": "Suppression du compte confirmée avec succès",
   "deletion_confirmed": true,
   "grace_period_ends": "2024-02-15T10:30:00Z",
-  "cancellation_instructions": "Use the cancellation token from the initial request to cancel before the grace period ends."
+  "cancellation_instructions": "Utilisez le jeton d'annulation de la demande initiale pour annuler avant la fin de la période de grâce."
+}
+```}
+}
+```
+
+**Réponse `400` (Déjà en attente) :**
+```json
+{
+  "error": "Suppression de compte déjà en attente",
+  "code": "DELETION_ALREADY_PENDING",
+  "existing_request": {
+    "scheduled_deletion_date": "2024-02-15T10:30:00Z",
+    "cancellation_token": "cancel_abc123"
+  }
+}
+```
+
+### `POST /confirm-account-deletion/` 
+Confirmer la demande de suppression de compte.
+
+**Requête :**
+```json
+{
+  "token": "confirm_abc123def456"
+}
+```
+
+**Réponse `200` :**
+```json
+{
+  "message": "Suppression du compte confirmée avec succès",
+  "deletion_confirmed": true,
+  "grace_period_ends": "2024-02-15T10:30:00Z",
+  "cancellation_instructions": "Utilisez le jeton d'annulation de la demande initiale pour annuler avant la fin de la période de grâce."
 }
 ```
 
 **Réponse `400` (Jeton requis) :**
 ```json
 {
-  "error": "Confirmation token is required"
+  "error": "Le jeton de confirmation est requis"
 }
 ```
 
 **Réponse `400` (Jeton invalide) :**
 ```json
 {
-  "error": "Invalid confirmation token",
+  "error": "Jeton de confirmation invalide",
   "code": "INVALID_TOKEN"
 }
 ```
@@ -3203,14 +3348,14 @@ Confirm account deletion request.
 **Réponse `410` (Jeton expiré) :**
 ```json
 {
-  "error": "Confirmation token has expired",
+  "error": "Le jeton de confirmation a expiré",
   "code": "TOKEN_EXPIRED",
   "expired_at": "2024-01-16T10:30:00Z"
 }
 ```
 
 ### `POST /cancel-account-deletion/` 
-Cancel a pending deletion request.
+Annuler une demande de suppression en attente.
 
 **En-têtes (requis) :**
 ```
@@ -3227,20 +3372,20 @@ Authorization: Bearer <access_token>
 **Réponse `200` :**
 ```json
 {
-  "message": "Account deletion cancelled successfully",
+  "message": "Suppression du compte annulée avec succès",
   "deletion_cancelled": true,
   "account_reactivated": true,
   "cancellation_time": "2024-01-15T14:30:00Z",
-  "security_note": "Your account has been reactivated and you can continue using the service normally."
+  "security_note": "Votre compte a été réactivé et vous pouvez continuer à utiliser le service normalement."
 }
 ```
 
 **Réponse `400` (Mot de passe invalide) :**
 ```json
 {
-  "error": "Invalid password",
+  "error": "Mot de passe invalide",
   "details": {
-    "password": ["Invalid password"]
+    "password": ["Mot de passe invalide"]
   }
 }
 ```
@@ -3248,13 +3393,13 @@ Authorization: Bearer <access_token>
 **Réponse `404` (Aucune suppression en attente) :**
 ```json
 {
-  "error": "No pending deletion request found",
+  "error": "Aucune demande de suppression en attente trouvée",
   "code": "NO_PENDING_DELETION"
 }
 ```
 
 ### `GET /account-deletion-status/` 
-Get the status of the current deletion request.
+Obtenir le statut de la demande de suppression actuelle.
 
 **En-têtes (requis) :**
 ```
@@ -3279,7 +3424,7 @@ Authorization: Bearer <access_token>
       "requested_at": "2024-01-15T10:30:00Z",
       "confirmed_at": null,
       "completed_at": null,
-      "reason": "No longer using the service"
+      "reason": "N'utilise plus le service"
     },
     {
       "id": "100",
@@ -3287,14 +3432,14 @@ Authorization: Bearer <access_token>
       "requested_at": "2023-12-01T09:00:00Z",
       "confirmed_at": null,
       "completed_at": "2023-12-02T10:00:00Z",
-      "reason": "Changed mind"
+      "reason": "A changé d'avis"
     }
   ]
 }
 ```
 
 ### `POST /export-user-data/` 
-Export all personal data (GDPR Article 20).
+Exporter toutes les données personnelles (RGPD Article 20).
 
 **En-têtes (requis) :**
 ```
@@ -3313,9 +3458,9 @@ Authorization: Bearer <access_token>
 {
   "user_info": {
     "id": "123",
-    "email": "user@example.com",
-    "first_name": "John",
-    "last_name": "Doe",
+    "email": "utilisateur@example.com",
+    "first_name": "Jean",
+    "last_name": "Dupont",
     "created_at": "2024-01-01T12:00:00Z",
     "last_login": "2024-01-15T10:30:00Z"
   },
@@ -3323,7 +3468,7 @@ Authorization: Bearer <access_token>
     {
       "id": "1",
       "name": "user",
-      "description": "Standard user role"
+      "description": "Rôle utilisateur standard"
     }
   ],
   "permissions": [
@@ -3333,7 +3478,7 @@ Authorization: Bearer <access_token>
   "applications": [
     {
       "id": "app_456",
-      "name": "My Client App",
+      "name": "Mon App Client",
       "created_at": "2024-01-05T09:00:00Z"
     }
   ],
@@ -3348,7 +3493,7 @@ Authorization: Bearer <access_token>
     "exported_at": "2024-01-15T14:30:00Z",
     "export_format": "json",
     "total_records": 15,
-    "data_retention_policy": "Available for 30 days"
+    "data_retention_policy": "Disponible pendant 30 jours"
   }
 }
 ```
@@ -3356,9 +3501,9 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Mot de passe invalide) :**
 ```json
 {
-  "error": "Invalid password",
+  "error": "Mot de passe invalide",
   "details": {
-    "password": ["Invalid password"]
+    "password": ["Mot de passe invalide"]
   }
 }
 ```
@@ -3370,14 +3515,14 @@ Authorization: Bearer <access_token>
 Tous les points de terminaison du tableau de bord nécessitent la permission `dashboard.view`.
 
 ### `GET /dashboard/stats/`  `dashboard.view`
-Statistiques globales multi-modules.
+Statistiques globales inter-modules.
 
 **En-têtes (requis) :**
 ```
 Authorization: Bearer <access_token>
 ```
 
-**Paramètres de requête (facultatif) :**
+**Paramètres de requête (optionnels) :**
 - `period` : Période d'analyse (7d, 30d, 90d) - par défaut : 7d
 - `compare` : Inclure la comparaison avec la période précédente (true/false)
 - `X-Org-Slug` : Slug de l'organisation pour filtrer par organisation
@@ -3425,7 +3570,7 @@ Authorization: Bearer <access_token>
 ```
 
 ### `GET /dashboard/auth/`  `dashboard.view`
-Statistiques détaillées d'authentification (taux de connexion, stats des jetons, graphiques).
+Statistiques d'authentification détaillées (taux de connexion, stats des jetons, graphiques).
 
 **En-têtes (requis) :**
 ```
@@ -3485,14 +3630,14 @@ Authorization: Bearer <access_token>
 ```
 
 ### `GET /dashboard/security/`  `dashboard.view`
-Statistiques de sécurité (résumé d'audit, jetons mis sur liste noire, activité suspecte).
+Security statistics (audit summary, blacklisted tokens, suspicious activity).
 
-**En-têtes (requis) :**
+**Headers (required):**
 ```
 Authorization: Bearer <access_token>
 ```
 
-**Réponse `200` :**
+**Response `200`:**
 ```json
 {
   "audit_summary_24h": {
@@ -3525,14 +3670,14 @@ Authorization: Bearer <access_token>
 ```
 
 ### `GET /dashboard/gdpr/`  `dashboard.view`
-Statistiques de conformité RGPD.
+GDPR compliance statistics.
 
-**En-têtes (requis) :**
+**Headers (required):**
 ```
 Authorization: Bearer <access_token>
 ```
 
-**Réponse `200` :**
+**Response `200`:**
 ```json
 {
   "deletion_requests": {
@@ -3554,14 +3699,14 @@ Authorization: Bearer <access_token>
 ```
 
 ### `GET /dashboard/organizations/`  `dashboard.view`
-Statistiques des organisations (uniquement si `TENXYTE_ORGANIZATIONS_ENABLED=True`).
+Organization statistics (only if `TENXYTE_ORGANIZATIONS_ENABLED=True`).
 
-**En-têtes (requis) :**
+**Headers (required):**
 ```
 Authorization: Bearer <access_token>
 ```
 
-**Réponse `200` (Activé) :**
+**Response `200` (Enabled):**
 ```json
 {
   "enabled": true,
@@ -3592,7 +3737,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-**Réponse `200` (Désactivé) :**
+**Response `200` (Disabled):**
 ```json
 {
   "enabled": false
@@ -3601,24 +3746,24 @@ Authorization: Bearer <access_token>
 
 ---
 
-## Organisations (optionnel)
+## Organizations (opt-in)
 
-Activez avec `TENXYTE_ORGANIZATIONS_ENABLED = True`.
+Enable with `TENXYTE_ORGANIZATIONS_ENABLED = True`.
 
-Tous les points de terminaison d'organisation nécessitent l'en-tête `X-Org-Slug` pour identifier l'organisation cible :
+All organization endpoints require the `X-Org-Slug` header to identify the target organization:
 ```
 X-Org-Slug: acme-corp
 ```
 
 ### `POST /organizations/` 
-Créer une organisation.
+Create an organization.
 
-**En-têtes (requis) :**
+**Headers (required):**
 ```
 Authorization: Bearer <access_token>
 ```
 
-**Requête :**
+**Request:**
 ```json
 {
   "name": "Acme Corp",
@@ -3633,7 +3778,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-**Réponse `201` :**
+**Response `201`:**
 ```json
 {
   "id": 1,
@@ -3652,7 +3797,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-**Réponse `400` (Erreur de validation) :**
+**Response `400` (Validation error):**
 ```json
 {
   "slug": ["Organization with this slug already exists"],
@@ -3661,22 +3806,22 @@ Authorization: Bearer <access_token>
 ```
 
 ### `GET /organizations/list/` 
-Lister les organisations auxquelles l'utilisateur actuel appartient.
+List organizations the current user belongs to.
 
-**En-têtes (requis) :**
+**Headers (required):**
 ```
 Authorization: Bearer <access_token>
 ```
 
-**Paramètres de requête (facultatif) :**
-- `search` : Recherche dans le nom et le slug
-- `is_active` : Filtrer par statut actif (true/false)
-- `parent` : Filtrer par parent (null = organisations racines)
-- `ordering` : Trier par nom, slug, date de création (avec - pour l'ordre décroissant)
-- `page` : Numéro de page
-- `page_size` : Éléments par page (max 100)
+**Query Parameters (optional):**
+- `search`: Search in name and slug
+- `is_active`: Filter by active status (true/false)
+- `parent`: Filter by parent (null = root organizations)
+- `ordering`: Sort by name, slug, created_at (with - for descending)
+- `page`: Page number
+- `page_size`: Items per page (max 100)
 
-**Réponse `200` :**
+**Response `200`:**
 ```json
 {
   "count": 2,
@@ -3708,15 +3853,15 @@ Authorization: Bearer <access_token>
 ```
 
 ### `GET /organizations/detail/` 
-Obtenir les détails de l'organisation.
+Get organization details.
 
-**En-têtes (requis) :**
+**Headers (required):**
 ```
 Authorization: Bearer <access_token>
 X-Org-Slug: acme-corp
 ```
 
-**Réponse `200` :**
+**Response `200`:**
 ```json
 {
   "id": 1,
@@ -3749,7 +3894,7 @@ X-Org-Slug: acme-corp
 }
 ```
 
-**Réponse `403` (Pas membre) :**
+**Response `403` (Not member):**
 ```json
 {
   "error": "Access denied: You are not a member of this organization",
@@ -3760,7 +3905,7 @@ X-Org-Slug: acme-corp
 **Réponse `404` (Non trouvée) :**
 ```json
 {
-  "error": "Organization not found",
+  "error": "Organisation non trouvée",
   "code": "NOT_FOUND"
 }
 ```
@@ -3779,7 +3924,7 @@ X-Org-Slug: acme-corp
 {
   "name": "Acme Corporation",
   "slug": "acme-corporation",
-  "description": "Updated technology company description",
+  "description": "Mise à jour de la description de l'entreprise technologique",
   "parent_id": null,
   "metadata": {
     "industry": "technology",
@@ -3796,7 +3941,7 @@ X-Org-Slug: acme-corp
   "id": 1,
   "name": "Acme Corporation",
   "slug": "acme-corporation",
-  "description": "Updated technology company description",
+  "description": "Mise à jour de la description de l'entreprise technologique",
   "updated_at": "2024-01-20T15:30:00Z",
   "is_active": true,
   "member_count": 15,
@@ -3812,7 +3957,7 @@ X-Org-Slug: acme-corp
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Cannot set max_members below current member count",
+  "error": "Impossible de définir max_members en dessous du nombre actuel de membres",
   "code": "INVALID_MEMBER_LIMIT"
 }
 ```
@@ -3820,7 +3965,7 @@ X-Org-Slug: acme-corp
 **Réponse `403` (Permissions insuffisantes) :**
 ```json
 {
-  "error": "You don't have permission to manage this organization",
+  "error": "Vous n'avez pas la permission de gérer cette organisation",
   "code": "INSUFFICIENT_PERMISSIONS"
 }
 ```
@@ -3837,14 +3982,14 @@ X-Org-Slug: acme-corp
 **Réponse `200` :**
 ```json
 {
-  "message": "Organization deleted successfully"
+  "message": "Organisation supprimée avec succès"
 }
 ```
 
-**Réponse `400` (A des organisations filles) :**
+**Réponse `400` (A des organisations enfants) :**
 ```json
 {
-  "error": "Cannot delete organization with child organizations",
+  "error": "Impossible de supprimer une organisation ayant des organisations enfants",
   "code": "HAS_CHILDREN"
 }
 ```
@@ -3852,7 +3997,7 @@ X-Org-Slug: acme-corp
 **Réponse `403` (Pas propriétaire) :**
 ```json
 {
-  "error": "Only organization owners can delete organizations",
+  "error": "Seuls les propriétaires de l'organisation peuvent supprimer des organisations",
   "code": "NOT_OWNER"
 }
 ```
@@ -3860,13 +4005,13 @@ X-Org-Slug: acme-corp
 **Réponse `404` (Non trouvée) :**
 ```json
 {
-  "error": "Organization not found",
+  "error": "Organisation non trouvée",
   "code": "NOT_FOUND"
 }
 ```
 
 ### `GET /organizations/tree/` 
-Obtenir l'arbre complet de la hiérarchie de l'organisation.
+Obtenir l'arborescence complète de la hiérarchie de l'organisation.
 
 **En-têtes (requis) :**
 ```
@@ -3925,11 +4070,11 @@ Authorization: Bearer <access_token>
 X-Org-Slug: acme-corp
 ```
 
-**Paramètres de requête (facultatif) :**
-- `search` : Recherche dans l'e-mail, le prénom, le nom
+**Paramètres de requête (optionnels) :**
+- `search` : Recherche dans l'email, le prénom, le nom
 - `role` : Filtrer par rôle (owner, admin, member)
 - `status` : Filtrer par statut (active, inactive, pending)
-- `ordering` : Trier par joined_at, user.email, rôle
+- `ordering` : Trier par joined_at, user.email, role
 - `page` : Numéro de page
 - `page_size` : Éléments par page (max 100)
 
@@ -3945,11 +4090,11 @@ X-Org-Slug: acme-corp
       "user": {
         "id": 42,
         "email": "admin@acme.com",
-        "first_name": "John",
-        "last_name": "Doe"
+        "first_name": "Jean",
+        "last_name": "Dupont"
       },
       "role": "admin",
-      "role_display": "Administrator",
+      "role_display": "Administrateur",
       "permissions": [
         "org.manage",
         "org.members.invite",
@@ -3968,12 +4113,12 @@ X-Org-Slug: acme-corp
       "id": 2,
       "user": {
         "id": 43,
-        "email": "user@acme.com",
-        "first_name": "Jane",
-        "last_name": "Smith"
+        "email": "utilisateur@acme.com",
+        "first_name": "Jeanne",
+        "last_name": "Martin"
       },
       "role": "member",
-      "role_display": "Member",
+      "role_display": "Membre",
       "permissions": [
         "org.view"
       ],
@@ -4013,12 +4158,12 @@ X-Org-Slug: acme-corp
   "id": 25,
   "user": {
     "id": 2,
-    "email": "newmember@acme.com",
-    "first_name": "Jane",
-    "last_name": "Smith"
+    "email": "nouveaumembre@acme.com",
+    "first_name": "Jeanne",
+    "last_name": "Martin"
   },
   "role": "member",
-  "role_display": "Member",
+  "role_display": "Membre",
   "joined_at": "2024-01-20T15:30:00Z",
   "status": "active"
 }
@@ -4027,7 +4172,7 @@ X-Org-Slug: acme-corp
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "Cannot add owner as regular member",
+  "error": "Impossible d'ajouter le propriétaire en tant que membre standard",
   "code": "INVALID_ROLE_FOR_OWNER"
 }
 ```
@@ -4035,7 +4180,7 @@ X-Org-Slug: acme-corp
 **Réponse `403` (Permissions insuffisantes) :**
 ```json
 {
-  "error": "You don't have permission to invite members",
+  "error": "Vous n'avez pas la permission d'inviter des membres",
   "code": "INSUFFICIENT_PERMISSIONS"
 }
 ```
@@ -4043,7 +4188,7 @@ X-Org-Slug: acme-corp
 **Réponse `404` (Utilisateur non trouvé) :**
 ```json
 {
-  "error": "User not found",
+  "error": "Utilisateur non trouvé",
   "code": "USER_NOT_FOUND"
 }
 ```
@@ -4073,12 +4218,12 @@ X-Org-Slug: acme-corp
   "id": 25,
   "user": {
     "id": 2,
-    "email": "member@acme.com",
-    "first_name": "Jane",
-    "last_name": "Smith"
+    "email": "membre@acme.com",
+    "first_name": "Jeanne",
+    "last_name": "Martin"
   },
   "role": "admin",
-  "role_display": "Administrator",
+  "role_display": "Administrateur",
   "updated_at": "2024-01-20T16:00:00Z"
 }
 ```
@@ -4086,7 +4231,7 @@ X-Org-Slug: acme-corp
 **Réponse `400` (Impossible de rétrograder le dernier propriétaire) :**
 ```json
 {
-  "error": "Cannot demote the last owner of the organization",
+  "error": "Impossible de rétrograder le dernier propriétaire de l'organisation",
   "code": "LAST_OWNER_CANNOT_BE_DEMOTED"
 }
 ```
@@ -4094,7 +4239,7 @@ X-Org-Slug: acme-corp
 **Réponse `403` (Permissions insuffisantes) :**
 ```json
 {
-  "error": "You don't have permission to manage members",
+  "error": "Vous n'avez pas la permission de gérer les membres",
   "code": "INSUFFICIENT_PERMISSIONS"
 }
 ```
@@ -4102,13 +4247,13 @@ X-Org-Slug: acme-corp
 **Réponse `404` (Membre non trouvé) :**
 ```json
 {
-  "error": "Member not found",
+  "error": "Membre non trouvé",
   "code": "MEMBER_NOT_FOUND"
 }
 ```
 
 ### `DELETE /organizations/members/<user_id>/remove/`  `org.members.remove`
-Supprimer un membre d'une organisation.
+Retirer un membre d'une organisation.
 
 **En-têtes (requis) :**
 ```
@@ -4117,19 +4262,19 @@ X-Org-Slug: acme-corp
 ```
 
 **Paramètres de chemin :**
-- `user_id` : ID de l'utilisateur à supprimer
+- `user_id` : ID de l'utilisateur à retirer
 
 **Réponse `200` :**
 ```json
 {
-  "message": "Member removed successfully"
+  "message": "Membre retiré avec succès"
 }
 ```
 
-**Réponse `400` (Impossible de supprimer le dernier propriétaire) :**
+**Réponse `400` (Impossible de retirer le dernier propriétaire) :**
 ```json
 {
-  "error": "Cannot remove the last owner of the organization",
+  "error": "Impossible de retirer le dernier propriétaire de l'organisation",
   "code": "LAST_OWNER_CANNOT_BE_REMOVED"
 }
 ```
@@ -4137,7 +4282,7 @@ X-Org-Slug: acme-corp
 **Réponse `403` (Permissions insuffisantes) :**
 ```json
 {
-  "error": "You don't have permission to remove members",
+  "error": "Vous n'avez pas la permission de retirer des membres",
   "code": "INSUFFICIENT_PERMISSIONS"
 }
 ```
@@ -4145,13 +4290,13 @@ X-Org-Slug: acme-corp
 **Réponse `404` (Membre non trouvé) :**
 ```json
 {
-  "error": "Member not found",
+  "error": "Membre non trouvé",
   "code": "MEMBER_NOT_FOUND"
 }
 ```
 
 ### `POST /organizations/invitations/`  `org.members.invite`
-Inviter un utilisateur dans une organisation par e-mail.
+Inviter un utilisateur dans une organisation par email.
 
 **En-têtes (requis) :**
 ```
@@ -4162,7 +4307,7 @@ X-Org-Slug: acme-corp
 **Requête :**
 ```json
 {
-  "email": "newuser@example.com",
+  "email": "nouvelutilisateur@example.com",
   "role_code": "member",
   "expires_in_days": 7
 }
@@ -4172,16 +4317,16 @@ X-Org-Slug: acme-corp
 ```json
 {
   "id": 123,
-  "email": "newuser@example.com",
+  "email": "nouvelutilisateur@example.com",
   "role": "member",
-  "role_display": "Member",
+  "role_display": "Membre",
   "token": "inv_abc123def456",
   "expires_at": "2024-01-27T15:30:00Z",
   "invited_by": {
     "id": 42,
     "email": "admin@acme.com",
-    "first_name": "John",
-    "last_name": "Doe"
+    "first_name": "Jean",
+    "last_name": "Dupont"
   },
   "organization": {
     "id": 1,
@@ -4196,7 +4341,7 @@ X-Org-Slug: acme-corp
 **Réponse `400` (Erreur de validation) :**
 ```json
 {
-  "error": "User is already a member of this organization",
+  "error": "L'utilisateur est déjà membre de cette organisation",
   "code": "ALREADY_MEMBER"
 }
 ```
@@ -4204,7 +4349,7 @@ X-Org-Slug: acme-corp
 **Réponse `403` (Permissions insuffisantes) :**
 ```json
 {
-  "error": "You don't have permission to invite members",
+  "error": "Vous n'avez pas la permission d'inviter des membres",
   "code": "INSUFFICIENT_PERMISSIONS"
 }
 ```
@@ -4228,23 +4373,23 @@ Authorization: Bearer <access_token>
     "permissions": [
       {
         "code": "org.manage",
-        "name": "Manage Organization",
-        "description": "Can manage all organization settings"
+        "name": "Gérer l'organisation",
+        "description": "Peut gérer tous les paramètres de l'organisation"
       },
       {
         "code": "org.members.invite",
-        "name": "Invite Members",
-        "description": "Can invite new members to the organization"
+        "name": "Inviter des membres",
+        "description": "Peut inviter de nouveaux membres dans l'organisation"
       },
       {
         "code": "org.members.manage",
-        "name": "Manage Members",
-        "description": "Can manage existing members"
+        "name": "Gérer les membres",
+        "description": "Peut gérer les membres existants"
       },
       {
         "code": "org.members.remove",
-        "name": "Remove Members",
-        "description": "Can remove members from organization"
+        "name": "Retirer des membres",
+        "description": "Peut retirer des membres de l'organisation"
       }
     ],
     "is_system_role": true,
@@ -4258,13 +4403,13 @@ Authorization: Bearer <access_token>
     "permissions": [
       {
         "code": "org.members.invite",
-        "name": "Invite Members",
-        "description": "Can invite new members to the organization"
+        "name": "Inviter des membres",
+        "description": "Peut inviter de nouveaux membres dans l'organisation"
       },
       {
         "code": "org.members.manage",
-        "name": "Manage Members",
-        "description": "Can manage existing members"
+        "name": "Gérer les membres",
+        "description": "Peut gérer les membres existants"
       }
     ],
     "is_system_role": true,
@@ -4278,8 +4423,8 @@ Authorization: Bearer <access_token>
     "permissions": [
       {
         "code": "org.view",
-        "name": "View Organization",
-        "description": "Can view organization details"
+        "name": "Voir l'organisation",
+        "description": "Peut voir les détails de l'organisation"
       }
     ],
     "is_system_role": true,
@@ -4295,7 +4440,7 @@ Authorization: Bearer <access_token>
 Nécessite `TENXYTE_WEBAUTHN_ENABLED = True` et `pip install py-webauthn`.
 
 ### `POST /webauthn/register/begin/` 
-Commencer l'enregistrement d'une clé d'accès (passkey). Retourne un défi (challenge).
+Commencer l'enregistrement d'une passkey. Retourne un challenge.
 
 **En-têtes (requis) :**
 ```
@@ -4312,8 +4457,8 @@ Authorization: Bearer <access_token>
   },
   "user": {
     "id": "MTIzNDU2Nzg5MA",
-    "name": "user@example.com",
-    "displayName": "user@example.com"
+    "name": "utilisateur@example.com",
+    "displayName": "utilisateur@example.com"
   },
   "pubKeyCredParams": [
     {
@@ -4342,13 +4487,13 @@ Authorization: Bearer <access_token>
 **Réponse `400` (WebAuthn désactivé) :**
 ```json
 {
-  "error": "WebAuthn is not enabled",
+  "error": "WebAuthn n'est pas activé",
   "code": "WEBAUTHN_DISABLED"
 }
 ```
 
 ### `POST /webauthn/register/complete/` 
-Terminer l'enregistrement de la clé d'accès avec la réponse de l'authentifieur.
+Terminer l'enregistrement de la passkey avec la réponse de l'authentificateur.
 
 **En-têtes (requis) :**
 ```
@@ -4376,7 +4521,7 @@ Authorization: Bearer <access_token>
 **Réponse `201` :**
 ```json
 {
-  "message": "Passkey registered successfully",
+  "message": "Passkey enregistrée avec succès",
   "credential": {
     "id": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6",
     "name": "iPhone 14 Pro",
@@ -4391,7 +4536,7 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Identifiant invalide) :**
 ```json
 {
-  "error": "Invalid WebAuthn credential response",
+  "error": "Réponse d'identifiant WebAuthn invalide",
   "code": "INVALID_CREDENTIAL"
 }
 ```
@@ -4399,18 +4544,18 @@ Authorization: Bearer <access_token>
 **Réponse `400` (Identifiant en double) :**
 ```json
 {
-  "error": "This credential is already registered",
+  "error": "Cet identifiant est déjà enregistré",
   "code": "DUPLICATE_CREDENTIAL"
 }
 ```
 
 ### `POST /webauthn/authenticate/begin/`
-Commencer l'authentification par clé d'accès. Retourne un défi (challenge).
+Commencer l'authentification par passkey. Retourne un challenge.
 
 **Requête :**
 ```json
 {
-  "email": "user@example.com"
+  "email": "utilisateur@example.com"
 }
 ```
 
@@ -4444,13 +4589,13 @@ Commencer l'authentification par clé d'accès. Retourne un défi (challenge).
 **Réponse `400` (Utilisateur non trouvé) :**
 ```json
 {
-  "error": "User not found",
+  "error": "Utilisateur non trouvé",
   "code": "USER_NOT_FOUND"
 }
 ```
 
 ### `POST /webauthn/authenticate/complete/`
-Terminer l'authentification par clé d'accès. Retourne les jetons JWT.
+Terminer l'authentification par passkey. Retourne des jetons JWT.
 
 **Requête :**
 ```json
@@ -4460,7 +4605,7 @@ Terminer l'authentification par clé d'accès. Retourne les jetons JWT.
     "id": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6",
     "rawId": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6",
     "response": {
-      "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiQTNINUQ3RTlGMUcyRzRIOEk4SjBLMUwyTTNONE81UDZRN1I4UzlUMFUxVjJXM1g0WTVaNiIsIm9yaWdpbiI6Imh0dHBzOi8vbG9jYWxob3N0OjgwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2UsImF1dGhlbnRpY2F0b3JEYXRhIjoiU1RaTVlJYlJibUZpYkdsemNHRnpjM2R2Y21PyVgybGtJam9pUTFWVFZFOU5SVkpmTVRJek5EVTJJaXdpYVhOemRXVmtYMlJoZEdVaU9pSXlNREkwTFRFd0xURXdWREV3T2pBd09qQXdXaUlzSW1WNGNHbHllVjlrWVhSbElqb2lNakF5TlMweE1DMHhNRlF4TURvd01Eb3dNRm9pTENKd2NtOWtkV04wSWpvaWRIbHJMVzl3WlhKaGRHOXlJaXdpYldGamFHbHVaVjltYVc1blpYSndjbWx1ZENJNklqRXlNelExTmpjNE9UQXhNak0wSW4wPQ",
+      "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiQTNINUQ3RTlGMUcyRzRIOEk4SjBLMUwyTTNONE81UDZRN1I4UzlUMFUxVjJXM1g0WTVaNiIsIm9yaWdpbiI6Imh0dHBzOi8vbG9jYWxob3N0OjgwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2UsImF1dGhlbnRpY2F0b3JEYXRhIjoiU1RaTVlJYlJibUZpYkdsemNHRnpjM2R2Y21WeVgybGtJam9pUTFWVFZFOU5SVkpmTVRJek5EVVJOUVhNRVFDTVVGYXFkZDFXVkdSVVJVTlFWTmxjbU56TTJSdlkyMVZlVjlyYkd0SmFtOXBUTFZXVlZWRk9VNVNWaXBsVFZKWlVpMXBOVEl6TkRVMklpd2lhWE56ZFdWa1gyUmhkR1VpT2lJeU1ESTBMVEV3TFRFd1ZERXdPakF3T2pBd1dpSXNJbVY0Y0dseWVWOWtZWFJsSWpvaU1qQXlOUzB4TUMweE1GUXhNRG93TURvd01Gb2lMQ0p3Y205a2RXTjBJam9pZEhscmN6VmtMblI1Y0dVaWFXTjBJam9pYVc1emRHRndZV2RwYldGemJHVjBJam9pYUdWcmN5NWllVzlpYldGbmFIUnZjR1Z6Y3lJZ2IyNXBaV3c2SUdGNWRXUm9aVzVwWm13aUlpd2laWE53YVdKMWJHVnpJanA3SW1sa1pXNW5aWFFpT2lJeU1ESTBMVEV3TFRFd1ZERXdPakF3T2pBd1dpSjki",
       "authenticatorData": "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MBAAAAAQ",
       "signature": "MEUCIQCdwBCrP_zZyGLYQh9a5r3U9k4FzJg2dJ7L7fJgQIgYKj8pXuYqJ5fX9r8tY2L3K4J7G6H5F4Z3E2D1C0B8A",
       "userHandle": "MTIzNDU2Nzg5MA"
@@ -4479,13 +4624,13 @@ Terminer l'authentification par clé d'accès. Retourne les jetons JWT.
   "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "user": {
     "id": 42,
-    "email": "user@example.com",
-    "first_name": "John",
-    "last_name": "Doe",
+    "email": "utilisateur@example.com",
+    "first_name": "Jean",
+    "last_name": "Dupont",
     "is_active": true,
     "last_login": "2024-01-20T17:00:00Z"
   },
-  "message": "Authentication successful",
+  "message": "Authentification réussie",
   "credential_used": "A3B5C7D9E1F2G4H6I8J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6"
 }
 ```
@@ -4493,21 +4638,21 @@ Terminer l'authentification par clé d'accès. Retourne les jetons JWT.
 **Réponse `400` (Assertion invalide) :**
 ```json
 {
-  "error": "Invalid WebAuthn assertion",
+  "error": "Assertion WebAuthn invalide",
   "code": "INVALID_ASSERTION"
 }
 ```
 
-**Réponse `401` (Échec de l'authentification) :**
+**Réponse `401` (Authentification échouée) :**
 ```json
 {
-  "error": "Authentication failed",
+  "error": "L'authentification a échoué",
   "code": "AUTH_FAILED"
 }
 ```
 
 ### `GET /webauthn/credentials/` 
-Lister les clés d'accès enregistrées pour l'utilisateur actuel.
+Lister les passkeys enregistrées pour l'utilisateur actuel.
 
 **En-têtes (requis) :**
 ```
@@ -4541,7 +4686,7 @@ Authorization: Bearer <access_token>
 ```
 
 ### `DELETE /webauthn/credentials/<id>/` 
-Supprimer une clé d'accès enregistrée.
+Supprimer une passkey enregistrée.
 
 **En-têtes (requis) :**
 ```
@@ -4549,15 +4694,15 @@ Authorization: Bearer <access_token>
 ```
 
 **Paramètres de chemin :**
-- `id` : ID de la clé d'accès à supprimer
+- `id` : ID de la passkey à supprimer
 
 **Réponse `204` :**
-(pas de contenu - suppression réussie)
+(aucun contenu - suppression réussie)
 
 **Réponse `404` (Non trouvée) :**
 ```json
 {
-  "error": "Passkey not found",
+  "error": "Passkey non trouvée",
   "code": "NOT_FOUND"
 }
 ```
