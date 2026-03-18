@@ -113,8 +113,6 @@ class UserSerializer(serializers.ModelSerializer):
     timezone = serializers.CharField(read_only=True, allow_null=True)
     language = serializers.CharField(read_only=True, allow_null=True)
     is_active = serializers.BooleanField(read_only=True)
-    is_verified = serializers.BooleanField(source="is_email_verified", read_only=True)
-    date_joined = serializers.DateTimeField(source="created_at", read_only=True)
     custom_fields = serializers.JSONField(read_only=True, allow_null=True)
     preferences = serializers.SerializerMethodField()
 
@@ -132,11 +130,9 @@ class UserSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "is_active",
-            "is_verified",
             "is_email_verified",
             "is_phone_verified",
             "is_2fa_enabled",
-            "date_joined",
             "created_at",
             "last_login",
             "custom_fields",
@@ -178,5 +174,4 @@ class UserSerializer(serializers.ModelSerializer):
             "email_notifications": getattr(obj, "email_notifications", True),
             "sms_notifications": getattr(obj, "sms_notifications", False),
             "marketing_emails": getattr(obj, "marketing_emails", False),
-            "two_factor_enabled": obj.is_2fa_enabled,
         }

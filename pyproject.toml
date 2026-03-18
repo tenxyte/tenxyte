@@ -4,7 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tenxyte"
-version = "0.9.3"
+version = "0.10.0.0"
+
 description = "Framework-agnostic Python authentication — JWT, RBAC, 2FA, Magic Links, Passkeys, Social Login, B2B Organizations, multi-tenant support. Works with Django, FastAPI, and more."
 readme = "README.md"
 license = {text = "MIT"}
@@ -44,32 +45,36 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Framework :: Django",
+    "Framework :: Django :: 4.2",
     "Framework :: Django :: 5.0",
     "Framework :: Django :: 5.1",
     "Framework :: Django :: 5.2",
+    "Framework :: Django :: 6.0",
     "Framework :: FastAPI",
 ]
 
 # Default dependencies include Django stack for backward compatibility
 # Install with [core] for minimal dependencies
 dependencies = [
-    "django>=6.0",
+    "django>=4.2",
     "djangorestframework>=3.16",
-    "django-cors-headers>=4.9",
-    "drf-spectacular>=0.28",
+    "django-cors-headers>=4.4",
+    "drf-spectacular>=0.27",
     "PyJWT>=2.12.0",
     "bcrypt>=4.2",
     "pyotp>=2.9",
     "qrcode[pil]>=8.0",
     "google-auth>=2.49",
     "google-auth-oauthlib>=1.2",
-    "django-cryptography>=1.1",
+    "cryptography>=42.0",
     "Pillow>=11.0",
     "requests>=2.32",
     "pydantic>=2.12",
+    "email-validator>=2.0",
 ]
 
 [project.optional-dependencies]
@@ -81,19 +86,21 @@ core = [
     "bcrypt>=4.2",
     "pyotp>=2.9",
     "qrcode[pil]>=8.0",
+    "cryptography>=42.0",
     "Pillow>=11.0",
     "requests>=2.32",
     "pydantic>=2.12",
+    "email-validator>=2.0",
 ]
 
 # Django stack (adds Django-specific dependencies)
 # Included by default for backward compatibility
 django = [
-    "django>=6.0",
+    "django>=4.2",
     "djangorestframework>=3.16",
-    "django-cors-headers>=4.9",
-    "drf-spectacular>=0.28",
-    "django-cryptography>=1.1",
+    "django-cors-headers>=4.4",
+    "drf-spectacular>=0.27",
+    "cryptography>=42.0",
     "google-auth>=2.49",
     "google-auth-oauthlib>=1.2",
 ]
@@ -186,7 +193,7 @@ markers = [
 
 [tool.black]
 line-length = 120
-target-version = ["py310", "py311", "py312"]
+target-version = ["py310", "py311", "py312", "py313"]
 
 [tool.ruff]
 line-length = 120

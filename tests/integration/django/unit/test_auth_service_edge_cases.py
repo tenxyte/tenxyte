@@ -8,14 +8,15 @@ Tests Phase 4 - AuthService edge cases:
 """
 import pytest
 from django.utils import timezone
-from unittest.mock import patch
 from datetime import timedelta
+
+from tenxyte.models import User, Application, RefreshToken, AuditLog
+from tests.integration.django.auth_service_compat import AuthService
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 def _make_app():
-    from tenxyte.models import Application
     app, _ = Application.create_application(name="AuthSvcTestApp")
     return app
 
@@ -53,7 +54,8 @@ class TestLogoutAllDevices:
         _make_refresh_token(user, app, "device1")
         _make_refresh_token(user, app, "device2")
 
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         count = svc.logout_all_devices(user, ip_address="1.2.3.4", application=app)
 
@@ -67,7 +69,8 @@ class TestLogoutAllDevices:
         _make_app()
         user = _make_user("logout_none@test.com")
 
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         count = svc.logout_all_devices(user)
         assert count == 0
@@ -78,7 +81,8 @@ class TestLogoutAllDevices:
         user = _make_user("logout_audit@test.com")
         _make_refresh_token(user, app)
 
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         from tenxyte.models import AuditLog
         before = AuditLog.objects.count()
@@ -99,7 +103,8 @@ class TestEnforceSessionLimit:
         user.save()
         _make_refresh_token(user, app)  # 1 active session → limit atteinte
 
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         with override_settings(TENXYTE_DEFAULT_SESSION_LIMIT_ACTION='deny'):
             result = svc._enforce_session_limit(user, app, "1.2.3.4")
@@ -118,7 +123,8 @@ class TestEnforceSessionLimit:
         user.save()
         old_rt = _make_refresh_token(user, app, "device_old")
 
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         with override_settings(TENXYTE_DEFAULT_SESSION_LIMIT_ACTION='revoke_oldest'):
             result = svc._enforce_session_limit(user, app, "1.2.3.4")
@@ -134,7 +140,8 @@ class TestEnforceSessionLimit:
         app = _make_app()
         user = _make_user("sess_disabled@test.com")
 
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         with override_settings(TENXYTE_SESSION_LIMIT_ENABLED=False):
             result = svc._enforce_session_limit(user, app, "1.2.3.4")
@@ -151,7 +158,8 @@ class TestEnforceSessionLimit:
         # Créer un token expiré (zombie)
         _make_refresh_token(user, app, expired=True)
 
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         with override_settings(TENXYTE_DEFAULT_SESSION_LIMIT_ACTION='deny'):
             result = svc._enforce_session_limit(user, app, "1.2.3.4")
@@ -173,7 +181,8 @@ class TestEnforceDeviceLimit:
         user.save()
         _make_refresh_token(user, app, device_info='v=1|os=android|device=mobile')
 
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         with override_settings(TENXYTE_DEVICE_LIMIT_ACTION='deny'):
             result = svc._enforce_device_limit(
@@ -191,7 +200,8 @@ class TestEnforceDeviceLimit:
         app = _make_app()
         user = _make_user("dev_disabled@test.com")
 
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         with override_settings(TENXYTE_DEVICE_LIMIT_ENABLED=False):
             result = svc._enforce_device_limit(user, app, "1.2.3.4")
@@ -211,7 +221,8 @@ class TestCheckNewDeviceAlert:
         device = 'v=1|os=android|device=mobile'
         _make_refresh_token(user, app, device_info=device)
 
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         from tenxyte.models import AuditLog
         before = AuditLog.objects.filter(action='new_device_detected').count()
@@ -224,7 +235,8 @@ class TestCheckNewDeviceAlert:
         app = _make_app()
         user = _make_user("new_device@test.com")
 
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         from tenxyte.models import AuditLog
         before = AuditLog.objects.filter(action='new_device_detected').count()
@@ -246,7 +258,8 @@ class TestAuditLog:
         app = _make_app()
         user = _make_user("auditlog_on@test.com")
 
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         before = AuditLog.objects.count()
         with override_settings(TENXYTE_AUDIT_LOGGING_ENABLED=True):
@@ -260,7 +273,8 @@ class TestAuditLog:
         app = _make_app()
         user = _make_user("auditlog_off@test.com")
 
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         before = AuditLog.objects.count()
         with override_settings(TENXYTE_AUDIT_LOGGING_ENABLED=False):
@@ -269,14 +283,16 @@ class TestAuditLog:
 
 class TestAuthServiceAdditionalEdgeCases:
     def test_lockout_duration_minutes_property(self):
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         from tenxyte.conf import auth_settings
         svc = AuthService()
         assert svc.lockout_duration_minutes == auth_settings.LOCKOUT_DURATION_MINUTES
 
     @pytest.mark.django_db
     def test_validate_application_invalid_secret(self):
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         app = _make_app()
         svc = AuthService()
         ok, res, msg = svc.validate_application(app.access_key, "wrongsecret")
@@ -285,7 +301,8 @@ class TestAuthServiceAdditionalEdgeCases:
 
     @pytest.mark.django_db
     def test_validate_application_invalid_key(self):
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         ok, res, msg = svc.validate_application("wrongkey", "wrongsecret")
         assert ok is False
@@ -298,7 +315,8 @@ class TestAuthServiceAdditionalEdgeCases:
         user.max_sessions = 0
         user.save()
         from django.test import override_settings
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         with override_settings(TENXYTE_DEFAULT_SESSION_LIMIT_ACTION='deny'):
             result = svc._enforce_session_limit(user, app, "1.2.3.4")
@@ -311,7 +329,8 @@ class TestAuthServiceAdditionalEdgeCases:
         user.max_devices = 0
         user.save()
         from django.test import override_settings
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         with override_settings(TENXYTE_DEVICE_LIMIT_ACTION='deny'):
             result = svc._enforce_device_limit(user, app, "1.2.3.4", device_info="foo")
@@ -325,7 +344,8 @@ class TestAuthServiceAdditionalEdgeCases:
         user.save()
         _make_refresh_token(user, app, device_info="", expired=True) # Unknown device zombie
         from django.test import override_settings
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         with override_settings(TENXYTE_DEVICE_LIMIT_ACTION='deny'):
             result = svc._enforce_device_limit(user, app, "1.2.3.4", device_info="newdev")
@@ -354,7 +374,8 @@ class TestAuthServiceAdditionalEdgeCases:
         # Created now, so it's the newest.
         
         from django.test import override_settings
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         
         with override_settings(TENXYTE_DEVICE_LIMIT_ACTION='revoke_oldest'):
@@ -376,7 +397,8 @@ class TestAuthServiceAdditionalEdgeCases:
     def test_check_new_device_alert_email_fail(self):
         app = _make_app()
         user = _make_user("new_dev_email_fail@test.com")
-        from tenxyte.services.auth_service import AuthService
+        # AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
         svc = AuthService()
         with patch("tenxyte.services.email_service.EmailService") as MockService:
             MockService.return_value.send_security_alert_email.side_effect = Exception("Email Failed")

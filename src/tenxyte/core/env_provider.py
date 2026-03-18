@@ -24,7 +24,7 @@ class EnvSettingsProvider(SettingsProvider):
 
     Example:
         # Set environment variables
-        export TENXYTE_JWT_SECRET="my-secret-key"
+        export TENXYTE_JWT_SECRET_KEY="my-secret-key"
         export TENXYTE_JWT_ACCESS_TOKEN_LIFETIME="3600"
         export TENXYTE_MFA_REQUIRED="true"
 
@@ -112,7 +112,7 @@ class EnvSettingsProvider(SettingsProvider):
         Get a setting value from environment variables.
 
         Args:
-            name: Setting name (e.g., 'TENXYTE_JWT_SECRET' or 'JWT_SECRET')
+            name: Setting name (e.g., 'TENXYTE_JWT_SECRET_KEY' or 'JWT_SECRET_KEY')
             default: Default value if not found
 
         Returns:

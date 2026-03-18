@@ -1,13 +1,19 @@
 import pytest
-from django.test import AsyncClient
+from django.test import AsyncClient, override_settings
 from tenxyte.models import Application
 from asgiref.sync import async_to_sync, sync_to_async
+
+
+@pytest.fixture
+def enable_app_auth(settings):
+    """Enable application authentication for tests."""
+    settings.TENXYTE_APPLICATION_AUTH_ENABLED = True
 
 
 @pytest.mark.django_db(transaction=True)
 class TestASGIMiddlewares:
 
-    def test_application_auth_middleware_async(self):
+    def test_application_auth_middleware_async(self, enable_app_auth):
         """
         Verify that ApplicationAuthMiddleware can run in an ASGI (async) context
         without raising SynchronousOnlyOperation errors.
@@ -28,7 +34,7 @@ class TestASGIMiddlewares:
 
         async_to_sync(_run)()
 
-    def test_application_auth_middleware_invalid_async(self):
+    def test_application_auth_middleware_invalid_async(self, enable_app_auth):
         """
         Verify ApplicationAuthMiddleware responds 401 with correct code
         when credentials are invalid — in an async context.
@@ -48,7 +54,7 @@ class TestASGIMiddlewares:
 
         async_to_sync(_run)()
 
-    def test_application_auth_middleware_missing_headers_async(self):
+    def test_application_auth_middleware_missing_headers_async(self, enable_app_auth):
         """
         Verify ApplicationAuthMiddleware responds 401 with APP_AUTH_REQUIRED
         when no credentials are provided at all — in an async context.

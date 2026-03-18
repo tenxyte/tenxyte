@@ -44,7 +44,7 @@ class MockTokenBlacklist:
 @pytest.fixture
 def settings():
     return Settings(provider=MockSettingsProvider(
-        jwt_secret="super-secret-key",
+        jwt_secret_key="super-secret-key",
         jwt_algorithm="HS256",
         jwt_access_token_lifetime=3600,
         jwt_refresh_token_lifetime=86400,

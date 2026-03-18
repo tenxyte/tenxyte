@@ -393,7 +393,9 @@ class MagicLinkService:
         Returns:
             MagicLinkResult with user_id or error
         """
-        if not self.enabled:
+        # Check enabled status dynamically to support runtime config changes
+        enabled = getattr(self.settings, "magic_link_enabled", True)
+        if not enabled:
             return MagicLinkResult(success=False, error="Magic link authentication is not enabled")
 
         # Get token from repository

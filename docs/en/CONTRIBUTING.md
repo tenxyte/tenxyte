@@ -223,10 +223,11 @@ Then open a pull request on GitHub targeting the `main` or `develop` branch.
 ### CI Checks
 
 Pull requests are automatically tested by GitHub Actions against a matrix of:
-- **Python**: 3.10, 3.11, 3.12
-- **Django**: 5.0, 5.1
+- **Python**: 3.10, 3.11, 3.12, 3.13
+- **Django**: 4.2, 5.0, 5.1, 5.2, 6.0
+- **FastAPI**: latest stable
 
-Coverage is reported via Codecov on Python 3.12 / Django 5.1.
+Coverage is reported via Codecov on Python 3.12 / Django 6.0.
 
 ### What We Look For
 
@@ -269,6 +270,18 @@ Documentation is organized in the `docs/` directory:
 
 When adding or changing a feature, update the relevant documentation file(s).
 
+> [!IMPORTANT]
+> ### Schema Consistency (all models)
+>
+> Tenxyte is **framework-agnostic**. Every response object (`User`, `Organization`, `Role`, `TokenPair`, `AuditLog`, etc.) **must be identical** across all adapters (Django, FastAPI, custom). This is a core value of the project.
+>
+> **Rules:**
+> - The canonical schemas are defined in [`schemas.md`](schemas.md) and in `tenxyte.core.schemas` ([source](../../src/tenxyte/core/schemas.py)). Any model change must start from these reference files.
+> - **No alias fields.** Do not add fields that duplicate existing ones (e.g. `is_verified` aliasing `is_email_verified`, or `date_joined` aliasing `created_at`). Each piece of information must appear exactly once.
+> - **No feature state in preference sub-objects.** Objects like `preferences` contain only user preferences. Feature state (e.g. `is_2fa_enabled`) belongs in dedicated top-level fields.
+> - When modifying a model, update **all** occurrences: `tenxyte.core.schemas.py`, adapter serializers (`auth_serializers.py`, etc.), `schemas.md` (EN + FR), and every relevant JSON example in `endpoints.md` (EN + FR).
+> - **Test obligation:** after any model change, all tests involving the modified model must be re-run and **must pass without errors**. No PR modifying a schema will be accepted if tests fail.
+
 ---
 
 ## Reporting Issues
@@ -296,9 +309,10 @@ Include:
 
 | Component | Versions |
 |-----------|----------|
-| Python | 3.10, 3.11, 3.12 |
-| Django | 5.0, 5.1, 5.2 |
-| DRF | ≥ 3.14 |
+| Python | 3.10, 3.11, 3.12, 3.13 |
+| Django | 4.2, 5.0, 5.1, 5.2, 6.0 |
+| DRF | ≥ 3.16 |
+| FastAPI | Latest stable |
 
 ---
 

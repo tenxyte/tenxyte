@@ -27,7 +27,7 @@ class DjangoSettingsProvider(SettingsProvider):
         settings = init(provider=DjangoSettingsProvider())
 
         # Now settings automatically reads from django.conf.settings
-        print(settings.jwt_secret)  # Reads TENXYTE_JWT_SECRET from Django
+        print(settings.jwt_secret_key)  # Reads TENXYTE_JWT_SECRET_KEY from Django
     """
 
     def __init__(self):
@@ -47,7 +47,7 @@ class DjangoSettingsProvider(SettingsProvider):
         Get a setting value from Django settings.
 
         Args:
-            name: Full setting name (e.g., 'TENXYTE_JWT_SECRET')
+            name: Full setting name (e.g., 'TENXYTE_JWT_SECRET_KEY')
             default: Default value if setting not found
 
         Returns:

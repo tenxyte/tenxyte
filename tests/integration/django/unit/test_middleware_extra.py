@@ -66,7 +66,18 @@ class TestJWTAuthMiddlewareExt:
     def test_valid_token(self, rf, get_response_ok):
         request = rf.get("/api/v1/test/", HTTP_AUTHORIZATION="Bearer valid_token")
         middleware = JWTAuthMiddleware(get_response_ok)
-        mock_payload = {"user_id": "user123"}
+        from tenxyte.core.jwt_service import DecodedToken
+        from datetime import datetime, timezone
+        mock_payload = DecodedToken(
+            user_id="user123",
+            app_id="app123",
+            jti="jti123",
+            exp=datetime.now(timezone.utc),
+            iat=datetime.now(timezone.utc),
+            type="access",
+            claims={},
+            is_valid=True
+        )
         with patch.object(middleware.jwt_service, "decode_token", return_value=mock_payload):
             response = middleware(request)
             assert response.status_code == 200

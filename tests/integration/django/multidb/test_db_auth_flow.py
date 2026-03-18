@@ -10,9 +10,12 @@ from django.conf import settings
 _is_mongodb = 'mongodb' in settings.DATABASES.get('default', {}).get('ENGINE', '')
 
 from tenxyte.models import User, Application, RefreshToken  # noqa: E402
-from tenxyte.services import AuthService, JWTService  # noqa: E402
+from tests.integration.django.test_helpers import get_jwt_service  # noqa: E402
+from tests.integration.django.auth_service_compat import AuthService  # noqa: E402
 from tenxyte.services.otp_service import OTPService  # noqa: E402
-from tenxyte.services import TOTPService  # noqa: E402
+from tests.integration.django.totp_compat import TOTPService  # noqa: E402
+
+JWTService = get_jwt_service  # noqa: E402
 
 
 @pytest.mark.django_db
@@ -30,77 +33,89 @@ class TestAuthFlowMultiDB:
             email='authflow@test.com',
             password='AuthP@ss123!'
         )
-        self.auth_service = AuthService()
         self.jwt_service = JWTService()
+        self.app_secret = self.raw_secret
+        self.auth_service = AuthService()
 
     def test_authenticate_by_email(self):
-        """Test auth par email → tokens générés."""
+        """Test d'authentification par email."""
         success, data, error = self.auth_service.authenticate_by_email(
-            email='authflow@test.com',
+            email=self.user.email,
             password='AuthP@ss123!',
-            application=self.app,
-            ip_address='127.0.0.1'
+            application=self.app
         )
+        
         assert success is True
+        assert data is not None
         assert 'access_token' in data
         assert 'refresh_token' in data
-        assert error == ''
 
     def test_authenticate_wrong_password(self):
-        """Test auth avec mauvais mot de passe."""
+        """Test d'authentification avec mauvais mot de passe."""
         success, data, error = self.auth_service.authenticate_by_email(
-            email='authflow@test.com',
-            password='WrongPassword!',
-            application=self.app,
-            ip_address='127.0.0.1'
+            email=self.user.email,
+            password='WrongPassword',
+            application=self.app
         )
+        
         assert success is False
-        assert error != ''
+        assert data is None
+        assert error is not None
 
     def test_authenticate_nonexistent_user(self):
         """Test auth avec utilisateur inexistant."""
         success, data, error = self.auth_service.authenticate_by_email(
             email='ghost@test.com',
             password='AuthP@ss123!',
-            application=self.app,
-            ip_address='127.0.0.1'
+            application=self.app
         )
         assert success is False
 
     def test_jwt_generate_decode_cycle(self):
         """Test cycle complet: generate → decode → validate."""
-        token, jti, expires_at = self.jwt_service.generate_access_token(
+        import secrets
+        token_pair = self.jwt_service._service.generate_token_pair(
             user_id=str(self.user.pk),
-            application_id=str(self.app.pk)
+            application_id=str(self.app.pk),
+            refresh_token_str=secrets.token_urlsafe(32)
         )
 
-        payload = self.jwt_service.decode_token(token)
-        assert payload is not None
-        assert payload['user_id'] == str(self.user.pk)
-        assert payload['app_id'] == str(self.app.pk)
-        assert self.jwt_service.is_token_valid(token) is True
+        decoded = self.jwt_service._service.decode_token(token_pair.access_token)
+        assert decoded is not None
+        assert decoded.user_id == str(self.user.pk)
+        assert decoded.app_id == str(self.app.pk)
+        assert decoded.is_valid is True
 
     def test_jwt_blacklist(self):
         """Test blacklisting d'un token."""
-        token, jti, expires_at = self.jwt_service.generate_access_token(
+        import secrets
+        token_pair = self.jwt_service._service.generate_token_pair(
             user_id=str(self.user.pk),
-            application_id=str(self.app.pk)
+            application_id=str(self.app.pk),
+            refresh_token_str=secrets.token_urlsafe(32)
         )
-        assert self.jwt_service.is_token_valid(token) is True
+        decoded = self.jwt_service._service.decode_token(token_pair.access_token)
+        assert decoded.is_valid is True
 
-        self.jwt_service.blacklist_token(token, user=self.user, reason='multidb_test')
+        # Blacklist le token en utilisant la méthode du service
+        self.jwt_service._service.blacklist_service.blacklist_token(
+            jti=decoded.jti,
+            expires_at=decoded.exp,
+            user_id=str(self.user.pk),
+            reason='test_multidb'
+        )
 
-        assert self.jwt_service.is_token_valid(token) is False
+        decoded_after = self.jwt_service._service.decode_token(token_pair.access_token)
+        assert decoded_after.is_blacklisted is True
 
     def test_refresh_token_lifecycle(self):
         """Test cycle refresh token: create → validate → revoke."""
-        success, data, _ = self.auth_service.authenticate_by_email(
-            email='authflow@test.com',
+        success, data, error = self.auth_service.authenticate_by_email(
+            email=self.user.email,
             password='AuthP@ss123!',
-            application=self.app,
-            ip_address='127.0.0.1'
+            application=self.app
         )
-        assert success
+        assert success is True
 
         # Le refresh token doit être valide en DB
         rt = RefreshToken.objects.filter(user=self.user, application=self.app).first()
@@ -117,16 +132,14 @@ class TestAuthFlowMultiDB:
         app_b, secret_b = Application.create_application(name='App B')
 
         success_a, data_a, _ = self.auth_service.authenticate_by_email(
-            email='authflow@test.com',
+            email=self.user.email,
             password='AuthP@ss123!',
-            application=self.app,
-            ip_address='127.0.0.1'
+            application=self.app
         )
         success_b, data_b, _ = self.auth_service.authenticate_by_email(
-            email='authflow@test.com',
+            email=self.user.email,
             password='AuthP@ss123!',
-            application=app_b,
-            ip_address='127.0.0.1'
+            application=app_b
         )
         assert success_a and success_b
 
@@ -135,10 +148,10 @@ class TestAuthFlowMultiDB:
         assert data_a['refresh_token'] != data_b['refresh_token']
 
         # Les payloads doivent référencer la bonne application
-        payload_a = self.jwt_service.decode_token(data_a['access_token'])
-        payload_b = self.jwt_service.decode_token(data_b['access_token'])
-        assert payload_a['app_id'] == str(self.app.pk)
-        assert payload_b['app_id'] == str(app_b.pk)
+        decoded_a = self.jwt_service._service.decode_token(data_a['access_token'])
+        decoded_b = self.jwt_service._service.decode_token(data_b['access_token'])
+        assert decoded_a.app_id == str(self.app.pk)
+        assert decoded_b.app_id == str(app_b.pk)
 
 
 @pytest.mark.django_db
@@ -185,29 +198,35 @@ class TestOTPFlowMultiDB:
 class TestTOTPMultiDB:
     """2FA TOTP sur chaque backend."""
 
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.app, self.raw_secret = Application.create_application(name='TestApp')
+        self.user = User.objects.create_user(email='test@example.com', password='AuthP@ss123!')
+        self.jwt_service = get_jwt_service()
+        self.app_secret = self.raw_secret
+        self.auth_service = AuthService()
+        self.totp_service = TOTPService()
+
     def test_setup_and_verify_2fa(self):
         """Test setup 2FA complet."""
         import pyotp
 
-        user = User.objects.create_user(email='totp@test.com', password='TOTPP@ss123!')
-        totp_service = TOTPService()
-
         # Générer secret
-        secret = totp_service.generate_secret()
-        user.totp_secret = secret
-        user.save()
+        secret = self.totp_service.generate_secret()
+        self.user.totp_secret = secret
+        self.user.save()
 
         # Vérifier un code valide
         totp = pyotp.TOTP(secret)
         valid_code = totp.now()
-        assert totp_service.verify_code(user, valid_code) is True
+        assert self.totp_service.verify_code(self.user, valid_code) is True
 
         # Activer 2FA
-        user.is_2fa_enabled = True
-        user.save()
-        user.refresh_from_db()
-        assert user.is_2fa_enabled is True
-        assert user.totp_secret == secret
+        self.user.is_2fa_enabled = True
+        self.user.save()
+        self.user.refresh_from_db()
+        assert self.user.is_2fa_enabled is True
+        assert self.user.totp_secret == secret
 
     def test_backup_codes_stored(self):
         """Test que les backup codes peuvent être stockés et récupérés."""

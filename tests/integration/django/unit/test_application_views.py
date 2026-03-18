@@ -33,7 +33,8 @@ from tenxyte.views.application_views import (  # noqa: E402
 
 def _make_jwt_request(user, app):
     """Forge une requête authentifiée avec un vrai token JWT."""
-    from tenxyte.services.jwt_service import JWTService
+    from tests.integration.django.test_helpers import get_jwt_service
+# JWTService = get_jwt_service  # Use get_jwt_service() instead
     tokens = JWTService().generate_token_pair(
         user_id=str(user.id),
         application_id=str(app.id),
@@ -45,8 +46,8 @@ def _make_jwt_request(user, app):
 
 def _authed_request(method, path, user, app, data=None):
     """Construit une requête DRF authentifiée prête à être passée à la vue."""
-    from tenxyte.services.jwt_service import JWTService
-    token = JWTService().generate_token_pair(
+    from tests.integration.django.test_helpers import create_jwt_token
+    token_pair = create_jwt_token(
         user_id=str(user.id),
         application_id=str(app.id),
         refresh_token_str="testrefresh",

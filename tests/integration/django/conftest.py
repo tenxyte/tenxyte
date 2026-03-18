@@ -124,7 +124,7 @@ def app_api_client(api_client, application):
 @pytest.fixture
 def authenticated_client(api_client, user, application):
     """Client authentifié avec JWT + headers application."""
-    from tenxyte.services import AuthService
+    from tests.integration.django.auth_service_compat import AuthService
 
     auth_service = AuthService()
     success, data, error = auth_service.authenticate_by_email(
@@ -147,7 +147,7 @@ def authenticated_client(api_client, user, application):
 @pytest.fixture
 def authenticated_admin_client(api_client, admin_user, application):
     """Client admin authentifié avec JWT + headers application."""
-    from tenxyte.services import AuthService
+    from tests.integration.django.auth_service_compat import AuthService
 
     auth_service = AuthService()
     success, data, error = auth_service.authenticate_by_email(

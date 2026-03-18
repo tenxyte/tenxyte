@@ -101,10 +101,16 @@ def test_init_encryption(settings):
     s1 = TOTPService(settings=settings, encryption_key="MTIzNDU2NzgxMjM0NTY3ODEyMzQ1Njc4MTIzNDU2Nzg=")
     assert s1.totp_key is not None
 
-    # with env
-    with patch.dict(os.environ, {"TENXYTE_TOTP_ENCRYPTION_KEY": "MTIzNDU2NzgxMjM0NTY3ODEyMzQ1Njc4MTIzNDU2Nzg="}):
-        s2 = TOTPService(settings=settings)
-        assert s2.totp_key is not None
+    # with settings providing the key via provider
+    class KeyProvider:
+        def get(self, name, default=None):
+            if name == "TENXYTE_TOTP_ENCRYPTION_KEY":
+                return "MTIzNDU2NzgxMjM0NTY3ODEyMzQ1Njc4MTIzNDU2Nzg="
+            return default
+    
+    settings_with_key = Settings(provider=KeyProvider())
+    s2 = TOTPService(settings=settings_with_key)
+    assert s2.totp_key is not None
 
 
 def test_encrypt_decrypt_no_key(settings):

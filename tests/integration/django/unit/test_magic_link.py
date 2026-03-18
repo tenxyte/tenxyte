@@ -14,7 +14,7 @@ from rest_framework.test import APIRequestFactory
 from django.test import override_settings
 
 from tenxyte.models import User, Application, MagicLinkToken
-from tenxyte.services.magic_link_service import MagicLinkService
+from tests.integration.django.magic_link_compat import MagicLinkService
 from tenxyte.views.magic_link_views import MagicLinkRequestView, MagicLinkVerifyView
 
 
@@ -257,7 +257,7 @@ class TestMagicLinkService:
     def test_request_magic_link_success(self):
         _user("service@example.com")
         service = MagicLinkService()
-        with patch.object(service.email_service, 'send_magic_link_email', return_value=True):
+        with patch.object(service.email_service, 'send_magic_link', return_value=True):
             success, error = service.request_magic_link(
                 email="service@example.com",
                 ip_address="127.0.0.1"
@@ -300,7 +300,7 @@ class TestMagicLinkService:
     def test_request_magic_link_email_failure(self):
         _user("emailfail@example.com")
         service = MagicLinkService()
-        with patch.object(service.email_service, 'send_magic_link_email', return_value=False):
+        with patch.object(service.email_service, 'send_magic_link', side_effect=Exception("Email send failed")):
             success, error = service.request_magic_link(
                 email="emailfail@example.com",
                 ip_address="127.0.0.1"
@@ -317,7 +317,7 @@ class TestMagicLinkService:
         assert old_instance.is_used is False
 
         service = MagicLinkService()
-        with patch.object(service.email_service, 'send_magic_link_email', return_value=True):
+        with patch.object(service.email_service, 'send_magic_link', return_value=True):
             service.request_magic_link(
                 email="oldtoken@example.com",
                 application=app,

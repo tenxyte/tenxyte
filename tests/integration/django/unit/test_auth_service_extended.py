@@ -14,7 +14,9 @@ from django.test import override_settings
 from datetime import timedelta
 
 from tenxyte.models import User, Application, RefreshToken
-from tenxyte.services.auth_service import AuthService
+from tests.integration.django.auth_service_compat import AuthService
+# AuthService removed - use core services instead
+# from tenxyte.core.jwt_service import JWTService
 
 
 # ---------------------------------------------------------------------------

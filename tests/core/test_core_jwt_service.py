@@ -21,7 +21,7 @@ from tenxyte.core.settings import Settings
 
 def _make_settings(**overrides):
     s = MagicMock(spec=Settings)
-    s.jwt_secret = overrides.get("jwt_secret", "test-secret-key-32chars-minimum!")
+    s.jwt_secret = overrides.get("jwt_secret_key", "test-secret-key-32chars-minimum!")
     s.jwt_public_key = overrides.get("jwt_public_key", None)
     s.jwt_algorithm = overrides.get("jwt_algorithm", "HS256")
     s.jwt_access_token_lifetime = overrides.get("jwt_access_token_lifetime", 3600)
@@ -151,7 +151,7 @@ class TestJWTService:
         """Lines 179-182: RS256 branch."""
         svc = JWTService(settings=_make_settings(
             jwt_algorithm="RS256",
-            jwt_secret="privkey",
+            jwt_secret_key="privkey",
             jwt_public_key="pubkey"
         ))
         assert svc.is_asymmetric
@@ -162,7 +162,7 @@ class TestJWTService:
     def test_init_asymmetric_no_public(self):
         """Line 182: no public key → uses private key."""
         svc = JWTService(settings=_make_settings(
-            jwt_algorithm="RS256", jwt_secret="privkey", jwt_public_key=None
+            jwt_algorithm="RS256", jwt_secret_key="privkey", jwt_public_key=None
         ))
         assert svc.verifying_key == "privkey"
 
@@ -176,14 +176,14 @@ class TestJWTService:
 
     def test_generate_access_token_no_key(self):
         """Line 217: no signing key."""
-        svc = JWTService(settings=_make_settings(jwt_secret=""))
+        svc = JWTService(settings=_make_settings(jwt_secret_key=""))
         with pytest.raises(ValueError, match="signing key"):
             svc.generate_access_token("u1", "app1")
 
     def test_generate_access_token_asymmetric_no_private(self):
         """Lines 222-223: asymmetric but no private key."""
         svc = JWTService(settings=_make_settings(
-            jwt_algorithm="RS256", jwt_secret="", jwt_public_key="pub"
+            jwt_algorithm="RS256", jwt_secret_key="", jwt_public_key="pub"
         ))
         with pytest.raises(ValueError, match="signing key"):
             svc.generate_access_token("u1", "app1")
@@ -239,7 +239,7 @@ class TestJWTService:
 
     def test_decode_token_no_key(self):
         """Line 367: no verifying key."""
-        svc = JWTService(settings=_make_settings(jwt_secret=""))
+        svc = JWTService(settings=_make_settings(jwt_secret_key=""))
         svc.verifying_key = ""
         with pytest.raises(ValueError, match="verifying key"):
             svc.decode_token("some.token.here")

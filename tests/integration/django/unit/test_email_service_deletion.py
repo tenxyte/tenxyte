@@ -42,7 +42,7 @@ class TestSendAccountDeletionConfirmed:
 
     @pytest.mark.django_db
     def test_sends_email_successfully(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         user = _user("del_confirmed_email@test.com")
         del_req = _make_deletion_request(user, "confirmed")
         del_req.grace_period_ends_at = timezone.now() + timedelta(days=30)
@@ -60,7 +60,7 @@ class TestSendAccountDeletionConfirmed:
 
     @pytest.mark.django_db
     def test_returns_false_on_exception(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         user = _user("del_confirmed_fail@test.com")
         del_req = _make_deletion_request(user)
         del_req.grace_period_ends_at = timezone.now() + timedelta(days=30)
@@ -77,7 +77,7 @@ class TestSendAccountDeletionConfirmed:
 
     @pytest.mark.django_db
     def test_context_contains_required_fields(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         user = _user("del_confirmed_ctx@test.com")
         del_req = _make_deletion_request(user, "confirmed")
         del_req.grace_period_ends_at = timezone.now() + timedelta(days=30)
@@ -103,7 +103,7 @@ class TestSendAccountDeletionConfirmed:
 
     @pytest.mark.django_db
     def test_no_grace_period_days_remaining_is_zero(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         user = _user("del_confirmed_nograce@test.com")
         del_req = _make_deletion_request(user)
         del_req.grace_period_ends_at = None
@@ -127,7 +127,7 @@ class TestSendAccountDeletionConfirmed:
 
     @pytest.mark.django_db
     def test_calls_send_template_email_with_correct_template(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         user = _user("del_confirmed_tmpl@test.com")
         del_req = _make_deletion_request(user, "confirmed")
         del_req.grace_period_ends_at = timezone.now() + timedelta(days=30)
@@ -153,7 +153,7 @@ class TestSendAccountDeletionCompleted:
 
     @pytest.mark.django_db
     def test_sends_email_successfully(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         user = _user("del_completed_email@test.com")
         del_req = _make_deletion_request(user, "completed")
         del_req.confirmed_at = timezone.now()
@@ -169,7 +169,7 @@ class TestSendAccountDeletionCompleted:
 
     @pytest.mark.django_db
     def test_returns_false_on_exception(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         user = _user("del_completed_fail@test.com")
         del_req = _make_deletion_request(user)
 
@@ -181,7 +181,7 @@ class TestSendAccountDeletionCompleted:
 
     @pytest.mark.django_db
     def test_context_contains_required_fields(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         user = _user("del_completed_ctx@test.com")
         del_req = _make_deletion_request(user, "completed")
         del_req.confirmed_at = timezone.now()
@@ -212,7 +212,7 @@ class TestSendDeletionRequestRejected:
 
     @pytest.mark.django_db
     def test_sends_email_successfully(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         user = _user("del_rejected_email@test.com")
         del_req = _make_deletion_request(user, "cancelled")
         del_req.admin_notes = "Not valid request"
@@ -230,7 +230,7 @@ class TestSendDeletionRequestRejected:
 
     @pytest.mark.django_db
     def test_returns_false_on_exception(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         user = _user("del_rejected_fail@test.com")
         del_req = _make_deletion_request(user)
 
@@ -242,7 +242,7 @@ class TestSendDeletionRequestRejected:
 
     @pytest.mark.django_db
     def test_context_contains_required_fields(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         user = _user("del_rejected_ctx@test.com")
         del_req = _make_deletion_request(user, "cancelled")
         del_req.admin_notes = "Rejected by admin"
@@ -276,7 +276,7 @@ class TestSendTemplateEmail:
 
     @pytest.mark.django_db
     def test_returns_true_on_success(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         service = EmailService()
 
         # render_to_string and EmailMultiAlternatives are imported locally inside the method
@@ -296,7 +296,7 @@ class TestSendTemplateEmail:
 
     @pytest.mark.django_db
     def test_returns_false_on_exception(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         service = EmailService()
 
         with patch('django.template.loader.render_to_string', side_effect=Exception("Template not found")):
@@ -317,7 +317,7 @@ class TestSendTemplateEmail:
 class TestGenerateTextAlternative:
 
     def test_strips_html_tags(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         service = EmailService()
         html = "<h1>Hello</h1><p>World</p>"
         result = service._generate_text_alternative(html)
@@ -326,14 +326,14 @@ class TestGenerateTextAlternative:
         assert "World" in result
 
     def test_collapses_whitespace(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         service = EmailService()
         html = "<p>Hello   World</p>"
         result = service._generate_text_alternative(html)
         assert "  " not in result
 
     def test_empty_html_returns_empty(self):
-        from tenxyte.services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
         service = EmailService()
         result = service._generate_text_alternative("")
         assert result == ""

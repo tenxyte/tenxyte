@@ -22,11 +22,13 @@ import json  # noqa: E402
 from datetime import datetime, timedelta, timezone as dt_timezone  # noqa: E402
 from django.utils import timezone  # noqa: E402
 from django.core.cache import cache  # noqa: E402
+from django.test import override_settings  # noqa: E402
 from rest_framework import status  # noqa: E402
 from rest_framework.test import APIClient  # noqa: E402
 
 from tenxyte.models import User, Application, RefreshToken  # noqa: E402
-from tenxyte.services import JWTService, AuthService  # noqa: E402
+from tests.integration.django.test_helpers import JWTService  # noqa: E402
+from tests.integration.django.auth_service_compat import AuthService  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
@@ -35,6 +37,13 @@ def clear_throttle_cache():
     cache.clear()
     yield
     cache.clear()
+
+
+@pytest.fixture
+def enable_app_auth(settings):
+    """Enable application authentication for tests that need it."""
+    settings.TENXYTE_APPLICATION_AUTH_ENABLED = True
+    return settings
 
 
 @pytest.mark.django_db
@@ -190,7 +199,7 @@ class TestJWTSecurity:
 class TestApplicationAuthSecurity:
     """Tests de sécurité pour l'authentification application."""
 
-    def test_missing_app_credentials(self, user):
+    def test_missing_app_credentials(self, user, enable_app_auth):
         """Les requêtes sans credentials application doivent être rejetées."""
         client = APIClient()
         response = client.post(f'{api_prefix}/auth/login/email/', {
@@ -202,7 +211,7 @@ class TestApplicationAuthSecurity:
         data = json.loads(response.content)
         assert data.get('code') == 'APP_AUTH_REQUIRED'
 
-    def test_invalid_access_key(self, user):
+    def test_invalid_access_key(self, user, enable_app_auth):
         """Une access_key invalide doit être rejetée."""
         client = APIClient()
         client.credentials(
@@ -218,7 +227,7 @@ class TestApplicationAuthSecurity:
         data = json.loads(response.content)
         assert data.get('code') == 'APP_AUTH_INVALID'
 
-    def test_valid_key_wrong_secret(self, user, application):
+    def test_valid_key_wrong_secret(self, user, application, enable_app_auth):
         """Une access_key valide avec un mauvais secret doit être rejetée."""
         client = APIClient()
         client.credentials(
@@ -234,7 +243,7 @@ class TestApplicationAuthSecurity:
         data = json.loads(response.content)
         assert data.get('code') == 'APP_AUTH_INVALID'
 
-    def test_inactive_application_rejected(self, user):
+    def test_inactive_application_rejected(self, user, enable_app_auth):
         """Une application inactive doit être rejetée."""
         app, raw_secret = Application.create_application(name="Inactive App")
         app.is_active = False
@@ -490,7 +499,7 @@ class TestRefreshTokenSecurity:
 class TestCrossApplicationSecurity:
     """Tests de sécurité cross-application."""
 
-    def test_token_from_other_app_rejected(self, user):
+    def test_token_from_other_app_rejected(self, user, enable_app_auth):
         """Un token JWT d'une application A ne doit pas fonctionner avec l'application B."""
         # Créer deux applications
         app_a, secret_a = Application.create_application(name="App A")

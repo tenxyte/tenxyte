@@ -169,17 +169,28 @@ Register a new user.
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
-    "phone_country_code": "+1",
-    "phone_number": "5551234567",
+    "username": null,
+    "phone": "+15551234567",
+    "avatar": null,
+    "bio": null,
+    "timezone": null,
+    "language": null,
     "first_name": "John",
     "last_name": "Doe",
+    "is_active": true,
     "is_email_verified": false,
     "is_phone_verified": false,
     "is_2fa_enabled": false,
-    "roles": [],
-    "permissions": [],
     "created_at": "2023-10-01T12:00:00Z",
-    "last_login": null
+    "last_login": null,
+    "custom_fields": null,
+    "preferences": {
+      "email_notifications": true,
+      "sms_notifications": false,
+      "marketing_emails": false
+    },
+    "roles": [],
+    "permissions": []
   },
   "verification_required": {
     "email": true,
@@ -194,7 +205,9 @@ If `login: true` in request, also includes:
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600
+  "expires_in": 3600,
+  "refresh_expires_in": 86400,
+  "device_summary": "Windows 11 Desktop"
 }
 ```
 
@@ -222,16 +235,33 @@ Login with email + password.
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
   "expires_in": 3600,
+  "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
+    "username": null,
     "phone": "+15551234567",
+    "avatar": "https://cdn.example.com/avatars/user.jpg",
+    "bio": null,
+    "timezone": "Europe/Paris",
+    "language": "en",
     "first_name": "John",
     "last_name": "Doe",
+    "is_active": true,
     "is_email_verified": true,
     "is_phone_verified": false,
-    "is_2fa_enabled": false
+    "is_2fa_enabled": false,
+    "created_at": "2023-10-01T12:00:00Z",
+    "last_login": "2023-10-02T08:30:00Z",
+    "custom_fields": null,
+    "preferences": {
+      "email_notifications": true,
+      "sms_notifications": false,
+      "marketing_emails": false
+    },
+    "roles": [],
+    "permissions": []
   }
 }
 ```
@@ -265,18 +295,17 @@ Login with email + password.
 ```json
 {
   "error": "Session limit exceeded",
-  "details": "Maximum concurrent sessions (1) already reached. Please logout from other devices.",
-  "code": "SESSION_LIMIT_EXCEEDED"
+  "code": "SESSION_LIMIT_EXCEEDED",
+  "details": {}
 }
 ```
 
 **Response `423` (Account locked):**
 ```json
 {
-  "error": "Account locked",
-  "details": "Account has been locked due to too many failed login attempts.",
+  "error": "Account locked due to too many failed login attempts",
   "code": "ACCOUNT_LOCKED",
-  "retry_after": 1800
+  "details": {}
 }
 ```
 
@@ -305,16 +334,33 @@ Login with phone number + password.
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
   "expires_in": 3600,
+  "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
+    "username": null,
     "phone": "+15551234567",
+    "avatar": "https://cdn.example.com/avatars/user.jpg",
+    "bio": null,
+    "timezone": "Europe/Paris",
+    "language": "en",
     "first_name": "John",
     "last_name": "Doe",
+    "is_active": true,
     "is_email_verified": true,
     "is_phone_verified": false,
-    "is_2fa_enabled": false
+    "is_2fa_enabled": false,
+    "created_at": "2023-10-01T12:00:00Z",
+    "last_login": "2023-10-02T08:30:00Z",
+    "custom_fields": null,
+    "preferences": {
+      "email_notifications": true,
+      "sms_notifications": false,
+      "marketing_emails": false
+    },
+    "roles": [],
+    "permissions": []
   }
 }
 ```
@@ -359,18 +405,17 @@ Login with phone number + password.
 ```json
 {
   "error": "Session limit exceeded",
-  "details": "Maximum concurrent sessions (1) already reached. Please logout from other devices.",
-  "code": "SESSION_LIMIT_EXCEEDED"
+  "code": "SESSION_LIMIT_EXCEEDED",
+  "details": {}
 }
 ```
 
 **Response `423` (Account locked):**
 ```json
 {
-  "error": "Account locked",
-  "details": "Account has been locked due to too many failed login attempts.",
+  "error": "Account locked due to too many failed login attempts",
   "code": "ACCOUNT_LOCKED",
-  "retry_after": 1800
+  "details": {}
 }
 ```
 
@@ -418,14 +463,31 @@ Authenticate via OAuth2 provider.
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
   "expires_in": 3600,
+  "refresh_expires_in": 86400,
+  "device_summary": "Windows 11 Desktop",
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
+    "username": null,
+    "phone": null,
+    "avatar": "https://lh3.googleusercontent.com/a/...",
+    "bio": null,
+    "timezone": null,
+    "language": null,
     "first_name": "John",
     "last_name": "Doe",
+    "is_active": true,
     "is_email_verified": true,
     "is_phone_verified": false,
     "is_2fa_enabled": false,
+    "created_at": "2023-10-01T12:00:00Z",
+    "last_login": "2023-10-02T08:30:00Z",
+    "custom_fields": null,
+    "preferences": {
+      "email_notifications": true,
+      "sms_notifications": false,
+      "marketing_emails": false
+    },
     "roles": [],
     "permissions": []
   },
@@ -477,15 +539,31 @@ OAuth2 callback endpoint for authorization code flow.
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
   "expires_in": 3600,
+  "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
+    "username": null,
+    "phone": null,
+    "avatar": "https://lh3.googleusercontent.com/a/...",
+    "bio": null,
+    "timezone": null,
+    "language": null,
     "first_name": "John",
     "last_name": "Doe",
+    "is_active": true,
     "is_email_verified": true,
     "is_phone_verified": false,
     "is_2fa_enabled": false,
+    "created_at": "2023-10-01T12:00:00Z",
+    "last_login": "2023-10-02T08:30:00Z",
+    "custom_fields": null,
+    "preferences": {
+      "email_notifications": true,
+      "sms_notifications": false,
+      "marketing_emails": false
+    },
     "roles": [],
     "permissions": []
   },
@@ -528,7 +606,7 @@ Location: https://yourapp.com/auth/callback?access_token=eyJ...&refresh_token=ey
 {
   "error": "OAuth2 callback processing failed",
   "code": "CALLBACK_ERROR",
-  "details": "An unexpected error occurred during authentication."
+  "details": {}
 }
 ```
 
@@ -604,13 +682,37 @@ Verify a magic link token and receive JWT tokens.
 **Response `200`:**
 ```json
 {
-  "access": "eyJ...",
-  "refresh": "eyJ...",
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "refresh_expires_in": 86400,
+  "device_summary": null,
   "user": {
-    "id": 42,
+    "id": "uuid-string",
     "email": "user@example.com",
+    "username": null,
+    "phone": null,
+    "avatar": "https://cdn.example.com/avatars/user.jpg",
+    "bio": null,
+    "timezone": "Europe/Paris",
+    "language": "en",
     "first_name": "John",
-    "last_name": "Doe"
+    "last_name": "Doe",
+    "is_active": true,
+    "is_email_verified": true,
+    "is_phone_verified": false,
+    "is_2fa_enabled": false,
+    "created_at": "2023-10-01T12:00:00Z",
+    "last_login": "2023-10-02T08:30:00Z",
+    "custom_fields": null,
+    "preferences": {
+      "email_notifications": true,
+      "sms_notifications": false,
+      "marketing_emails": false
+    },
+    "roles": [],
+    "permissions": []
   },
   "message": "Magic link verified successfully",
   "session_id": "uuid-string",
@@ -630,8 +732,8 @@ Verify a magic link token and receive JWT tokens.
 ```json
 {
   "error": "Invalid magic link token",
-  "details": "The token provided is not valid",
-  "code": "INVALID_TOKEN"
+  "code": "INVALID_TOKEN",
+  "details": {}
 }
 ```
 
@@ -651,7 +753,9 @@ Refresh the access token.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600
+  "expires_in": 3600,
+  "refresh_expires_in": 86400,
+  "device_summary": null
 }
 ```
 
@@ -722,7 +826,8 @@ Authorization: Bearer <access_token>
 ```json
 {
   "error": "Authentication credentials were not provided",
-  "details": "JWT token is required"
+  "code": "UNAUTHORIZED",
+  "details": {}
 }
 ```
 
@@ -811,8 +916,8 @@ Authorization: Bearer <access_token>
 ```json
 {
   "error": "Invalid OTP code",
-  "details": "The code provided is incorrect or has expired",
-  "code": "INVALID_OTP"
+  "code": "INVALID_OTP",
+  "details": {}
 }
 ```
 
@@ -855,8 +960,8 @@ Authorization: Bearer <access_token>
 ```json
 {
   "error": "Invalid OTP code",
-  "details": "The code provided is incorrect or has expired",
-  "code": "INVALID_OTP"
+  "code": "INVALID_OTP",
+  "details": {}
 }
 ```
 
@@ -894,7 +999,10 @@ Request a password reset email.
 ```json
 {
   "error": "Validation error",
-  "details": "Email or phone number is required"
+  "code": "VALIDATION_ERROR",
+  "details": {
+    "non_field_errors": ["Email or phone number is required"]
+  }
 }
 ```
 
@@ -953,8 +1061,8 @@ Confirm password reset with OTP code.
 ```json
 {
   "error": "OTP code has expired",
-  "details": "Please request a new password reset code",
-  "code": "OTP_EXPIRED"
+  "code": "OTP_EXPIRED",
+  "details": {}
 }
 ```
 

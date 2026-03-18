@@ -12,7 +12,8 @@ from rest_framework.test import APIRequestFactory
 
 from tenxyte.services.breach_check_service import BreachCheckService, breach_check_service
 from tenxyte.models import User, Application
-from tenxyte.services.jwt_service import JWTService
+from tests.integration.django.test_helpers import get_jwt_service
+# JWTService = get_jwt_service  # Use get_jwt_service() instead
 from tenxyte.views.auth_views import RegisterView
 from tenxyte.views.password_views import ChangePasswordView
 

@@ -98,13 +98,13 @@ class AccountDeletionRequest(models.Model):
 
     def send_confirmation_email(self):
         """Send confirmation email to user."""
-        from ..services.email_service import EmailService
+        from tenxyte.adapters.django.email_service import DjangoEmailService
 
         self.status = "confirmation_sent"
         self.save()
 
         try:
-            email_service = EmailService()
+            email_service = DjangoEmailService()
             email_service.send_account_deletion_confirmation(self)
             return True
         except Exception as e:
@@ -146,9 +146,9 @@ class AccountDeletionRequest(models.Model):
 
             # Envoyer email de notification de completion
             try:
-                from ..services.email_service import EmailService
+                from tenxyte.adapters.django.email_service import DjangoEmailService
 
-                email_service = EmailService()
+                email_service = DjangoEmailService()
                 email_service.send_account_deletion_completed(self)
             except Exception as e:
                 import logging

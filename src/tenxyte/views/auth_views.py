@@ -48,9 +48,9 @@ def get_breach_check_service():
 
 
 def get_email_service():
-    from ..services.email_service import EmailService
+    from tenxyte.adapters.django.email_service import DjangoEmailService
 
-    return EmailService()
+    return DjangoEmailService()
 
 
 def get_otp_service():
@@ -346,6 +346,7 @@ class RegisterView(APIView):
                     "refresh_token": tokens.refresh_token,
                     "token_type": "Bearer",
                     "expires_in": get_core_settings().jwt_access_token_lifetime,
+                    "refresh_expires_in": get_core_settings().jwt_refresh_token_lifetime,
                 }
             )
 
@@ -500,6 +501,7 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
         "refresh_token": tokens.refresh_token,
         "token_type": "Bearer",
         "expires_in": get_core_settings().jwt_access_token_lifetime,
+        "refresh_expires_in": get_core_settings().jwt_refresh_token_lifetime,
         "device_summary": get_device_summary(device_info) if device_info else "Unknown device",
         "user": user_data,
         "_user": user,  # Internal field for 2FA check (not serialized)
@@ -595,6 +597,7 @@ def authenticate_by_phone_with_core(
         "refresh_token": tokens.refresh_token,
         "token_type": "Bearer",
         "expires_in": get_core_settings().jwt_access_token_lifetime,
+        "refresh_expires_in": get_core_settings().jwt_refresh_token_lifetime,
         "device_summary": get_device_summary(device_info) if device_info else "Unknown device",
         "user": user_data,
         "_user": user,  # Internal field for 2FA check
@@ -1030,6 +1033,7 @@ class RefreshTokenView(APIView):
                 "refresh_token": result.refresh_token,
                 "token_type": "Bearer",
                 "expires_in": get_core_settings().jwt_access_token_lifetime,
+                "refresh_expires_in": get_core_settings().jwt_refresh_token_lifetime,
             }
 
             # Convert user to serialized format

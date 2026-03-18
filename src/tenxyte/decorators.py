@@ -1,6 +1,8 @@
 from functools import wraps
 from django.http import JsonResponse
-from .services.jwt_service import JWTService
+from tenxyte.core.jwt_service import JWTService
+from tenxyte.adapters.django import get_django_settings
+from tenxyte.adapters.django.cache_service import DjangoCacheService
 from .models import get_user_model, get_application_model
 from .conf import auth_settings
 
@@ -69,23 +71,26 @@ def require_jwt(view_func):
             return JsonResponse({"error": "Authorization header required", "code": "AUTH_REQUIRED"}, status=401)
 
         token = auth_header[7:]
-        jwt_service = JWTService()
+        jwt_service = JWTService(
+            settings=get_django_settings(),
+            blacklist_service=DjangoCacheService()
+        )
         payload = jwt_service.decode_token(token)
 
-        if not payload:
+        if not payload or not payload.is_valid:
             return JsonResponse({"error": "Invalid or expired token", "code": "TOKEN_INVALID"}, status=401)
 
         # Vérifier que l'application du token correspond
         application = getattr(request, "application", None)
         if application:
-            if str(application.id) != payload.get("app_id"):
+            if str(application.id) != payload.app_id:
                 return JsonResponse(
                     {"error": "Token does not match application", "code": "TOKEN_APP_MISMATCH"}, status=401
                 )
 
         # Récupérer l'utilisateur
         try:
-            user = User.objects.get(id=payload.get("user_id"))
+            user = User.objects.get(id=payload.user_id)
             if not user.is_active:
                 return JsonResponse({"error": "User account is inactive", "code": "USER_INACTIVE"}, status=401)
 

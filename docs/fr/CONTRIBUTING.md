@@ -223,10 +223,11 @@ Ensuite, ouvrez une pull request sur GitHub ciblant la branche `main` ou `develo
 ### Vérifications CI
 
 Les pull requests sont automatiquement testées par GitHub Actions sur une matrice de :
-- **Python** : 3.10, 3.11, 3.12
-- **Django** : 5.0, 5.1
+- **Python** : 3.10, 3.11, 3.12, 3.13
+- **Django** : 4.2, 5.0, 5.1, 5.2, 6.0
+- **FastAPI** : dernière version stable
 
-La couverture est rapportée via Codecov sur Python 3.12 / Django 5.1.
+La couverture est rapportée via Codecov sur Python 3.12 / Django 6.0.
 
 ### Ce que nous recherchons
 
@@ -269,6 +270,18 @@ La documentation est organisée dans le répertoire `docs/` :
 
 Lors de l'ajout ou de la modification d'une fonctionnalité, mettez à jour le ou les fichiers de documentation correspondants.
 
+> [!IMPORTANT]
+> ### Cohérence des schémas (tous les modèles)
+>
+> Tenxyte est **agnostique au framework**. Chaque objet de réponse (`User`, `Organization`, `Role`, `TokenPair`, `AuditLog`, etc.) **doit être identique** sur tous les adaptateurs (Django, FastAPI, personnalisé). C'est une valeur fondamentale du projet.
+>
+> **Règles :**
+> - Les schémas canoniques sont définis dans [`schemas.md`](schemas.md) et dans `tenxyte.core.schemas` ([source](../../src/tenxyte/core/schemas.py)). Toute modification de modèle doit commencer par ces fichiers de référence.
+> - **Pas de champs alias.** N'ajoutez pas de champs qui dupliquent des champs existants (ex : `is_verified` comme alias de `is_email_verified`, ou `date_joined` comme alias de `created_at`). Chaque information ne doit apparaître qu'une seule fois.
+> - **Pas d'état dans les sous-objets de préférences.** Les objets comme `preferences` contiennent uniquement des préférences utilisateur. L'état des fonctionnalités (ex : `is_2fa_enabled`) appartient à des champs dédiés de premier niveau.
+> - Lors de la modification d'un modèle, mettez à jour **toutes** les occurrences : `tenxyte.core.schemas.py`, les sérialiseurs adaptateurs (`auth_serializers.py`, etc.), `schemas.md` (EN + FR), et chaque exemple JSON concerné dans `endpoints.md` (EN + FR).
+> - **Obligation de test :** après toute modification de modèle, tous les tests impliquant le modèle modifié doivent être repris et **doivent passer sans erreur**. Aucune PR modifiant un schéma ne sera acceptée si des tests échouent.
+
 ---
 
 ## Signaler des problèmes
@@ -296,9 +309,10 @@ Incluez :
 
 | Composant | Versions |
 |-----------|----------|
-| Python | 3.10, 3.11, 3.12 |
-| Django | 5.0, 5.1, 5.2 |
-| DRF | ≥ 3.14 |
+| Python | 3.10, 3.11, 3.12, 3.13 |
+| Django | 4.2, 5.0, 5.1, 5.2, 6.0 |
+| DRF | ≥ 3.16 |
+| FastAPI | Dernière version stable |
 
 ---
 

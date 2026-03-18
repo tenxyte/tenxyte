@@ -47,15 +47,15 @@ def test_init_with_dotenv_missing():
 def test_get_prefixed_name():
     """Lines 134-138: name already has prefix."""
     provider = EnvSettingsProvider()
-    with patch.dict(os.environ, {"TENXYTE_JWT_SECRET": "mysecret"}):
-        assert provider.get("TENXYTE_JWT_SECRET") == "mysecret"
+    with patch.dict(os.environ, {"TENXYTE_JWT_SECRET_KEY": "mysecret"}):
+        assert provider.get("TENXYTE_JWT_SECRET_KEY") == "mysecret"
 
 
 def test_get_unprefixed_with_prefix_found():
     """Lines 124-128: unprefixed name → found with prefix."""
     provider = EnvSettingsProvider()
-    with patch.dict(os.environ, {"TENXYTE_JWT_SECRET": "val"}, clear=False):
-        assert provider.get("JWT_SECRET") == "val"
+    with patch.dict(os.environ, {"TENXYTE_JWT_SECRET_KEY": "val"}, clear=False):
+        assert provider.get("JWT_SECRET_KEY") == "val"
 
 
 def test_get_unprefixed_fallback():

@@ -17,8 +17,8 @@ from rest_framework.test import APIRequestFactory
 
 from tenxyte.models import User, Application
 from tenxyte.models.webauthn import WebAuthnCredential, WebAuthnChallenge
-from tenxyte.services.webauthn_service import WebAuthnService
-from tenxyte.services.jwt_service import JWTService
+from tests.integration.django.webauthn_compat import WebAuthnService
+from tests.integration.django.test_helpers import JWTService
 from tenxyte.views.webauthn_views import (
     WebAuthnRegisterBeginView, WebAuthnRegisterCompleteView,
     WebAuthnAuthenticateBeginView, WebAuthnAuthenticateCompleteView,
@@ -215,7 +215,7 @@ class TestWebAuthnService:
         mock_webauthn.options_to_json.return_value = '{"challenge": "abc"}'
         mock_webauthn.PublicKeyCredentialDescriptor = MagicMock()
 
-        with patch('tenxyte.services.webauthn_service._get_webauthn', return_value=mock_webauthn):
+        with patch('tenxyte.core.webauthn_service._get_webauthn', return_value=mock_webauthn):
             success, data, error = service.begin_registration(user)
 
         assert success is True
@@ -232,7 +232,7 @@ class TestWebAuthnService:
         mock_webauthn.generate_registration_options.side_effect = Exception("webauthn error")
         mock_webauthn.PublicKeyCredentialDescriptor = MagicMock()
 
-        with patch('tenxyte.services.webauthn_service._get_webauthn', return_value=mock_webauthn):
+        with patch('tenxyte.core.webauthn_service._get_webauthn', return_value=mock_webauthn):
             success, data, error = service.begin_registration(user)
 
         assert success is False
@@ -272,7 +272,7 @@ class TestWebAuthnService:
         mock_webauthn = MagicMock()
         mock_webauthn.verify_registration_response.side_effect = Exception("invalid credential")
 
-        with patch('tenxyte.services.webauthn_service._get_webauthn', return_value=mock_webauthn):
+        with patch('tenxyte.core.webauthn_service._get_webauthn', return_value=mock_webauthn):
             success, cred, error = service.complete_registration(
                 user=user,
                 credential_data={'id': 'test'},
@@ -297,7 +297,7 @@ class TestWebAuthnService:
         mock_webauthn = MagicMock()
         mock_webauthn.verify_registration_response.return_value = mock_verification
 
-        with patch('tenxyte.services.webauthn_service._get_webauthn', return_value=mock_webauthn):
+        with patch('tenxyte.core.webauthn_service._get_webauthn', return_value=mock_webauthn):
             success, cred, error = service.complete_registration(
                 user=user,
                 credential_data={'id': 'test'},
@@ -327,7 +327,7 @@ class TestWebAuthnService:
         mock_webauthn.options_to_json.return_value = '{"challenge": "xyz"}'
         mock_webauthn.PublicKeyCredentialDescriptor = MagicMock()
 
-        with patch('tenxyte.services.webauthn_service._get_webauthn', return_value=mock_webauthn):
+        with patch('tenxyte.core.webauthn_service._get_webauthn', return_value=mock_webauthn):
             success, data, error = service.begin_authentication(user=user)
 
         assert success is True
@@ -370,7 +370,7 @@ class TestWebAuthnService:
         mock_webauthn = MagicMock()
         mock_webauthn.verify_authentication_response.return_value = mock_verification
 
-        with patch('tenxyte.services.webauthn_service._get_webauthn', return_value=mock_webauthn):
+        with patch('tenxyte.core.webauthn_service._get_webauthn', return_value=mock_webauthn):
             success, data, error = service.complete_authentication(
                 credential_data={'id': 'auth_cred_ok'},
                 challenge_id=instance.id,
@@ -417,7 +417,7 @@ class TestWebAuthnService:
         assert success is False
 
     def test_get_webauthn_import_error(self):
-        from tenxyte.services.webauthn_service import _get_webauthn
+        from tenxyte.core.webauthn_service import _get_webauthn
         with patch.dict('sys.modules', {'webauthn': None}):
             with pytest.raises(ImportError):
                 _get_webauthn()
@@ -442,7 +442,7 @@ class TestWebAuthnService:
         mock_webauthn = MagicMock()
         mock_webauthn.generate_authentication_options.side_effect = Exception("auth err")
         mock_webauthn.PublicKeyCredentialDescriptor = MagicMock()
-        with patch('tenxyte.services.webauthn_service._get_webauthn', return_value=mock_webauthn):
+        with patch('tenxyte.core.webauthn_service._get_webauthn', return_value=mock_webauthn):
             success, data, error = service.begin_authentication(user)
         assert success is False
         assert error == 'An unexpected error occurred during WebAuthn authentication.'
@@ -497,7 +497,7 @@ class TestWebAuthnService:
         service = WebAuthnService()
         mock_webauthn = MagicMock()
         mock_webauthn.verify_authentication_response.side_effect = Exception("failed verif")
-        with patch('tenxyte.services.webauthn_service._get_webauthn', return_value=mock_webauthn):
+        with patch('tenxyte.core.webauthn_service._get_webauthn', return_value=mock_webauthn):
             success, data, error = service.complete_authentication({'id': 'auth_cred_fail'}, instance.id)
         assert success is False
         assert 'failed' in error.lower()

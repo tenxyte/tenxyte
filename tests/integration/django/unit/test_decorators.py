@@ -57,7 +57,12 @@ class TestDecoratorsRequireJWT:
         user = User.objects.create(email='locked@test.com')
         user.is_account_locked = MagicMock(return_value=True)
 
-        mock_jwt_service.return_value.decode_token.return_value = {'user_id': user.id, 'app_id': 'app123'}
+        from tenxyte.core.jwt_service import DecodedToken
+        from datetime import datetime, timezone
+        mock_jwt_service.return_value.decode_token.return_value = DecodedToken(
+            user_id=str(user.id), app_id='app123', jti='jti123', exp=datetime.now(timezone.utc),
+            iat=datetime.now(timezone.utc), type='access', claims={}, is_valid=True
+        )
         
         req = MagicMock(META={}, method='GET')
         req.headers = {'Authorization': 'Bearer asdf'}
@@ -73,7 +78,12 @@ class TestDecoratorsRequireJWT:
     @patch('tenxyte.decorators.JWTService')
     def test_require_jwt_user_does_not_exist(self, mock_jwt_service):
         # Line 112-113
-        mock_jwt_service.return_value.decode_token.return_value = {'user_id': 9999, 'app_id': 'app123'}
+        from tenxyte.core.jwt_service import DecodedToken
+        from datetime import datetime, timezone
+        mock_jwt_service.return_value.decode_token.return_value = DecodedToken(
+            user_id='9999', app_id='app123', jti='jti123', exp=datetime.now(timezone.utc),
+            iat=datetime.now(timezone.utc), type='access', claims={}, is_valid=True
+        )
         
         req = MagicMock(META={}, method='GET')
         req.headers = {'Authorization': 'Bearer asdf'}
@@ -97,7 +107,12 @@ class TestRBACDecorators:
     def _run(self, decorator_factory, arg, hook_method, mock_return):
         with override_settings(TENXYTE_JWT_AUTH_ENABLED=True):
             with patch('tenxyte.decorators.JWTService') as mock_jwt:
-                mock_jwt.return_value.decode_token.return_value = {'user_id': self.user.id, 'app_id': 'app123'}
+                from tenxyte.core.jwt_service import DecodedToken
+                from datetime import datetime, timezone
+                mock_jwt.return_value.decode_token.return_value = DecodedToken(
+                    user_id=str(self.user.id), app_id='app123', jti='jti123', exp=datetime.now(timezone.utc),
+                    iat=datetime.now(timezone.utc), type='access', claims={}, is_valid=True
+                )
                 with patch('tenxyte.decorators.User.objects.get', return_value=self.user):
                     with patch.object(self.user, hook_method, return_value=mock_return):
                         @decorator_factory(arg)
@@ -132,7 +147,12 @@ class TestVerifiedDecorators:
     @patch('tenxyte.decorators.JWTService')
     def test_require_verified_email(self, mock_jwt_service):
         user = User.objects.create(email='unverified@test.com')
-        mock_jwt_service.return_value.decode_token.return_value = {'user_id': user.id, 'app_id': 'app123'}
+        from tenxyte.core.jwt_service import DecodedToken
+        from datetime import datetime, timezone
+        mock_jwt_service.return_value.decode_token.return_value = DecodedToken(
+            user_id=str(user.id), app_id='app123', jti='jti123', exp=datetime.now(timezone.utc),
+            iat=datetime.now(timezone.utc), type='access', claims={}, is_valid=True
+        )
         
         req = MagicMock(META={}, method='GET')
         req.headers = {'Authorization': 'Bearer asdf'}
@@ -152,7 +172,12 @@ class TestVerifiedDecorators:
     def test_require_verified_email_success(self, mock_jwt_service):
         user = User.objects.create(email='verified@test.com')
         user.is_email_verified = True
-        mock_jwt_service.return_value.decode_token.return_value = {'user_id': user.id, 'app_id': 'app123'}
+        from tenxyte.core.jwt_service import DecodedToken
+        from datetime import datetime, timezone
+        mock_jwt_service.return_value.decode_token.return_value = DecodedToken(
+            user_id=str(user.id), app_id='app123', jti='jti123', exp=datetime.now(timezone.utc),
+            iat=datetime.now(timezone.utc), type='access', claims={}, is_valid=True
+        )
         
         req = MagicMock(META={}, method='GET')
         req.headers = {'Authorization': 'Bearer asdf'}
@@ -172,7 +197,12 @@ class TestVerifiedDecorators:
     def test_require_verified_phone(self, mock_jwt_service):
         user = User.objects.create(email='unvphone@test.com')
         user.is_phone_verified = False
-        mock_jwt_service.return_value.decode_token.return_value = {'user_id': user.id, 'app_id': 'app123'}
+        from tenxyte.core.jwt_service import DecodedToken
+        from datetime import datetime, timezone
+        mock_jwt_service.return_value.decode_token.return_value = DecodedToken(
+            user_id=str(user.id), app_id='app123', jti='jti123', exp=datetime.now(timezone.utc),
+            iat=datetime.now(timezone.utc), type='access', claims={}, is_valid=True
+        )
         
         req = MagicMock(META={}, method='GET')
         req.headers = {'Authorization': 'Bearer asdf'}
@@ -324,7 +354,12 @@ class TestRemainingCoverage:
         user = User.objects.create(email='cbv@test.com', is_active=True)
         with override_settings(TENXYTE_JWT_AUTH_ENABLED=True):
             with patch('tenxyte.decorators.JWTService') as jwt:
-                jwt.return_value.decode_token.return_value = {'user_id': user.id}
+                from tenxyte.core.jwt_service import DecodedToken
+                from datetime import datetime, timezone
+                jwt.return_value.decode_token.return_value = DecodedToken(
+                    user_id=str(user.id), app_id='app123', jti='jti123', exp=datetime.now(timezone.utc),
+                    iat=datetime.now(timezone.utc), type='access', claims={}, is_valid=True
+                )
                 view = CBVTest()
                 assert view.my_method(req).status_code == 200
 
@@ -339,7 +374,12 @@ class TestRemainingCoverage:
         req.headers = {'Authorization': 'Bearer bad'}
         with override_settings(TENXYTE_JWT_AUTH_ENABLED=True):
             with patch('tenxyte.decorators.JWTService') as jwt:
-                jwt.return_value.decode_token.return_value = None
+                from tenxyte.core.jwt_service import DecodedToken
+                from datetime import datetime, timezone
+                jwt.return_value.decode_token.return_value = DecodedToken(
+                    user_id='', app_id='', jti='', exp=datetime.now(timezone.utc),
+                    iat=datetime.now(timezone.utc), type='access', claims={}, is_valid=False, error='Invalid token'
+                )
                 assert require_jwt(lambda r: None)(req).status_code == 401
                 
     def test_jwt_app_mismatch(self): # Line 89
@@ -349,7 +389,12 @@ class TestRemainingCoverage:
         req.application.id = 'app1'
         with override_settings(TENXYTE_JWT_AUTH_ENABLED=True):
             with patch('tenxyte.decorators.JWTService') as jwt:
-                jwt.return_value.decode_token.return_value = {'app_id': 'app2'}
+                from tenxyte.core.jwt_service import DecodedToken
+                from datetime import datetime, timezone
+                jwt.return_value.decode_token.return_value = DecodedToken(
+                    user_id='', app_id='app2', jti='jti123', exp=datetime.now(timezone.utc),
+                    iat=datetime.now(timezone.utc), type='access', claims={}, is_valid=True
+                )
                 assert require_jwt(lambda r: None)(req).status_code == 401
                 
     def test_jwt_user_inactive(self): # Line 98
@@ -359,7 +404,12 @@ class TestRemainingCoverage:
         user = User.objects.create(email='inact@test.com', is_active=False)
         with override_settings(TENXYTE_JWT_AUTH_ENABLED=True):
             with patch('tenxyte.decorators.JWTService') as jwt:
-                jwt.return_value.decode_token.return_value = {'user_id': user.id}
+                from tenxyte.core.jwt_service import DecodedToken
+                from datetime import datetime, timezone
+                jwt.return_value.decode_token.return_value = DecodedToken(
+                    user_id=str(user.id), app_id='app123', jti='jti123', exp=datetime.now(timezone.utc),
+                    iat=datetime.now(timezone.utc), type='access', claims={}, is_valid=True
+                )
                 assert require_jwt(lambda r: None)(req).status_code == 401
 
     @override_settings(TENXYTE_JWT_AUTH_ENABLED=True)
@@ -367,7 +417,12 @@ class TestRemainingCoverage:
     def test_require_verified_phone_success(self, mock_jwt_service): # Line 158
         user = User.objects.create(email='vphone@test.com')
         user.is_phone_verified = True
-        mock_jwt_service.return_value.decode_token.return_value = {'user_id': user.id}
+        from tenxyte.core.jwt_service import DecodedToken
+        from datetime import datetime, timezone
+        mock_jwt_service.return_value.decode_token.return_value = DecodedToken(
+            user_id=str(user.id), app_id='app123', jti='jti123', exp=datetime.now(timezone.utc),
+            iat=datetime.now(timezone.utc), type='access', claims={}, is_valid=True
+        )
         req = MagicMock(META={}, method='GET')
         req.headers = {'Authorization': 'Bearer test'}
         req.application = None
