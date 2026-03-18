@@ -50,10 +50,31 @@ class AuthService:
         from tenxyte.conf import auth_settings
         return getattr(auth_settings, 'MAX_LOGIN_ATTEMPTS', 5)
     
-    def _check_new_device_alert(self, user, device_info: str) -> bool:
-        """Check if this is a new device for the user (stub for testing)."""
-        # This is a stub method for test compatibility
-        # In real implementation, this would check device fingerprints
+    def _check_new_device_alert(self, user, device_info: str, ip_address: str = "") -> bool:
+        """Check if this is a new device for the user and send alert if needed."""
+        # Check if this is a known device
+        if not device_info:
+            return False
+        
+        known_device = RefreshToken.objects.filter(
+            user=user,
+            device_info=device_info
+        ).exists()
+        
+        if not known_device and user.email:
+            # Send security alert email
+            from tenxyte.adapters.django.email_service import DjangoEmailService
+            email_service = DjangoEmailService()
+            try:
+                email_service.send_security_alert_email(
+                    user=user,
+                    device_info=device_info,
+                    ip_address=ip_address
+                )
+            except Exception:
+                pass  # Don't fail login if email fails
+            return True
+        
         return False
     
     def authenticate_by_email(
@@ -99,6 +120,9 @@ class AuthService:
         try:
             user = User.objects.get(email=email, is_deleted=False)
         except User.DoesNotExist:
+            # Use dummy hash for timing attack mitigation
+            from django.contrib.auth.hashers import check_password
+            check_password(password, self._get_dummy_hash())
             LoginAttempt.record(
                 identifier=email,
                 ip_address=ip_address,
@@ -583,3 +607,190 @@ class AuthService:
             return True
         except Exception:
             return False
+    
+    def validate_application(self, api_key: str, api_secret: str) -> tuple[bool, Application | None, str]:
+        """Validate application credentials."""
+        try:
+            app = Application.objects.get(access_key=api_key)
+            if app.verify_secret(api_secret):
+                return True, app, ""
+            return False, None, "Invalid application credentials"
+        except Application.DoesNotExist:
+            return False, None, "Invalid application credentials"
+    
+    def _enforce_session_limit(self, user: User, application: Application) -> Tuple[bool, str]:
+        """Enforce session limit for user."""
+        from django.conf import settings
+        if not getattr(settings, 'TENXYTE_SESSION_LIMIT_ENABLED', False):
+            return True, ""
+        
+        max_sessions = getattr(settings, 'TENXYTE_DEFAULT_MAX_SESSIONS', 0)
+        if max_sessions == 0:  # 0 = unlimited
+            return True, ""
+        
+        action = getattr(settings, 'TENXYTE_DEFAULT_SESSION_LIMIT_ACTION', 'deny')
+        
+        # Count active sessions
+        active_sessions = RefreshToken.objects.filter(
+            user=user,
+            application=application,
+            is_revoked=False,
+            expires_at__gt=timezone.now()
+        ).count()
+        
+        if active_sessions >= max_sessions:
+            if action == 'deny':
+                return False, "Session limit exceeded"
+            elif action == 'revoke_oldest':
+                # Revoke oldest session
+                oldest = RefreshToken.objects.filter(
+                    user=user,
+                    application=application,
+                    is_revoked=False,
+                    expires_at__gt=timezone.now()
+                ).order_by('created_at').first()
+                if oldest:
+                    oldest.revoke()
+        
+        return True, ""
+    
+    def _enforce_device_limit(self, user: User, application: Application, device_info: str) -> Tuple[bool, str]:
+        """Enforce device limit for user."""
+        from django.conf import settings
+        if not getattr(settings, 'TENXYTE_DEVICE_LIMIT_ENABLED', False):
+            return True, ""
+        
+        max_devices = getattr(settings, 'TENXYTE_DEFAULT_MAX_DEVICES', 0)
+        if max_devices == 0:  # 0 = unlimited
+            return True, ""
+        
+        if not device_info:
+            return True, ""
+        
+        action = getattr(settings, 'TENXYTE_DEVICE_LIMIT_ACTION', 'deny')
+        
+        # Check if this is a known device
+        known_device = RefreshToken.objects.filter(
+            user=user,
+            application=application,
+            device_info=device_info,
+            is_revoked=False,
+            expires_at__gt=timezone.now()
+        ).exists()
+        
+        if known_device:
+            return True, ""  # Known devices always allowed
+        
+        # Count unique devices
+        unique_devices = RefreshToken.objects.filter(
+            user=user,
+            application=application,
+            is_revoked=False,
+            expires_at__gt=timezone.now()
+        ).values('device_info').distinct().count()
+        
+        if unique_devices >= max_devices:
+            if action == 'deny':
+                return False, "Device limit exceeded"
+        
+        return True, ""
+    
+    def generate_tokens_for_user(
+        self,
+        user: User,
+        application: Application,
+        ip_address: str = "127.0.0.1",
+        device_info: str = ""
+    ) -> Dict[str, Any]:
+        """Generate token pair for user."""
+        refresh_token_str = secrets.token_urlsafe(32)
+        token_pair = self.jwt_service.generate_token_pair(
+            user_id=str(user.id),
+            application_id=str(application.id),
+            refresh_token_str=refresh_token_str
+        )
+        
+        # Create refresh token in database
+        from datetime import timedelta
+        expires_at = timezone.now() + timedelta(seconds=self.settings.jwt_refresh_token_lifetime)
+        
+        RefreshToken.objects.create(
+            user=user,
+            application=application,
+            token=refresh_token_str,
+            expires_at=expires_at,
+            ip_address=ip_address,
+            device_info=device_info or ""
+        )
+        
+        # Update last_login
+        user.last_login = timezone.now()
+        user.save(update_fields=['last_login'])
+        
+        return {
+            'access_token': token_pair.access_token,
+            'refresh_token': refresh_token_str,
+            'token_type': 'Bearer',
+            'expires_in': self.settings.jwt_access_token_lifetime,
+        }
+    
+    @staticmethod
+    def _get_dummy_hash() -> str:
+        """Get or generate a dummy password hash for timing attack mitigation."""
+        from django.core.cache import cache
+        dummy_hash = cache.get('auth_service_dummy_hash')
+        if not dummy_hash:
+            from django.contrib.auth.hashers import make_password
+            dummy_hash = make_password('dummy_password_for_timing_attack_mitigation')
+            cache.set('auth_service_dummy_hash', dummy_hash, timeout=3600)
+        return dummy_hash
+    
+    def authenticate_by_phone(
+        self,
+        phone_country_code: str,
+        phone_number: str,
+        password: str,
+        application: Application,
+        ip_address: str = "127.0.0.1",
+        device_info: str = "",
+        **kwargs
+    ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
+        """Authenticate user by phone and password."""
+        try:
+            user = User.objects.get(
+                phone_country_code=phone_country_code,
+                phone_number=phone_number,
+                is_deleted=False
+            )
+        except User.DoesNotExist:
+            # Use dummy hash for timing attack mitigation
+            from django.contrib.auth.hashers import check_password
+            check_password(password, self._get_dummy_hash())
+            return False, None, "Invalid credentials"
+        
+        # Reuse email authentication logic
+        if not user.check_password(password):
+            return False, None, "Invalid credentials"
+        
+        if not user.is_active:
+            return False, None, "Account is inactive"
+        
+        # Generate tokens
+        data = self.generate_tokens_for_user(user, application, ip_address, device_info)
+        return True, data, ""
+    
+    def _audit_log(self, user: User, action: str, **kwargs) -> None:
+        """Log audit event."""
+        from django.conf import settings
+        if not getattr(settings, 'TENXYTE_AUDIT_LOG_ENABLED', True):
+            return
+        
+        try:
+            from tenxyte.models import AuditLog
+            AuditLog.objects.create(
+                user=user,
+                action=action,
+                details=kwargs
+            )
+        except Exception:
+            pass  # Don't fail operations if audit logging fails

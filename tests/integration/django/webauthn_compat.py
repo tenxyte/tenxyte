@@ -165,11 +165,21 @@ class WebAuthnService:
     
     def __init__(self):
         """Initialize with Django-specific repositories."""
-        self.settings = get_django_settings()
         self.credential_repo = DjangoWebAuthnCredentialRepository()
         self.challenge_repo = DjangoWebAuthnChallengeRepository()
-        self._service = CoreWebAuthnService(
-            settings=self.settings,
+    
+    def _get_service(self):
+        """Get a fresh service instance with current settings."""
+        # Force re-read of settings to pick up override_settings changes
+        import tenxyte.core.settings as settings_module
+        from tenxyte.adapters.django import DjangoSettingsProvider
+        
+        # Force reset of global singleton to pick up Django's override_settings
+        settings_module._settings = None
+        settings = settings_module.init(provider=DjangoSettingsProvider())
+        
+        return CoreWebAuthnService(
+            settings=settings,
             credential_repo=self.credential_repo,
             challenge_repo=self.challenge_repo,
         )
@@ -184,7 +194,7 @@ class WebAuthnService:
         Returns:
             Tuple of (success, data, error)
         """
-        return self._service.begin_registration(
+        return self._get_service().begin_registration(
             user_id=str(user.id),
             email=user.email,
             display_name=getattr(user, 'get_full_name', lambda: user.email)(),
@@ -203,7 +213,7 @@ class WebAuthnService:
         Returns:
             Tuple of (success, credential, error)
         """
-        result = self._service.complete_registration(
+        result = self._get_service().complete_registration(
             user_id=str(user.id),
             challenge_id=challenge_id,
             credential_data=credential_data,
@@ -223,7 +233,7 @@ class WebAuthnService:
             Tuple of (success, data, error)
         """
         user_id = str(user.id) if user else None
-        return self._service.begin_authentication(user_id=user_id)
+        return self._get_service().begin_authentication(user_id=user_id)
     
     def complete_authentication(self, credential_data, challenge_id, **kwargs):
         """
@@ -259,7 +269,7 @@ class WebAuthnService:
             except User.DoesNotExist:
                 pass
         
-        result = self._service.complete_authentication(
+        result = self._get_service().complete_authentication(
             challenge_id=challenge_id,
             credential_data=credential_data,
         )
@@ -280,7 +290,7 @@ class WebAuthnService:
         Returns:
             List of credentials
         """
-        return self._service.list_credentials(user_id=str(user.id))
+        return self._get_service().list_credentials(user_id=str(user.id))
     
     def delete_credential(self, user, credential_id):
         """
@@ -301,11 +311,11 @@ class WebAuthnService:
             except WebAuthnCredential.DoesNotExist:
                 return (False, "Credential not found")
         
-        return self._service.delete_credential(
+        return self._get_service().delete_credential(
             user_id=str(user.id),
             credential_id=credential_id,
         )
     
     def _get_origin(self):
         """Get origin URL for WebAuthn - delegates to core service."""
-        return self._service._get_origin()
+        return self._get_service()._get_origin()
