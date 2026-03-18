@@ -33,9 +33,8 @@ class TestAuthServiceCoverage:
         rt = RefreshToken.generate(user=user, application=application, ip_address="127.0.0.1", device_info="Mozilla/5.0")
         
         success, data, msg = service.refresh_access_token(
-            refresh_token_str=rt.raw_token,
-            application=application,
-            ip_address="192.168.1.1" # triggers extra_claims['ip'] and extra_claims['device']
+            rt.raw_token,
+            application
         )
         assert success is True
         assert data is not None
@@ -52,15 +51,17 @@ class TestAuthServiceCoverage:
     @patch('tenxyte.conf.security.SecuritySettingsMixin.DEFAULT_MAX_SESSIONS', new_callable=PropertyMock, return_value=0)
     def test_enforce_session_limit_zero(self, mock_max, mock_enabled, user, application):
         service = AuthService()
-        result = service._enforce_session_limit(user, application, "127.0.0.1")
-        assert result is None
+        ok, msg = service._enforce_session_limit(user, application)
+        assert ok is True
+        assert msg == ""
 
     @patch('tenxyte.conf.security.SecuritySettingsMixin.DEVICE_LIMIT_ENABLED', new_callable=PropertyMock, return_value=True)
     @patch('tenxyte.conf.security.SecuritySettingsMixin.DEFAULT_MAX_DEVICES', new_callable=PropertyMock, return_value=0)
     def test_enforce_device_limit_zero(self, mock_max, mock_enabled, user, application):
         service = AuthService()
-        result = service._enforce_device_limit(user, application, "127.0.0.1")
-        assert result is None
+        ok, msg = service._enforce_device_limit(user, application, "device_info")
+        assert ok is True
+        assert msg == ""
 
     @patch('tenxyte.conf.security.SecuritySettingsMixin.SESSION_LIMIT_ENABLED', new_callable=PropertyMock, return_value=True)
     @patch('tenxyte.conf.security.SecuritySettingsMixin.DEFAULT_MAX_SESSIONS', new_callable=PropertyMock, return_value=1)
@@ -93,8 +94,9 @@ class TestAuthServiceCoverage:
         user.save()
 
         service = AuthService()
-        result = service._enforce_session_limit(user, application, "127.0.0.1")
-        assert result is None
+        ok, msg = service._enforce_session_limit(user, application)
+        assert ok is True
+        assert msg == ""
 
     @patch('tenxyte.conf.security.SecuritySettingsMixin.DEVICE_LIMIT_ENABLED', new_callable=PropertyMock, return_value=True)
     @patch('tenxyte.conf.security.SecuritySettingsMixin.DEFAULT_MAX_DEVICES', new_callable=PropertyMock, return_value=1)
@@ -131,5 +133,6 @@ class TestAuthServiceCoverage:
         user.save()
 
         service = AuthService()
-        result = service._enforce_device_limit(user, application, "127.0.0.1", "New Device")
-        assert result is None
+        ok, msg = service._enforce_device_limit(user, application, "New Device")
+        assert ok is True
+        assert msg == ""

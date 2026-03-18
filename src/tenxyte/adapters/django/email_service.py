@@ -347,6 +347,26 @@ class DjangoEmailService(EmailService):
             )
         except Exception:
             return False
+    
+    def send_security_alert_email(self, user, device_info: str, ip_address: str) -> bool:
+        """Send security alert email for new device login."""
+        try:
+            from django.utils import timezone
+            context = {
+                'user': user,
+                'device_info': device_info,
+                'ip_address': ip_address,
+                'login_time': timezone.now(),
+            }
+
+            return self._send_template_email(
+                to_email=user.email,
+                subject="New Device Login Alert",
+                template_name="emails/security_alert.html",
+                context=context,
+            )
+        except Exception:
+            return False
 
 
 # Convenience function for getting configured email service

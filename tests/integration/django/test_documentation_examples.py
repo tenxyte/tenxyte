@@ -263,8 +263,8 @@ class DocumentationIntegrationTestCase(APITestCase):
             response_data = response.json()
             
             # Should have tokens and user data
-            assert 'access' in response_data
-            assert 'refresh' in response_data
+            assert 'access_token' in response_data
+            assert 'refresh_token' in response_data
             assert 'user' in response_data
             
             # User data should match documented structure
