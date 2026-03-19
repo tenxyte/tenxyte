@@ -64,11 +64,11 @@ dependencies = [
     "djangorestframework>=3.16",
     "django-cors-headers>=4.4",
     "drf-spectacular>=0.27",
-    "PyJWT>=2.12.0",
+    "PyJWT>=2.12.1",
     "bcrypt>=4.2",
     "pyotp>=2.9",
     "qrcode[pil]>=8.0",
-    "google-auth>=2.49",
+    "google-auth>=2.49.1",
     "google-auth-oauthlib>=1.2",
     "cryptography>=42.0",
     "Pillow>=11.0",
@@ -82,7 +82,7 @@ dependencies = [
 # Core-only (minimal dependencies, no framework)
 # Use for custom integrations or when you bring your own framework
 core = [
-    "PyJWT>=2.12.0",
+    "PyJWT>=2.12.1",
     "bcrypt>=4.2",
     "pyotp>=2.9",
     "qrcode[pil]>=8.0",
@@ -101,7 +101,7 @@ django = [
     "django-cors-headers>=4.4",
     "drf-spectacular>=0.27",
     "cryptography>=42.0",
-    "google-auth>=2.49",
+    "google-auth>=2.49.1",
     "google-auth-oauthlib>=1.2",
 ]
 
