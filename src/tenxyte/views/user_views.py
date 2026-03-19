@@ -15,6 +15,7 @@ from drf_spectacular.types import OpenApiTypes
 from rest_framework import serializers
 
 from ..serializers import UserSerializer
+from ..serializers.auth_serializers import UpdateProfileSerializer
 from ..serializers.user_admin_serializers import (
     AdminUserListSerializer,
     AdminUserDetailSerializer,
@@ -246,32 +247,20 @@ class MeView(APIView):
     )
     def patch(self, request):
         """Update profile using Core repository."""
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer = UpdateProfileSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(
                 {"error": "Validation error", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        email_changed = (
-            "email" in serializer.validated_data and serializer.validated_data["email"] != request.user.email
+        validated = serializer.validated_data
+
+        # Detect what changed
+        email_changed = "email" in validated and validated["email"] != request.user.email
+        phone_changed = (
+            ("phone_country_code" in validated and validated["phone_country_code"] != (request.user.phone_country_code or ""))
+            or ("phone_number" in validated and validated["phone_number"] != (request.user.phone_number or ""))
         )
-        phone_changed = False
-        if "phone" in request.data:
-            new_phone = request.data["phone"]
-            current_phone = (
-                f"+{request.user.phone_country_code}{request.user.phone_number}"
-                if request.user.phone_country_code
-                else request.user.phone_number
-            )
-            if new_phone != current_phone:
-                phone_changed = True
-        elif "phone_number" in request.data and request.data["phone_number"] != request.user.phone_number:
-            phone_changed = True
-        elif (
-            "phone_country_code" in request.data
-            and request.data["phone_country_code"] != request.user.phone_country_code
-        ):
-            phone_changed = True
 
         # Use Core repository for update
         user_repo = get_core_user_repo()
@@ -280,13 +269,14 @@ class MeView(APIView):
         if not core_user:
             return Response({"error": "User not found", "code": "NOT_FOUND"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Update fields via repository
-        update_data = {
-            "first_name": serializer.validated_data.get("first_name", core_user.first_name),
-            "last_name": serializer.validated_data.get("last_name", core_user.last_name),
-            "email": serializer.validated_data.get("email", core_user.email),
-            "email_verified": core_user.email_verified if not email_changed else False,
-        }
+        # Build update_data with only fields present in the request
+        update_data = {k: v for k, v in validated.items()}
+
+        # VULN-005 Mitigation: Reset verification flags if contact info is updated
+        if email_changed:
+            update_data["is_email_verified"] = False
+        if phone_changed:
+            update_data["is_phone_verified"] = False
 
         user_repo.update_user(str(request.user.id), update_data)
 
@@ -296,19 +286,10 @@ class MeView(APIView):
         UserModel = get_user_model()
         user = UserModel.objects.get(id=request.user.id)
 
-        # VULN-005 Mitigation: Reset verification flags if contact info is updated
-        if email_changed:
-            user.is_email_verified = False
-        if phone_changed:
-            user.is_phone_verified = False
-
-        if email_changed or phone_changed:
-            user.save(update_fields=["is_email_verified", "is_phone_verified"])
-
         return Response(
             {
                 "message": "Profile updated successfully",
-                "updated_fields": list(serializer.validated_data.keys()),
+                "updated_fields": list(validated.keys()),
                 "user": UserSerializer(user).data,
                 "verification_required": {"email_changed": email_changed, "phone_changed": phone_changed},
             }

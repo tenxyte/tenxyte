@@ -89,6 +89,7 @@ REST_FRAMEWORK = {
         'tenxyte.authentication.JWTAuthentication',
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_THROTTLE_CLASSES': [],  # Disable throttling in tests
 }
 
 # DRF Spectacular

@@ -174,6 +174,11 @@ class AbstractUser(models.Model):
     # Profil
     first_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=100, blank=True)
+    username = models.CharField(max_length=191, unique=True, null=True, blank=True, db_index=True)
+    bio = models.TextField(max_length=500, blank=True, default="")
+    timezone = models.CharField(max_length=63, blank=True, default="")
+    language = models.CharField(max_length=10, blank=True, default="")
+    custom_fields = models.JSONField(null=True, blank=True, default=None)
 
     # OAuth
     google_id = models.CharField(max_length=100, unique=True, null=True, blank=True, db_index=True)
