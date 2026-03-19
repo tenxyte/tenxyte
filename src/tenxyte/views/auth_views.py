@@ -467,16 +467,25 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
     try:
         from tenxyte.models import RefreshToken
         from django.utils import timezone as django_timezone
+        from django.db import transaction as db_transaction
         from datetime import timedelta
 
-        RefreshToken.objects.create(
-            user_id=user.id,
-            application_id=application.id if application else None,
-            token=RefreshToken._hash_token(tokens.refresh_token),
-            expires_at=django_timezone.now() + timedelta(days=7),  # 7 days
-            ip_address=ip_address,
-            device_info=device_info,
-        )
+        # Resolve application_id — FK is NOT NULL so we need a valid application
+        app_for_token = application
+        if app_for_token is None:
+            from tenxyte.models import Application as AppModel
+            app_for_token = AppModel.objects.filter(is_active=True).first()
+
+        if app_for_token is not None:
+            with db_transaction.atomic():
+                RefreshToken.objects.create(
+                    user_id=user.id,
+                    application_id=app_for_token.id,
+                    token=RefreshToken._hash_token(tokens.refresh_token),
+                    expires_at=django_timezone.now() + timedelta(days=7),
+                    ip_address=ip_address,
+                    device_info=device_info,
+                )
     except Exception:
         pass  # Don't fail login if refresh token storage fails
 
@@ -1019,44 +1028,38 @@ class RefreshTokenView(APIView):
             )
 
         jwt_service = get_core_jwt_service()
+        refresh_token_str = serializer.validated_data["refresh_token"]
 
+        # Use core service refresh_tokens which handles all the logic
+        result = jwt_service.refresh_tokens(refresh_token_str)
+        
+        if not result:
+            return Response(
+                {"error": "Invalid or expired refresh token", "code": "REFRESH_FAILED"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        # Build response data
+        data = {
+            "access_token": result.access_token,
+            "refresh_token": result.refresh_token,
+            "token_type": "Bearer",
+            "expires_in": get_core_settings().jwt_access_token_lifetime,
+            "refresh_expires_in": get_core_settings().jwt_refresh_token_lifetime,
+        }
+
+        # Add user data if available
         try:
-            result = jwt_service.refresh_tokens(serializer.validated_data["refresh_token"])
-            if not result:
-                return Response(
-                    {"error": "Invalid or expired refresh token", "code": "REFRESH_FAILED"},
-                    status=status.HTTP_401_UNAUTHORIZED,
-                )
+            decoded = jwt_service.decode_token(result.access_token, check_blacklist=False)
+            if decoded and decoded.user_id:
+                from ..models import get_user_model
+                UserModel = get_user_model()
+                user = UserModel.objects.get(id=decoded.user_id)
+                data["user"] = UserSerializer(user).data
+        except Exception:
+            pass
 
-            data = {
-                "access_token": result.access_token,
-                "refresh_token": result.refresh_token,
-                "token_type": "Bearer",
-                "expires_in": get_core_settings().jwt_access_token_lifetime,
-                "refresh_expires_in": get_core_settings().jwt_refresh_token_lifetime,
-            }
-
-            # Convert user to serialized format
-            # Note: The refresh result may not include user_id directly
-            # We need to decode the access token to get user info
-            try:
-                decoded = jwt_service.decode_token(result.access_token, check_blacklist=False)
-                if decoded and decoded.user_id:
-                    from ..models import get_user_model
-
-                    UserModel = get_user_model()
-                    try:
-                        django_user = UserModel.objects.get(id=decoded.user_id)
-                        data["user"] = UserSerializer(django_user).data
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-
-            return Response(data)
-
-        except Exception as e:
-            return Response({"error": str(e), "code": "REFRESH_FAILED"}, status=status.HTTP_401_UNAUTHORIZED)
+        return Response(data)
 
 
 class LogoutView(APIView):
