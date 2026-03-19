@@ -28,10 +28,7 @@ class JWTAuthentication(BaseAuthentication):
             return None  # Pas de token, passer au prochain authenticator
 
         token = auth_header[7:]
-        jwt_service = JWTService(
-            settings=get_django_settings(),
-            blacklist_service=DjangoCacheService()
-        )
+        jwt_service = JWTService(settings=get_django_settings(), blacklist_service=DjangoCacheService())
         payload = jwt_service.decode_token(token)
 
         if not payload or not payload.is_valid:

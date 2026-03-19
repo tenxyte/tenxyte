@@ -7,7 +7,6 @@ for 2FA/MFA authentication. Compatible with Google Authenticator, Authy, etc.
 
 import base64
 import logging
-import os
 import secrets
 from dataclasses import dataclass, field
 from io import BytesIO
@@ -188,7 +187,7 @@ class TOTPService:
             except ValueError as e:
                 logger.error(
                     f"Invalid encryption_key format: {e}\n"
-                    "Generate a valid key with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+                    'Generate a valid key with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
                 )
                 raise ValueError(
                     "encryption_key must be a valid Fernet key (32 url-safe base64-encoded bytes). "
@@ -203,7 +202,7 @@ class TOTPService:
                 except ValueError as e:
                     logger.error(
                         f"Invalid TENXYTE_TOTP_ENCRYPTION_KEY format: {e}\n"
-                        "Generate a valid key with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+                        'Generate a valid key with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"'
                     )
                     raise ValueError(
                         "TENXYTE_TOTP_ENCRYPTION_KEY must be a valid Fernet key (32 url-safe base64-encoded bytes). "

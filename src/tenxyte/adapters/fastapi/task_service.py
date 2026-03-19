@@ -4,7 +4,6 @@ from typing import Any, Callable, Coroutine, Union
 
 from tenxyte.core.task_service import TaskService
 
-
 logger = logging.getLogger(__name__)
 
 

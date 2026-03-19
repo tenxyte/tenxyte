@@ -105,10 +105,7 @@ class JWTAuthMiddleware:
             from tenxyte.adapters.django import get_django_settings
             from tenxyte.adapters.django.cache_service import DjangoCacheService
 
-            self._jwt_service = JWTService(
-                settings=get_django_settings(),
-                blacklist_service=DjangoCacheService()
-            )
+            self._jwt_service = JWTService(settings=get_django_settings(), blacklist_service=DjangoCacheService())
         return self._jwt_service
 
     def __call__(self, request):

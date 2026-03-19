@@ -364,11 +364,8 @@ class SocialAuthService:
     def __init__(self):
         from tenxyte.adapters.django import get_django_settings
         from tenxyte.adapters.django.cache_service import DjangoCacheService
-        
-        self.jwt_service = JWTService(
-            settings=get_django_settings(),
-            blacklist_service=DjangoCacheService()
-        )
+
+        self.jwt_service = JWTService(settings=get_django_settings(), blacklist_service=DjangoCacheService())
 
     def authenticate(
         self, provider_name: str, user_data: Dict[str, Any], application, ip_address: str, device_info: str = ""

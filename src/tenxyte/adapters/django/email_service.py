@@ -160,14 +160,15 @@ class DjangoEmailService(EmailService):
         import re
 
         # Remove HTML tags
-        text = re.sub(r'<[^>]+>', '', html_content)
+        text = re.sub(r"<[^>]+>", "", html_content)
 
         # Decode HTML entities
         import html
+
         text = html.unescape(text)
 
         # Clean up whitespace
-        text = re.sub(r'\s+', ' ', text).strip()
+        text = re.sub(r"\s+", " ", text).strip()
 
         return text
 
@@ -223,7 +224,7 @@ class DjangoEmailService(EmailService):
         try:
             from django.template.loader import render_to_string
             from django.core.mail import EmailMultiAlternatives
-            
+
             # Render the template
             html_content = render_to_string(template_name, context)
 
@@ -239,8 +240,8 @@ class DjangoEmailService(EmailService):
             # Send
             email.send()
             return True
-            
-        except Exception as e:
+
+        except Exception:
             # Log error but don't raise - return False to indicate failure
             return False
 
@@ -256,8 +257,8 @@ class DjangoEmailService(EmailService):
             cancel_url = f"https://{site.domain}/account/deletion/cancel/{deletion_request.id}/"
 
             context = {
-                'user': deletion_request.user,
-                'cancel_url': cancel_url,
+                "user": deletion_request.user,
+                "cancel_url": cancel_url,
             }
 
             return self._send_template_email(
@@ -288,9 +289,9 @@ class DjangoEmailService(EmailService):
                 days_remaining = max(0, delta.days)
 
             context = {
-                'user': deletion_request.user,
-                'cancel_url': cancel_url,
-                'days_remaining': days_remaining,
+                "user": deletion_request.user,
+                "cancel_url": cancel_url,
+                "days_remaining": days_remaining,
             }
 
             return self._send_template_email(
@@ -306,10 +307,10 @@ class DjangoEmailService(EmailService):
         """Send email when account deletion is completed."""
         try:
             context = {
-                'user': deletion_request.user,
-                'user_email': deletion_request.user.email,
-                'requested_at': deletion_request.requested_at,
-                'reason': getattr(deletion_request, 'reason', ''),
+                "user": deletion_request.user,
+                "user_email": deletion_request.user.email,
+                "requested_at": deletion_request.requested_at,
+                "reason": getattr(deletion_request, "reason", ""),
             }
 
             return self._send_template_email(
@@ -333,10 +334,10 @@ class DjangoEmailService(EmailService):
             login_url = f"https://{site.domain}/login/"
 
             context = {
-                'user': deletion_request.user,
-                'login_url': login_url,
-                'admin_notes': getattr(deletion_request, 'admin_notes', ''),
-                'reason': getattr(deletion_request, 'rejection_reason', 'No reason provided'),
+                "user": deletion_request.user,
+                "login_url": login_url,
+                "admin_notes": getattr(deletion_request, "admin_notes", ""),
+                "reason": getattr(deletion_request, "rejection_reason", "No reason provided"),
             }
 
             return self._send_template_email(
@@ -347,16 +348,17 @@ class DjangoEmailService(EmailService):
             )
         except Exception:
             return False
-    
+
     def send_security_alert_email(self, user, device_info: str, ip_address: str) -> bool:
         """Send security alert email for new device login."""
         try:
             from django.utils import timezone
+
             context = {
-                'user': user,
-                'device_info': device_info,
-                'ip_address': ip_address,
-                'login_time': timezone.now(),
+                "user": user,
+                "device_info": device_info,
+                "ip_address": ip_address,
+                "login_time": timezone.now(),
             }
 
             return self._send_template_email(
