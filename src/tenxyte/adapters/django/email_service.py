@@ -237,7 +237,7 @@ class DjangoEmailService(EmailService):
             )
             email.attach_alternative(html_content, "text/html")
 
-            # Send
+            # Send email
             email.send()
             return True
 
