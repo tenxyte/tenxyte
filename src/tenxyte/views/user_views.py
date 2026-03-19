@@ -258,9 +258,9 @@ class MeView(APIView):
         # Detect what changed
         email_changed = "email" in validated and validated["email"] != request.user.email
         phone_changed = (
-            ("phone_country_code" in validated and validated["phone_country_code"] != (request.user.phone_country_code or ""))
-            or ("phone_number" in validated and validated["phone_number"] != (request.user.phone_number or ""))
-        )
+            "phone_country_code" in validated
+            and validated["phone_country_code"] != (request.user.phone_country_code or "")
+        ) or ("phone_number" in validated and validated["phone_number"] != (request.user.phone_number or ""))
 
         # Use Core repository for update
         user_repo = get_core_user_repo()

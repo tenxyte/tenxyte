@@ -13,11 +13,11 @@ strictly follow the canonical `ErrorResponse` schema:
 """
 
 from rest_framework.views import exception_handler
-from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
+
 
 def custom_exception_handler(exc, context):
     """
@@ -58,7 +58,7 @@ def custom_exception_handler(exc, context):
                 error_code = codes.upper()
                 if isinstance(response.data, dict) and "detail" in response.data:
                     error_message = str(response.data["detail"])
-        
+
         # Override for built-in or mapped known cases
         if response.status_code == 401:
             error_code = getattr(exc, "auth_code", "UNAUTHORIZED")
@@ -77,14 +77,10 @@ def custom_exception_handler(exc, context):
             error_code = "RATE_LIMITED"
             if isinstance(response.data, dict) and "detail" in response.data:
                 error_message = str(response.data["detail"])
-        
+
         # Build strict canonical response
-        canon_response = {
-            "error": error_message,
-            "code": error_code,
-            "details": details if details else {}
-        }
-        
+        canon_response = {"error": error_message, "code": error_code, "details": details if details else {}}
+
         response.data = canon_response
 
     return response
