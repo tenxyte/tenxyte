@@ -88,6 +88,11 @@ class DjangoUserRepository(UserRepository):
         optional_fields = [
             "phone_country_code",
             "phone_number",
+            "username",
+            "bio",
+            "timezone",
+            "language",
+            "custom_fields",
             "google_id",
             "backup_codes",
             "is_banned",
@@ -198,6 +203,22 @@ class DjangoUserRepository(UserRepository):
             django_user.is_active = user_data["is_active"]
         if "is_email_verified" in user_data:
             django_user.is_email_verified = user_data["is_email_verified"]
+        if "phone_country_code" in user_data:
+            django_user.phone_country_code = user_data["phone_country_code"]
+        if "phone_number" in user_data:
+            django_user.phone_number = user_data["phone_number"]
+        if "is_phone_verified" in user_data:
+            django_user.is_phone_verified = user_data["is_phone_verified"]
+        if "username" in user_data:
+            django_user.username = user_data["username"]
+        if "bio" in user_data:
+            django_user.bio = user_data["bio"]
+        if "timezone" in user_data:
+            django_user.timezone = user_data["timezone"]
+        if "language" in user_data:
+            django_user.language = user_data["language"]
+        if "custom_fields" in user_data:
+            django_user.custom_fields = user_data["custom_fields"]
 
         django_user.save()
         return self._to_core_user(django_user)

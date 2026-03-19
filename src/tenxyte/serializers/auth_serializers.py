@@ -98,6 +98,21 @@ class LoginPhoneSerializer(serializers.Serializer):
         return value
 
 
+class UpdateProfileSerializer(serializers.Serializer):
+    """Serializer for PATCH /me/ — fields that exist on AbstractUser."""
+
+    first_name = serializers.CharField(max_length=100, required=False)
+    last_name = serializers.CharField(max_length=100, required=False)
+    email = serializers.EmailField(required=False)
+    username = serializers.CharField(max_length=191, required=False, allow_null=True)
+    phone_country_code = serializers.CharField(max_length=5, required=False, allow_blank=True)
+    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    bio = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    timezone = serializers.CharField(max_length=63, required=False, allow_blank=True)
+    language = serializers.CharField(max_length=10, required=False, allow_blank=True)
+    custom_fields = serializers.JSONField(required=False, allow_null=True)
+
+
 class RefreshTokenSerializer(serializers.Serializer):
     refresh_token = serializers.CharField()
 
@@ -106,14 +121,9 @@ class UserSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
     roles = serializers.SerializerMethodField()
     permissions = serializers.SerializerMethodField()
-    username = serializers.CharField(source="get_username", read_only=True, allow_null=True)
     phone = serializers.SerializerMethodField()
     avatar = serializers.CharField(source="avatar_url", read_only=True, allow_null=True)
-    bio = serializers.CharField(read_only=True, allow_null=True)
-    timezone = serializers.CharField(read_only=True, allow_null=True)
-    language = serializers.CharField(read_only=True, allow_null=True)
     is_active = serializers.BooleanField(read_only=True)
-    custom_fields = serializers.JSONField(read_only=True, allow_null=True)
     preferences = serializers.SerializerMethodField()
 
     class Meta:

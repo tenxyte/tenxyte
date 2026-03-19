@@ -18,6 +18,13 @@ def django_db_setup(django_db_setup, django_db_blocker):
     yield
 
 
+@pytest.fixture(autouse=True)
+def _clear_cache():
+    """Clear Django cache before each test to prevent throttle state leaking."""
+    from django.core.cache import cache
+    cache.clear()
+
+
 @pytest.fixture
 def api_client():
     """Client API REST Framework."""
