@@ -358,17 +358,17 @@ class Settings:
     @property
     def webauthn_enabled(self) -> bool:
         """Whether WebAuthn is enabled."""
-        return self._get("TENXYTE_WEBAUTHN_ENABLED", True)
+        return self._get("WEBAUTHN_ENABLED", True)
 
     @property
     def webauthn_rp_id(self) -> str:
         """WebAuthn Relying Party ID."""
-        return self._get("TENXYTE_WEBAUTHN_RP_ID", "localhost")
+        return self._get("WEBAUTHN_RP_ID", "localhost")
 
     @property
     def webauthn_rp_name(self) -> str:
         """WebAuthn Relying Party Name."""
-        return self._get("TENXYTE_WEBAUTHN_RP_NAME", "Tenxyte")
+        return self._get("WEBAUTHN_RP_NAME", "Tenxyte")
 
     @property
     def magic_link_enabled(self) -> bool:

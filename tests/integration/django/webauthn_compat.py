@@ -200,14 +200,14 @@ class WebAuthnService:
             display_name=getattr(user, 'get_full_name', lambda: user.email)(),
         )
     
-    def complete_registration(self, user, challenge_id, credential_data, device_name=""):
+    def complete_registration(self, user, credential_data, challenge_id, device_name=""):
         """
         Complete WebAuthn registration.
         
         Args:
             user: Django User object
-            challenge_id: Challenge ID
             credential_data: Credential data from client
+            challenge_id: Challenge ID
             device_name: Optional device name
             
         Returns:

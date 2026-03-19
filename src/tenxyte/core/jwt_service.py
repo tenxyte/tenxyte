@@ -755,12 +755,15 @@ class JWTService:
                 token_obj.is_revoked = True
                 token_obj.save(update_fields=["is_revoked"])
 
-                # Create new refresh token
+                # Create new refresh token (hash it before storing)
+                # Preserve application_id, ip_address, and device_info from old token
                 RefreshTokenModel.objects.create(
-                    user_id=user_id,
+                    user_id=token_obj.user_id,
                     application_id=token_obj.application_id,
-                    token=new_refresh_token,
+                    token=RefreshTokenModel._hash_token(new_refresh_token),
                     expires_at=datetime.now(timezone.utc) + self.refresh_token_lifetime,
+                    ip_address=token_obj.ip_address or "",
+                    device_info=token_obj.device_info or "",
                 )
 
                 return TokenPair(
