@@ -1,0 +1,82 @@
+site_name: Documentation Tenxyte
+site_url: https://tenxyte.readthedocs.io/fr/latest/
+repo_url: https://github.com/tenxyte/tenxyte
+repo_name: tenxyte/tenxyte
+docs_dir: docs/fr
+
+theme:
+  name: material
+  language: fr
+  logo: https://tenxyte-graphics.s3.us-east-1.amazonaws.com/tenxyte-graphics/out/custom/SVG/v1_logo-sharp.svg
+  favicon: https://tenxyte-graphics.s3.us-east-1.amazonaws.com/tenxyte-graphics/out/custom/SVG/v1_logo-sharp.svg
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+
+extra:
+  alternate:
+    - name: English
+      link: /en/
+      lang: en
+    - name: Français
+      link: /fr/
+      lang: fr
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/tenxyte/tenxyte
+
+plugins:
+  - search:
+      lang: fr
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - tables
+  - admonition
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Accueil: index.md
+  - 'Démarrage':
+      - 'Démarrage Rapide': quickstart.md
+      - 'Démarrage Rapide FastAPI': fastapi_quickstart.md
+      - 'Référence des Paramètres': settings.md
+  - 'Architecture':
+      - "Guide d'Architecture": architecture.md
+      - 'Adaptateurs Personnalisés': custom_adapters.md
+      - 'Guide Asynchrone': async_guide.md
+  - 'Référence API':
+      - "Points d'Accès API": endpoints.md
+      - 'Schémas de Données': schemas.md
+      - 'Référence AIRs': airs.md
+  - 'Fonctionnalités':
+      - 'Comptes Administrateur': admin.md
+      - 'Guide des Applications': applications.md
+      - 'Organisations': organizations.md
+      - 'Guide RBAC': rbac.md
+      - 'Guide de Sécurité': security.md
+      - 'Service de Tâches': task_service.md
+  - 'Opérations & Maintenance':
+      - 'Tâches Périodiques': periodic_tasks.md
+      - 'Dépannage': troubleshooting.md
+      - 'Guide de Migration': MIGRATION_GUIDE.md
+      - "Guides d'Opération":
+          - 'Déploiement': runbooks/deployment.md
+          - 'Réponse aux Incidents': runbooks/incident_response.md
+          - 'Rollback': runbooks/rollback.md
+  - 'Contribution':
+      - 'Guide de Contribution': CONTRIBUTING.md
+      - 'Tests': TESTING.md
