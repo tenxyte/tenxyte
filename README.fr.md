@@ -8,7 +8,7 @@
 
 [![Version PyPI](https://badge.fury.io/py/tenxyte.svg)](https://badge.fury.io/py/tenxyte)
 [![Versions Python](https://img.shields.io/pypi/pyversions/tenxyte.svg)](https://pypi.org/project/tenxyte/)
-[![Versions Django](https://img.shields.io/badge/django-6.0%2B-blue.svg)](https://www.djangoproject.com/)
+[![Versions Django](https://img.shields.io/badge/django-4.2%2B-blue.svg)](https://www.djangoproject.com/)
 [![Licence : MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Couverture](https://codecov.io/gh/tenxyte/tenxyte/graph/badge.svg)](https://codecov.io/gh/tenxyte/tenxyte)
 [![Tests](https://github.com/tenxyte/tenxyte/actions/workflows/ci.yml/badge.svg)](https://github.com/tenxyte/tenxyte)
