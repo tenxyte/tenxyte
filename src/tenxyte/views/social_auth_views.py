@@ -75,8 +75,10 @@ class SocialAuthView(APIView):
             200: {
                 "type": "object",
                 "properties": {
-                    "access": {"type": "string"},
-                    "refresh": {"type": "string"},
+                    "access_token": {"type": "string"},
+                    "refresh_token": {"type": "string"},
+                    "token_type": {"type": "string"},
+                    "expires_in": {"type": "integer"},
                     "user": {"$ref": "#/components/schemas/User"},
                     "message": {"type": "string"},
                     "provider": {"type": "string"},
@@ -199,6 +201,13 @@ class SocialAuthView(APIView):
         if not success:
             return Response({"error": error, "code": "SOCIAL_AUTH_FAILED"}, status=status.HTTP_401_UNAUTHORIZED)
 
+        # Add provider and message to response (per documentation)
+        data["provider"] = provider_name
+        data["message"] = "Authentication successful"
+
+        # Remove device_summary from POST /social/ response per documentation
+        data.pop("device_summary", None)
+
         return Response(data)
 
 
@@ -258,8 +267,12 @@ class SocialAuthCallbackView(APIView):
             200: inline_serializer(
                 name="SocialCallbackResponse",
                 fields={
-                    "access": serializers.CharField(),
-                    "refresh": serializers.CharField(),
+                    "access_token": serializers.CharField(),
+                    "refresh_token": serializers.CharField(),
+                    "token_type": serializers.CharField(),
+                    "expires_in": serializers.IntegerField(),
+                    "device_summary": serializers.CharField(required=False),
+                    "user": serializers.DictField(),
                     "provider": serializers.CharField(),
                     "is_new_user": serializers.BooleanField(),
                 },
@@ -362,6 +375,9 @@ class SocialAuthCallbackView(APIView):
 
             if not success:
                 return Response({"error": error, "code": "SOCIAL_AUTH_FAILED"}, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Add provider to response (per documentation)
+            data["provider"] = provider_name
 
             return Response(data)
 

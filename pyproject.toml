@@ -4,8 +4,9 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tenxyte"
-version = "0.9.2.5"
-description = "Complete Django authentication package — JWT, RBAC, 2FA (TOTP), Magic Links, Passkeys (WebAuthn), Social Login, Breach Check, Organizations B2B, and multi-application support"
+version = "0.9.3.1.5.2"
+
+description = "Framework-agnostic Python authentication — JWT, RBAC, 2FA, Magic Links, Passkeys, Social Login, B2B Organizations, multi-tenant support. Works with Django, FastAPI, and more."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -13,7 +14,6 @@ authors = [
     { name = "Tenxyte Team", email = "contact@tenxyte.com" }
 ]
 keywords = [
-    "django",
     "authentication",
     "jwt",
     "2fa",
@@ -25,24 +25,18 @@ keywords = [
     "organizations",
     "multi-tenant",
     "b2b",
-    "device-fingerprinting",
-    "audit-log",
-    "gdpr",
     "magic-link",
     "passkeys",
     "webauthn",
     "fido2",
     "social-login",
     "oauth2",
-    "breach-check",
-    "haveibeenpwned"
+    "django",
+    "fastapi",
+    "framework-agnostic",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
-    "Framework :: Django",
-    "Framework :: Django :: 5.0",
-    "Framework :: Django :: 5.1",
-    "Framework :: Django :: 5.2",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -51,42 +45,76 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+    "Framework :: Django :: 5.2",
+    "Framework :: Django :: 6.0",
+    "Framework :: FastAPI",
 ]
 
+# Default dependencies include Django stack for backward compatibility
+# Install with [core] for minimal dependencies
 dependencies = [
-    "django>=5.0",
-    "djangorestframework>=3.14",
-    "django-cors-headers>=4.0",
+    "django>=4.2",
+    "djangorestframework>=3.16",
+    "django-cors-headers>=4.4",
     "drf-spectacular>=0.27",
-    "PyJWT>=2.8",
-    "bcrypt>=4.0",
+    "PyJWT>=2.12.1",
+    "bcrypt>=4.2",
     "pyotp>=2.9",
     "qrcode[pil]>=8.0",
-    "google-auth>=2.20",
-    "google-auth-oauthlib>=1.0",
-    "django-cryptography>=1.1",  # R2 — chiffrement totp_secret
-    "Pillow>=10.3.0",           # R3 — sécurité (CVE)
-    "requests>=2.31.0",         # R7 — CVE-2023-32681
+    "google-auth>=2.49.1",
+    "google-auth-oauthlib>=1.2",
+    "cryptography>=42.0",
+    "Pillow>=11.0",
+    "requests>=2.32",
+    "pydantic>=2.12",
+    "email-validator>=2.0",
 ]
 
 [project.optional-dependencies]
-# Support SMS via Twilio
-twilio = [
-    "twilio>=9.0",
+# ===== ADAPTER EXTRAS =====
+# Core-only (minimal dependencies, no framework)
+# Use for custom integrations or when you bring your own framework
+core = [
+    "PyJWT>=2.12.1",
+    "bcrypt>=4.2",
+    "pyotp>=2.9",
+    "qrcode[pil]>=8.0",
+    "cryptography>=42.0",
+    "Pillow>=11.0",
+    "requests>=2.32",
+    "pydantic>=2.12",
+    "email-validator>=2.0",
 ]
 
-# Support email via SendGrid
-sendgrid = [
-    "sendgrid>=6.10",
+# Django stack (adds Django-specific dependencies)
+# Included by default for backward compatibility
+django = [
+    "django>=4.2",
+    "djangorestframework>=3.16",
+    "django-cors-headers>=4.4",
+    "drf-spectacular>=0.27",
+    "cryptography>=42.0",
+    "google-auth>=2.49.1",
+    "google-auth-oauthlib>=1.2",
 ]
 
-# Bases de données
-mongodb = [
-    "django-mongodb-backend>=5.0",
+# FastAPI stack
+fastapi = [
+    "fastapi>=0.135",
+    "uvicorn>=0.40",
+    "sqlalchemy>=2.0",
+    "python-multipart>=0.0.9",
+    "pydantic>=2.12",
 ]
 
+# ===== DATABASE ADAPTERS =====
 postgres = [
     "psycopg2-binary>=2.9",
 ]
@@ -95,12 +123,28 @@ mysql = [
     "mysqlclient>=2.2",
 ]
 
-# R4 — WebAuthn/FIDO2 (optionnel, contrainte de version explicite)
-webauthn = [
-    "webauthn>=2.0.0",
+mongodb = [
+    "django-mongodb-backend>=5.0",
 ]
 
-# Tout inclure
+# ===== FEATURE-SPECIFIC EXTRAS =====
+# SMS support via Twilio
+twilio = [
+    "twilio>=9.5",
+]
+
+# Email support via SendGrid
+sendgrid = [
+    "sendgrid>=6.12",
+]
+
+# WebAuthn/FIDO2 support
+webauthn = [
+    "webauthn>=2.7.0",
+]
+
+# ===== META EXTRAS =====
+# All features (backward compatible - includes Django stack)
 all = [
     "twilio>=9.0",
     "sendgrid>=6.10",
@@ -110,15 +154,15 @@ all = [
     "webauthn>=2.0.0",
 ]
 
-# Dépendances de développement
+# Development dependencies
 dev = [
-    "pytest>=7.0",
-    "pytest-django>=4.5",
-    "pytest-cov>=4.0",
-    "pytest-asyncio>=0.21",
-    "black>=23.0",
-    "ruff>=0.1",
-    "mypy>=1.0",
+    "pytest>=8.0",
+    "pytest-django>=4.9",
+    "pytest-cov>=6.0",
+    "pytest-asyncio>=0.24",
+    "black>=25.0",
+    "ruff>=0.9",
+    "mypy>=1.15",
 ]
 
 [project.urls]
@@ -132,17 +176,29 @@ Changelog = "https://github.com/tenxyte/tenxyte/blob/main/CHANGELOG.md"
 packages = ["src/tenxyte"]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "tests.settings"
-pythonpath = ["."]
+# Core tests (pure unit tests, no Django)
+# Run with: pytest tests/core/ -p no:django
+# Django tests (integration tests with Django ORM)
+# Run with: pytest tests/integration/django/
+DJANGO_SETTINGS_MODULE = "tests.integration.django.settings"
+pythonpath = [".", "src"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--cov=tenxyte --cov-report=html --cov-report=term --cov-fail-under=90 --reuse-db --create-db"  # R13 — seuil aligné sur la réalité (98% actuel)
+addopts = "--cov=tenxyte --cov-report=html --cov-report=term --cov-fail-under=90 --reuse-db --create-db"
+markers = [
+    "no_django: marks tests that should run without Django (pure Core tests)",
+    "django: marks tests that require Django (integration tests)",
+]
 
 [tool.black]
 line-length = 120
-target-version = ["py310", "py311", "py312"]
+target-version = ["py310", "py311", "py312", "py313"]
 
 [tool.ruff]
 line-length = 120
 target-version = "py310"
+
+[tool.pyright]
+include = ["src"]
+extraPaths = ["src"]

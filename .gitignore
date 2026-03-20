@@ -95,7 +95,10 @@ old_dists/*/*
 
 checklist.md
 log.md
-site/
+site/*
 
 # foncs.md
 # foncs_copy.md
+
+# tasks-package-agnostic.md
+# implementation-plan-package-agnostic.md
