@@ -34,8 +34,8 @@ plugins:
         - en
         - fr
   
-  - i18n:  # Plugin multilangue
-      default_language: en
+  - i18n:
+      docs_structure: folder
       languages:
         - locale: en
           name: English
@@ -46,7 +46,6 @@ plugins:
           name: Français
           build: true
           site_name: "Documentation Tenxyte"
-      material_alternate: true  # Active le sélecteur de langue dans Material
       nav_translations:
         fr:
           Getting Started: Démarrage
@@ -97,82 +96,34 @@ markdown_extensions:
       alternate_style: true
 
 nav:
-  - Home:
-      en: en/README.md
-      fr: fr/README.md
+  - Home: index.md
   - 'Getting Started':
-      - 'Quickstart':
-          en: en/quickstart.md
-          fr: fr/quickstart.md
-      - 'FastAPI Quickstart':
-          en: en/fastapi_quickstart.md
-          fr: fr/fastapi_quickstart.md
-      - 'Settings Reference':
-          en: en/settings.md
-          fr: fr/settings.md
+      - 'Quickstart': quickstart.md
+      - 'FastAPI Quickstart': fastapi_quickstart.md
+      - 'Settings Reference': settings.md
   - 'Architecture':
-      - 'Architecture Guide':
-          en: en/architecture.md
-          fr: fr/architecture.md
-      - 'Custom Adapters':
-          en: en/custom_adapters.md
-          fr: fr/custom_adapters.md
-      - 'Async Guide':
-          en: en/async_guide.md
-          fr: fr/async_guide.md
+      - 'Architecture Guide': architecture.md
+      - 'Custom Adapters': custom_adapters.md
+      - 'Async Guide': async_guide.md
   - 'API Reference':
-      - 'API Endpoints':
-          en: en/endpoints.md
-          fr: fr/endpoints.md
-      - 'Data Schemas':
-          en: en/schemas.md
-          fr: fr/schemas.md
-      - 'AIRs Reference':
-          en: en/airs.md
-          fr: fr/airs.md
+      - 'API Endpoints': endpoints.md
+      - 'Data Schemas': schemas.md
+      - 'AIRs Reference': airs.md
   - 'Features':
-      - 'Admin Accounts':
-          en: en/admin.md
-          fr: fr/admin.md
-      - 'Applications Guide':
-          en: en/applications.md
-          fr: fr/applications.md
-      - 'Organizations':
-          en: en/organizations.md
-          fr: fr/organizations.md
-      - 'RBAC Guide':
-          en: en/rbac.md
-          fr: fr/rbac.md
-      - 'Security Guide':
-          en: en/security.md
-          fr: fr/security.md
-      - 'Task Service':
-          en: en/task_service.md
-          fr: fr/task_service.md
+      - 'Admin Accounts': admin.md
+      - 'Applications Guide': applications.md
+      - 'Organizations': organizations.md
+      - 'RBAC Guide': rbac.md
+      - 'Security Guide': security.md
+      - 'Task Service': task_service.md
   - 'Operations & Maintenance':
-      - 'Periodic Tasks':
-          en: en/periodic_tasks.md
-          fr: fr/periodic_tasks.md
-      - 'Troubleshooting':
-          en: en/troubleshooting.md
-          fr: fr/troubleshooting.md
-      - 'Migration Guide':
-          en: en/MIGRATION_GUIDE.md
-          fr: fr/MIGRATION_GUIDE.md
+      - 'Periodic Tasks': periodic_tasks.md
+      - 'Troubleshooting': troubleshooting.md
+      - 'Migration Guide': MIGRATION_GUIDE.md
       - 'Runbooks':
-          - 'Deployment':
-              en: en/runbooks/deployment.md
-              fr: fr/runbooks/deployment.md
-          - 'Incident Response':
-              en: en/runbooks/incident_response.md
-              fr: fr/runbooks/incident_response.md
-          - 'Rollback':
-              en: en/runbooks/rollback.md
-              fr: fr/runbooks/rollback.md
+          - 'Deployment': runbooks/deployment.md
+          - 'Incident Response': runbooks/incident_response.md
+          - 'Rollback': runbooks/rollback.md
   - 'Contributing':
-      - 'Contributing Guidelines':
-          en: en/CONTRIBUTING.md
-          fr: fr/CONTRIBUTING.md
-      - 'Testing':
-          en: en/TESTING.md
-          fr: fr/TESTING.md
+      - 'Contributing Guidelines': CONTRIBUTING.md
+      - 'Testing': TESTING.md
