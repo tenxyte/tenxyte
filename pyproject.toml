@@ -185,7 +185,7 @@ pythonpath = [".", "src"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--cov=tenxyte --cov-report=html --cov-report=term --cov-fail-under=90 --reuse-db --create-db"
+addopts = "--cov=tenxyte --cov-report=html --cov-report=term --cov-fail-under=90"
 markers = [
     "no_django: marks tests that should run without Django (pure Core tests)",
     "django: marks tests that require Django (integration tests)",
