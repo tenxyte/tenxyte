@@ -20,8 +20,8 @@ class PermissionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Permission
-        fields = ["id", "code", "name", "description", "parent", "parent_code", "children", "created_at"]
-        read_only_fields = ["id", "created_at"]
+        fields = ["id", "code", "name", "description", "parent", "parent_code", "children", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
 
     @extend_schema_field(serializers.DictField(allow_null=True))
     def get_parent(self, obj):

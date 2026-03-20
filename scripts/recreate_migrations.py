@@ -5,8 +5,6 @@ Usage:
     python scripts/recreate_migrations.py
 """
 
-import os
-import shutil
 from pathlib import Path
 
 # Chemins

@@ -40,17 +40,27 @@ Application = get_application_model()
             201: {
                 "type": "object",
                 "properties": {
-                    "id": {"type": "integer"},
-                    "name": {"type": "string"},
-                    "description": {"type": "string"},
-                    "client_id": {"type": "string"},
-                    "client_secret": {"type": "string"},
-                    "is_active": {"type": "boolean"},
-                    "created_at": {"type": "string", "format": "date-time"},
-                    "secret_rotation_warning": {
-                        "type": "string",
-                        "description": "Avertissement sur la sauvegarde du secret",
+                    "message": {"type": "string"},
+                    "application": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "string"},
+                            "name": {"type": "string"},
+                            "description": {"type": "string"},
+                            "access_key": {"type": "string"},
+                            "is_active": {"type": "boolean"},
+                            "created_at": {"type": "string", "format": "date-time"},
+                            "updated_at": {"type": "string", "format": "date-time"},
+                        },
                     },
+                    "credentials": {
+                        "type": "object",
+                        "properties": {
+                            "access_key": {"type": "string"},
+                            "access_secret": {"type": "string"},
+                        },
+                    },
+                    "warning": {"type": "string"},
                 },
             }
         },
@@ -69,8 +79,8 @@ Application = get_application_model()
                 name="secret_warning",
                 summary="Avertissement secret",
                 value={
-                    "client_secret": "sk_live_1234567890abcdef...",
-                    "secret_rotation_warning": "Save this secret securely. It will not be shown again.",
+                    "access_secret": "as_def456ghi789...",
+                    "warning": "Save the access_secret now! It will never be shown again.",
                 },
             ),
         ],
@@ -185,7 +195,7 @@ class ApplicationListView(APIView):
                     "id": 10,
                     "name": "Production External API",
                     "description": "Handles all incoming requests from the new frontend v3",
-                    "client_id": "app_abc123...",
+                    "access_key": "ak_abc123...",
                     "is_active": True,
                     "created_at": "2024-01-01T10:00:00Z",
                     "updated_at": "2024-01-20T14:30:00Z",

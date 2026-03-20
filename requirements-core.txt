@@ -1,0 +1,7 @@
+PyJWT>=2.12.0
+bcrypt>=4.2
+pyotp>=2.9
+qrcode[pil]>=8.0
+Pillow>=11.0
+requests>=2.32
+pydantic>=2.12

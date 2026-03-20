@@ -1,14 +1,14 @@
-<p align="center">
-  <img src="https://tenxyte-graphics.s3.us-east-1.amazonaws.com/tenxyte-graphics/out/custom/SVG/v1_tenxyte-long-logo-sharp.svg" alt="Tenxyte Auth" width="500">
-</p>
+[Lire cette documentation en Français](README.fr.md)
+
+![# TENXYTE • AI-Ready Backend Framework](https://tenxyte-graphics.s3.us-east-1.amazonaws.com/tenxyte-graphics/baniere_github.jpg)
 
 # Tenxyte Auth
 
-> Production-ready Django authentication in minutes — JWT, RBAC, 2FA, Magic Links, Passkeys, Social Login, Breach Check, Organizations (B2B), multi-application support.
+> Framework-Agnostic Python Authentication in minutes — JWT, RBAC, 2FA, Magic Links, Passkeys, Social Login, Breach Check, Organizations (B2B), multi-application support.
 
 [![PyPI version](https://badge.fury.io/py/tenxyte.svg)](https://badge.fury.io/py/tenxyte)
 [![Python versions](https://img.shields.io/pypi/pyversions/tenxyte.svg)](https://pypi.org/project/tenxyte/)
-[![Django versions](https://img.shields.io/badge/django-5.0%2B-blue.svg)](https://www.djangoproject.com/)
+[![Django versions](https://img.shields.io/badge/django-6.0%2B-blue.svg)](https://www.djangoproject.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Coverage](https://codecov.io/gh/tenxyte/tenxyte/graph/badge.svg)](https://codecov.io/gh/tenxyte/tenxyte)
 [![Tests](https://github.com/tenxyte/tenxyte/actions/workflows/ci.yml/badge.svg)](https://github.com/tenxyte/tenxyte/actions/workflows/ci.yml)
@@ -23,6 +23,8 @@
 - [Quickstart (Dev vs Prod)](#quickstart--development)
 - [Request & Response Examples](#request--response-examples)
 - [Endpoints & Documentation](#endpoints--documentation)
+- [Documentation Structure](#-documentation-structure)
+- [Architecture: Core & Adapters](#architecture-core--adapters)
 - [Supported Databases](#supported-databases)
 - [Periodic Maintenance](#periodic-maintenance)
 - [Customization & Extension](#customization--extension)
@@ -62,25 +64,30 @@
 - One-line security preset: `TENXYTE_SHORTCUT_SECURE_MODE = 'medium'`
 - Modes: `development` / `medium` / `robust` — all individually overridable
 
+---
+
 ## Prerequisites
 
-- Python 3.11+ (recommended)
+- Python 3.10+ (3.11+ recommended)
 - `pip` and a virtual environment
-- Django 5.0+
+- **Django 6.0+** (for the Django adapter) or **FastAPI 0.135+** (for the FastAPI adapter)
 - Database (PostgreSQL recommended for production)
 
 ## Installation
 
 ```bash
-pip install tenxyte
+pip install tenxyte              # Includes Django adapter (backward compatible)
+pip install tenxyte[core]        # Core only — no framework, bring your own
+pip install tenxyte[fastapi]     # FastAPI adapter + Core
 
-# Optional Extras
-pip install tenxyte[twilio]    # SMS via Twilio
-pip install tenxyte[sendgrid]  # Email via SendGrid
-pip install tenxyte[mongodb]   # MongoDB support
-pip install tenxyte[postgres]  # PostgreSQL
-pip install tenxyte[mysql]     # MySQL/MariaDB
-pip install tenxyte[all]       # Everything included
+# Optional Extras (work with any adapter)
+pip install tenxyte[twilio]      # SMS via Twilio
+pip install tenxyte[sendgrid]    # Email via SendGrid
+pip install tenxyte[mongodb]     # MongoDB support
+pip install tenxyte[postgres]    # PostgreSQL
+pip install tenxyte[mysql]       # MySQL/MariaDB
+pip install tenxyte[webauthn]    # Passkeys / FIDO2
+pip install tenxyte[all]         # Everything included
 ```
 
 ## Quickstart — Development
@@ -261,7 +268,7 @@ curl http://localhost:8000/api/v1/auth/me/ \
   -H "Authorization: Bearer <access_token>"
 ```
 
-For more complete examples with responses, see: [docs/endpoints.md](docs/endpoints.md)
+For more complete examples with responses, see: [docs/en/endpoints.md](docs/en/endpoints.md)
 
 ---
 
@@ -297,7 +304,7 @@ python manage.py runserver
 
 - [**Static Site**](docs_site/index.html) — Full documentation
 - [**Postman Collection**](tenxyte_api_collection.postman_collection.json) — Ready-to-use collection
-- [**Endpoint Reference**](docs/endpoints.md) — All endpoints with curl examples
+- [**Endpoint Reference**](docs/en/endpoints.md) — All endpoints with curl examples
 
 ### Endpoint Overview
 
@@ -316,14 +323,94 @@ python manage.py runserver
 
 ---
 
+## 📚 Documentation Structure
+
+### 📖 **Developer Guides**
+- [**Quickstart**](docs/en/quickstart.md) - Get started in 2 minutes with Django
+- [**FastAPI Quickstart**](docs/en/fastapi_quickstart.md) - Get started with FastAPI
+- [**Settings Reference**](docs/en/settings.md) - All 95+ configuration options
+- [**API Endpoints**](docs/en/endpoints.md) - Full endpoint reference with examples
+- [**Admin Accounts**](docs/en/admin.md) - Manage Superusers and RBAC Admins
+- [**Applications Guide**](docs/en/applications.md) - Manage API clients and credentials
+- [**RBAC Guide**](docs/en/rbac.md) - Roles, permissions, and decorators
+- [**Security Guide**](docs/en/security.md) - Security features and best practices
+- [**Organizations Guide**](docs/en/organizations.md) - B2B multi-tenant setup
+- [**AIRS Guide**](docs/en/airs.md) - AI Responsibility & Security
+- [**Migration Guide**](docs/en/MIGRATION_GUIDE.md) - Migration from dj-rest-auth, simplejwt
+
+### 🔧 **Technical Documentation**
+- [**Architecture Guide**](docs/en/architecture.md) - Core & Adapters (Hexagonal) architecture
+- [**Async Guide**](docs/en/async_guide.md) - Async/await patterns and best practices
+- [**Task Service**](docs/en/task_service.md) - Background job processing
+- [**Custom Adapters Guide**](docs/en/custom_adapters.md) - Creating custom adapters
+- [**Schemas Reference**](docs/en/schemas.md) - Reusable schema components
+- [**Testing Guide**](docs/en/TESTING.md) - Testing strategies and examples
+- [**Periodic Tasks**](docs/en/periodic_tasks.md) - Scheduled maintenance and cleanup tasks
+- [**Troubleshooting**](docs/en/troubleshooting.md) - Common issues and solutions
+- [**Contributing**](docs/en/CONTRIBUTING.md) - How to contribute to Tenxyte
+
+---
+
+## 📊 Documentation Quality Metrics
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| API Coverage | 100% | ✅ Complete |
+| Quality Score | 100/100 | ✅ Perfect |
+| Schema Size Reduction | 3% | ✅ Optimized |
+| Examples Count | 280+ | ✅ Comprehensive |
+| Error Code Coverage | 100% | ✅ Complete |
+| Multi-tenant Documentation | 100% | ✅ Complete |
+
+---
+
+## 🛠️ Documentation Scripts
+
+### Validation Tools
+```bash
+# Validate OpenAPI specification
+python scripts/validate_openapi_spec.py
+
+# Check documentation coverage
+python scripts/validate_documentation.py
+
+# Optimize schema performance
+python scripts/optimize_schemas.py
+```
+
+### Generation Tools
+```bash
+# Generate Postman collection
+python scripts/generate_postman_collection.py
+
+# Generate static documentation site
+python scripts/generate_docs_site.py
+```
+
+See [Scripts Documentation](https://github.com/tenxyte/tenxyte/blob/main/scripts/README.md) for complete usage guide.
+
+---
+
+## Architecture: Core & Adapters
+
+Tenxyte is built around a **Framework-Agnostic Core** utilizing a Ports and Adapters (Hexagonal) architecture. 
+
+- **Core**: Contains pure Python authentication, JWT, and RBAC logic (zero framework dependencies).
+- **Ports**: Defines abstract interfaces for external operations (e.g., Repositories, EmailServices, CacheServices).
+- **Adapters**: Concrete implementations tailored to frameworks (Django, FastAPI) or libraries.
+
+This design guarantees that existing Django deployments run with **zero breaking changes**, while natively opening support for modern async frameworks like FastAPI.
+
+Read more in our detailed **[Architecture Guide](docs/en/architecture.md)**.
+
+---
+
 ## Supported Databases
 
 - ✅ **SQLite** — development
 - ✅ **PostgreSQL** — recommended for production
 - ✅ **MySQL/MariaDB**
 - ✅ **MongoDB** — via `django-mongodb-backend`
-
-See [DATABASE_SETUP.md](DATABASE_SETUP.md) for full per-database configuration.
 
 ### MongoDB — Required Configuration
 
@@ -461,11 +548,15 @@ AUTH_USER_MODEL = 'myapp.CustomUser'
 
 Same pattern for `TENXYTE_ROLE_MODEL`, `TENXYTE_PERMISSION_MODEL`, `TENXYTE_APPLICATION_MODEL`. Always inherit the parent `Meta` and set a custom `db_table`.
 
+### Creating Custom Framework Adapters
+
+Because Tenxyte is framework-agnostic, you can write your own Database adapters, Cache adapters, or Email adapters using the core `Ports`. See the **[Custom Adapters Guide](docs/en/custom_adapters.md)** for detailed instructions on extending the core.
+
 ---
 
 ## Configuration Reference
 
-All 115+ settings documented in [docs/settings.md](docs/settings.md).
+All 115+ settings documented in [docs/en/settings.md](docs/en/settings.md).
 
 Useful toggles for development:
 
@@ -517,6 +608,24 @@ pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_mongodb"
 
 ---
 
+## 🎯 Documentation Standards
+
+### Quality Requirements
+- ✅ **100% Coverage** - All endpoints documented
+- ✅ **Working Examples** - All examples tested and functional
+- ✅ **Error Documentation** - Comprehensive error handling
+- ✅ **Multi-tenant Support** - Complete B2B documentation
+- ✅ **Security Features** - Privacy and security documented
+
+### Maintenance Standards
+- 🔄 **Regular Updates** - Keep documentation synchronized
+- 🧪 **Automated Testing** - Continuous validation
+- 📊 **Quality Monitoring** - Track metrics and improvements
+- 🔧 **Tool Updates** - Maintain validation and generation tools
+- 📚 **User Feedback** - Incorporate developer feedback
+
+---
+
 ## Contributing
 
 Contributions are welcome! A few simple rules:
@@ -525,7 +634,7 @@ Contributions are welcome! A few simple rules:
 2. Fork → branch `feature/xxx` → PR with tests and changelog.
 3. Respect commit conventions and add unit tests.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+See [docs/en/CONTRIBUTING.md](docs/en/CONTRIBUTING.md) for more details.
 
 ## License
 

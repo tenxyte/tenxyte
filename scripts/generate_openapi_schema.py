@@ -88,8 +88,6 @@ def generate_schema(output_path: Path, fmt: str = "json") -> dict:
 def validate_paths(schema: dict) -> list:
     """Cross-check schema paths vs urls.py registered routes."""
     print("\n🔎 Cross-checking paths vs urls.py...")
-    from django.urls import reverse, NoReverseMatch
-    from django.test import RequestFactory
 
     schema_paths = sorted(schema.get("paths", {}).keys())
     issues = []

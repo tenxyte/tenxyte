@@ -7,7 +7,7 @@ from typing import Tuple, Optional, Dict, Any
 from django.utils import timezone
 from django.conf import settings
 
-from .email_service import EmailService
+from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
 from ..models import get_user_model, AccountDeletionRequest, AuditLog
 
 User = get_user_model()

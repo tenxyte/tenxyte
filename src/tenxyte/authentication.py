@@ -6,7 +6,9 @@ from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 
-from .services.jwt_service import JWTService
+from tenxyte.core.jwt_service import JWTService
+from tenxyte.adapters.django import get_django_settings
+from tenxyte.adapters.django.cache_service import DjangoCacheService
 from .models import get_user_model
 
 User = get_user_model()
@@ -26,21 +28,21 @@ class JWTAuthentication(BaseAuthentication):
             return None  # Pas de token, passer au prochain authenticator
 
         token = auth_header[7:]
-        jwt_service = JWTService()
+        jwt_service = JWTService(settings=get_django_settings(), blacklist_service=DjangoCacheService())
         payload = jwt_service.decode_token(token)
 
-        if not payload:
+        if not payload or not payload.is_valid:
             raise AuthenticationFailed("Token invalide ou expiré")
 
         # Vérifier l'application si présente
         application = getattr(request, "application", None)
         if application:
-            if str(application.id) != payload.get("app_id"):
+            if str(application.id) != payload.app_id:
                 raise AuthenticationFailed("Token ne correspond pas à l'application")
 
         # Récupérer l'utilisateur
         try:
-            user = User.objects.get(id=payload.get("user_id"))
+            user = User.objects.get(id=payload.user_id)
         except User.DoesNotExist:
             raise AuthenticationFailed("Utilisateur non trouvé")
 

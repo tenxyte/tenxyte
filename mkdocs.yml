@@ -15,6 +15,43 @@ theme:
     - search.suggest
     - search.highlight
 
+extra:
+  # Configuration des langues pour Material
+  alternate:
+    - name: English
+      link: /en/
+      lang: en
+    - name: Français
+      link: /fr/
+      lang: fr
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/tenxyte/tenxyte
+
+plugins:
+  - search:
+      lang:
+        - en
+        - fr
+  
+  - i18n:  # Plugin multilangue
+      default_language: en
+      languages:
+        - locale: en
+          name: English
+          build: true
+          site_name: "Tenxyte Documentation"
+        - locale: fr
+          name: Français
+          build: true
+          site_name: "Documentation Tenxyte"
+      material_alternate: true  # Active le sélecteur de langue dans Material
+      nav_translations:
+        fr:
+          Developer Guides: Guides Développeur
+          Operations & Maintenance: Opérations & Maintenance
+          Runbooks: Guides d'Opération
+ 
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
@@ -25,28 +62,77 @@ markdown_extensions:
   - pymdownx.superfences
   - tables
   - admonition
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.tabbed:
+      alternate_style: true
 
 nav:
-  - Home: README.md
-  - Quickstart: quickstart.md
+  - Home:
+      en: en/README.md
+      fr: fr/README.md
+  - Quickstart:
+      en: en/quickstart.md
+      fr: fr/quickstart.md
   - 'Developer Guides':
-      - 'Settings Reference': settings.md
-      - 'API Endpoints': endpoints.md
-      - 'Data Schemas': schemas.md
-      - 'AIRs Reference': airs.md
-      - 'Admin Accounts': admin.md
-      - 'Applications Guide': applications.md
-      - 'RBAC Guide': rbac.md
-      - 'Security Guide': security.md
-      - 'Organizations': organizations.md
+      - 'Settings Reference': 
+          en: en/settings.md
+          fr: fr/settings.md
+      - 'API Endpoints': 
+          en: en/endpoints.md
+          fr: fr/endpoints.md
+      - 'Data Schemas': 
+          en: en/schemas.md
+          fr: fr/schemas.md
+      - 'Architecture Guide': 
+          en: en/architecture.md
+          fr: fr/architecture.md
+      - 'Custom Adapters': 
+          en: en/custom_adapters.md
+          fr: fr/custom_adapters.md
+      - 'AIRs Reference': 
+          en: en/airs.md
+          fr: fr/airs.md
+      - 'Admin Accounts': 
+          en: en/admin.md
+          fr: fr/admin.md
+      - 'Applications Guide': 
+          en: en/applications.md
+          fr: fr/applications.md
+      - 'RBAC Guide': 
+          en: en/rbac.md
+          fr: fr/rbac.md
+      - 'Security Guide': 
+          en: en/security.md
+          fr: fr/security.md
+      - 'Organizations': 
+          en: en/organizations.md
+          fr: fr/organizations.md
   - 'Operations & Maintenance':
-      - 'Periodic Tasks': periodic_tasks.md
-      - 'Troubleshooting': troubleshooting.md
-      - 'Migration Guide': MIGRATION_GUIDE.md
+      - 'Periodic Tasks': 
+          en: en/periodic_tasks.md
+          fr: fr/periodic_tasks.md
+      - 'Troubleshooting': 
+          en: en/troubleshooting.md
+          fr: fr/troubleshooting.md
+      - 'Migration Guide': 
+          en: en/MIGRATION_GUIDE.md
+          fr: fr/MIGRATION_GUIDE.md
       - 'Runbooks':
-          - 'Deployment': runbooks/deployment.md
-          - 'Incident Response': runbooks/incident_response.md
-          - 'Rollback': runbooks/rollback.md
+          - 'Deployment': 
+              en: en/runbooks/deployment.md
+              fr: fr/runbooks/deployment.md
+          - 'Incident Response': 
+              en: en/runbooks/incident_response.md
+              fr: fr/runbooks/incident_response.md
+          - 'Rollback': 
+              en: en/runbooks/rollback.md
+              fr: fr/runbooks/rollback.md
   - 'Contributing':
-      - 'Contributing Guidelines': CONTRIBUTING.md
-      - 'Testing': TESTING.md
+      - 'Contributing Guidelines': 
+          en: en/CONTRIBUTING.md
+          fr: fr/CONTRIBUTING.md
+      - 'Testing': 
+          en: en/TESTING.md
+          fr: fr/TESTING.md

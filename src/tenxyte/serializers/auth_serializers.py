@@ -98,6 +98,21 @@ class LoginPhoneSerializer(serializers.Serializer):
         return value
 
 
+class UpdateProfileSerializer(serializers.Serializer):
+    """Serializer for PATCH /me/ — fields that exist on AbstractUser."""
+
+    first_name = serializers.CharField(max_length=100, required=False)
+    last_name = serializers.CharField(max_length=100, required=False)
+    email = serializers.EmailField(required=False)
+    username = serializers.CharField(max_length=191, required=False, allow_null=True)
+    phone_country_code = serializers.CharField(max_length=5, required=False, allow_blank=True)
+    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    bio = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    timezone = serializers.CharField(max_length=63, required=False, allow_blank=True)
+    language = serializers.CharField(max_length=10, required=False, allow_blank=True)
+    custom_fields = serializers.JSONField(required=False, allow_null=True)
+
+
 class RefreshTokenSerializer(serializers.Serializer):
     refresh_token = serializers.CharField()
 
@@ -106,23 +121,34 @@ class UserSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
     roles = serializers.SerializerMethodField()
     permissions = serializers.SerializerMethodField()
+    phone = serializers.SerializerMethodField()
+    avatar = serializers.CharField(source="avatar_url", read_only=True, allow_null=True)
+    is_active = serializers.BooleanField(read_only=True)
+    preferences = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             "id",
             "email",
-            "phone_country_code",
-            "phone_number",
+            "username",
+            "phone",
+            "avatar",
+            "bio",
+            "timezone",
+            "language",
             "first_name",
             "last_name",
+            "is_active",
             "is_email_verified",
             "is_phone_verified",
             "is_2fa_enabled",
-            "roles",
-            "permissions",
             "created_at",
             "last_login",
+            "custom_fields",
+            "preferences",
+            "roles",
+            "permissions",
         ]
         # VULN-005: Ensure sensitive fields are strictly read-only even if injected
         read_only_fields = [
@@ -147,3 +173,15 @@ class UserSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_permissions(self, obj):
         return obj.get_all_permissions()
+
+    def get_phone(self, obj):
+        if obj.phone_country_code and obj.phone_number:
+            return f"+{obj.phone_country_code}{obj.phone_number}"
+        return None
+
+    def get_preferences(self, obj):
+        return {
+            "email_notifications": getattr(obj, "email_notifications", True),
+            "sms_notifications": getattr(obj, "sms_notifications", False),
+            "marketing_emails": getattr(obj, "marketing_emails", False),
+        }

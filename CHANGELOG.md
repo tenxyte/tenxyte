@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Task Service Documentation** — Complete guide for `TaskService` port and adapters (`docs/task_service.md`)
+- **FastAPI Quickstart** — Step-by-step guide for FastAPI integration (`docs/fastapi_quickstart.md`)
+- **Async Guide** — Comprehensive async/await patterns and best practices (`docs/async_guide.md`)
+- **TaskService Custom Adapter Example** — Added to `docs/custom_adapters.md` for custom task queue implementations
+
+### Fixed
+- **Test Fixes for 100% Coverage** — Fixed failing async service tests:
+  - `test_async_jwt_service.py`: `test_refresh_tokens_async_rotate_exception` now properly tests exception handling
+  - `test_async_magic_link_service.py`: Removed duplicate test methods, fixed `test_ip_subnet_match` exception path
+  - `test_async_totp_service.py`: Fixed `test_disable_2fa_async` to use actual encrypted secret, fixed `test_totp_storage_stubs` protocol testing
+  - `test_task_service_extra.py`: Fixed incomplete `test_celery_task_service_enqueue_generic_wrap` test
+
+## [0.9.3] - 2026-03-14
+
+### Added
+- **Framework-Agnostic Core** — Refactored business logic into a standalone `tenxyte.core` module, independent of Django.
+- **Framework Adapters** — Introduced `tenxyte.adapters.django` containing Django-specific implementations (cache, email, middleware, settings provider).
+- **Dependency Injection Ports** — Added `tenxyte.ports` defining abstract interfaces (repositories, providers) to allow custom ORM and framework integrations (e.g., FastAPI, Flask).
+- **100% Test Coverage** — Achieved full coverage on core services and middleware components.
+- Complete decoupling of essential services (`jwt_service`, `totp_service`, `magic_link_service`, `webauthn_service`, `email_service`, `cache_service`) from Django's specific dependencies.
+
+### Changed
+- Base middleware refactored into `tenxyte.core.middleware` with abstract core logic, while Django-specific execution moved to `tenxyte.adapters.django.middleware`.
+- Shifted settings and environment variable management from direct Django imports to explicit `SettingsProvider` and `EnvProvider` interfaces.
+
+### Fixed
+- Various test suite fixes, including proper model mocking and exception simulation, using framework-agnostic injection strategies.
+
 ## [0.9.1.7] - 2026-02-21
 
 ### Added

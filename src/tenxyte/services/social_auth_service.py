@@ -20,7 +20,7 @@ from django.utils import timezone
 
 from ..models import get_user_model, get_application_model, RefreshToken
 from ..models.social import SocialConnection
-from .jwt_service import JWTService
+from tenxyte.core.jwt_service import JWTService
 from ..device_info import get_device_summary
 
 logger = logging.getLogger(__name__)
@@ -362,7 +362,10 @@ class SocialAuthService:
     """
 
     def __init__(self):
-        self.jwt_service = JWTService()
+        from tenxyte.adapters.django import get_django_settings
+        from tenxyte.adapters.django.cache_service import DjangoCacheService
+
+        self.jwt_service = JWTService(settings=get_django_settings(), blacklist_service=DjangoCacheService())
 
     def authenticate(
         self, provider_name: str, user_data: Dict[str, Any], application, ip_address: str, device_info: str = ""
@@ -424,6 +427,7 @@ class SocialAuthService:
 
         if not user:
             # 3. Créer un nouvel utilisateur
+            is_new_user = True
             user = User.objects.create(
                 email=email.lower() if email else None,
                 first_name=user_data.get("first_name", ""),
@@ -457,6 +461,7 @@ class SocialAuthService:
                         f"Failed to create default organization for user {user.id} via social auth: {e}"
                     )
         else:
+            is_new_user = False
             # Mettre à jour l'email vérifié si nécessaire
             if email and user_data.get("email_verified") and not user.is_email_verified:
                 user.is_email_verified = True
@@ -488,7 +493,7 @@ class SocialAuthService:
             user=user, application=application, ip_address=ip_address, device_info=device_info
         )
 
-        tokens = self.jwt_service.generate_token_pair(
+        token_pair = self.jwt_service.generate_token_pair(
             user_id=str(user.id),
             application_id=str(application.id),
             refresh_token_str=refresh_token.raw_token,  # valeur brute, jamais persistée
@@ -497,7 +502,8 @@ class SocialAuthService:
         return (
             True,
             {
-                **tokens,
+                "access_token": token_pair.access_token,
+                "refresh_token": token_pair.refresh_token,
                 "device_summary": get_device_summary(device_info) if device_info else None,
                 "user": {
                     "id": str(user.id),
@@ -505,7 +511,12 @@ class SocialAuthService:
                     "first_name": user.first_name,
                     "last_name": user.last_name,
                     "is_email_verified": user.is_email_verified,
+                    "is_phone_verified": getattr(user, "is_phone_verified", False),
+                    "is_2fa_enabled": getattr(user, "is_2fa_enabled", False),
+                    "roles": user.get_all_roles(),
+                    "permissions": user.get_all_permissions(),
                 },
+                "is_new_user": is_new_user,
             },
             "",
         )

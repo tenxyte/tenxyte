@@ -1,5 +1,5 @@
 """
-Tenxyte - Complete Django Authentication Package
+Tenxyte - Framework-Agnostic Python Authentication Package
 
 Features:
 - JWT authentication with access and refresh tokens
@@ -144,6 +144,10 @@ def setup(settings_module=None):
 
     if "DEFAULT_SCHEMA_CLASS" not in rf:
         rf["DEFAULT_SCHEMA_CLASS"] = "drf_spectacular.openapi.AutoSchema"
+        changed_rf = True
+
+    if "EXCEPTION_HANDLER" not in rf:
+        rf["EXCEPTION_HANDLER"] = "tenxyte.exceptions.custom_exception_handler"
         changed_rf = True
 
     if changed_rf:
