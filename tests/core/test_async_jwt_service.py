@@ -200,15 +200,19 @@ class TestJWTServiceBlacklistAsync:
             result = await svc.blacklist_token_async(access_token, user_id="u1")
             assert result is True
 
-    @pytest.mark.django_db(transaction=True)
     @pytest.mark.anyio
     async def test_revoke_all_user_tokens_async(self, jwt_service):
         """Lines 674-711: full async revoke - only tests in-memory blacklist path."""
-        # Mock RefreshTokenModel to avoid DB access
-        from tenxyte.models import RefreshToken as RefreshTokenModel
-        with patch.object(RefreshTokenModel.objects, "filter") as mock_filter:
-            # Return a mock that can be iterated and has a count
-            mock_filter.return_value = []
+        # Mock the tenxyte.models module to avoid Django model loading
+        import sys
+        mock_refresh_model = MagicMock()
+        mock_refresh_model.objects.filter.return_value = []
+        mock_models = MagicMock()
+        mock_models.RefreshToken = mock_refresh_model
+        with patch.dict(sys.modules, {
+            "tenxyte.models": mock_models,
+            "tenxyte.models.auth": MagicMock(),
+        }):
             result = await jwt_service.revoke_all_user_tokens_async("1")
         assert result is True
 
@@ -216,16 +220,21 @@ class TestJWTServiceBlacklistAsync:
 
 # ─── JWTService.refresh_tokens_async (lines 844-913) ─────────────────────────
 
+def _make_mock_refresh_model():
+    """Create a mock RefreshToken model with DoesNotExist exception."""
+    mock_model = MagicMock()
+    mock_model.DoesNotExist = type("DoesNotExist", (Exception,), {})
+    mock_model.get_by_raw_token.side_effect = mock_model.DoesNotExist()
+    return mock_model
+
+
 class TestJWTServiceRefreshAsync:
-    @pytest.mark.django_db
     @pytest.mark.anyio
     async def test_refresh_tokens_async_jwt_only(self, jwt_service):
         """Lines 884-911: DB path raises DoesNotExist -> JWT-only fallback."""
         user_id = "u1"
         app_id = "app1"
-        
-        # Manually create a JWT with type="refresh"
-        # We use integer timestamps to be safe
+
         now_ts = int(time.time())
         payload = {
             "type": "refresh",
@@ -244,12 +253,17 @@ class TestJWTServiceRefreshAsync:
         assert decoded.is_valid, f"Token invalid: {decoded.error}"
         assert decoded.type == "refresh", f"Wrong type: {decoded.type}"
 
-        # Patch RefreshTokenModel (imported from tenxyte.models)
-        from tenxyte.models import RefreshToken as RefreshTokenModel
-        with patch.object(RefreshTokenModel, "get_by_raw_token",
-                          side_effect=RefreshTokenModel.DoesNotExist()):
+        # Mock tenxyte.models in sys.modules to avoid Django bootstrap
+        import sys
+        mock_model = _make_mock_refresh_model()
+        mock_models = MagicMock()
+        mock_models.RefreshToken = mock_model
+        with patch.dict(sys.modules, {
+            "tenxyte.models": mock_models,
+            "tenxyte.models.auth": MagicMock(),
+        }):
             result = await jwt_service.refresh_tokens_async(refresh_token)
-            
+
         assert result is not None, "refresh_tokens_async returned None"
         assert isinstance(result, TokenPair)
         assert result.access_token is not None
@@ -257,40 +271,62 @@ class TestJWTServiceRefreshAsync:
     @pytest.mark.anyio
     async def test_refresh_tokens_async_invalid_token(self, jwt_service):
         """Lines 891-893: invalid/expired refresh token -> None."""
-        from tenxyte.models import RefreshToken as RefreshTokenModel
-        with patch.object(RefreshTokenModel, "get_by_raw_token",
-                          side_effect=RefreshTokenModel.DoesNotExist()):
+        import sys
+        mock_model = _make_mock_refresh_model()
+        mock_models = MagicMock()
+        mock_models.RefreshToken = mock_model
+        with patch.dict(sys.modules, {
+            "tenxyte.models": mock_models,
+            "tenxyte.models.auth": MagicMock(),
+        }):
             result = await jwt_service.refresh_tokens_async("not.a.valid.refresh.token")
         assert result is None
 
     @pytest.mark.anyio
     async def test_refresh_tokens_async_wrong_type(self, jwt_service):
         """Line 892: access token used as refresh -> None (wrong type)."""
-        # generate_access_token returns a token with type="access"
         access_token, _, _ = jwt_service.generate_access_token(
             user_id="u1", application_id="app1"
         )
-        from tenxyte.models import RefreshToken as RefreshTokenModel
-        with patch.object(RefreshTokenModel, "get_by_raw_token",
-                          side_effect=RefreshTokenModel.DoesNotExist()):
+        import sys
+        mock_model = _make_mock_refresh_model()
+        mock_models = MagicMock()
+        mock_models.RefreshToken = mock_model
+        with patch.dict(sys.modules, {
+            "tenxyte.models": mock_models,
+            "tenxyte.models.auth": MagicMock(),
+        }):
             result = await jwt_service.refresh_tokens_async(access_token)
         assert result is None
 
     @pytest.mark.anyio
     async def test_refresh_tokens_async_rotate_exception(self, jwt_service):
         """Lines 912-913: exception in JWT refresh token path after DB returns not_found."""
-        # DB path returns not_found, then JWT path raises exception
-        from tenxyte.models import RefreshToken as RefreshTokenModel
-        with patch.object(RefreshTokenModel, "get_by_raw_token", side_effect=RefreshTokenModel.DoesNotExist()):
+        import sys
+        mock_model = _make_mock_refresh_model()
+        mock_models = MagicMock()
+        mock_models.RefreshToken = mock_model
+        with patch.dict(sys.modules, {
+            "tenxyte.models": mock_models,
+            "tenxyte.models.auth": MagicMock(),
+        }):
             with patch.object(jwt_service, "decode_token_async", side_effect=Exception("JWT decode error")):
                 result = await jwt_service.refresh_tokens_async("some-token")
                 assert result is None
 
-    @pytest.mark.django_db
     @pytest.mark.anyio
     async def test_refresh_tokens_async_exception_path(self, jwt_service):
         """Lines 912-913."""
         # Cause an exception inside the try block
-        with patch.object(jwt_service, "decode_token_async", side_effect=Exception("Unexpected")):
-            result = await jwt_service.refresh_tokens_async("any-token")
-        assert result is None
+        # Need to mock tenxyte.models too since _db_lookup_and_rotate imports it
+        import sys
+        mock_model = _make_mock_refresh_model()
+        mock_models = MagicMock()
+        mock_models.RefreshToken = mock_model
+        with patch.dict(sys.modules, {
+            "tenxyte.models": mock_models,
+            "tenxyte.models.auth": MagicMock(),
+        }):
+            with patch.object(jwt_service, "decode_token_async", side_effect=Exception("Unexpected")):
+                result = await jwt_service.refresh_tokens_async("any-token")
+            assert result is None
