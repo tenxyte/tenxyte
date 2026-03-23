@@ -8,7 +8,7 @@ asgiref==3.11.1
     # via
     #   django
     #   django-cors-headers
-attrs==25.4.0
+attrs==26.1.0
     # via
     #   jsonschema
     #   referencing
