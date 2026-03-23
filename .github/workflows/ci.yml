@@ -51,7 +51,7 @@ jobs:
 
       - name: Upload core coverage
         if: matrix.python-version == '3.12'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-core
           path: coverage-core.xml
@@ -111,7 +111,7 @@ jobs:
 
       - name: Upload Django coverage
         if: matrix.python-version == '3.12' && matrix.django-version == '6.0'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-django
           path: coverage-django.xml
