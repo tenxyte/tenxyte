@@ -474,6 +474,7 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
         app_for_token = application
         if app_for_token is None:
             from tenxyte.models import Application as AppModel
+
             app_for_token = AppModel.objects.filter(is_active=True).first()
 
         if app_for_token is not None:
@@ -1032,7 +1033,7 @@ class RefreshTokenView(APIView):
 
         # Use core service refresh_tokens which handles all the logic
         result = jwt_service.refresh_tokens(refresh_token_str)
-        
+
         if not result:
             return Response(
                 {"error": "Invalid or expired refresh token", "code": "REFRESH_FAILED"},
@@ -1053,6 +1054,7 @@ class RefreshTokenView(APIView):
             decoded = jwt_service.decode_token(result.access_token, check_blacklist=False)
             if decoded and decoded.user_id:
                 from ..models import get_user_model
+
                 UserModel = get_user_model()
                 user = UserModel.objects.get(id=decoded.user_id)
                 data["user"] = UserSerializer(user).data

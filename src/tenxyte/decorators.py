@@ -71,10 +71,7 @@ def require_jwt(view_func):
             return JsonResponse({"error": "Authorization header required", "code": "AUTH_REQUIRED"}, status=401)
 
         token = auth_header[7:]
-        jwt_service = JWTService(
-            settings=get_django_settings(),
-            blacklist_service=DjangoCacheService()
-        )
+        jwt_service = JWTService(settings=get_django_settings(), blacklist_service=DjangoCacheService())
         payload = jwt_service.decode_token(token)
 
         if not payload or not payload.is_valid:
