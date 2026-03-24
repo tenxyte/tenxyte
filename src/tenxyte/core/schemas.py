@@ -319,7 +319,9 @@ class RoleResponse(RoleBase, TimestampMixin):
     """Schema for role response."""
 
     id: str
-    permissions: List[PermissionResponse] = Field(default_factory=list, description="Full permission objects with hierarchy")
+    permissions: List[PermissionResponse] = Field(
+        default_factory=list, description="Full permission objects with hierarchy"
+    )
     organization_id: Optional[str] = None
 
 
@@ -398,13 +400,15 @@ class PaginatedResponse(BaseSchema):
     previous: Optional[str] = None
     results: List[Any]
 
+
 # ============================================================
 # Security Schemas (Session, Device, Attempts)
 # ============================================================
 
+
 class SessionResponse(BaseSchema):
     """Schema for user session."""
-    
+
     id: str
     user_id: str
     device_info: Dict[str, Any] = Field(default_factory=dict)
@@ -415,9 +419,10 @@ class SessionResponse(BaseSchema):
     last_activity: datetime
     expires_at: datetime
 
+
 class DeviceResponse(BaseSchema):
     """Schema for tracked user devices."""
-    
+
     id: str
     user_id: str
     device_fingerprint: str
@@ -429,6 +434,7 @@ class DeviceResponse(BaseSchema):
     last_seen: datetime
     created_at: datetime
 
+
 class LoginAttemptResponse(BaseSchema):
     """Schema for login attempts."""
 
@@ -439,6 +445,7 @@ class LoginAttemptResponse(BaseSchema):
     success: bool
     failure_reason: Optional[str] = None
     created_at: datetime
+
 
 class BlacklistedTokenResponse(BaseSchema):
     """Schema for revoked tokens."""

@@ -243,7 +243,8 @@ class JWTService:
         """
         if not self.signing_key:
             raise ValueError(
-                f"JWT signing key is required for algorithm {self.algorithm}. " f"Set TENXYTE_JWT_SECRET_KEY in settings."
+                f"JWT signing key is required for algorithm {self.algorithm}. "
+                f"Set TENXYTE_JWT_SECRET_KEY in settings."
             )
 
         if self.is_asymmetric and not self.private_key:  # pragma: no cover

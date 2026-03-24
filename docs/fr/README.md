@@ -182,7 +182,7 @@ urlpatterns += [
 
 ## 📚 Documentation
 
-### 📖 **Guides de Développement**
+### 📖 **Guides pour Développeurs**
 - [**Démarrage Rapide**](quickstart.md) - Commencez en 2 minutes avec Django
 - [**Démarrage Rapide FastAPI**](fastapi_quickstart.md) - Commencez avec FastAPI
 - [**Référence des Paramètres**](settings.md) - Toutes les 95+ options de configuration
@@ -199,6 +199,8 @@ urlpatterns += [
 - [**Guide d'Architecture**](architecture.md) - Architecture Core & Adapters (Hexagonale)
 - [**Guide Async**](async_guide.md) - Modèles async/await et bonnes pratiques
 - [**Service de Tâches**](task_service.md) - Traitement des tâches en arrière-plan
+- [**Guide des Adaptateurs Personnalisés**](custom_adapters.md) - Création d'adaptateurs personnalisés
+- [**Référence des Schémas**](schemas.md) - Composants de schéma réutilisables
 - [**Guide des Adaptateurs Personnalisés**](custom_adapters.md) - Création d'adaptateurs personnalisés
 - [**Référence des Schémas**](schemas.md) - Composants de schéma réutilisables
 - [**Guide de Test**](TESTING.md) - Stratégies de test et exemples
