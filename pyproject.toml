@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tenxyte"
-version = "0.9.3.1.5.2"
+version = "0.9.3"
 
 description = "Framework-agnostic Python authentication — JWT, RBAC, 2FA, Magic Links, Passkeys, Social Login, B2B Organizations, multi-tenant support. Works with Django, FastAPI, and more."
 readme = "README.md"
@@ -160,6 +160,7 @@ dev = [
     "pytest-django>=4.9",
     "pytest-cov>=6.0",
     "pytest-asyncio>=0.24",
+    "anyio>=4.0",
     "black>=25.0",
     "ruff>=0.9",
     "mypy>=1.15",
@@ -185,7 +186,7 @@ pythonpath = [".", "src"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "--cov=tenxyte --cov-report=html --cov-report=term --cov-fail-under=90 --reuse-db --create-db"
+addopts = "--cov=tenxyte --cov-report=html --cov-report=term --cov-fail-under=90"
 markers = [
     "no_django: marks tests that should run without Django (pure Core tests)",
     "django: marks tests that require Django (integration tests)",
