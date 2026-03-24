@@ -46,6 +46,14 @@ htmlcov/
 coverage.xml
 *.cover
 
+checklist.md
+log.md
+site
+site/*
+
+next-steps.md
+next-steps-phases.md
+
 # Django
 *.log
 local_settings.py
@@ -76,30 +84,6 @@ Thumbs.db
 *.tar.gz
 *.whl
 
-SUMMARY.md
-DESCRIPTION.md
-OWASP_ANALYSIS.md
-RECREATE_MIGRATIONS.md
-P1_TEST_REPORT_RAW.txt
-P1_TEST_REPORT.md
-ANALYSE_BY_OPUS_1.md
-INSTALL_TEST.md
-test_debug.txt
-TESTS_PROCESSED.md
-END_TO_END.md
-ROADMAP.md
-
 old_dists/
 old_dists/*
 old_dists/*/*
-
-checklist.md
-log.md
-site
-site/*
-
-# foncs.md
-# foncs_copy.md
-
-# tasks-package-agnostic.md
-# implementation-plan-package-agnostic.md
