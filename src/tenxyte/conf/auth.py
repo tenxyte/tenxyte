@@ -49,6 +49,11 @@ class AuthSettingsMixin:
         return self._get("PASSWORD_MIN_LENGTH", 8)
 
     @property
+    def PASSWORD_MIN_LENGTH_NO_MFA(self):
+        """Longueur minimale du mot de passe sans MFA (NIST SP 800-63B). 0 = disabled."""
+        return self._get("PASSWORD_MIN_LENGTH_NO_MFA", 0)
+
+    @property
     def PASSWORD_MAX_LENGTH(self):
         """Longueur maximale du mot de passe."""
         return self._get("PASSWORD_MAX_LENGTH", 128)
@@ -117,3 +122,37 @@ class AuthSettingsMixin:
     def ACCOUNT_LOCKOUT_ENABLED(self):
         """Activer/désactiver le verrouillage de compte après échecs."""
         return self._get("ACCOUNT_LOCKOUT_ENABLED", True)
+
+    @property
+    def LOCKOUT_ESCALATION_ENABLED(self):
+        """Activer le verrouillage exponentiel (1er=base, 2è=2×base, etc.)."""
+        return self._get("LOCKOUT_ESCALATION_ENABLED", True)
+
+    @property
+    def LOCKOUT_MAX_DURATION_MINUTES(self):
+        """Durée maximale du verrouillage exponentiel en minutes (plafond)."""
+        return self._get("LOCKOUT_MAX_DURATION_MINUTES", 1440)
+
+    # =============================================
+    # Refresh Token Cookie Settings
+    # =============================================
+
+    @property
+    def REFRESH_TOKEN_COOKIE_ENABLED(self):
+        """Activer le transport du refresh token dans un cookie HttpOnly."""
+        return self._get("REFRESH_TOKEN_COOKIE_ENABLED", False)
+
+    @property
+    def REFRESH_TOKEN_COOKIE_NAME(self):
+        """Nom du cookie refresh token."""
+        return self._get("REFRESH_TOKEN_COOKIE_NAME", "tenxyte_refresh")
+
+    @property
+    def REFRESH_TOKEN_COOKIE_SAMESITE(self):
+        """Attribut SameSite du cookie refresh token."""
+        return self._get("REFRESH_TOKEN_COOKIE_SAMESITE", "Strict")
+
+    @property
+    def REFRESH_TOKEN_COOKIE_PATH(self):
+        """Path du cookie refresh token."""
+        return self._get("REFRESH_TOKEN_COOKIE_PATH", "/api/v1/auth/")

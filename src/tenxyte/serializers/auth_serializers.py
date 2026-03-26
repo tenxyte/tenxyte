@@ -114,7 +114,7 @@ class UpdateProfileSerializer(serializers.Serializer):
 
 
 class RefreshTokenSerializer(serializers.Serializer):
-    refresh_token = serializers.CharField()
+    refresh_token = serializers.CharField(required=False, allow_blank=True, default="")
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -144,6 +144,7 @@ class UserSerializer(serializers.ModelSerializer):
             "is_phone_verified",
             "is_2fa_enabled",
             "created_at",
+            "updated_at",
             "last_login",
             "custom_fields",
             "preferences",
@@ -157,6 +158,7 @@ class UserSerializer(serializers.ModelSerializer):
             "is_phone_verified",
             "is_2fa_enabled",
             "created_at",
+            "updated_at",
             "last_login",
             "is_staff",
             "is_superuser",

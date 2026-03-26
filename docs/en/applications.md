@@ -82,7 +82,8 @@ Authorization: Bearer <token>
 
 {
   "name": "Mobile iOS App",
-  "description": "Main iOS app for end-users"
+  "description": "Main iOS app for end-users",
+  "redirect_uris": ["myapp://callback", "https://app.example.com/auth"]
 }
 ```
 
@@ -235,7 +236,10 @@ Application (AbstractApplication)
 ├── description (text)
 ├── access_key (string, unique, indexed)
 ├── access_secret (string, hashed)
-├── is_active (boolean)
+├── is_active (boolean, default: true)
+├── redirect_uris (JSON array, default: [])
 ├── created_at (datetime)
 └── updated_at (datetime)
 ```
+
+> **Note:** When `redirect_uris` is empty, all redirect URIs are permitted (backward-compatible). When populated, only exact matches are allowed during OAuth flows. See [Security Guide](security.md) for details.

@@ -341,8 +341,8 @@ async def login_step1(request: LoginRequest):
         return {"requires_2fa": True, "temp_token": temp_token}
     
     # Pas de 2FA requise, retourner les jetons complets
-    access_token, _, _ = jwt_service.generate_access_token(str(user.id))
-    refresh_token = jwt_service.generate_refresh_token(str(user.id))
+    access_token, _, _ = jwt_service.generate_access_token(str(user.id), application_id="default")
+    refresh_token = jwt_service.generate_refresh_token(str(user.id), application_id="default")
     
     return {
         "access_token": access_token,
@@ -370,8 +370,8 @@ async def login_step2(code: str, temp_token: str):
         raise HTTPException(status_code=401, detail=error)
     
     # Délivrer les jetons finaux
-    access_token, _, _ = jwt_service.generate_access_token(decoded.user_id)
-    refresh_token = jwt_service.generate_refresh_token(decoded.user_id)
+    access_token, _, _ = jwt_service.generate_access_token(decoded.user_id, application_id="default")
+    refresh_token = jwt_service.generate_refresh_token(decoded.user_id, application_id="default")
     
     return {"access_token": access_token, "refresh_token": refresh_token}
 ```
@@ -404,12 +404,13 @@ async def register(request: RegisterRequest):
 
 ### 1. Utilisez un Cache de Niveau Production
 
-Remplacez `InMemoryCacheService` par Redis pour les déploiements multi-instances :
+Remplacez `InMemoryCacheService` par un adaptateur Redis pour les déploiements multi-instances. Tenxyte ne fournit pas d'adaptateur Redis intégré, mais en créer un est simple (voir [Adaptateurs Personnalisés](custom_adapters.md)) :
 
 ```python
-from tenxyte.adapters.redis.cache_service import RedisCacheService
+# Voir custom_adapters.md pour l'implémentation complète de RedisCacheAdapter
+from my_adapters.cache import RedisCacheAdapter
 
-cache_service = RedisCacheService(redis_url="redis://localhost:6379/0")
+cache_service = RedisCacheAdapter(redis_url="redis://localhost:6379/0")
 
 jwt_service = JWTService(settings=settings, blacklist_service=cache_service)
 ```
@@ -439,8 +440,8 @@ async def rate_limit(request: Request, call_next):
     client_ip = request.client.host
     allowed, remaining, reset_time = await cache_service.check_rate_limit_async(
         key=f"rate_limit:{client_ip}",
-        limit=100,  # requêtes
-        window=60   # par minute
+        max_requests=100,  # requêtes
+        window_seconds=60  # par minute
     )
     
     if not allowed:
@@ -453,25 +454,32 @@ async def rate_limit(request: Request, call_next):
 
 ### 4. Authentification de l'Application
 
-Pour l'authentification au niveau de l'application (clés API) :
+Pour l'authentification au niveau de l'application (clés API), utilisez directement le modèle `Application` :
 
 ```python
-from fastapi import Security, HTTPException
-from tenxyte.core.application_service import ApplicationService
+from fastapi import Security, HTTPException, Header
+from tenxyte.models import get_application_model
 
-app_service = ApplicationService(settings=settings)
+Application = get_application_model()
 
 async def verify_app_credentials(
     access_key: str = Header(..., alias="X-Access-Key"),
     access_secret: str = Header(..., alias="X-Access-Secret")
 ):
-    app = await app_service.validate_credentials_async(access_key, access_secret)
-    if not app:
+    from asgiref.sync import sync_to_async
+    try:
+        app = await sync_to_async(Application.objects.get)(
+            access_key=access_key, is_active=True
+        )
+    except Application.DoesNotExist:
+        raise HTTPException(status_code=401, detail="Identifiants d'application invalides")
+    
+    if not app.verify_secret(access_secret):
         raise HTTPException(status_code=401, detail="Identifiants d'application invalides")
     return app
 
 @app.get("/protected")
-async def protected_endpoint(app: Application = Security(verify_app_credentials)):
+async def protected_endpoint(app = Security(verify_app_credentials)):
     return {"message": f"Bonjour de la part de {app.name}"}
 ```
 

@@ -6,7 +6,7 @@
 
 [![PyPI version](https://badge.fury.io/py/tenxyte.svg)](https://badge.fury.io/py/tenxyte)
 [![Python versions](https://img.shields.io/pypi/pyversions/tenxyte.svg)](https://pypi.org/project/tenxyte/)
-[![Django versions](https://img.shields.io/badge/django-6.0%2B-blue.svg)](https://www.djangoproject.com/)
+[![Django versions](https://img.shields.io/badge/django-4.2%2B-blue.svg)](https://www.djangoproject.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Coverage](https://codecov.io/gh/tenxyte/tenxyte/graph/badge.svg)](https://codecov.io/gh/tenxyte/tenxyte)
 [![Tests](https://github.com/tenxyte/tenxyte/actions/workflows/ci.yml/badge.svg)](https://github.com/tenxyte/tenxyte/actions/workflows/ci.yml)
@@ -21,7 +21,7 @@
 pip install tenxyte
 ```
 
-> **Prérequis :** Python 3.10+, Django 6.0+ ou FastAPI 0.135+
+> **Prérequis :** Python 3.10+, Django 4.2+ ou FastAPI 0.135+
 
 ### 2. Configuration
 
@@ -91,7 +91,7 @@ C'est tout — vous avez un backend d'authentification complet en fonctionnement
 
 👥 **RBAC**
 - Rôles hiérarchiques, permissions directes (par utilisateur et par rôle)
-- 8 décorateurs + classes de permissions DRF
+- 9 décorateurs + classes de permissions DRF
 
 🏢 **Organisations (B2B)**
 - Multi-tenant avec arborescence hiérarchique, rôles & adhésions par organisation
@@ -185,7 +185,7 @@ urlpatterns += [
 ### 📖 **Guides pour Développeurs**
 - [**Démarrage Rapide**](quickstart.md) - Commencez en 2 minutes avec Django
 - [**Démarrage Rapide FastAPI**](fastapi_quickstart.md) - Commencez avec FastAPI
-- [**Référence des Paramètres**](settings.md) - Toutes les 95+ options de configuration
+- [**Référence des Paramètres**](settings.md) - Toutes les 115+ options de configuration
 - [**Endpoints de l'API**](endpoints.md) - Référence complète des endpoints avec exemples
 - [**Comptes Admin**](admin.md) - Gérer les Super-utilisateurs et les Admins RBAC
 - [**Guide des Applications**](applications.md) - Gérer les clients API et les identifiants
@@ -195,12 +195,16 @@ urlpatterns += [
 - [**Guide AIRS**](airs.md) - Responsabilité et Sécurité de l'IA
 - [**Guide de Migration**](MIGRATION_GUIDE.md) - Migration depuis dj-rest-auth, simplejwt
 
+### 📦 **Intégration SDK (JavaScript / TypeScript)**
+- [**Vue d'ensemble du SDK JavaScript**](integration/javascript/index.md) - Packages, installation, configuration, gestion des erreurs
+- [**Guide @tenxyte/core**](integration/javascript/core.md) - SDK agnostique au framework — les 10 modules, mode cookie, PKCE, événements
+- [**Guide @tenxyte/react**](integration/javascript/react.md) - Hooks React, TenxyteProvider, exemples SPA
+- [**Guide @tenxyte/vue**](integration/javascript/vue.md) - Composables Vue 3, configuration du plugin, exemples SPA
+
 ### 🔧 **Documentation Technique**
 - [**Guide d'Architecture**](architecture.md) - Architecture Core & Adapters (Hexagonale)
 - [**Guide Async**](async_guide.md) - Modèles async/await et bonnes pratiques
 - [**Service de Tâches**](task_service.md) - Traitement des tâches en arrière-plan
-- [**Guide des Adaptateurs Personnalisés**](custom_adapters.md) - Création d'adaptateurs personnalisés
-- [**Référence des Schémas**](schemas.md) - Composants de schéma réutilisables
 - [**Guide des Adaptateurs Personnalisés**](custom_adapters.md) - Création d'adaptateurs personnalisés
 - [**Référence des Schémas**](schemas.md) - Composants de schéma réutilisables
 - [**Guide de Test**](TESTING.md) - Stratégies de test et exemples
@@ -295,10 +299,10 @@ pytest --cov=tenxyte --cov-report=html
 **Tests multi-BDD** (nécessite un serveur par backend) :
 
 ```bash
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_sqlite"
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_pgsql"
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_mysql"
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_mongodb"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_sqlite"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_pgsql"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_mysql"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_mongodb"
 ```
 
 ---

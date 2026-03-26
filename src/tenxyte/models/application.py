@@ -40,6 +40,11 @@ class AbstractApplication(models.Model):
     access_key = models.CharField(max_length=64, unique=True, db_index=True)
     access_secret = models.CharField(max_length=128)
     is_active = models.BooleanField(default=True)
+    redirect_uris = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of allowed redirect URIs for OAuth flows. Empty list permits all.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -69,6 +74,16 @@ class AbstractApplication(models.Model):
         if not self.access_secret or not raw_secret:
             return False
         return self._verify_hashed_secret(raw_secret, self.access_secret)
+
+    def is_redirect_uri_allowed(self, redirect_uri: str) -> bool:
+        """Check if a redirect URI is in the application's whitelist.
+
+        Returns True if the whitelist is empty (backward compatibility)
+        or if the URI exactly matches an entry.
+        """
+        if not self.redirect_uris:
+            return True
+        return redirect_uri in self.redirect_uris
 
     def regenerate_credentials(self):
         """
