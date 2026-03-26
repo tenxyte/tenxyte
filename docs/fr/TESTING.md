@@ -33,16 +33,16 @@ Le rapport HTML sera généré dans `htmlcov/index.html`. Le seuil de couverture
 
 ```bash
 # Répertoire de test spécifique
-pytest tests/unit/
+pytest tests/core/
 
 # Fichier de test spécifique
-pytest tests/unit/test_jwt.py
+pytest tests/core/test_core_jwt_service.py
 
 # Classe de test spécifique
-pytest tests/unit/test_validators.py::TestPasswordValidator
+pytest tests/core/test_core_jwt_service.py::TestJWTService
 
 # Test spécifique
-pytest tests/unit/test_jwt.py::TestJWTService::test_generate_access_token
+pytest tests/core/test_core_jwt_service.py::TestJWTService::test_generate_access_token
 
 # Tests correspondant à un motif (pattern)
 pytest tests/ -k "password"
@@ -65,20 +65,21 @@ Tenxyte organise les tests par catégorie :
 
 ```
 tests/
-├── unit/                 # Tests unitaires (Services Core, Validateurs)
+├── core/                       # Tests des services Core (JWT, Cache, E-mail, TOTP, Sessions, etc.)
+│   └── conftest.py             # Fixtures de test Core (mocks, sans DB)
 ├── integration/
-│   ├── django/           # Tests d'intégration de l'adaptateur Django (Modèles, Signaux, Vues)
-│   └── fastapi/          # Tests de l'adaptateur FastAPI (Modèles, Répertoires, Routeurs)
-├── security/             # Tests spécifiques à la sécurité (Attaques temporelles, BREACH, etc.)
-├── multidb/              # Tests du support multi-bases de données
-├── conftest.py           # Fixtures partagées
-├── settings.py           # Paramètres de test Django
-└── test_dashboard.py     # Tests de la vue principale du tableau de bord
+│   ├── django/                 # Tests d'intégration de l'adaptateur Django (Modèles, Signaux, Vues)
+│   │   ├── conftest.py         # Fixtures Django partagées (DB, clients API, utilisateurs)
+│   │   ├── multidb/            # Tests du support multi-bases de données
+│   │   ├── test_dashboard.py   # Tests de la vue tableau de bord
+│   │   └── settings.py         # Paramètres de test Django
+│   └── fastapi/                # Tests de l'adaptateur FastAPI (Modèles, Répertoires, Routeurs)
+└── test_canonical_spec.py      # Validation de la spécification canonique
 ```
 
 ## Fixtures Disponibles
 
-Définies dans `tests/conftest.py` :
+Définies dans `tests/integration/django/conftest.py` :
 
 - `api_client` : Client API standard REST Framework
 - `app_api_client` : Client avec les en-têtes `X-Access-Key` / `X-Access-Secret`
@@ -93,37 +94,30 @@ Définies dans `tests/conftest.py` :
 
 ## Catégories de Tests
 
-### 1. Tests Unitaires (`tests/unit/`)
-Tests de la logique de la couche de service Core (JWT, OTP, TOTP, Breach Check, Cache, E-mail). Rapides, isolés et agnostiques au framework.
+### 1. Tests Core (`tests/core/`)
+Tests de la logique de la couche de service Core (JWT, OTP, TOTP, Cache, E-mail, Session, Magic Link, WebAuthn). Rapides, isolés et agnostiques au framework. Inclut également des tests spécifiques à la sécurité (atténuation des attaques temporelles).
 
 ### 2. Tests d'Intégration (`tests/integration/`)
 
 #### Django (`tests/integration/django/`)
-Test des composants de l'adaptateur Django : interactions avec les modèles, contraintes de base de données, signaux, vues et sérialiseurs.
+Test des composants de l'adaptateur Django : interactions avec les modèles, contraintes de base de données, signaux, vues, sérialiseurs et tableau de bord.
 
 #### FastAPI (`tests/integration/fastapi/`)
 Test des composants de l'adaptateur FastAPI : modèles Pydantic, répertoires (repositories) et routeurs.
 
-### 3. Tests de Sécurité (`tests/security/`)
-Tests spécifiques aux vulnérabilités incluant :
-- Détection de compromission de mot de passe (Breach check)
-- Protection contre l'énumération de comptes
-- Logique de limitation de débit (rate limiting) et de verrouillage
-- Validation de signature JWT
-
-### 4. Tests Multi-DB (`tests/multidb/`)
+### 3. Tests Multi-DB (`tests/integration/django/multidb/`)
 Garantit la compatibilité avec plusieurs backends :
 ```bash
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_sqlite"
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_pgsql"
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_mongodb"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_sqlite"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_pgsql"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_mongodb"
 ```
 
 ## Couverture Attendue
 
 Tenxyte impose un **seuil de couverture de 90%**. Pour vérifier la couverture d'un module spécifique :
 ```bash
-pytest --cov=tenxyte.services.auth_service tests/unit/test_auth_service.py
+pytest --cov=tenxyte.core.jwt_service tests/core/test_core_jwt_service.py
 ```
 
 ## Meilleures Pratiques

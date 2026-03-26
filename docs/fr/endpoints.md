@@ -205,7 +205,7 @@ Si `login: true` dans la requête, inclut également :
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop"
 }
@@ -234,7 +234,7 @@ Connexion avec email + mot de passe.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
@@ -333,7 +333,7 @@ Connexion avec numéro de téléphone + mot de passe.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
@@ -443,9 +443,11 @@ S'authentifier via un fournisseur OAuth2.
 {
   "code": "<code-d-autorisation>",
   "redirect_uri": "https://votre-app.com/auth/callback",
+  "code_verifier": "<vérificateur-PKCE>",
   "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
+`code_verifier` : Vérificateur PKCE optionnel (RFC 7636). Requis si la requête d'autorisation incluait un `code_challenge`.
 
 **Requête (Google ID token) :**
 ```json
@@ -462,7 +464,7 @@ S'authentifier via un fournisseur OAuth2.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
@@ -530,6 +532,7 @@ Point de terminaison de rappel (callback) OAuth2 pour le flux de code d'autorisa
 **Paramètres de requête :**
 - `code` (requis) : Code d'autorisation du fournisseur
 - `redirect_uri` (requis) : URI de redirection d'origine
+- `code_verifier` (optionnel) : Vérificateur PKCE (RFC 7636)
 - `state` (optionnel) : Paramètre d'état/CSRF
 
 **Réponse `200` :**
@@ -538,7 +541,7 @@ Point de terminaison de rappel (callback) OAuth2 pour le flux de code d'autorisa
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
@@ -626,6 +629,14 @@ Location: https://votre-app.com/auth/callback?access_token=eyJ...&refresh_token=
 }
 ```
 
+**Réponse `400` (URI de redirection invalide) :**
+```json
+{
+  "error": "redirect_uri n'est pas dans la liste blanche de l'application",
+  "code": "INVALID_REDIRECT_URI"
+}
+```
+
 **Réponse `401` (Échec de l'authentification sociale) :**
 ```json
 {
@@ -685,7 +696,7 @@ Vérifier un jeton de lien magique et recevoir des jetons JWT.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": null,
   "user": {
@@ -747,25 +758,25 @@ Rafraîchir le jeton d'accès.
 { "refresh_token": "eyJ..." }
 ```
 
+> **Mode cookie :** Lorsque `TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED=True`, le champ `refresh_token` est optionnel. S'il est omis ou vide, le serveur lit le jeton depuis le cookie `HttpOnly` défini lors de la connexion. Dans ce mode, la réponse omet également `refresh_token` du corps JSON (il est renouvelé via `Set-Cookie`).
+
 **Réponse `200` :**
 ```json
 {
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": null
 }
 ```
 
-**Réponse `400` (Erreur de validation) :**
+**Réponse `400` (Jeton de rafraîchissement manquant) :**
 ```json
 {
-  "error": "Erreur de validation",
-  "details": {
-    "refresh_token": ["Ce champ est obligatoire."]
-  }
+  "error": "refresh_token is required",
+  "code": "MISSING_REFRESH_TOKEN"
 }
 ```
 
@@ -797,13 +808,13 @@ Authorization: Bearer <access_token>
 { "message": "Déconnexion réussie" }
 ```
 
-**Réponse `400` (Erreur de validation) :**
+> **Mode cookie :** Lorsque `TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED=True`, le serveur efface également le cookie du jeton de rafraîchissement via `Set-Cookie` avec `max-age=0`.
+
+**Réponse `400` (Jeton de rafraîchissement manquant) :**
 ```json
 {
-  "error": "Erreur de validation",
-  "details": {
-    "refresh_token": ["Ce champ est obligatoire."]
-  }
+  "error": "refresh_token is required",
+  "code": "MISSING_REFRESH_TOKEN"
 }
 ```
 
@@ -4706,6 +4717,27 @@ Authorization: Bearer <access_token>
   "code": "NOT_FOUND"
 }
 ```
+
+## Points de terminaison Agent IA (AIRS)
+
+Tenxyte inclut un ensemble complet de points de terminaison pour la sécurité d'identité et d'exécution des agents IA (AIRS) — gestion des jetons d'agent, heartbeats, actions en attente et rapports d'utilisation :
+
+| Méthode | Point de terminaison | Description |
+|---|---|---|
+| `GET/POST` | `/ai/tokens/` | Lister / créer des jetons d'agent |
+| `GET/PUT/DELETE` | `/ai/tokens/<id>/` | Détail d'un jeton d'agent |
+| `POST` | `/ai/tokens/<id>/revoke/` | Révoquer un jeton d'agent |
+| `POST` | `/ai/tokens/<id>/suspend/` | Suspendre un jeton d'agent |
+| `POST` | `/ai/tokens/<id>/heartbeat/` | Ping de heartbeat de l'agent |
+| `POST` | `/ai/tokens/<id>/report-usage/` | Rapporter les métriques d'utilisation |
+| `POST` | `/ai/tokens/revoke-all/` | Révoquer tous les jetons d'agent |
+| `GET` | `/ai/pending-actions/` | Lister les actions en attente (human-in-the-loop) |
+| `POST` | `/ai/pending-actions/<id>/approve/` | Approuver une action en attente |
+| `POST` | `/ai/pending-actions/<id>/reject/` | Rejeter une action en attente |
+
+→ Voir le [Guide AIRS](airs.md) pour la documentation complète des requêtes/réponses, les niveaux d'habilitation et la gestion du cycle de vie des agents.
+
+---
 
 ## Légende
 

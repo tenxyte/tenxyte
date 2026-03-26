@@ -15,7 +15,7 @@ Pour utiliser une implémentation personnalisée, il vous suffit de créer une c
 
 ## Exemple 1 : Service de Cache Personnalisé
 
-L'ABC `CacheService` (définie dans `tenxyte.core.cache_service`) nécessite l'implémentation de six méthodes abstraites : `get`, `set`, `delete`, `exists`, `increment`, `expire` et `ttl`.
+L'ABC `CacheService` (définie dans `tenxyte.core.cache_service`) nécessite l'implémentation de sept méthodes abstraites : `get`, `set`, `delete`, `exists`, `increment`, `expire` et `ttl`.
 
 Supposons que vous souhaitiez utiliser Redis :
 

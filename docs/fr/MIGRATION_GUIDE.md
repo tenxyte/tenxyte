@@ -187,12 +187,11 @@ dj-rest-auth renvoie les jetons à l'intérieur d'un champ `key` (Knox) ou `acce
 
 ```json
 {
-  "access_token": "<access token>",
-  "refresh_token": "<refresh token>",
-  "access_token_expires_at": "...",
-  "access_token_jti": "...",
-  "expires_in": 3600,
+  "access_token": "<jeton d'accès>",
+  "refresh_token": "<jeton de rafraîchissement>",
   "token_type": "Bearer",
+  "expires_in": 900,
+  "refresh_expires_in": 604800,
   "user": { ... },
   "requires_2fa": false,
   "session_id": "...",

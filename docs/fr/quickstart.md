@@ -63,7 +63,7 @@ python manage.py tenxyte_quickstart
 
 Cette commande unique exécute :
 - `makemigrations` + `migrate`
-- L'injection des rôles et des permissions (4 rôles, 41 permissions)
+- L'injection des rôles et des permissions (4 rôles, 47 permissions)
 - La création d'une Application par défaut (identifiants affichés)
 
 **Options :**

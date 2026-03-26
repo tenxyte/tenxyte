@@ -68,6 +68,11 @@ nav:
       - 'RBAC Guide': rbac.md
       - 'Security Guide': security.md
       - 'Task Service': task_service.md
+  - 'SDK Integration (JS/TS)':
+      - 'Overview': integration/javascript/index.md
+      - '@tenxyte/core': integration/javascript/core.md
+      - '@tenxyte/react': integration/javascript/react.md
+      - '@tenxyte/vue': integration/javascript/vue.md
   - 'Operations & Maintenance':
       - 'Periodic Tasks': periodic_tasks.md
       - 'Troubleshooting': troubleshooting.md

@@ -66,7 +66,7 @@ POST /api/v1/auth/users/<user_id>/roles/
 Authorization: Bearer <superuser_token>
 
 {
-  "role_codes": ["super_admin"]
+  "role_code": "super_admin"
 }
 ```
 
@@ -86,8 +86,22 @@ user.assign_role("super_admin")
 - **Strict RBAC:** They only have the permissions explicitly granted to their role.
 - **No Django Admin Access:** By default, they cannot access `/admin/` unless you also manually set `is_staff=True` on their account.
 - **Safer for Teams:** Ideal for customer support, HR, or product managers who need widespread API access without raw database access.
+- **2FA Enforcement:** Admin and super_admin users are required to enable 2FA before logging in. If 2FA is not configured, the login returns `403 ADMIN_2FA_SETUP_REQUIRED`.
 
 See the [RBAC Guide](rbac.md) for details on built-in roles and permissions.
+
+### Admin API Endpoints
+
+Admins with the appropriate permissions can access the following API groups (documented in [Endpoints Reference](endpoints.md)):
+
+| Category | Endpoints | Required Permission |
+|---|---|---|
+| **User Management** | `GET/PUT /admin/users/`, ban, unban, lock, unlock | `users.view`, `users.ban`, `users.lock` |
+| **Audit Logs** | `GET /admin/audit-logs/` | `audit.view` |
+| **Login Attempts** | `GET /admin/login-attempts/` | `audit.view` |
+| **Token Management** | `GET /admin/refresh-tokens/`, revoke, blacklist cleanup | `tokens.view`, `tokens.revoke` |
+| **GDPR** | `GET /admin/deletion-requests/`, process | `gdpr.view`, `gdpr.process` |
+| **Dashboard** | `GET /dashboard/stats/`, auth, security, gdpr, orgs | `dashboard.view` |
 
 ---
 
@@ -98,6 +112,7 @@ See the [RBAC Guide](rbac.md) for details on built-in roles and permissions.
 | **Bypass Permissions** | ✅ Yes | ❌ No (Relies on assigned perms) | ❌ No |
 | **Django Admin (`/admin/`) access** | ✅ Yes | ❌ No (requires `is_staff`) | ❌ No |
 | **Manage Users & Roles (API)** | ✅ Yes | ✅ Yes | ✅ Yes |
+| **2FA Required at Login** | ✅ Yes | ✅ Yes | ✅ Yes |
 | **Creation Method** | CLI (`createsuperuser`) | API or Shell | API or Shell |
 | **Best For** | Developers, Sysadmins | Team Leads | Support Staff |
 

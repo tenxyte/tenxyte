@@ -55,8 +55,8 @@ class JwtSettingsMixin:
 
     @property
     def JWT_ACCESS_TOKEN_LIFETIME(self):
-        """Durée de vie du access token en secondes (défaut: 1 heure)."""
-        return self._get("JWT_ACCESS_TOKEN_LIFETIME", 3600)
+        """Durée de vie du access token en secondes (défaut: 15 minutes)."""
+        return self._get("JWT_ACCESS_TOKEN_LIFETIME", 900)
 
     @property
     def JWT_REFRESH_TOKEN_LIFETIME(self):
@@ -83,6 +83,16 @@ class JwtSettingsMixin:
         Si activé, l'ancien refresh token est invalidé lors du renouvellement.
         """
         return self._get("REFRESH_TOKEN_ROTATION", True)
+
+    @property
+    def JWT_PREVIOUS_SECRET_KEY(self):
+        """Ancienne clé secrète JWT pour validation pendant la rotation de clés."""
+        return self._get("JWT_PREVIOUS_SECRET_KEY", None)
+
+    @property
+    def JWT_PREVIOUS_PUBLIC_KEY(self):
+        """Ancienne clé publique JWT pour validation pendant la rotation (RS256)."""
+        return self._get("JWT_PREVIOUS_PUBLIC_KEY", None)
 
     # =============================================
     # 2FA / TOTP Settings

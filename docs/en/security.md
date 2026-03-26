@@ -30,7 +30,7 @@ Tenxyte ships with pre-configured throttle classes for sensitive endpoints:
 | `RegisterThrottle` | 3/hour | Register endpoint |
 | `RegisterDailyThrottle` | 10/day | Register endpoint |
 | `RefreshTokenThrottle` | 30/min | Token refresh |
-| `GoogleAuthThrottle` | 10/min | Google OAuth |
+| `ProgressiveLoginThrottle` | Progressive | Login endpoints (increases delay after each failure) |
 | `OTPRequestThrottle` | 5/hour | OTP request |
 | `OTPVerifyThrottle` | 5/min | OTP verification |
 | `PasswordResetThrottle` | 3/hour | Password reset request |
@@ -84,6 +84,25 @@ TENXYTE_RATE_LIMIT_WINDOW_MINUTES = 15
 
 Locked accounts return `401` with `code: 'ACCOUNT_LOCKED'`.
 
+### Exponential Lockout
+
+When `TENXYTE_LOCKOUT_ESCALATION_ENABLED = True` (default), each consecutive lockout doubles the duration, capped at `TENXYTE_LOCKOUT_MAX_DURATION_MINUTES` (default: 1440 = 24h):
+
+| Lockout # | Duration (base=30min) |
+|---|---|
+| 1st | 30 min |
+| 2nd | 60 min |
+| 3rd | 120 min |
+| 4th | 240 min |
+| 5th+ | 1440 min (24h cap) |
+
+The counter resets after a successful login. Formula: `min(base × 2^(n-1), max_duration)`.
+
+```python
+TENXYTE_LOCKOUT_ESCALATION_ENABLED = True
+TENXYTE_LOCKOUT_MAX_DURATION_MINUTES = 1440  # 24h cap
+```
+
 Admin unlock via API:
 ```bash
 POST /api/v1/auth/admin/users/<id>/unlock/
@@ -136,6 +155,19 @@ TENXYTE_BACKUP_CODES_COUNT = 10
 
 ## JWT Token Security
 
+### Algorithm
+
+Tenxyte defaults to `HS256` (HMAC-SHA256). For production, switch to an asymmetric algorithm (`RS256`, `EdDSA`) to avoid sharing the signing secret across services:
+
+```python
+# settings.py
+TENXYTE_JWT_ALGORITHM = 'RS256'
+TENXYTE_JWT_PRIVATE_KEY = open('/secrets/jwt_private.pem').read()
+TENXYTE_JWT_PUBLIC_KEY = open('/secrets/jwt_public.pem').read()
+```
+
+> **Note**: When `HS256` is detected, Tenxyte emits a `SecurityWarning` on service initialization. Use the `production` or `enterprise` secure mode preset to automatically switch to RS256.
+
 ### Access Token Blacklisting
 
 When `TENXYTE_TOKEN_BLACKLIST_ENABLED = True` (default), access tokens are blacklisted on logout. This prevents token reuse even before expiry.
@@ -154,15 +186,66 @@ TENXYTE_REFRESH_TOKEN_ROTATION = True
 
 ### Short-Lived Access Tokens
 
-Keep access tokens short-lived and rely on refresh tokens for session persistence. By default, access tokens last 1 hour, but it is highly recommended to shorten this in production:
+Access tokens expire after **15 minutes by default**. This limits the exposure window if a token is compromised. Rely on refresh tokens for session persistence:
 
 ```python
-# Default values
-TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 3600    # 1 hour
+# Defaults — already secure
+TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 900    # 15 minutes
 TENXYTE_JWT_REFRESH_TOKEN_LIFETIME = 604800 # 7 days
 ```
 
-*(Note: The `standard` preset configures access tokens to 15 minutes).*
+### GDPR / Data Minimization
+
+Avoid including PII (email, IP address, phone number, etc.) in JWT payloads. JWT tokens are base64-encoded and readable by anyone who intercepts them. Tenxyte emits a `SecurityWarning` if sensitive keys are detected in `extra_claims`:
+
+```python
+# ❌ Do NOT do this
+jwt_service.generate_access_token(user_id, app_id, extra_claims={"email": user.email})
+
+# ✅ Look up by user_id instead
+user = User.objects.get(pk=decoded_token.user_id)
+```
+
+Claims that trigger the warning: `email`, `password`, `phone`, `phone_number`, `ip`, `ip_address`, `address`, `ssn`, `credit_card`, `dob`, `date_of_birth`.
+
+### Required Claims
+
+All issued tokens include `exp`, `iat`, and `jti`. When `JWT_ISSUER` or `JWT_AUDIENCE` are configured, `iss` and `aud` are also enforced as required claims — tokens missing them are rejected at the PyJWT decoding level.
+
+### Key Rotation
+
+Rotate JWT signing keys without invalidating active tokens. Set the **previous** key so existing tokens can still be verified during the transition:
+
+```python
+# 1. Generate a new key
+# 2. Move the current key to PREVIOUS
+TENXYTE_JWT_PREVIOUS_SECRET_KEY = '<old-key>'  # HS256
+# or for RS256:
+TENXYTE_JWT_PREVIOUS_PUBLIC_KEY = open('/secrets/old_jwt_public.pem').read()
+
+# 3. Set the new key
+TENXYTE_JWT_SECRET_KEY = '<new-key>'
+```
+
+New tokens are signed with the current key. On decode, if the primary key fails with `InvalidSignatureError`, Tenxyte retries with the previous key. Remove `PREVIOUS_*` once all old tokens have expired.
+
+### Cookie-Based Refresh Tokens
+
+Opt-in mode to transport refresh tokens in `HttpOnly; Secure; SameSite` cookies instead of the JSON body, preventing XSS-based token theft:
+
+```python
+TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED = True  # Default: False
+TENXYTE_REFRESH_TOKEN_COOKIE_NAME = 'tenxyte_refresh'
+TENXYTE_REFRESH_TOKEN_COOKIE_SAMESITE = 'Strict'
+TENXYTE_REFRESH_TOKEN_COOKIE_PATH = '/api/v1/auth/'
+```
+
+When enabled:
+- **Login/Refresh responses**: `refresh_token` is removed from the JSON body and set as a `Set-Cookie` header.
+- **Refresh requests**: The server reads the refresh token from the cookie if the body is empty.
+- **Logout**: The cookie is cleared with `max-age=0`.
+
+> **Important**: This is **opt-in** and disabled by default. Clients must handle the absence of `refresh_token` in JSON responses.
 
 ---
 
@@ -237,6 +320,16 @@ TENXYTE_PASSWORD_HISTORY_COUNT = 5  # Check against last 5 passwords
 POST /api/v1/auth/password/strength/
 { "password": "MyPassword123!" }
 ```
+
+### NIST SP 800-63B Compliance
+
+Accounts **without** 2FA enabled can be held to a higher minimum password length, per NIST SP 800-63B recommendations:
+
+```python
+TENXYTE_PASSWORD_MIN_LENGTH_NO_MFA = 15  # 0 = disabled (default)
+```
+
+When set to `15`, users without 2FA must use passwords of at least 15 characters. Users with 2FA active continue using the standard `PASSWORD_MIN_LENGTH` (default: 8).
 
 ---
 
@@ -347,12 +440,64 @@ TENXYTE_OTP_MAX_ATTEMPTS = 5      # before invalidation
 ## Production Checklist
 
 - [ ] Set `TENXYTE_JWT_SECRET_KEY` to a strong, unique secret (not `SECRET_KEY`)
-- [ ] Set `TENXYTE_JWT_ACCESS_TOKEN_LIFETIME` to ≤ 900 seconds (15 min)
+- [ ] Switch to `TENXYTE_JWT_ALGORITHM = 'RS256'` and configure RSA keys
+- [ ] Set `TENXYTE_JWT_ACCESS_TOKEN_LIFETIME` to ≤ 900 seconds (15 min) — **this is now the default**
 - [ ] Enable `TENXYTE_REFRESH_TOKEN_ROTATION = True`
 - [ ] Enable `TENXYTE_TOKEN_BLACKLIST_ENABLED = True`
+- [ ] Set `TENXYTE_JWT_AUDIENCE` to your application identifier
 - [ ] Enable `TENXYTE_SECURITY_HEADERS_ENABLED = True`
 - [ ] Configure `TENXYTE_CORS_ALLOWED_ORIGINS` (never use `ALLOW_ALL_ORIGINS` in production)
 - [ ] Set `TENXYTE_MAX_LOGIN_ATTEMPTS` to a reasonable value (5–10)
 - [ ] Enable `TENXYTE_PASSWORD_HISTORY_ENABLED = True`
 - [ ] Use HTTPS in production (required for `Strict-Transport-Security`)
 - [ ] Rotate `Application` secrets regularly
+- [ ] Ensure `extra_claims` do not contain PII (email, IP, phone…)
+- [ ] Consider enabling cookie refresh token transport for web apps
+- [ ] Consider enabling NIST password length for non-MFA accounts (`PASSWORD_MIN_LENGTH_NO_MFA = 15`)
+
+---
+
+## OAuth / Social Login Security
+
+### PKCE (Proof Key for Code Exchange)
+
+All OAuth providers support PKCE (RFC 7636). Clients should include `code_verifier` in the code exchange request:
+
+```json
+POST /api/v1/auth/social/google/
+{
+  "code": "<authorization-code>",
+  "redirect_uri": "https://yourapp.com/auth/callback",
+  "code_verifier": "<PKCE-code-verifier>"
+}
+```
+
+The `code_verifier` is forwarded to the provider's token endpoint. This prevents authorization code interception attacks.
+
+### Redirect URI Whitelist
+
+Configure allowed redirect URIs per `Application` model. When the whitelist is non-empty, any `redirect_uri` not in the list returns `400 INVALID_REDIRECT_URI`:
+
+```python
+# Via Django admin or API
+app.redirect_uris = [
+    "https://yourapp.com/auth/callback",
+    "https://staging.yourapp.com/auth/callback",
+]
+```
+
+### Configurable OAuth Scopes
+
+Override default scopes per provider:
+
+```python
+TENXYTE_SOCIAL_GOOGLE_SCOPES = 'openid email profile'
+TENXYTE_SOCIAL_GITHUB_SCOPES = 'read:user user:email'
+TENXYTE_SOCIAL_MICROSOFT_SCOPES = 'openid email profile'
+TENXYTE_SOCIAL_FACEBOOK_SCOPES = 'email,public_profile'
+```
+
+---
+
+*For the full list of settings with defaults, see [Settings Reference](settings.md).*
+

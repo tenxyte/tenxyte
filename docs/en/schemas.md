@@ -103,6 +103,8 @@ Issued on successful login or token refresh.
 | `refresh_expires_in` | integer | Refresh token expiration in seconds |
 | `device_summary` | string \| null | Description of the user's device (if `device_info` was sent) |
 
+> **Cookie mode:** When `TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED=True`, the `refresh_token` field is omitted from the JSON body. Instead, it is delivered as an `HttpOnly; Secure; SameSite` cookie. See [Security Guide](security.md#cookie-based-refresh-tokens) for details.
+
 ---
 
 ## ErrorResponse
@@ -138,6 +140,16 @@ Returned on all `4xx` and `5xx` responses.
 | `SESSION_LIMIT_EXCEEDED` | 403 | Too many concurrent sessions |
 | `DEVICE_LIMIT_EXCEEDED` | 403 | Too many registered devices |
 | `RATE_LIMITED` | 429 | Too many requests |
+| `MISSING_REFRESH_TOKEN` | 400 | No refresh token in body or cookie |
+| `INVALID_REDIRECT_URI` | 400 | redirect_uri not in application whitelist |
+| `ADMIN_2FA_SETUP_REQUIRED` | 403 | Admin must enable 2FA before login |
+| `INVALID_2FA_CODE` | 401 | Wrong TOTP or backup code |
+| `PASSWORD_BREACHED` | 400 | Password found in HIBP breach database |
+| `PASSWORD_REUSED` | 400 | Password matches a recent entry in history |
+| `INVALID_PASSWORD` | 400 | Current password is incorrect (change flow) |
+| `INVALID_OTP` | 400 | Wrong OTP verification code |
+| `OTP_EXPIRED` | 400 | OTP code has expired |
+| `RESET_FAILED` | 400 | Password reset failed |
 | `ORG_NOT_FOUND` | 404 | X-Org-Slug header does not match |
 | `NOT_ORG_MEMBER` | 403 | User is not a member of the provided org |
 

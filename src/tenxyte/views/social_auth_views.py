@@ -63,6 +63,9 @@ class SocialAuthView(APIView):
                 "redirect_uri": serializers.CharField(
                     required=False, allow_blank=True, help_text="URI de redirection (requis avec code)"
                 ),
+                "code_verifier": serializers.CharField(
+                    required=False, allow_blank=True, help_text="PKCE code_verifier (recommended)"
+                ),
                 "id_token": serializers.CharField(
                     required=False, allow_blank=True, help_text="Google ID token uniquement"
                 ),
@@ -162,7 +165,18 @@ class SocialAuthView(APIView):
                     {"error": "redirect_uri is required with code", "code": "REDIRECT_URI_REQUIRED"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            tokens = oauth_provider.exchange_code(request.data["code"], redirect_uri)
+
+            # Validate redirect_uri against application whitelist
+            application = getattr(request, "application", None)
+            if application and hasattr(application, "is_redirect_uri_allowed"):
+                if not application.is_redirect_uri_allowed(redirect_uri):
+                    return Response(
+                        {"error": "redirect_uri is not in the application's whitelist", "code": "INVALID_REDIRECT_URI"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            code_verifier = request.data.get("code_verifier", None)
+            tokens = oauth_provider.exchange_code(request.data["code"], redirect_uri, code_verifier=code_verifier)
             if tokens and tokens.get("access_token"):
                 user_data = oauth_provider.get_user_info(tokens["access_token"])
 
