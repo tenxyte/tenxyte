@@ -126,7 +126,7 @@ class TestPresetDefinitions:
 class TestNoPriorityMode:
 
     def test_no_mode_uses_default_jwt_lifetime(self):
-        assert _get_no_mode('JWT_ACCESS_TOKEN_LIFETIME') == 3600
+        assert _get_no_mode('JWT_ACCESS_TOKEN_LIFETIME') == 900
 
     def test_no_mode_uses_default_refresh_rotation(self):
         assert _get_no_mode('REFRESH_TOKEN_ROTATION') is True
@@ -387,7 +387,7 @@ class TestInvalidMode:
         with patch('tenxyte.conf.base.settings', mock):
             with warnings.catch_warnings(record=True):
                 warnings.simplefilter("always")
-                assert s.JWT_ACCESS_TOKEN_LIFETIME == 3600
+                assert s.JWT_ACCESS_TOKEN_LIFETIME == 900
 
     def test_empty_string_mode_emits_warning(self):
         s = TenxyteSettings()

@@ -108,5 +108,29 @@ class SocialSettingsMixin:
         return getattr(settings, "GOOGLE_CLIENT_SECRET", "")
 
     # =============================================
+    # OAuth Scopes
+    # =============================================
+
+    @property
+    def SOCIAL_GOOGLE_SCOPES(self):
+        """Scopes OAuth pour Google."""
+        return self._get("SOCIAL_GOOGLE_SCOPES", "openid email profile")
+
+    @property
+    def SOCIAL_GITHUB_SCOPES(self):
+        """Scopes OAuth pour GitHub."""
+        return self._get("SOCIAL_GITHUB_SCOPES", "read:user user:email")
+
+    @property
+    def SOCIAL_MICROSOFT_SCOPES(self):
+        """Scopes OAuth pour Microsoft."""
+        return self._get("SOCIAL_MICROSOFT_SCOPES", "openid email profile")
+
+    @property
+    def SOCIAL_FACEBOOK_SCOPES(self):
+        """Scopes OAuth pour Facebook."""
+        return self._get("SOCIAL_FACEBOOK_SCOPES", "email,public_profile")
+
+    # =============================================
     # Organizations Settings
     # =============================================

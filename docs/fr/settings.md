@@ -96,15 +96,28 @@ TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 600  # 10min au lieu de 5min
 
 | Paramètre | Défaut | Description |
 |---|---|---|
-| `TENXYTE_JWT_SECRET_KEY` | `None` (Requis) | Clé secrète dédiée à la signature des JWT. Doit être définie explicitement en production. En mode `DEBUG`, une clé éphémère est auto-générée. |
-| `TENXYTE_JWT_ALGORITHM` | `'HS256'` | Algorithme de signature JWT. |
+| `TENXYTE_JWT_SECRET_KEY` | `None` (Requis) | Clé secrète dédiée pour la signature JWT (HS256) ou clé privée (RS256/EdDSA). Doit être définie explicitement en production. En mode `DEBUG`, une clé éphémère est auto-générée. |
+| `TENXYTE_JWT_ALGORITHM` | `'HS256'` | Algorithme de signature JWT. **En production, utilisez `RS256` ou `EdDSA`** — les algorithmes symétriques nécessitent de partager le secret de signature entre toutes les instances. Un `SecurityWarning` est émis si `HS256` est utilisé. |
 | `TENXYTE_JWT_PRIVATE_KEY` | `None` | Clé privée RSA/ECDSA pour la signature JWT (requise pour les algorithmes RS/PS/ES). |
 | `TENXYTE_JWT_PUBLIC_KEY` | `None` | Clé publique RSA/ECDSA pour la vérification JWT (requise pour les algorithmes RS/PS/ES). |
-| `TENXYTE_JWT_ACCESS_TOKEN_LIFETIME` | `3600` | Durée de vie du jeton d'accès en secondes (1 heure). |
+| `TENXYTE_JWT_ACCESS_TOKEN_LIFETIME` | `900` | Durée de vie du jeton d'accès en secondes (15 minutes). |
 | `TENXYTE_JWT_REFRESH_TOKEN_LIFETIME` | `604800` | Durée de vie du jeton de rafraîchissement en secondes (7 jours). |
+| `TENXYTE_JWT_ISSUER` | `'tenxyte'` | Valeur du claim `iss`. Vérifié à chaque décodage de jeton. |
+| `TENXYTE_JWT_AUDIENCE` | `None` | Valeur du claim `aud`. Définissez-le pour activer la vérification d'audience (ex: `'monapp'`). |
 | `TENXYTE_JWT_AUTH_ENABLED` | `True` | Active/désactive l'authentification JWT. |
 | `TENXYTE_TOKEN_BLACKLIST_ENABLED` | `True` | Met les jetons d'accès sur liste noire lors de la déconnexion. |
 | `TENXYTE_REFRESH_TOKEN_ROTATION` | `True` | Délivre un nouveau jeton de rafraîchissement à chaque rafraîchissement (invalide l'ancien). |
+| `TENXYTE_JWT_PREVIOUS_SECRET_KEY` | `None` | Ancienne clé de signature pour une rotation gracieuse. Les jetons signés avec cette clé sont encore acceptés pendant la transition. |
+| `TENXYTE_JWT_PREVIOUS_PUBLIC_KEY` | `None` | Ancienne clé publique pour la rotation RS256/EdDSA. |
+
+### Transport par Cookie du Jeton de Rafraîchissement
+
+| Paramètre | Défaut | Description |
+|---|---|---|
+| `TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED` | `False` | **Opt-in.** Transporte le jeton de rafraîchissement dans un cookie `HttpOnly; Secure; SameSite` au lieu du corps JSON. |
+| `TENXYTE_REFRESH_TOKEN_COOKIE_NAME` | `'tenxyte_refresh'` | Nom du cookie. |
+| `TENXYTE_REFRESH_TOKEN_COOKIE_SAMESITE` | `'Strict'` | Attribut `SameSite` (`'Strict'`, `'Lax'` ou `'None'`). |
+| `TENXYTE_REFRESH_TOKEN_COOKIE_PATH` | `'/api/v1/auth/'` | Portée `Path` du cookie — envoyé uniquement aux endpoints d'authentification. |
 
 ---
 
@@ -142,6 +155,7 @@ TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 600  # 10min au lieu de 5min
 | `TENXYTE_PASSWORD_REQUIRE_SPECIAL` | `True` | Exige au moins un caractère spécial. |
 | `TENXYTE_PASSWORD_HISTORY_ENABLED` | `True` | Empêche la réutilisation des mots de passe récents. |
 | `TENXYTE_PASSWORD_HISTORY_COUNT` | `5` | Nombre de mots de passe précédents à vérifier. |
+| `TENXYTE_PASSWORD_MIN_LENGTH_NO_MFA` | `0` | **NIST SP 800-63B.** Longueur minimale pour les comptes **sans** 2FA. Mettre à `15` pour la conformité NIST. `0` = désactivé. |
 
 ---
 
@@ -151,9 +165,11 @@ TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 600  # 10min au lieu de 5min
 |---|---|---|
 | `TENXYTE_RATE_LIMITING_ENABLED` | `True` | Active la limitation de débit sur les points de terminaison sensibles. |
 | `TENXYTE_MAX_LOGIN_ATTEMPTS` | `5` | Tentatives échouées avant le verrouillage du compte. |
-| `TENXYTE_LOCKOUT_DURATION_MINUTES` | `30` | Durée du verrouillage du compte en minutes. |
+| `TENXYTE_LOCKOUT_DURATION_MINUTES` | `30` | Durée de base du verrouillage en minutes. |
 | `TENXYTE_RATE_LIMIT_WINDOW_MINUTES` | `15` | Fenêtre temporelle pour le comptage des tentatives de connexion. |
 | `TENXYTE_ACCOUNT_LOCKOUT_ENABLED` | `True` | Active/désactive le verrouillage du compte après échecs. |
+| `TENXYTE_LOCKOUT_ESCALATION_ENABLED` | `True` | Verrouillage exponentiel. Chaque verrouillage consécutif double la durée : `min(base × 2^(n-1), max)`. |
+| `TENXYTE_LOCKOUT_MAX_DURATION_MINUTES` | `1440` | Durée maximale de verrouillage en minutes (24h). |
 
 ### Règles de Limitation Personnalisées
 
@@ -260,6 +276,15 @@ En-têtes par défaut :
 | `MICROSOFT_CLIENT_SECRET` | `''` | Secret client Microsoft Azure AD. |
 | `FACEBOOK_APP_ID` | `''` | Identifiant d'application Facebook. |
 | `FACEBOOK_APP_SECRET` | `''` | Secret d'application Facebook. |
+
+### Scopes OAuth par Fournisseur
+
+| Paramètre | Défaut | Description |
+|---|---|---|
+| `TENXYTE_SOCIAL_GOOGLE_SCOPES` | `'openid email profile'` | Scopes OAuth demandés à Google. |
+| `TENXYTE_SOCIAL_GITHUB_SCOPES` | `'read:user user:email'` | Scopes OAuth demandés à GitHub. |
+| `TENXYTE_SOCIAL_MICROSOFT_SCOPES` | `'openid email profile'` | Scopes OAuth demandés à Microsoft. |
+| `TENXYTE_SOCIAL_FACEBOOK_SCOPES` | `'email,public_profile'` | Scopes OAuth demandés à Facebook. |
 
 Point de terminaison : `POST /api/v1/auth/social/<provider>/` — où `<provider>` est `google`, `github`, `microsoft` ou `facebook`.
 

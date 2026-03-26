@@ -160,7 +160,7 @@ class PasswordValidator:
         self.check_common = check_common
         self.check_sequences = check_sequences
 
-    def validate(self, password: str, email: str = None, username: str = None) -> PasswordValidationResult:
+    def validate(self, password: str, email: str = None, username: str = None, has_mfa: bool = False) -> PasswordValidationResult:
         """
         Valide un mot de passe et retourne un resultat detaille.
 
@@ -181,8 +181,20 @@ class PasswordValidator:
             )
 
         # === Longueur ===
-        if len(password) < self.min_length:
-            errors.append(f"Le mot de passe doit contenir au moins {self.min_length} caracteres")
+        effective_min = self.min_length
+        if not has_mfa:
+            no_mfa_min = getattr(auth_settings, 'PASSWORD_MIN_LENGTH_NO_MFA', None)
+            if no_mfa_min and no_mfa_min > effective_min:
+                effective_min = no_mfa_min
+
+        if len(password) < effective_min:
+            if not has_mfa and effective_min > self.min_length:
+                errors.append(
+                    f"Le mot de passe doit contenir au moins {effective_min} caractères "
+                    f"(sans MFA actif; {self.min_length} avec MFA)"
+                )
+            else:
+                errors.append(f"Le mot de passe doit contenir au moins {effective_min} caracteres")
         elif len(password) >= self.min_length:
             score += 20
             if len(password) >= 12:

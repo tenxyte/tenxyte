@@ -39,6 +39,8 @@ DEFAULT_PERMISSIONS = [
     {"code": "users.create", "name": "Create Users", "description": "Can create new users", "parent": "users"},
     {"code": "users.edit", "name": "Edit Users", "description": "Can edit user information", "parent": "users"},
     {"code": "users.delete", "name": "Delete Users", "description": "Can delete users", "parent": "users"},
+    {"code": "users.ban", "name": "Ban Users", "description": "Can ban/unban users", "parent": "users"},
+    {"code": "users.lock", "name": "Lock Users", "description": "Can lock/unlock user accounts", "parent": "users"},
     {
         "code": "users.roles.view",
         "name": "View User Roles",
@@ -163,6 +165,11 @@ DEFAULT_PERMISSIONS = [
     },
     {"code": "system.logs", "name": "View Logs", "description": "Can view system logs", "parent": "system"},
     {"code": "system.audit", "name": "View Audit Trail", "description": "Can view audit trail", "parent": "system"},
+    # Dashboard & Security permissions
+    {"code": "dashboard.view", "name": "View Dashboard", "description": "Can access dashboard statistics"},
+    {"code": "security.view", "name": "View Security", "description": "Can view audit logs, login attempts, tokens"},
+    {"code": "gdpr.admin", "name": "GDPR Admin", "description": "Can view deletion requests"},
+    {"code": "gdpr.process", "name": "GDPR Process", "description": "Can process deletion requests"},
 ]
 
 

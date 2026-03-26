@@ -63,7 +63,7 @@ python manage.py tenxyte_quickstart
 
 This single command executes:
 - `makemigrations` + `migrate`
-- Seed roles and permissions (4 roles, 41 permissions)
+- Seed roles and permissions (4 roles, 47 permissions)
 - Create a default Application (credentials displayed)
 
 **Options:**

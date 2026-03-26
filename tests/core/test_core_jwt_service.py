@@ -4,6 +4,7 @@ src/tenxyte/core/jwt_service.py
 """
 import time
 import uuid
+import warnings
 import pytest
 import jwt as pyjwt
 from datetime import datetime, timedelta, timezone
@@ -15,6 +16,7 @@ from tenxyte.core.jwt_service import (
     JWTService,
     TokenPair,
     DecodedToken,
+    SecurityWarning,
 )
 from tenxyte.core.settings import Settings
 
@@ -24,7 +26,7 @@ def _make_settings(**overrides):
     s.jwt_secret = overrides.get("jwt_secret_key", "test-secret-key-32chars-minimum!")
     s.jwt_public_key = overrides.get("jwt_public_key", None)
     s.jwt_algorithm = overrides.get("jwt_algorithm", "HS256")
-    s.jwt_access_token_lifetime = overrides.get("jwt_access_token_lifetime", 3600)
+    s.jwt_access_token_lifetime = overrides.get("jwt_access_token_lifetime", 900)
     s.jwt_refresh_token_lifetime = overrides.get("jwt_refresh_token_lifetime", 86400)
     s.jwt_issuer = overrides.get("jwt_issuer", "")
     s.jwt_audience = overrides.get("jwt_audience", None)
@@ -134,26 +136,36 @@ class TestJWTService:
 
     @pytest.fixture
     def svc(self):
-        return JWTService(settings=_make_settings())
+        # Suppress the expected HS256 SecurityWarning — tests use HS256 intentionally
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", SecurityWarning)
+            return JWTService(settings=_make_settings())
 
     @pytest.fixture
     def svc_with_issuer(self):
-        return JWTService(settings=_make_settings(jwt_issuer="tenxyte", jwt_audience="myapp"))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", SecurityWarning)
+            return JWTService(settings=_make_settings(jwt_issuer="tenxyte", jwt_audience="myapp"))
 
     # -- __init__ --
 
     def test_init_symmetric(self):
-        """Lines 179-182 branch: HS256."""
-        svc = JWTService(settings=_make_settings())
+        """Lines 179-182 branch: HS256 — SecurityWarning expected."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", SecurityWarning)
+            svc = JWTService(settings=_make_settings())
         assert not svc.is_asymmetric
 
     def test_init_asymmetric(self):
-        """Lines 179-182: RS256 branch."""
-        svc = JWTService(settings=_make_settings(
-            jwt_algorithm="RS256",
-            jwt_secret_key="privkey",
-            jwt_public_key="pubkey"
-        ))
+        """Lines 179-182: RS256 branch — no SecurityWarning."""
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            svc = JWTService(settings=_make_settings(
+                jwt_algorithm="RS256",
+                jwt_secret_key="privkey",
+                jwt_public_key="pubkey"
+            ))
+        assert not any(issubclass(x.category, SecurityWarning) for x in w)
         assert svc.is_asymmetric
         assert svc.private_key == "privkey"
         assert svc.public_key == "pubkey"
@@ -161,9 +173,11 @@ class TestJWTService:
 
     def test_init_asymmetric_no_public(self):
         """Line 182: no public key → uses private key."""
-        svc = JWTService(settings=_make_settings(
-            jwt_algorithm="RS256", jwt_secret_key="privkey", jwt_public_key=None
-        ))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", SecurityWarning)
+            svc = JWTService(settings=_make_settings(
+                jwt_algorithm="RS256", jwt_secret_key="privkey", jwt_public_key=None
+            ))
         assert svc.verifying_key == "privkey"
 
     # -- generate_access_token --
@@ -176,15 +190,19 @@ class TestJWTService:
 
     def test_generate_access_token_no_key(self):
         """Line 217: no signing key."""
-        svc = JWTService(settings=_make_settings(jwt_secret_key=""))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", SecurityWarning)
+            svc = JWTService(settings=_make_settings(jwt_secret_key=""))
         with pytest.raises(ValueError, match="signing key"):
             svc.generate_access_token("u1", "app1")
 
-    def test_generate_access_token_asymmetric_no_private(self):
+    def test_generate_access_token_no_key_asymmetric(self):
         """Lines 222-223: asymmetric but no private key."""
-        svc = JWTService(settings=_make_settings(
-            jwt_algorithm="RS256", jwt_secret_key="", jwt_public_key="pub"
-        ))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", SecurityWarning)
+            svc = JWTService(settings=_make_settings(
+                jwt_algorithm="RS256", jwt_secret_key="", jwt_public_key="pub"
+            ))
         with pytest.raises(ValueError, match="signing key"):
             svc.generate_access_token("u1", "app1")
 
@@ -205,6 +223,32 @@ class TestJWTService:
         decoded = pyjwt.decode(token, "test-secret-key-32chars-minimum!", algorithms=["HS256"])
         assert decoded["custom"] == "val"
         assert decoded["jti"] != "SHOULD_NOT_OVERRIDE"
+
+    def test_generate_access_token_warns_on_sensitive_claims(self, svc):
+        """SecurityWarning is emitted when PII keys appear in extra_claims."""
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            svc.generate_access_token("u1", "app1", extra_claims={"email": "user@example.com"})
+        security_warns = [x for x in w if issubclass(x.category, SecurityWarning)]
+        assert len(security_warns) >= 1
+        assert "email" in str(security_warns[0].message)
+
+    def test_hs256_emits_security_warning(self):
+        """JWTService with HS256 emits a SecurityWarning on init."""
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            JWTService(settings=_make_settings(jwt_algorithm="HS256"))
+        security_warns = [x for x in w if issubclass(x.category, SecurityWarning)]
+        assert len(security_warns) >= 1
+        assert "HS256" in str(security_warns[0].message)
+
+    def test_rs256_no_security_warning(self):
+        """JWTService with RS256 does NOT emit a SecurityWarning on init."""
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            JWTService(settings=_make_settings(jwt_algorithm="RS256", jwt_secret_key="privkey", jwt_public_key="pubkey"))
+        security_warns = [x for x in w if issubclass(x.category, SecurityWarning)]
+        assert len(security_warns) == 0
 
     # -- generate_refresh_token --
     
@@ -239,18 +283,20 @@ class TestJWTService:
 
     def test_decode_token_no_key(self):
         """Line 367: no verifying key."""
-        svc = JWTService(settings=_make_settings(jwt_secret_key=""))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", SecurityWarning)
+            svc = JWTService(settings=_make_settings(jwt_secret_key=""))
         svc.verifying_key = ""
         with pytest.raises(ValueError, match="verifying key"):
             svc.decode_token("some.token.here")
 
     def test_decode_token_missing_claims(self, svc):
-        """Lines 391: missing user_id/app_id/jti."""
+        """Token without jti is now rejected at PyJWT level (MissingRequiredClaimError)."""
         payload = {"type": "access", "iat": datetime.now(timezone.utc), "exp": datetime.now(timezone.utc) + timedelta(hours=1)}
         token = pyjwt.encode(payload, "test-secret-key-32chars-minimum!", algorithm="HS256")
         decoded = svc.decode_token(token)
-        assert not decoded.is_valid
-        assert "Missing required claims" in decoded.error
+        # Token is invalid regardless of which layer catches it
+        assert decoded is None or not decoded.is_valid
 
     def test_decode_token_expired(self, svc):
         """Line 433: ExpiredSignatureError → None."""

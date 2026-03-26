@@ -418,7 +418,7 @@ Tenxyte seeds 4 default roles via `tenxyte_seed`:
 
 ## Built-in Permission Codes
 
-Tenxyte seeds 41 permissions via `tenxyte_seed`. Parent permissions (bold) grant all their children via hierarchy.
+Tenxyte seeds 47 permissions via `tenxyte_seed`. Parent permissions (bold) grant all their children via hierarchy.
 
 ### Users
 
