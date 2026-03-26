@@ -28,7 +28,7 @@ if not os.environ.get('DJANGO_SETTINGS_MODULE'):
     from django.conf import settings
     if not settings.configured:
         settings.configure(
-            SECRET_KEY='validation-script-only',
+            SECRET_KEY='validation-script-only',  # gitleaks:allow
             INSTALLED_APPS=[
                 'django.contrib.contenttypes',
                 'django.contrib.auth',
