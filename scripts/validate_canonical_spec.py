@@ -20,6 +20,40 @@ from typing import Set, Dict, List, Tuple
 # Ajouter le répertoire src au path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
+# ---------- Django bootstrap (required for DRF serializer / pagination imports) ----------
+# If DJANGO_SETTINGS_MODULE is already set (e.g. by the CI workflow), use it.
+# Otherwise, configure minimal settings inline so the script works standalone.
+if not os.environ.get('DJANGO_SETTINGS_MODULE'):
+    import django
+    from django.conf import settings
+    if not settings.configured:
+        settings.configure(
+            SECRET_KEY='validation-script-only',  # gitleaks:allow
+            INSTALLED_APPS=[
+                'django.contrib.contenttypes',
+                'django.contrib.auth',
+                'rest_framework',
+                'tenxyte',
+            ],
+            DATABASES={
+                'default': {
+                    'ENGINE': 'django.db.backends.sqlite3',
+                    'NAME': ':memory:',
+                }
+            },
+            AUTH_USER_MODEL='tenxyte.User',
+            REST_FRAMEWORK={
+                'DEFAULT_AUTHENTICATION_CLASSES': [
+                    'tenxyte.authentication.JWTAuthentication',
+                ],
+            },
+            USE_TZ=True,
+        )
+    django.setup()
+else:
+    import django
+    django.setup()
+
 
 class Colors:
     """Codes ANSI pour la colorisation de la sortie."""
@@ -40,7 +74,7 @@ class CanonicalSpecValidator:
             'id', 'email', 'username', 'phone', 'avatar', 'bio',
             'timezone', 'language', 'first_name', 'last_name',
             'is_active', 'is_email_verified', 'is_phone_verified',
-            'is_2fa_enabled', 'created_at', 'last_login',
+            'is_2fa_enabled', 'created_at', 'updated_at', 'last_login',
             'custom_fields', 'preferences', 'roles', 'permissions'
         },
         'TokenPair': {

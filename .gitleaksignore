@@ -1,4 +1,8 @@
-[allowlist]
-paths = [
-    '''^site/.*'''
-]
+# Gitleaks ignore file
+# This file suppresses false positives and intentional non-secrets from Gitleaks scanning.
+# Format: <fingerprint>  # <reason>
+
+# Django minimal bootstrap SECRET_KEY in validation script — not a real secret, not stored/used in production.
+# The value 'validation-script-only' is a placeholder required by Django's settings.configure().
+# The gitleaks:allow annotation was added in a subsequent commit.
+1347f3e8aa2789b053001d45722dedf3ed76b1ef:scripts/validate_canonical_spec.py:secret-key:31

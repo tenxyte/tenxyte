@@ -209,6 +209,7 @@ paths = [
     '''README.*''',
     '''CHANGELOG.*''',
     '''LICENSE.*''',
+    '''site/.*''',
 ]
 regexes = [
     # Valeurs évidemment fictives

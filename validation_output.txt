@@ -1,0 +1,35 @@
+[1m=== Validation des exemples JSON dans endpoints.md ===[0m
+
+Fichier: docs\en\endpoints.md
+
+[94mExtraction des exemples JSON...[0m
+Trouv├® 276 exemples JSON
+
+[94mValidation des exemples...[0m
+
+[1m=== R├®sultats ===[0m
+
+[92mÔ£ô Validations r├®ussies (120):[0m
+  [92mÔ£ô[0m Ligne 166 (nested user): User Ô£ô
+  [92mÔ£ô[0m Ligne 203 : TokenPair Ô£ô
+  [92mÔ£ô[0m Ligne 232 : TokenPair Ô£ô
+  [92mÔ£ô[0m Ligne 232 (nested user): User Ô£ô
+  [92mÔ£ô[0m Ligne 270 : ErrorResponse Ô£ô
+  [92mÔ£ô[0m Ligne 279 : ErrorResponse Ô£ô
+  [92mÔ£ô[0m Ligne 287 : ErrorResponse Ô£ô
+  [92mÔ£ô[0m Ligne 295 : ErrorResponse Ô£ô
+  [92mÔ£ô[0m Ligne 304 : ErrorResponse Ô£ô
+  [92mÔ£ô[0m Ligne 331 : TokenPair Ô£ô
+  ... et 110 autres
+
+[93mÔÜá Avertissements (1):[0m
+  [93mÔÜá[0m Ligne 2556 : User avec champs suppl├®mentaires: {'phone_country_code', 'deleted_at', 'is_locked', 'max_devices', 'is_staff', 'is_deleted', 'is_superuser', 'is_banned', 'max_sessions', 'updated_at', 'locked_until', 'phone_number'}
+
+[1mR├®sum├®:[0m
+  Total validations: 120
+  R├®ussies: [92m120[0m
+  ├ëchou├®es: [91m0[0m
+  Avertissements: [93m1[0m
+  Taux de r├®ussite: 100.0%
+
+[92m[1mÔ£ô Tous les exemples sont conformes ├á la sp├®cification canonique[0m
