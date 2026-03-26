@@ -1,0 +1,41 @@
+[1m=== Validation des exemples JSON dans endpoints.md ===[0m
+
+Fichier: docs\fr\endpoints.md
+
+[94mExtraction des exemples JSON...[0m
+Trouv├® 277 exemples JSON
+
+[94mValidation des exemples...[0m
+
+[1m=== R├®sultats ===[0m
+
+[92mÔ£ô Validations r├®ussies (117):[0m
+  [92mÔ£ô[0m Ligne 166 (nested user): User Ô£ô
+  [92mÔ£ô[0m Ligne 203 : TokenPair Ô£ô
+  [92mÔ£ô[0m Ligne 232 : TokenPair Ô£ô
+  [92mÔ£ô[0m Ligne 232 (nested user): User Ô£ô
+  [92mÔ£ô[0m Ligne 270 : ErrorResponse Ô£ô
+  [92mÔ£ô[0m Ligne 279 : ErrorResponse Ô£ô
+  [92mÔ£ô[0m Ligne 287 : ErrorResponse Ô£ô
+  [92mÔ£ô[0m Ligne 295 : ErrorResponse Ô£ô
+  [92mÔ£ô[0m Ligne 304 : ErrorResponse Ô£ô
+  [92mÔ£ô[0m Ligne 331 : TokenPair Ô£ô
+  ... et 107 autres
+
+[91mÔ£ù Erreurs (7):[0m
+  [91mÔ£ù[0m Ligne 1374: JSON invalide - Expecting value: line 6 column 40 (char 266)
+  [91mÔ£ù[0m Ligne 1986: JSON invalide - Expecting value: line 6 column 19 (char 156)
+  [91mÔ£ù[0m Ligne 2222: JSON invalide - Expecting value: line 6 column 26 (char 156)
+  [91mÔ£ù[0m Ligne 1417 : 'details' devrait ├¬tre un dict, trouv├® str
+  [91mÔ£ù[0m Ligne 1460 : 'details' devrait ├¬tre un dict, trouv├® str
+  [91mÔ£ù[0m Ligne 1501 : 'details' devrait ├¬tre un dict, trouv├® str
+  [91mÔ£ù[0m Ligne 2551 : User incomplet - champs manquants: {'custom_fields', 'preferences', 'username', 'phone', 'avatar', 'language', 'timezone', 'bio'}
+
+[1mR├®sum├®:[0m
+  Total validations: 124
+  R├®ussies: [92m117[0m
+  ├ëchou├®es: [91m7[0m
+  Avertissements: [93m0[0m
+  Taux de r├®ussite: 94.4%
+
+[91m[1mÔ£ù Des corrections sont n├®cessaires[0m
