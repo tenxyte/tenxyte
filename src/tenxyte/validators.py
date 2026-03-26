@@ -160,7 +160,9 @@ class PasswordValidator:
         self.check_common = check_common
         self.check_sequences = check_sequences
 
-    def validate(self, password: str, email: str = None, username: str = None, has_mfa: bool = False) -> PasswordValidationResult:
+    def validate(
+        self, password: str, email: str = None, username: str = None, has_mfa: bool = False
+    ) -> PasswordValidationResult:
         """
         Valide un mot de passe et retourne un resultat detaille.
 
@@ -183,7 +185,7 @@ class PasswordValidator:
         # === Longueur ===
         effective_min = self.min_length
         if not has_mfa:
-            no_mfa_min = getattr(auth_settings, 'PASSWORD_MIN_LENGTH_NO_MFA', None)
+            no_mfa_min = getattr(auth_settings, "PASSWORD_MIN_LENGTH_NO_MFA", None)
             if no_mfa_min and no_mfa_min > effective_min:
                 effective_min = no_mfa_min
 

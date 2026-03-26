@@ -18,15 +18,26 @@ from tenxyte.core.settings import Settings
 
 class SecurityWarning(UserWarning):
     """Warning emitted for JWT security issues (e.g. HS256 in production, PII in claims)."""
+
     pass
 
 
 # Keys that should never appear in JWT payloads — GDPR data minimization
-SENSITIVE_CLAIM_KEYS: frozenset = frozenset({
-    "email", "password", "phone", "phone_number",
-    "ip", "ip_address", "address", "ssn",
-    "credit_card", "dob", "date_of_birth",
-})
+SENSITIVE_CLAIM_KEYS: frozenset = frozenset(
+    {
+        "email",
+        "password",
+        "phone",
+        "phone_number",
+        "ip",
+        "ip_address",
+        "address",
+        "ssn",
+        "credit_card",
+        "dob",
+        "date_of_birth",
+    }
+)
 
 
 @dataclass
@@ -240,8 +251,8 @@ class JWTService:
 
         # Key rotation support: previous keys for graceful transition
         self.previous_verifying_key = None
-        previous_secret = getattr(settings, 'jwt_previous_secret_key', None)
-        previous_public = getattr(settings, 'jwt_previous_public_key', None)
+        previous_secret = getattr(settings, "jwt_previous_secret_key", None)
+        previous_public = getattr(settings, "jwt_previous_public_key", None)
         if self.is_asymmetric and previous_public:
             self.previous_verifying_key = previous_public
         elif previous_secret:
@@ -536,15 +547,11 @@ class JWTService:
 
             # Decoding is CPU bound, run in thread
             try:
-                payload = await asyncio.to_thread(
-                    jwt.decode, token, self.verifying_key, **decode_kwargs
-                )
+                payload = await asyncio.to_thread(jwt.decode, token, self.verifying_key, **decode_kwargs)
             except jwt.InvalidSignatureError:
                 # Key rotation: retry with previous key if configured
                 if self.previous_verifying_key:
-                    payload = await asyncio.to_thread(
-                        jwt.decode, token, self.previous_verifying_key, **decode_kwargs
-                    )
+                    payload = await asyncio.to_thread(jwt.decode, token, self.previous_verifying_key, **decode_kwargs)
                 else:
                     raise
 
