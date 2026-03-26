@@ -1377,7 +1377,7 @@ Authorization: Bearer <access_token>
   "secret": "JBSWY3DPEHPK3PXP",
   "qr_code": "data:image/png;base64,...",
   "provisioning_uri": "otpauth://totp/...",
-  "backup_codes": ["abc123", "def456", ...],
+  "backup_codes": ["abc123", "def456", "ghi789", "jkl012", "mno345", "pqr678", "stu901", "vwx234", "yza567", "bcd890"],
   "warning": "Conservez les codes de secours en lieu sûr. Ils ne seront plus affichés."
 }
 ```
@@ -1417,7 +1417,9 @@ Authorization: Bearer <access_token>
 ```json
 {
   "error": "Code TOTP invalide",
-  "details": "Le code fourni est incorrect ou en dehors de la fenêtre temporelle valide",
+  "details": {
+    "code": ["Le code fourni est incorrect ou en dehors de la fenêtre temporelle valide"]
+  },
   "code": "INVALID_CODE"
 }
 ```
@@ -1460,7 +1462,9 @@ Authorization: Bearer <access_token>
 ```json
 {
   "error": "Code TOTP invalide",
-  "details": "Le code fourni est incorrect",
+  "details": {
+    "code": ["Le code fourni est incorrect"]
+  },
   "code": "INVALID_CODE"
 }
 ```
@@ -1501,7 +1505,9 @@ Authorization: Bearer <access_token>
 ```json
 {
   "error": "Code TOTP invalide",
-  "details": "Le code TOTP fourni est incorrect",
+  "details": {
+    "code": ["Le code TOTP fourni est incorrect"]
+  },
   "code": "INVALID_CODE"
 }
 ```
@@ -1989,7 +1995,7 @@ Authorization: Bearer <access_token>
   "added": ["posts.publish"],
   "already_assigned": ["posts.edit"],
   "role_code": "editor",
-  "permissions": [...]
+  "permissions": ["posts.edit", "posts.view", "posts.publish"]
 }
 ```
 
@@ -2225,7 +2231,7 @@ Authorization: Bearer <access_token>
   "added": ["posts.publish"],
   "already_assigned": ["posts.edit"],
   "user_id": "1",
-  "direct_permissions": [...]
+  "direct_permissions": ["posts.edit", "posts.view", "posts.publish"]
 }
 ```
 
@@ -2552,8 +2558,14 @@ Authorization: Bearer <access_token>
 {
   "id": "1",
   "email": "utilisateur@example.com",
+  "username": "johndoe",
+  "phone": "+33612345678",
   "phone_country_code": "+33",
   "phone_number": "612345678",
+  "avatar": "https://cdn.example.com/avatars/john.jpg",
+  "bio": "Développeur logiciel",
+  "timezone": "Europe/Paris",
+  "language": "fr",
   "first_name": "Jean",
   "last_name": "Dupont",
   "is_active": true,
@@ -2569,6 +2581,14 @@ Authorization: Bearer <access_token>
   "is_superuser": false,
   "max_sessions": 5,
   "max_devices": 3,
+    "custom_fields": {
+    "department": "Ingénierie",
+    "employee_id": "EMP001"
+  },
+  "preferences": {
+    "email_notifications": true,
+    "sms_notifications": false
+  },
   "roles": ["admin", "user"],
   "permissions": ["users.view", "users.manage", "posts.edit"],
   "created_at": "2024-01-01T12:00:00Z",
