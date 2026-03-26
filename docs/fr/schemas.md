@@ -103,6 +103,8 @@ Délivré lors d'une connexion réussie ou d'un rafraîchissement de jeton.
 | `refresh_expires_in` | integer | Expiration du jeton de rafraîchissement en secondes |
 | `device_summary` | string \| null | Description de l'appareil de l'utilisateur (si `device_info` a été envoyé) |
 
+> **Mode cookie :** Lorsque `TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED=True`, le champ `refresh_token` est omis du corps JSON. Il est transmis via un cookie `HttpOnly; Secure; SameSite`. Voir le [Guide de Sécurité](security.md#cookie-based-refresh-tokens) pour plus de détails.
+
 ---
 
 ## Réponse d'Erreur
@@ -138,6 +140,16 @@ Renvoyée pour toutes les réponses `4xx` et `5xx`.
 | `SESSION_LIMIT_EXCEEDED` | 403 | Trop de sessions simultanées |
 | `DEVICE_LIMIT_EXCEEDED` | 403 | Trop d'appareils enregistrés |
 | `RATE_LIMITED` | 429 | Trop de requêtes |
+| `MISSING_REFRESH_TOKEN` | 400 | Pas de jeton de rafraîchissement dans le corps ou le cookie |
+| `INVALID_REDIRECT_URI` | 400 | redirect_uri non autorisé dans la liste blanche de l'application |
+| `ADMIN_2FA_SETUP_REQUIRED` | 403 | L'administrateur doit activer la 2FA avant de se connecter |
+| `INVALID_2FA_CODE` | 401 | Code TOTP ou code de secours invalide |
+| `PASSWORD_BREACHED` | 400 | Mot de passe trouvé dans la base de données HIBP |
+| `PASSWORD_REUSED` | 400 | Mot de passe identique à une entrée récente de l'historique |
+| `INVALID_PASSWORD` | 400 | Mot de passe actuel incorrect (flux de changement) |
+| `INVALID_OTP` | 400 | Code OTP de vérification incorrect |
+| `OTP_EXPIRED` | 400 | Le code OTP a expiré |
+| `RESET_FAILED` | 400 | Échec de la réinitialisation du mot de passe |
 | `ORG_NOT_FOUND` | 404 | L'en-tête X-Org-Slug ne correspond pas |
 | `NOT_ORG_MEMBER` | 403 | L'utilisateur n'est pas membre de l'organisation fournie |
 

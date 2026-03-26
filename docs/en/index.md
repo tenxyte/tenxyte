@@ -21,7 +21,7 @@
 pip install tenxyte
 ```
 
-> **Requirements:** Python 3.10+, Django 6.0+ or FastAPI 0.135+
+> **Requirements:** Python 3.10+, Django 4.2+ or FastAPI 0.135+
 
 ### 2. Configure
 
@@ -91,7 +91,7 @@ That's it — you have a fully featured auth backend running.
 
 👥 **RBAC**
 - Hierarchical roles, direct permissions (per-user and per-role)
-- 8 decorators + DRF permission classes
+- 9 decorators + DRF permission classes
 
 🏢 **Organizations (B2B)**
 - Multi-tenant with hierarchical tree, per-org roles & memberships
@@ -185,7 +185,7 @@ urlpatterns += [
 ### 📖 **Developer Guides**
 - [**Quickstart**](quickstart.md) - Get started in 2 minutes with Django
 - [**FastAPI Quickstart**](fastapi_quickstart.md) - Get started with FastAPI
-- [**Settings Reference**](settings.md) - All 95+ configuration options
+- [**Settings Reference**](settings.md) - All 115+ configuration options
 - [**API Endpoints**](endpoints.md) - Full endpoint reference with examples
 - [**Admin Accounts**](admin.md) - Manage Superusers and RBAC Admins
 - [**Applications Guide**](applications.md) - Manage API clients and credentials
@@ -194,6 +194,12 @@ urlpatterns += [
 - [**Organizations Guide**](organizations.md) - B2B multi-tenant setup
 - [**AIRS Guide**](airs.md) - AI Responsibility & Security
 - [**Migration Guide**](MIGRATION_GUIDE.md) - Migration from dj-rest-auth, simplejwt
+
+### 📦 **SDK Integration (JavaScript / TypeScript)**
+- [**JavaScript SDK Overview**](integration/javascript/index.md) - Packages, installation, configuration, error handling
+- [**@tenxyte/core Guide**](integration/javascript/core.md) - Framework-agnostic SDK — all 10 modules, cookie mode, PKCE, events
+- [**@tenxyte/react Guide**](integration/javascript/react.md) - React hooks, TenxyteProvider, SPA examples
+- [**@tenxyte/vue Guide**](integration/javascript/vue.md) - Vue 3 composables, plugin setup, SPA examples
 
 ### 🔧 **Technical Documentation**
 - [**Architecture Guide**](architecture.md) - Core & Adapters (Hexagonal) architecture
@@ -293,10 +299,10 @@ pytest --cov=tenxyte --cov-report=html
 **Multi-DB Tests** (requires a running server per backend):
 
 ```bash
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_sqlite"
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_pgsql"
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_mysql"
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_mongodb"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_sqlite"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_pgsql"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_mysql"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_mongodb"
 ```
 
 ---

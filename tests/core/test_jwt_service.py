@@ -46,7 +46,7 @@ def settings():
     return Settings(provider=MockSettingsProvider(
         jwt_secret_key="super-secret-key",
         jwt_algorithm="HS256",
-        jwt_access_token_lifetime=3600,
+        jwt_access_token_lifetime=900,
         jwt_refresh_token_lifetime=86400,
         jwt_issuer="test-issuer",
         jwt_audience="test-audience"

@@ -7,12 +7,26 @@ Works with any underlying cache implementation.
 
 import jwt
 import uuid
+import warnings
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Protocol, Tuple, runtime_checkable
 import asyncio
 
 from tenxyte.core.settings import Settings
+
+
+class SecurityWarning(UserWarning):
+    """Warning emitted for JWT security issues (e.g. HS256 in production, PII in claims)."""
+    pass
+
+
+# Keys that should never appear in JWT payloads — GDPR data minimization
+SENSITIVE_CLAIM_KEYS: frozenset = frozenset({
+    "email", "password", "phone", "phone_number",
+    "ip", "ip_address", "address", "ssn",
+    "credit_card", "dob", "date_of_birth",
+})
 
 
 @dataclass
@@ -224,6 +238,27 @@ class JWTService:
         self.issuer = settings.jwt_issuer
         self.audience = settings.jwt_audience
 
+        # Key rotation support: previous keys for graceful transition
+        self.previous_verifying_key = None
+        previous_secret = getattr(settings, 'jwt_previous_secret_key', None)
+        previous_public = getattr(settings, 'jwt_previous_public_key', None)
+        if self.is_asymmetric and previous_public:
+            self.previous_verifying_key = previous_public
+        elif previous_secret:
+            self.previous_verifying_key = previous_secret
+
+        # Warn if symmetric algorithm is used without DEBUG mode
+        if not self.is_asymmetric:
+            warnings.warn(
+                f"TENXYTE_JWT_ALGORITHM is '{self.algorithm}' (symmetric HMAC). "
+                "For production deployments, switch to an asymmetric algorithm "
+                "(RS256, PS256, EdDSA) to avoid sharing the signing secret. "
+                "Set TENXYTE_JWT_ALGORITHM = 'RS256' and configure "
+                "TENXYTE_JWT_PRIVATE_KEY / TENXYTE_JWT_PUBLIC_KEY.",
+                SecurityWarning,
+                stacklevel=2,
+            )
+
     def generate_access_token(
         self, user_id: str, application_id: str, extra_claims: Optional[Dict[str, Any]] = None
     ) -> Tuple[str, str, datetime]:
@@ -280,8 +315,17 @@ class JWTService:
             # Prevent overriding protected claims
             protected = {"type", "jti", "user_id", "app_id", "iat", "exp", "nbf", "iss", "aud"}
             for key, value in extra_claims.items():
-                if key not in protected:
-                    payload[key] = value
+                if key in protected:
+                    continue
+                if key in SENSITIVE_CLAIM_KEYS:
+                    warnings.warn(
+                        f"Sensitive key '{key}' detected in JWT extra_claims. "
+                        "Including PII in JWT payloads violates GDPR data minimization principles. "
+                        "Store sensitive attributes server-side and look them up by user_id.",
+                        SecurityWarning,
+                        stacklevel=3,
+                    )
+                payload[key] = value
 
         token = jwt.encode(payload, self.signing_key, algorithm=self.algorithm)
         return token, jti, expires_at
@@ -383,17 +427,29 @@ class JWTService:
             )
 
         try:
-            # Decode with required claims
-            options = {"require": ["exp", "iat"]}
+            # Decode with required claims — jti is mandatory for blacklisting
+            required = ["exp", "iat", "jti"]
+            if self.issuer:
+                required.append("iss")
+            if self.audience:
+                required.append("aud")
+            options = {"require": required}
 
-            payload = jwt.decode(
-                token,
-                self.verifying_key,
+            decode_kwargs = dict(
                 algorithms=[self.algorithm],
                 options=options,
                 issuer=self.issuer if self.issuer else None,
                 audience=self.audience if self.audience else None,
             )
+
+            try:
+                payload = jwt.decode(token, self.verifying_key, **decode_kwargs)
+            except jwt.InvalidSignatureError:
+                # Key rotation: retry with previous key if configured
+                if self.previous_verifying_key:
+                    payload = jwt.decode(token, self.previous_verifying_key, **decode_kwargs)
+                else:
+                    raise
 
             # Extract required fields
             user_id = payload.get("user_id")
@@ -464,18 +520,33 @@ class JWTService:
             )
 
         try:
-            options = {"require": ["exp", "iat"]}
+            required = ["exp", "iat", "jti"]
+            if self.issuer:
+                required.append("iss")
+            if self.audience:
+                required.append("aud")
+            options = {"require": required}
 
-            # Decoding is CPU bound, run in thread
-            payload = await asyncio.to_thread(
-                jwt.decode,
-                token,
-                self.verifying_key,
+            decode_kwargs = dict(
                 algorithms=[self.algorithm],
                 options=options,
                 issuer=self.issuer if self.issuer else None,
                 audience=self.audience if self.audience else None,
             )
+
+            # Decoding is CPU bound, run in thread
+            try:
+                payload = await asyncio.to_thread(
+                    jwt.decode, token, self.verifying_key, **decode_kwargs
+                )
+            except jwt.InvalidSignatureError:
+                # Key rotation: retry with previous key if configured
+                if self.previous_verifying_key:
+                    payload = await asyncio.to_thread(
+                        jwt.decode, token, self.previous_verifying_key, **decode_kwargs
+                    )
+                else:
+                    raise
 
             user_id = payload.get("user_id")
             app_id = payload.get("app_id")
