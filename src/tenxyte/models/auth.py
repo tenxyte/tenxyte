@@ -337,8 +337,8 @@ class AbstractUser(models.Model):
 
         self.lockout_count += 1
 
-        escalation_enabled = getattr(auth_settings, 'LOCKOUT_ESCALATION_ENABLED', True)
-        max_duration = getattr(auth_settings, 'LOCKOUT_MAX_DURATION_MINUTES', 1440)
+        escalation_enabled = getattr(auth_settings, "LOCKOUT_ESCALATION_ENABLED", True)
+        max_duration = getattr(auth_settings, "LOCKOUT_MAX_DURATION_MINUTES", 1440)
 
         if escalation_enabled and self.lockout_count > 1:
             escalated = duration_minutes * (2 ** (self.lockout_count - 1))

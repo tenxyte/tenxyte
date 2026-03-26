@@ -122,6 +122,7 @@ def _clear_refresh_cookie(response):
     )
     return response
 
+
 def validate_application_required(request):
     """Validate that an application is present when required."""
     if auth_settings.APPLICATION_AUTH_ENABLED:
