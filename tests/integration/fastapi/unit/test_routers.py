@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import bcrypt
 
 from tenxyte.adapters.fastapi.routers import router, get_user_repository, get_jwt_service, get_magic_link_service
-from tenxyte.core.jwt_service import TokenPair
+from tenxyte.core.jwt_service import TokenPair, SecurityWarning
 from tenxyte.core.magic_link_service import MagicLinkResult
 from tenxyte.ports.repositories import User
 
@@ -52,7 +52,7 @@ def test_login_success():
         access_token_expires_at=datetime.now(timezone.utc),
         refresh_token="ref",
         token_type="Bearer",
-        expires_in=3600
+        expires_in=900
     )
     
     with patch("tenxyte.adapters.fastapi.routers.get_settings") as mock_settings:
@@ -69,15 +69,18 @@ def test_login_success():
         assert data["access_token"] == "acc"
         assert data["refresh_token"] == "ref"
         assert data["token_type"] == "Bearer"
-        assert data["expires_in"] == 3600
+        assert data["expires_in"] == 900
         assert data["refresh_expires_in"] == 86400
 
         mock_user_repo.update_last_login.assert_called_once()
-        mock_jwt_service.generate_new_token_pair.assert_called_once_with(
-            user_id="u1",
-            application_id="fastapi-app",
-            extra_claims={"email": "test@user.com"}
-        )
+        import warnings as _w
+        with _w.catch_warnings():
+            _w.simplefilter("ignore", SecurityWarning)
+            mock_jwt_service.generate_new_token_pair.assert_called_once_with(
+                user_id="u1",
+                application_id="fastapi-app",
+                extra_claims={"email": "test@user.com"}
+            )
 
 def test_login_user_not_found():
     mock_user_repo.get_by_email.return_value = None

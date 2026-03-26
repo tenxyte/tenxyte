@@ -16,7 +16,7 @@ class TestUserSchemaConformity:
         'id', 'email', 'username', 'phone', 'avatar', 'bio',
         'timezone', 'language', 'first_name', 'last_name',
         'is_active', 'is_email_verified', 'is_phone_verified',
-        'is_2fa_enabled', 'created_at', 'last_login',
+        'is_2fa_enabled', 'created_at', 'updated_at', 'last_login',
         'custom_fields', 'preferences', 'roles', 'permissions'
     }
     

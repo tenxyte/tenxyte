@@ -66,7 +66,7 @@ POST /api/v1/auth/users/<user_id>/roles/
 Authorization: Bearer <superuser_token>
 
 {
-  "role_codes": ["super_admin"]
+  "role_code": "super_admin"
 }
 ```
 
@@ -86,8 +86,22 @@ user.assign_role("super_admin")
 - **RBAC strict :** Ils n'ont que les permissions explicitement accordées à leur rôle.
 - **Pas d'accès à l'administration Django :** Par défaut, ils ne peuvent pas accéder à `/admin/` à moins que vous ne définissiez également manuellement `is_staff=True` sur leur compte.
 - **Plus sûr pour les équipes :** Idéal pour le support client, les RH ou les chefs de produit qui ont besoin d'un large accès à l'API sans accès direct à la base de données.
+- **2FA obligatoire :** Les utilisateurs admin et super_admin doivent activer la 2FA avant de pouvoir se connecter. Si la 2FA n'est pas configurée, la connexion retourne `403 ADMIN_2FA_SETUP_REQUIRED`.
 
 Consultez le [Guide RBAC](rbac.md) pour plus de détails sur les rôles et permissions intégrés.
+
+### Points de terminaison d'administration
+
+Les administrateurs disposant des permissions appropriées peuvent accéder aux groupes d'API suivants (documentés dans la [Référence des Endpoints](endpoints.md)) :
+
+| Catégorie | Endpoints | Permission requise |
+|---|---|---|
+| **Gestion des utilisateurs** | `GET/PUT /admin/users/`, ban, unban, lock, unlock | `users.view`, `users.ban`, `users.lock` |
+| **Journaux d'audit** | `GET /admin/audit-logs/` | `audit.view` |
+| **Tentatives de connexion** | `GET /admin/login-attempts/` | `audit.view` |
+| **Gestion des jetons** | `GET /admin/refresh-tokens/`, révoquer, nettoyage blacklist | `tokens.view`, `tokens.revoke` |
+| **RGPD** | `GET /admin/deletion-requests/`, traiter | `gdpr.view`, `gdpr.process` |
+| **Tableau de bord** | `GET /dashboard/stats/`, auth, sécurité, rgpd, orgs | `dashboard.view` |
 
 ---
 
@@ -98,6 +112,7 @@ Consultez le [Guide RBAC](rbac.md) pour plus de détails sur les rôles et permi
 | **Outrepasser les permissions** | ✅ Oui | ❌ Non (Dépend des perms assignées) | ❌ Non |
 | **Accès Admin Django (`/admin/`)** | ✅ Oui | ❌ Non (nécessite `is_staff`) | ❌ Non |
 | **Gérer utilisateurs & rôles (API)** | ✅ Oui | ✅ Oui | ✅ Oui |
+| **2FA obligatoire à la connexion** | ✅ Oui | ✅ Oui | ✅ Oui |
 | **Méthode de création** | CLI (`createsuperuser`) | API ou Shell | API ou Shell |
 | **Idéal pour** | Développeurs, Administrateurs système | Responsables d'équipe | Personnel de support |
 
