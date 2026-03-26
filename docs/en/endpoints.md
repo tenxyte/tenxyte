@@ -1376,7 +1376,7 @@ Authorization: Bearer <access_token>
   "secret": "JBSWY3DPEHPK3PXP",
   "qr_code": "data:image/png;base64,...",
   "provisioning_uri": "otpauth://totp/...",
-  "backup_codes": ["abc123", "def456", ...],
+  "backup_codes": ["abc123", "def456", "ghi789", "jkl012", "mno345", "pqr678", "stu901", "vwx234", "yza567", "bcd890"],
   "warning": "Save the backup codes securely. They will not be shown again."
 }
 ```
@@ -1416,7 +1416,9 @@ Authorization: Bearer <access_token>
 ```json
 {
   "error": "Invalid TOTP code",
-  "details": "The code provided is incorrect or outside the valid time window",
+  "details": {
+    "code": ["The code provided is incorrect or outside the valid time window"]
+  },
   "code": "INVALID_CODE"
 }
 ```
@@ -1459,7 +1461,9 @@ Authorization: Bearer <access_token>
 ```json
 {
   "error": "Invalid TOTP code",
-  "details": "The code provided is incorrect",
+  "details": {
+    "code": ["The code provided is incorrect"]
+  },
   "code": "INVALID_CODE"
 }
 ```
@@ -1500,7 +1504,9 @@ Authorization: Bearer <access_token>
 ```json
 {
   "error": "Invalid TOTP code",
-  "details": "The TOTP code provided is incorrect",
+  "details": {
+    "code": ["The TOTP code provided is incorrect"]
+  },
   "code": "INVALID_CODE"
 }
 ```
@@ -1988,7 +1994,7 @@ Authorization: Bearer <access_token>
   "added": ["posts.publish"],
   "already_assigned": ["posts.edit"],
   "role_code": "editor",
-  "permissions": [...]
+  "permissions": ["posts.edit", "posts.view", "posts.publish"]
 }
 ```
 
@@ -2224,7 +2230,7 @@ Authorization: Bearer <access_token>
   "added": ["posts.publish"],
   "already_assigned": ["posts.edit"],
   "user_id": "1",
-  "direct_permissions": [...]
+  "direct_permissions": ["posts.edit", "posts.view", "posts.publish"]
 }
 ```
 
@@ -2551,8 +2557,14 @@ Authorization: Bearer <access_token>
 {
   "id": "1",
   "email": "user@example.com",
+  "username": "johndoe",
+  "phone": "+33612345678",
   "phone_country_code": "+33",
   "phone_number": "612345678",
+  "avatar": "https://cdn.example.com/avatars/john.jpg",
+  "bio": "Software developer",
+  "timezone": "Europe/Paris",
+  "language": "en",
   "first_name": "John",
   "last_name": "Doe",
   "is_active": true,
@@ -2568,6 +2580,14 @@ Authorization: Bearer <access_token>
   "is_superuser": false,
   "max_sessions": 5,
   "max_devices": 3,
+  "custom_fields": {
+    "department": "Engineering",
+    "employee_id": "EMP001"
+  },
+  "preferences": {
+    "email_notifications": true,
+    "sms_notifications": false
+  },
   "roles": ["admin", "user"],
   "permissions": ["users.view", "users.manage", "posts.edit"],
   "created_at": "2024-01-01T12:00:00Z",

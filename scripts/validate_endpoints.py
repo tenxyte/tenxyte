@@ -226,8 +226,12 @@ class EndpointsValidator:
         
         return None  # Pas un PaginatedResponse
     
-    def validate_example(self, line_num: int, json_str: str, obj: Dict) -> None:
+    def validate_example(self, line_num: int, json_str: str, obj: Any) -> None:
         """Valide un exemple JSON."""
+        # Les validateurs attendent un dict ; ignorer les tableaux et scalaires
+        if not isinstance(obj, dict):
+            return
+
         # Déterminer le contexte (endpoint)
         context = ""
         
