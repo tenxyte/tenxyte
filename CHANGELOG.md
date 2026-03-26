@@ -7,11 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-03-26
+
+### Security
+- **JWT Hardening** — Implemented key rotation via `JWT_PREVIOUS_SECRET_KEY` and dynamic `iss`/`aud` claims.
+- **HttpOnly Cookies** — Added secure HttpOnly cookie transport for refresh tokens (`REFRESH_TOKEN_COOKIE_ENABLED`).
+- **OAuth Hardening** — Implemented PKCE (`code_verifier`), strict `redirect_uri` application whitelist, and configurable social scopes.
+- **Lockout Policy** — Added exponential lockout scaling (base × 2^(n-1)) to mitigate brute-force attacks (`LOCKOUT_ESCALATION_ENABLED`).
+- **NIST Password Policy** — Enforced 15-character minimum for accounts without MFA (`PASSWORD_MIN_LENGTH_NO_MFA`).
+
 ### Added
 - **Task Service Documentation** — Complete guide for `TaskService` port and adapters (`docs/task_service.md`)
 - **FastAPI Quickstart** — Step-by-step guide for FastAPI integration (`docs/fastapi_quickstart.md`)
 - **Async Guide** — Comprehensive async/await patterns and best practices (`docs/async_guide.md`)
 - **TaskService Custom Adapter Example** — Added to `docs/custom_adapters.md` for custom task queue implementations
+- Documentation updates mirroring all security improvements in `endpoints.md`, `schemas.md`, `settings.md`, and `security.md` (EN/FR).
+- **JS/TS SDK Documentation** — Added integration guide and API reference for the official JavaScript/TypeScript client.
 
 ### Fixed
 - **Test Fixes for 100% Coverage** — Fixed failing async service tests:
