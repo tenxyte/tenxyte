@@ -39,14 +39,16 @@ jobs:
           pip install ".[all]" pip-audit safety
 
       - name: pip-audit (CVE database check)
-        # nltk is a transitive dependency (not used by Tenxyte directly).
-        # These 3 vulnerabilities have no fix available as of 2026-03-20.
-        # Review periodically and remove ignores when nltk releases a fix.
+        # Transitive dependencies with no fix available:
+        # nltk: GHSA-rf74-v2fm-23pw, CVE-2026-33230, CVE-2026-33231
+        # pygments: CVE-2026-4539 (transitive via rich)
+        # Review periodically and remove ignores when a fix is released.
         run: >
           pip-audit --desc on --format markdown
           --ignore-vuln GHSA-rf74-v2fm-23pw
           --ignore-vuln CVE-2026-33230
           --ignore-vuln CVE-2026-33231
+          --ignore-vuln CVE-2026-4539
 
       - name: safety scan (known vulnerabilities)
         run: safety scan --full-report
