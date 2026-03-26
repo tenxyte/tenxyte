@@ -13,23 +13,65 @@
 
 ---
 
-## Table of Contents
+## Quickstart — 2 minutes to your first API call
 
-- [Key Features](#key-features)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Quickstart (Dev vs Prod)](#quickstart--development)
-- [Request & Response Examples](#request--response-examples)
-- [Endpoints & Documentation](#endpoints--documentation)
-- [Documentation Structure](#-documentation-structure)
-- [Architecture: Core & Adapters](#architecture-core--adapters)
-- [Supported Databases](#supported-databases)
-- [Periodic Maintenance](#periodic-maintenance)
-- [Customization & Extension](#customization--extension)
-- [Development & Testing](#development--testing)
-- [Troubleshooting](#frequently-asked-questions--troubleshooting)
-- [Contributing](#contributing)
-- [License & Support](#license)
+### 1. Install
+
+```bash
+pip install tenxyte
+```
+
+> **Requirements:** Python 3.10+, Django 4.2+ or FastAPI 0.135+
+
+### 2. Configure
+
+```python
+# settings.py — add at the very bottom
+import tenxyte
+tenxyte.setup(globals())   # auto-injects INSTALLED_APPS, AUTH_USER_MODEL, REST_FRAMEWORK, MIDDLEWARE
+```
+
+```python
+# urls.py
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('api/auth/', include('tenxyte.urls')),
+]
+```
+
+### 3. Run
+
+```bash
+python manage.py tenxyte_quickstart   # migrate + seed roles + create Application
+python manage.py runserver
+```
+
+### 4. First API call
+
+```bash
+# Register — use the credentials displayed by tenxyte_quickstart
+curl -X POST http://localhost:8000/api/v1/auth/register/ \
+  -H "Content-Type: application/json" \
+  -H "X-Access-Key: <your-access-key>" -H "X-Access-Secret: <your-access-secret>" \
+  -d '{"email": "user@example.com", "password": "SecureP@ss1!", "first_name": "John", "last_name": "Doe"}'
+
+# Login
+curl -X POST http://localhost:8000/api/v1/auth/login/email/ \
+  -H "Content-Type: application/json" \
+  -H "X-Access-Key: <your-access-key>" -H "X-Access-Secret: <your-access-secret>" \
+  -d '{"email": "user@example.com", "password": "SecureP@ss1!"}'
+
+# Authenticated request
+curl http://localhost:8000/api/v1/auth/me/ \
+  -H "X-Access-Key: <your-access-key>" -H "X-Access-Secret: <your-access-secret>" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+> ⚠️ In `DEBUG=True`, Tenxyte auto-generates an **ephemeral JWT secret key** (invalidated on restart) and applies relaxed security limits. `X-Access-Key` / `X-Access-Secret` headers are **still required** unless you explicitly set `TENXYTE_APPLICATION_AUTH_ENABLED = False`.
+
+> 💡 Include `"login": true` in the register request to receive JWT tokens in the response immediately.
+
+That's it — you have a fully featured auth backend running.
 
 ---
 
@@ -49,7 +91,7 @@
 
 👥 **RBAC**
 - Hierarchical roles, direct permissions (per-user and per-role)
-- 8 decorators + DRF permission classes
+- 9 decorators + DRF permission classes
 
 🏢 **Organizations (B2B)**
 - Multi-tenant with hierarchical tree, per-org roles & memberships
@@ -64,14 +106,7 @@
 
 ---
 
-## Prerequisites
-
-- Python 3.10+ (3.11+ recommended)
-- `pip` and a virtual environment
-- **Django 6.0+** (for the Django adapter) or **FastAPI 0.135+** (for the FastAPI adapter)
-- Database (PostgreSQL recommended for production)
-
-## Installation
+## Installation Options
 
 ```bash
 pip install tenxyte              # Includes Django adapter (backward compatible)
@@ -88,58 +123,9 @@ pip install tenxyte[webauthn]    # Passkeys / FIDO2
 pip install tenxyte[all]         # Everything included
 ```
 
-## Quickstart — Development
+---
 
-### 1. Install
-
-```bash
-pip install tenxyte
-```
-
-### 2. Configure (`settings.py` + `urls.py`)
-
-```python
-# settings.py — Add this at the END of the file (after INSTALLED_APPS, MIDDLEWARE, etc.)
-import tenxyte
-tenxyte.setup(globals())
-
-# `tenxyte.setup(globals())` automatically injects the minimal required configuration:
-# - Sets AUTH_USER_MODEL = 'tenxyte.User'
-# - Adds 'rest_framework' and 'tenxyte' to INSTALLED_APPS
-# - Configures DEFAULT_AUTHENTICATION_CLASSES and DEFAULT_SCHEMA_CLASS for REST_FRAMEWORK
-# - Adds 'tenxyte.middleware.ApplicationAuthMiddleware' to MIDDLEWARE
-# Note: It will NEVER overwrite settings you have already explicitly defined.
-```
-
-### Understanding `tenxyte.setup()` VS `tenxyte.setup(globals())`
-Passing `globals()` tells Tenxyte to directly modify the local dictionary of variables in your `settings.py`. **This is the recommended and safest approach**, as it strictly ensures that your `INSTALLED_APPS`, `MIDDLEWARE`, and `REST_FRAMEWORK` dictionaries are cleanly appended to without risking module resolution issues. Always place it at the **very bottom** of your `settings.py`.
-
-```python
-# urls.py
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/auth/', include('tenxyte.urls')),
-]
-```
-
-### 3. Bootstrap
-
-```bash
-python manage.py tenxyte_quickstart
-# → makemigrations + migrate + seed roles/permissions + create Application
-python manage.py runserver
-```
-
-> ⚠️ In `DEBUG=True`, Tenxyte activates a "zero-configuration" behavior: ephemeral JWT, `X-Access-Key` disabled, relaxed limits.
-
-```bash
-# First request — no special headers needed in dev!
-curl -X POST http://localhost:8000/api/v1/auth/register/ \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "SecureP@ss1!", "first_name": "John", "last_name": "Doe"}'
-```
-
-### Quickstart — Production
+## Production Setup
 
 ```python
 # settings.py
@@ -154,157 +140,9 @@ TENXYTE_APPLICATION_AUTH_ENABLED = True
 
 ---
 
-## Request & Response Examples
+## Endpoints Overview
 
-> In production, routes require `X-Access-Key` and `X-Access-Secret` headers. In `DEBUG=True` (dev mode), they are not required.
-
-### Register
-
-**Request:**
-
-```http
-POST /api/v1/auth/register/
-Content-Type: application/json
-X-Access-Key: <app_key>
-X-Access-Secret: <app_secret>
-
-{
-  "email": "user@example.com",
-  "password": "SecureP@ss1!",
-  "first_name": "John",
-  "last_name": "Doe"
-}
-```
-
-**Response (201 Created):**
-
-```json
-{
-  "message": "Registration successful",
-  "user": {
-    "id": "1",
-    "email": "user@example.com",
-    "phone_country_code": null,
-    "phone_number": null,
-    "first_name": "John",
-    "last_name": "Doe",
-    "is_email_verified": false,
-    "is_phone_verified": false,
-    "is_2fa_enabled": false,
-    "roles": [],
-    "permissions": [],
-    "created_at": "2026-03-03T22:00:00Z",
-    "last_login": null
-  },
-  "verification_required": {
-    "email": true,
-    "phone": false
-  }
-}
-```
-
-> 💡 To log the user in immediately after registration, include `"login": true` in the request — JWT tokens will then be included in the response (`access_token`, `refresh_token`, `token_type`, `expires_in`).
-
-### Login (email)
-
-**Request:**
-
-```http
-POST /api/v1/auth/login/email/
-Content-Type: application/json
-X-Access-Key: <app_key>
-X-Access-Secret: <app_secret>
-
-{
-  "email": "user@example.com",
-  "password": "SecureP@ss1!"
-}
-```
-
-**Response (200 OK):**
-
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "Bearer",
-  "expires_in": 3600,
-  "device_summary": "desktop/windows",
-  "user": {
-    "id": "1",
-    "email": "user@example.com",
-    "phone": "",
-    "first_name": "John",
-    "last_name": "Doe",
-    "is_email_verified": false,
-    "is_phone_verified": false,
-    "is_2fa_enabled": false
-  }
-}
-```
-
-> If 2FA is enabled on the account, add `"totp_code": "123456"` to the request.
-
-### curl — Quick Summary
-
-```bash
-# Register
-curl -X POST http://localhost:8000/api/v1/auth/register/ \
-  -H "X-Access-Key: key" -H "X-Access-Secret: secret" \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "SecureP@ss1!", "first_name": "John", "last_name": "Doe"}'
-
-# Login
-curl -X POST http://localhost:8000/api/v1/auth/login/email/ \
-  -H "X-Access-Key: key" -H "X-Access-Secret: secret" \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "SecureP@ss1!"}'
-
-# Authenticated request
-curl http://localhost:8000/api/v1/auth/me/ \
-  -H "X-Access-Key: key" -H "X-Access-Secret: secret" \
-  -H "Authorization: Bearer <access_token>"
-```
-
-For more complete examples with responses, see: [endpoints.md](endpoints.md)
-
----
-
-## Endpoints & Documentation
-
-### Interactive Documentation
-
-To enable the interactive documentation endpoints (Swagger UI, ReDoc, and OpenAPI Schema), make sure they are included in your routing, normally done in your main `urls.py`:
-
-```python
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
-from tenxyte.conf import auth_settings
-
-api_prefix = auth_settings.API_PREFIX.strip('/')
-
-urlpatterns = [
-    # ... your other urls
-    path(f'{api_prefix}/docs/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path(f'{api_prefix}/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path(f'{api_prefix}/docs/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-]
-```
-
-Once configured, start your server:
-
-```bash
-python manage.py runserver
-
-# Swagger UI: http://localhost:8000/api/v1/docs/
-# ReDoc:      http://localhost:8000/api/v1/docs/redoc/
-# Schema:     http://localhost:8000/api/v1/docs/schema/
-```
-
-- [**Static Site**](../docs_site/index.html) — Full documentation
-- [**Postman Collection**](../../tenxyte_api_collection.postman_collection.json) — Ready-to-use collection
-- [**Endpoint Reference**](endpoints.md) — All endpoints with curl examples
-
-### Endpoint Overview
+> Routes require `X-Access-Key` and `X-Access-Secret` headers by default. To disable this check in development, set `TENXYTE_APPLICATION_AUTH_ENABLED = False` (forbidden in production).
 
 | Category | Key Endpoints |
 |---|---|
@@ -319,14 +157,35 @@ python manage.py runserver
 | **RBAC** | `roles/`, `permissions/`, `users/{id}/roles/`, `users/{id}/permissions/` |
 | **Applications** | `applications/` (CRUD + regenerate) |
 
+For complete examples with full request/response bodies, see [endpoints.md](endpoints.md).
+
+### Interactive Documentation
+
+Add these routes to your `urls.py` for Swagger UI and ReDoc:
+
+```python
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from tenxyte.conf import auth_settings
+
+api_prefix = auth_settings.API_PREFIX.strip('/')
+
+urlpatterns += [
+    path(f'{api_prefix}/docs/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path(f'{api_prefix}/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path(f'{api_prefix}/docs/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+]
+```
+
+- [**Postman Collection**](../../tenxyte_api_collection.postman_collection.json) — Ready-to-use collection
+
 ---
 
-## 📚 Documentation Structure
+## 📚 Documentation
 
 ### 📖 **Developer Guides**
 - [**Quickstart**](quickstart.md) - Get started in 2 minutes with Django
 - [**FastAPI Quickstart**](fastapi_quickstart.md) - Get started with FastAPI
-- [**Settings Reference**](settings.md) - All 95+ configuration options
+- [**Settings Reference**](settings.md) - All 115+ configuration options
 - [**API Endpoints**](endpoints.md) - Full endpoint reference with examples
 - [**Admin Accounts**](admin.md) - Manage Superusers and RBAC Admins
 - [**Applications Guide**](applications.md) - Manage API clients and credentials
@@ -335,6 +194,12 @@ python manage.py runserver
 - [**Organizations Guide**](organizations.md) - B2B multi-tenant setup
 - [**AIRS Guide**](airs.md) - AI Responsibility & Security
 - [**Migration Guide**](MIGRATION_GUIDE.md) - Migration from dj-rest-auth, simplejwt
+
+### 📦 **SDK Integration (JavaScript / TypeScript)**
+- [**JavaScript SDK Overview**](integration/javascript/index.md) - Packages, installation, configuration, error handling
+- [**@tenxyte/core Guide**](integration/javascript/core.md) - Framework-agnostic SDK — all 10 modules, cookie mode, PKCE, events
+- [**@tenxyte/react Guide**](integration/javascript/react.md) - React hooks, TenxyteProvider, SPA examples
+- [**@tenxyte/vue Guide**](integration/javascript/vue.md) - Vue 3 composables, plugin setup, SPA examples
 
 ### 🔧 **Technical Documentation**
 - [**Architecture Guide**](architecture.md) - Core & Adapters (Hexagonal) architecture
@@ -346,46 +211,6 @@ python manage.py runserver
 - [**Periodic Tasks**](periodic_tasks.md) - Scheduled maintenance and cleanup tasks
 - [**Troubleshooting**](troubleshooting.md) - Common issues and solutions
 - [**Contributing**](CONTRIBUTING.md) - How to contribute to Tenxyte
-
----
-
-## 📊 Documentation Quality Metrics
-
-| Metric | Value | Status |
-|--------|-------|--------|
-| API Coverage | 100% | ✅ Complete |
-| Quality Score | 100/100 | ✅ Perfect |
-| Schema Size Reduction | 3% | ✅ Optimized |
-| Examples Count | 280+ | ✅ Comprehensive |
-| Error Code Coverage | 100% | ✅ Complete |
-| Multi-tenant Documentation | 100% | ✅ Complete |
-
----
-
-## 🛠️ Documentation Scripts
-
-### Validation Tools
-```bash
-# Validate OpenAPI specification
-python scripts/validate_openapi_spec.py
-
-# Check documentation coverage
-python scripts/validate_documentation.py
-
-# Optimize schema performance
-python scripts/optimize_schemas.py
-```
-
-### Generation Tools
-```bash
-# Generate Postman collection
-python scripts/generate_postman_collection.py
-
-# Generate static documentation site
-python scripts/generate_docs_site.py
-```
-
-See [Scripts Documentation](https://github.com/tenxyte/tenxyte/blob/main/scripts/README.md) for complete usage guide.
 
 ---
 
@@ -408,118 +233,7 @@ Read more in our detailed **[Architecture Guide](architecture.md)**.
 - ✅ **SQLite** — development
 - ✅ **PostgreSQL** — recommended for production
 - ✅ **MySQL/MariaDB**
-- ✅ **MongoDB** — via `django-mongodb-backend`
-
-### MongoDB — Required Configuration
-
-```bash
-pip install tenxyte[mongodb]
-```
-
-```python
-# settings.py
-AUTH_USER_MODEL = 'tenxyte.User'
-DEFAULT_AUTO_FIELD = 'django_mongodb_backend.fields.ObjectIdAutoField'
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django_mongodb_backend',
-        'NAME': 'tenxyte_db',
-        'HOST': 'localhost',
-        'PORT': 27017,
-    }
-}
-
-# Disable native migrations (integer PKs incompatible with ObjectId)
-MIGRATION_MODULES = {
-    'contenttypes': None,
-    'auth': None,
-}
-
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'tenxyte.middleware.CORSMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    # ❌ Remove: 'django.contrib.auth.middleware.AuthenticationMiddleware'
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'tenxyte.middleware.ApplicationAuthMiddleware',
-]
-```
-
-#### MongoDB — Django Admin Support
-
-To use Django Admin with MongoDB, replace default admin/auth/contenttypes entries with custom configs that set `ObjectIdAutoField`.
-
-**Step 1 — `apps.py` of your main app:**
-
-```python
-from django.contrib.admin.apps import AdminConfig
-from django.contrib.auth.apps import AuthConfig
-from django.contrib.contenttypes.apps import ContentTypesConfig
-
-class MongoAdminConfig(AdminConfig):
-    default_auto_field = "django_mongodb_backend.fields.ObjectIdAutoField"
-
-class MongoAuthConfig(AuthConfig):
-    default_auto_field = "django_mongodb_backend.fields.ObjectIdAutoField"
-
-class MongoContentTypesConfig(ContentTypesConfig):
-    default_auto_field = "django_mongodb_backend.fields.ObjectIdAutoField"
-```
-
-**Step 2 — `INSTALLED_APPS`:**
-
-```python
-INSTALLED_APPS = [
-    # Replace the three Django defaults with your MongoDB versions:
-    'config.apps.MongoAdminConfig',       # replaces 'django.contrib.admin'
-    'config.apps.MongoAuthConfig',        # replaces 'django.contrib.auth'
-    'config.apps.MongoContentTypesConfig', # replaces 'django.contrib.contenttypes'
-
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'tenxyte',
-]
-```
-
-> Replace `config` with the name of your main Django app. Then, run `python manage.py makemigrations && python manage.py migrate` — Django Admin will work correctly with MongoDB.
-
----
-
-## Periodic Maintenance
-
-Tenxyte requires a few periodic tasks to maintain performance and security. Configure **Celery Beat** or a standard *cron* job:
-
-1. **Token Cleanup** (Daily at 3 AM)
-   Remove blacklisted JWT tokens and expired refresh/agent tokens:
-   ```python
-   from tenxyte.models import BlacklistedToken, RefreshToken, AgentToken
-   BlacklistedToken.cleanup_expired()
-   # Add similar logic for Refresh/Agent tokens based on expires_at
-   ```
-
-2. **OTP & WebAuthn Purge** (Every 15 minutes)
-   Clear expired OTP codes and unused WebAuthn challenges:
-   ```python
-   from tenxyte.models import OTPCode, WebAuthnChallenge
-   OTPCode.cleanup_expired()
-   WebAuthnChallenge.cleanup_expired()
-   ```
-
-3. **Audit Log Rotation** (Monthly)
-   To comply with GDPR, archive or delete old logs:
-   ```python
-   from django.utils import timezone
-   from datetime import timedelta
-   from tenxyte.models import AuditLog
-   
-   cutoff = timezone.now() - timedelta(days=90)
-   AuditLog.objects.filter(timestamp__lt=cutoff).delete()
-   ```
+- ✅ **MongoDB** — via `django-mongodb-backend` (see [quickstart.md](quickstart.md#mongodb) for configuration)
 
 ---
 
@@ -567,6 +281,12 @@ TENXYTE_JWT_AUTH_ENABLED = False          # testing only
 
 ---
 
+## Periodic Maintenance
+
+Tenxyte requires periodic tasks (token cleanup, OTP purge, audit log rotation) to maintain performance and security. See the [Periodic Tasks Guide](periodic_tasks.md) for full configuration with Celery Beat or cron.
+
+---
+
 ## Development & Testing
 
 ```bash
@@ -579,10 +299,10 @@ pytest --cov=tenxyte --cov-report=html
 **Multi-DB Tests** (requires a running server per backend):
 
 ```bash
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_sqlite"
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_pgsql"
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_mysql"
-pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_mongodb"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_sqlite"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_pgsql"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_mysql"
+pytest tests/integration/django/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.integration.django.multidb.settings_mongodb"
 ```
 
 ---
@@ -590,7 +310,7 @@ pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_mongodb"
 ## Frequently Asked Questions & Troubleshooting
 
 **`MongoDB does not support AutoField/BigAutoField`**
-→ Configure `DEFAULT_AUTO_FIELD = 'django_mongodb_backend.fields.ObjectIdAutoField'` and add `MIGRATION_MODULES = {'contenttypes': None, 'auth': None}`. For Django Admin, use the custom app configs described in the [MongoDB Admin section](#mongodb--django-admin-support).
+→ Configure `DEFAULT_AUTO_FIELD = 'django_mongodb_backend.fields.ObjectIdAutoField'` and add `MIGRATION_MODULES = {'contenttypes': None, 'auth': None}`. See [quickstart.md](quickstart.md#mongodb).
 
 **`Model instances without primary key value are unhashable`**
 → Same fix (`MIGRATION_MODULES`). If it persists, disconnect `post_migrate` signals for `create_permissions` and `create_contenttypes`.
@@ -604,23 +324,7 @@ pytest tests/multidb/ -o "DJANGO_SETTINGS_MODULE=tests.multidb.settings_mongodb"
 **`No module named 'corsheaders'`**
 → Tenxyte includes built-in CORS middleware (`tenxyte.middleware.CORSMiddleware`). Remove `corsheaders` from your config.
 
----
-
-## 🎯 Documentation Standards
-
-### Quality Requirements
-- ✅ **100% Coverage** - All endpoints documented
-- ✅ **Working Examples** - All examples tested and functional
-- ✅ **Error Documentation** - Comprehensive error handling
-- ✅ **Multi-tenant Support** - Complete B2B documentation
-- ✅ **Security Features** - Privacy and security documented
-
-### Maintenance Standards
-- 🔄 **Regular Updates** - Keep documentation synchronized
-- 🧪 **Automated Testing** - Continuous validation
-- 📊 **Quality Monitoring** - Track metrics and improvements
-- 🔧 **Tool Updates** - Maintain validation and generation tools
-- 📚 **User Feedback** - Incorporate developer feedback
+For more solutions, see [troubleshooting.md](troubleshooting.md).
 
 ---
 

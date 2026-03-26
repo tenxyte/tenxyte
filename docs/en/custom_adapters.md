@@ -15,7 +15,7 @@ To use a custom implementation, you just need to create a class that inherits fr
 
 ## Example 1: Custom Cache Service
 
-The `CacheService` ABC (defined in `tenxyte.core.cache_service`) requires implementing six abstract methods: `get`, `set`, `delete`, `exists`, `increment`, `expire`, and `ttl`.
+The `CacheService` ABC (defined in `tenxyte.core.cache_service`) requires implementing seven abstract methods: `get`, `set`, `delete`, `exists`, `increment`, `expire`, and `ttl`.
 
 Suppose you want to use Redis:
 

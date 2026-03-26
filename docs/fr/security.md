@@ -30,7 +30,7 @@ Tenxyte est livré avec des classes de limitation préconfigurées pour les poin
 | `RegisterThrottle` | 3/heure | Point de terminaison d'inscription |
 | `RegisterDailyThrottle` | 10/jour | Point de terminaison d'inscription |
 | `RefreshTokenThrottle` | 30/min | Rafraîchissement de jeton |
-| `GoogleAuthThrottle` | 10/min | OAuth Google |
+| `ProgressiveLoginThrottle` | Progressif | Points de terminaison de connexion (augmente le délai après chaque échec) |
 | `OTPRequestThrottle` | 5/heure | Demande d'OTP |
 | `OTPVerifyThrottle` | 5/min | Vérification d'OTP |
 | `PasswordResetThrottle` | 3/heure | Demande de réinitialisation de mot de passe |
@@ -84,6 +84,25 @@ TENXYTE_RATE_LIMIT_WINDOW_MINUTES = 15
 
 Les comptes verrouillés renvoient un `401` avec le code : `'ACCOUNT_LOCKED'`.
 
+### Verrouillage Exponentiel
+
+Lorsque `TENXYTE_LOCKOUT_ESCALATION_ENABLED = True` (par défaut), chaque verrouillage consécutif double la durée, plafonnée à `TENXYTE_LOCKOUT_MAX_DURATION_MINUTES` (par défaut : 1440 = 24h) :
+
+| Verrouillage # | Durée (base=30min) |
+|---|---|
+| 1er | 30 min |
+| 2ème | 60 min |
+| 3ème | 120 min |
+| 4ème | 240 min |
+| 5ème+ | 1440 min (plafond 24h) |
+
+Le compteur se réinitialise après une connexion réussie. Formule : `min(base × 2^(n-1), durée_max)`.
+
+```python
+TENXYTE_LOCKOUT_ESCALATION_ENABLED = True
+TENXYTE_LOCKOUT_MAX_DURATION_MINUTES = 1440  # plafond 24h
+```
+
 Déverrouillage par l'administrateur via l'API :
 ```bash
 POST /api/v1/auth/admin/users/<id>/unlock/
@@ -136,6 +155,19 @@ TENXYTE_BACKUP_CODES_COUNT = 10
 
 ## Sécurité des Jetons JWT
 
+### Algorithme
+
+Tenxyte utilise `HS256` (HMAC-SHA256) par défaut. En production, passez à un algorithme asymétrique (`RS256`, `EdDSA`) pour éviter de partager le secret de signature entre les services :
+
+```python
+# settings.py
+TENXYTE_JWT_ALGORITHM = 'RS256'
+TENXYTE_JWT_PRIVATE_KEY = open('/secrets/jwt_private.pem').read()
+TENXYTE_JWT_PUBLIC_KEY = open('/secrets/jwt_public.pem').read()
+```
+
+> **Note** : Lorsque `HS256` est détecté, Tenxyte émet un `SecurityWarning` au démarrage du service. Utilisez le préréglage `production` ou `enterprise` pour passer automatiquement à RS256.
+
 ### Mise sur Liste Noire (Blacklisting) des Jetons d'Accès
 
 Lorsque `TENXYTE_TOKEN_BLACKLIST_ENABLED = True` (par défaut), les jetons d'accès sont mis sur liste noire lors de la déconnexion. Cela empêche la réutilisation du jeton même avant son expiration.
@@ -154,15 +186,66 @@ TENXYTE_REFRESH_TOKEN_ROTATION = True
 
 ### Jetons d'Accès à Courte Durée de Vie
 
-Gardez les jetons d'accès à courte durée de vie et appuyez-vous sur les jetons de rafraîchissement pour la persistance de session. Par défaut, les jetons d'accès durent 1 heure, mais il est fortement recommandé de raccourcir cette durée en production :
+Les jetons d'accès expirent après **15 minutes par défaut**. Cela limite la fenêtre d'exposition en cas de compromission d'un jeton. Appuyez-vous sur les jetons de rafraîchissement pour la persistance de session :
 
 ```python
-# Valeurs par défaut
-TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 3600    # 1 heure
+# Défauts — déjà sécurisés
+TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 900    # 15 minutes
 TENXYTE_JWT_REFRESH_TOKEN_LIFETIME = 604800 # 7 jours
 ```
 
-*(Note : Le préréglage `standard` configure les jetons d'accès à 15 minutes).*
+### RGPD / Minimisation des Données
+
+Évitez d'inclure des DCP (adresse e-mail, adresse IP, numéro de téléphone, etc.) dans les payloads JWT. Les jetons JWT sont encodés en base64 et lisibles par quiconque les intercepte. Tenxyte émet un `SecurityWarning` si des clés sensibles sont détectées dans `extra_claims` :
+
+```python
+# ❌ Ne jamais faire ceci
+jwt_service.generate_access_token(user_id, app_id, extra_claims={"email": user.email})
+
+# ✅ Rechercher par user_id à la place
+user = User.objects.get(pk=decoded_token.user_id)
+```
+
+Clés qui déclenchent l'avertissement : `email`, `password`, `phone`, `phone_number`, `ip`, `ip_address`, `address`, `ssn`, `credit_card`, `dob`, `date_of_birth`.
+
+### Claims Obligatoires
+
+Tous les jetons émis incluent `exp`, `iat` et `jti`. Lorsque `JWT_ISSUER` ou `JWT_AUDIENCE` sont configurés, `iss` et `aud` sont également requis — les jetons les manquant sont rejetés au niveau du décodage PyJWT.
+
+### Rotation des Clés
+
+Effectuez une rotation des clés de signature JWT sans invalider les jetons actifs. Définissez la clé **précédente** pour que les jetons existants puissent encore être vérifiés pendant la transition :
+
+```python
+# 1. Générer une nouvelle clé
+# 2. Déplacer la clé actuelle vers PREVIOUS
+TENXYTE_JWT_PREVIOUS_SECRET_KEY = '<ancienne-cle>'  # HS256
+# ou pour RS256 :
+TENXYTE_JWT_PREVIOUS_PUBLIC_KEY = open('/secrets/old_jwt_public.pem').read()
+
+# 3. Définir la nouvelle clé
+TENXYTE_JWT_SECRET_KEY = '<nouvelle-cle>'
+```
+
+Les nouveaux jetons sont signés avec la clé actuelle. Au décodage, si la clé primaire échoue avec `InvalidSignatureError`, Tenxyte réessaie avec la clé précédente. Retirez `PREVIOUS_*` une fois que tous les anciens jetons ont expiré.
+
+### Transport par Cookie des Jetons de Rafraîchissement
+
+Mode opt-in pour transporter les jetons de rafraîchissement dans des cookies `HttpOnly; Secure; SameSite` au lieu du corps JSON, empêchant le vol de jetons par XSS :
+
+```python
+TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED = True  # Défaut : False
+TENXYTE_REFRESH_TOKEN_COOKIE_NAME = 'tenxyte_refresh'
+TENXYTE_REFRESH_TOKEN_COOKIE_SAMESITE = 'Strict'
+TENXYTE_REFRESH_TOKEN_COOKIE_PATH = '/api/v1/auth/'
+```
+
+Lorsqu'activé :
+- **Réponses de connexion/rafraîchissement** : `refresh_token` est retiré du corps JSON et défini dans un en-tête `Set-Cookie`.
+- **Requêtes de rafraîchissement** : Le serveur lit le jeton de rafraîchissement depuis le cookie si le corps est vide.
+- **Déconnexion** : Le cookie est effacé avec `max-age=0`.
+
+> **Important** : Ce mode est **opt-in** et désactivé par défaut. Les clients doivent gérer l'absence de `refresh_token` dans les réponses JSON.
 
 ---
 
@@ -237,6 +320,16 @@ TENXYTE_PASSWORD_HISTORY_COUNT = 5  # Vérifier par rapport aux 5 derniers mots 
 POST /api/v1/auth/password/strength/
 { "password": "MonMotDePasse123!" }
 ```
+
+### Conformité NIST SP 800-63B
+
+Les comptes **sans** 2FA activée peuvent être soumis à une longueur minimale de mot de passe plus élevée, conformément aux recommandations NIST SP 800-63B :
+
+```python
+TENXYTE_PASSWORD_MIN_LENGTH_NO_MFA = 15  # 0 = désactivé (défaut)
+```
+
+Lorsque défini à `15`, les utilisateurs sans 2FA doivent utiliser des mots de passe d'au moins 15 caractères. Les utilisateurs avec 2FA active continuent d'utiliser le `PASSWORD_MIN_LENGTH` standard (défaut : 8).
 
 ---
 
@@ -347,12 +440,63 @@ TENXYTE_OTP_MAX_ATTEMPTS = 5      # avant invalidation
 ## Checklist pour la Production
 
 - [ ] Définissez `TENXYTE_JWT_SECRET_KEY` sur un secret fort et unique (différent de `SECRET_KEY`).
-- [ ] Définissez `TENXYTE_JWT_ACCESS_TOKEN_LIFETIME` sur ≤ 900 secondes (15 min).
+- [ ] Passez à `TENXYTE_JWT_ALGORITHM = 'RS256'` et configurez des clés RSA.
+- [ ] Définissez `TENXYTE_JWT_ACCESS_TOKEN_LIFETIME` sur ≤ 900 secondes (15 min) — **c'est désormais la valeur par défaut**.
 - [ ] Activez `TENXYTE_REFRESH_TOKEN_ROTATION = True`.
 - [ ] Activez `TENXYTE_TOKEN_BLACKLIST_ENABLED = True`.
+- [ ] Définissez `TENXYTE_JWT_AUDIENCE` avec l'identifiant de votre application.
 - [ ] Activez `TENXYTE_SECURITY_HEADERS_ENABLED = True`.
 - [ ] Configurez `TENXYTE_CORS_ALLOWED_ORIGINS` (ne jamais utiliser `ALLOW_ALL_ORIGINS` en production).
 - [ ] Définissez `TENXYTE_MAX_LOGIN_ATTEMPTS` sur une valeur raisonnable (5–10).
 - [ ] Activez `TENXYTE_PASSWORD_HISTORY_ENABLED = True`.
 - [ ] Utilisez HTTPS en production (requis pour `Strict-Transport-Security`).
 - [ ] Effectuez une rotation régulière des secrets d'`Application`.
+- [ ] Assurez-vous que `extra_claims` ne contient pas de DCP (email, IP, téléphone…).
+- [ ] Envisagez d'activer le transport par cookie pour les jetons de rafraîchissement pour les applications web.
+- [ ] Envisagez d'activer la longueur NIST pour les comptes sans MFA (`PASSWORD_MIN_LENGTH_NO_MFA = 15`).
+
+---
+
+## Sécurité OAuth / Connexion Sociale
+
+### PKCE (Proof Key for Code Exchange)
+
+Tous les fournisseurs OAuth supportent PKCE (RFC 7636). Les clients doivent inclure `code_verifier` dans la requête d'échange de code :
+
+```json
+POST /api/v1/auth/social/google/
+{
+  "code": "<code-d-autorisation>",
+  "redirect_uri": "https://votre-app.com/auth/callback",
+  "code_verifier": "<vérificateur-PKCE>"
+}
+```
+
+Le `code_verifier` est transmis au endpoint de jeton du fournisseur. Cela empêche les attaques d'interception de code d'autorisation.
+
+### Liste Blanche des URI de Redirection
+
+Configurez les URI de redirection autorisées par modèle `Application`. Lorsque la liste n'est pas vide, tout `redirect_uri` non présent retourne `400 INVALID_REDIRECT_URI` :
+
+```python
+# Via l'admin Django ou l'API
+app.redirect_uris = [
+    "https://votre-app.com/auth/callback",
+    "https://staging.votre-app.com/auth/callback",
+]
+```
+
+### Scopes OAuth Configurables
+
+Surchargez les scopes par défaut par fournisseur :
+
+```python
+TENXYTE_SOCIAL_GOOGLE_SCOPES = 'openid email profile'
+TENXYTE_SOCIAL_GITHUB_SCOPES = 'read:user user:email'
+TENXYTE_SOCIAL_MICROSOFT_SCOPES = 'openid email profile'
+TENXYTE_SOCIAL_FACEBOOK_SCOPES = 'email,public_profile'
+```
+
+---
+
+*Pour la liste complète des paramètres avec leurs valeurs par défaut, voir la [Référence des Paramètres](settings.md).*

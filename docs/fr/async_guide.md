@@ -64,8 +64,8 @@ count = await cache.increment_async("counter", delta=1)
 # Limitation de débit (renvoie : allowed, remaining, reset_time)
 allowed, remaining, reset = await cache.check_rate_limit_async(
     key="rate:user:123",
-    limit=100,
-    window=60
+    max_requests=100,
+    window_seconds=60
 )
 
 # Mise sur liste noire de jetons (révocation JWT)
@@ -558,7 +558,7 @@ await cache.ttl_async(key)
 await cache.add_to_blacklist_async(jti, expires_in)
 await cache.is_blacklisted_async(jti)
 await cache.remove_from_blacklist_async(jti)
-await cache.check_rate_limit_async(key, limit, window)
+await cache.check_rate_limit_async(key, max_requests, window_seconds)
 await cache.reset_rate_limit_async(key)
 
 # JWTService

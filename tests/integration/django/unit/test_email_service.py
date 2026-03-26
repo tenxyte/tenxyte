@@ -159,3 +159,102 @@ def test_get_email_service(email_svc):
         svc = get_email_service()
     assert isinstance(svc, DjangoEmailService)
     assert svc._default_from_email == "noreply@example.com"
+
+
+# ── send_magic_link ──────────────────────────────────────────────────────────
+
+def test_send_magic_link_success(email_svc):
+    """send_magic_link() calls send() with correct body/HTML (lines 192-201)."""
+    with patch.object(email_svc, "send", return_value=True) as mock_send:
+        result = email_svc.send_magic_link(
+            to_email="user@example.com",
+            magic_link_url="https://example.com/magic/abc123",
+            expires_in_minutes=10,
+        )
+    assert result is True
+    mock_send.assert_called_once()
+    call_kwargs = mock_send.call_args.kwargs
+    assert "user@example.com" == call_kwargs["to_email"]
+    assert "Magic Link" in call_kwargs["subject"]
+    assert "https://example.com/magic/abc123" in call_kwargs["body"]
+    assert "10 minutes" in call_kwargs["body"]
+    assert "href=" in call_kwargs["html_body"]
+
+
+def test_send_magic_link_default_expiry(email_svc):
+    """send_magic_link() defaults to 15 minutes (line 180)."""
+    with patch.object(email_svc, "send", return_value=True) as mock_send:
+        email_svc.send_magic_link(
+            to_email="user@example.com",
+            magic_link_url="https://example.com/magic/xyz",
+        )
+    call_kwargs = mock_send.call_args.kwargs
+    assert "15 minutes" in call_kwargs["body"]
+
+
+def test_send_magic_link_failure(email_svc):
+    """send_magic_link() returns False if send() fails (line 196)."""
+    with patch.object(email_svc, "send", return_value=False):
+        result = email_svc.send_magic_link(
+            to_email="user@example.com",
+            magic_link_url="https://example.com/magic/fail",
+        )
+    assert result is False
+
+
+# ── send_account_deletion_confirmation ────────────────────────────────────────
+
+def test_send_account_deletion_confirmation_success(email_svc):
+    """send_account_deletion_confirmation() success path (lines 250-271)."""
+    mock_req = MagicMock()
+    mock_req.user.email = "del@example.com"
+    mock_req.id = "abc-123"
+    mock_site = MagicMock()
+    mock_site.domain = "testserver"
+
+    with patch("django.contrib.sites.shortcuts.get_current_site", return_value=mock_site), \
+         patch.object(email_svc, "_send_template_email", return_value=True) as mock_send:
+        result = email_svc.send_account_deletion_confirmation(mock_req)
+
+    assert result is True
+    mock_send.assert_called_once()
+    call_kwargs = mock_send.call_args.kwargs
+    assert "del@example.com" == call_kwargs["to_email"]
+    assert "cancel" in call_kwargs["context"]["cancel_url"]
+
+
+def test_send_account_deletion_confirmation_exception(email_svc):
+    """send_account_deletion_confirmation() returns False on exception (lines 270-271)."""
+    mock_req = MagicMock()
+    mock_req.user.email = "del@example.com"
+
+    with patch("django.contrib.sites.shortcuts.get_current_site", side_effect=Exception("site error")):
+        result = email_svc.send_account_deletion_confirmation(mock_req)
+
+    assert result is False
+
+
+# ── send_security_alert_email ────────────────────────────────────────────────
+
+def test_send_security_alert_email_exception(email_svc):
+    """send_security_alert_email() returns False on exception (lines 370-371)."""
+    mock_user = MagicMock()
+    mock_user.email = "user@example.com"
+
+    with patch("django.utils.timezone.now", side_effect=Exception("tz error")):
+        result = email_svc.send_security_alert_email(mock_user, "Chrome/Win", "1.2.3.4")
+
+    assert result is False
+
+
+def test_send_security_alert_email_success(email_svc):
+    """send_security_alert_email() success path (lines 352-369)."""
+    mock_user = MagicMock()
+    mock_user.email = "user@example.com"
+
+    with patch.object(email_svc, "_send_template_email", return_value=True) as mock_send:
+        result = email_svc.send_security_alert_email(mock_user, "Chrome/Win", "1.2.3.4")
+
+    assert result is True
+    mock_send.assert_called_once()
+

@@ -418,7 +418,7 @@ Tenxyte injecte 4 rôles par défaut via `tenxyte_seed` :
 
 ## Codes de Permission Intégrés
 
-Tenxyte injecte 41 permissions via `tenxyte_seed`. Les permissions parentes (en gras) accordent tous leurs enfants via la hiérarchie.
+Tenxyte injecte 47 permissions via `tenxyte_seed`. Les permissions parentes (en gras) accordent tous leurs enfants via la hiérarchie.
 
 ### Utilisateurs
 

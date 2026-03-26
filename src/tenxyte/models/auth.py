@@ -201,6 +201,9 @@ class AbstractUser(models.Model):
     is_active = models.BooleanField(default=True)
     is_locked = models.BooleanField(default=False)
     locked_until = models.DateTimeField(null=True, blank=True)
+    lockout_count = models.PositiveIntegerField(
+        default=0, help_text="Consecutive lockout count for exponential backoff."
+    )
     is_banned = models.BooleanField(
         default=False, help_text="Permanent ban (manual admin action). Cannot be auto-lifted."
     )
@@ -323,9 +326,27 @@ class AbstractUser(models.Model):
         return bcrypt.checkpw(pre_hash.encode("utf-8"), self.password.encode("utf-8"))
 
     def lock_account(self, duration_minutes: int = 30):
+        """Lock account with exponential backoff support.
+
+        If LOCKOUT_ESCALATION_ENABLED, automatically escalates:
+          1st lockout = duration_minutes
+          2nd lockout = duration_minutes * 2
+          nth lockout = min(duration_minutes * 2^(n-1), max_duration)
+        """
+        from ..conf import auth_settings
+
+        self.lockout_count += 1
+
+        escalation_enabled = getattr(auth_settings, "LOCKOUT_ESCALATION_ENABLED", True)
+        max_duration = getattr(auth_settings, "LOCKOUT_MAX_DURATION_MINUTES", 1440)
+
+        if escalation_enabled and self.lockout_count > 1:
+            escalated = duration_minutes * (2 ** (self.lockout_count - 1))
+            duration_minutes = min(escalated, max_duration)
+
         self.is_locked = True
         self.locked_until = timezone.now() + timedelta(minutes=duration_minutes)
-        self.save()
+        self.save(update_fields=["is_locked", "locked_until", "lockout_count"])
 
     def unlock_account(self):
         self.is_locked = False

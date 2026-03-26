@@ -66,7 +66,7 @@ class AbstractOAuthProvider(ABC):
         ...
 
     @abstractmethod
-    def exchange_code(self, code: str, redirect_uri: str) -> Optional[Dict[str, Any]]:
+    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str = None) -> Optional[Dict[str, Any]]:
         """Échange un authorization code contre des tokens."""
         ...
 
@@ -141,17 +141,20 @@ class GoogleOAuthProvider(AbstractOAuthProvider):
             return None
         return self._normalize(data)
 
-    def exchange_code(self, code: str, redirect_uri: str) -> Optional[Dict[str, Any]]:
-        return self._post(
-            self.GOOGLE_TOKEN_URL,
-            data={
-                "code": code,
-                "client_id": getattr(settings, "GOOGLE_CLIENT_ID", ""),
-                "client_secret": getattr(settings, "GOOGLE_CLIENT_SECRET", ""),
-                "redirect_uri": redirect_uri,
-                "grant_type": "authorization_code",
-            },
-        )
+    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str = None) -> Optional[Dict[str, Any]]:
+        from ..conf import auth_settings
+
+        data = {
+            "code": code,
+            "client_id": getattr(settings, "GOOGLE_CLIENT_ID", ""),
+            "client_secret": getattr(settings, "GOOGLE_CLIENT_SECRET", ""),
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+            "scope": auth_settings.SOCIAL_GOOGLE_SCOPES,
+        }
+        if code_verifier:
+            data["code_verifier"] = code_verifier
+        return self._post(self.GOOGLE_TOKEN_URL, data=data)
 
     def _normalize(self, data: dict) -> Dict[str, Any]:
         return {
@@ -208,15 +211,21 @@ class GitHubOAuthProvider(AbstractOAuthProvider):
             "avatar_url": data.get("avatar_url", ""),
         }
 
-    def exchange_code(self, code: str, redirect_uri: str) -> Optional[Dict[str, Any]]:
+    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str = None) -> Optional[Dict[str, Any]]:
+        from ..conf import auth_settings
+
+        data = {
+            "code": code,
+            "client_id": getattr(settings, "GITHUB_CLIENT_ID", ""),
+            "client_secret": getattr(settings, "GITHUB_CLIENT_SECRET", ""),
+            "redirect_uri": redirect_uri,
+            "scope": auth_settings.SOCIAL_GITHUB_SCOPES,
+        }
+        if code_verifier:
+            data["code_verifier"] = code_verifier
         return self._post(
             self.GITHUB_TOKEN_URL,
-            data={
-                "code": code,
-                "client_id": getattr(settings, "GITHUB_CLIENT_ID", ""),
-                "client_secret": getattr(settings, "GITHUB_CLIENT_SECRET", ""),
-                "redirect_uri": redirect_uri,
-            },
+            data=data,
             headers={"Accept": "application/json"},
         )
 
@@ -251,18 +260,20 @@ class MicrosoftOAuthProvider(AbstractOAuthProvider):
             "avatar_url": "",
         }
 
-    def exchange_code(self, code: str, redirect_uri: str) -> Optional[Dict[str, Any]]:
-        return self._post(
-            self.MICROSOFT_TOKEN_URL,
-            data={
-                "code": code,
-                "client_id": getattr(settings, "MICROSOFT_CLIENT_ID", ""),
-                "client_secret": getattr(settings, "MICROSOFT_CLIENT_SECRET", ""),
-                "redirect_uri": redirect_uri,
-                "grant_type": "authorization_code",
-                "scope": "openid email profile",
-            },
-        )
+    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str = None) -> Optional[Dict[str, Any]]:
+        from ..conf import auth_settings
+
+        data = {
+            "code": code,
+            "client_id": getattr(settings, "MICROSOFT_CLIENT_ID", ""),
+            "client_secret": getattr(settings, "MICROSOFT_CLIENT_SECRET", ""),
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+            "scope": auth_settings.SOCIAL_MICROSOFT_SCOPES,
+        }
+        if code_verifier:
+            data["code_verifier"] = code_verifier
+        return self._post(self.MICROSOFT_TOKEN_URL, data=data)
 
 
 # ===========================================================================
@@ -306,16 +317,19 @@ class FacebookOAuthProvider(AbstractOAuthProvider):
             "avatar_url": data.get("picture", {}).get("data", {}).get("url", ""),
         }
 
-    def exchange_code(self, code: str, redirect_uri: str) -> Optional[Dict[str, Any]]:
-        return self._post(
-            self.FACEBOOK_TOKEN_URL,
-            data={
-                "code": code,
-                "client_id": getattr(settings, "FACEBOOK_APP_ID", ""),
-                "client_secret": getattr(settings, "FACEBOOK_APP_SECRET", ""),
-                "redirect_uri": redirect_uri,
-            },
-        )
+    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str = None) -> Optional[Dict[str, Any]]:
+        from ..conf import auth_settings
+
+        data = {
+            "code": code,
+            "client_id": getattr(settings, "FACEBOOK_APP_ID", ""),
+            "client_secret": getattr(settings, "FACEBOOK_APP_SECRET", ""),
+            "redirect_uri": redirect_uri,
+            "scope": auth_settings.SOCIAL_FACEBOOK_SCOPES,
+        }
+        if code_verifier:
+            data["code_verifier"] = code_verifier
+        return self._post(self.FACEBOOK_TOKEN_URL, data=data)
 
 
 # ===========================================================================

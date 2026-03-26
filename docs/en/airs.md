@@ -40,6 +40,9 @@ Content-Type: application/json
   "circuit_breaker": {
     "max_requests_per_minute": 30,
     "max_requests_total": 500
+  },
+  "dead_mans_switch": {
+    "heartbeat_required_every": 300
   }
 }
 ```
@@ -99,6 +102,7 @@ If any threshold is exceeded, the token is automatically moved to `SUSPENDED` st
 | `ANOMALY` | Max failed requests exceeded |
 | `HEARTBEAT_MISSING` | Dead Man's Switch timeout |
 | `BUDGET_EXCEEDED` | LLM cost exceeded budget limit |
+| `MANUAL` | Manually suspended by the delegating user |
 
 ### Dead Man's Switch
 
@@ -152,12 +156,12 @@ TENXYTE_AIRS_CONFIRMATION_REQUIRED = [
 
 ```http
 # Human approves
-POST /ai/pending-actions/confirm/
-{ "token": "hitl_a1b2c3d4..." }
+POST /ai/pending-actions/<confirmation_token>/confirm/
+Authorization: Bearer <user_jwt>
 
 # Human denies
-POST /ai/pending-actions/deny/
-{ "token": "hitl_a1b2c3d4..." }
+POST /ai/pending-actions/<confirmation_token>/deny/
+Authorization: Bearer <user_jwt>
 ```
 
 The agent's pending actions can also be listed:

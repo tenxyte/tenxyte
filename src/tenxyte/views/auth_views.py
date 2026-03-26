@@ -95,6 +95,34 @@ def get_application_from_request(request):
     return getattr(request, "application", None)
 
 
+def _set_refresh_cookie(response, refresh_token: str):
+    """Set refresh token in an HttpOnly cookie if cookie mode is enabled."""
+    if not auth_settings.REFRESH_TOKEN_COOKIE_ENABLED:
+        return response
+    response.set_cookie(
+        key=auth_settings.REFRESH_TOKEN_COOKIE_NAME,
+        value=refresh_token,
+        max_age=get_core_settings().jwt_refresh_token_lifetime,
+        httponly=True,
+        secure=True,
+        samesite=auth_settings.REFRESH_TOKEN_COOKIE_SAMESITE,
+        path=auth_settings.REFRESH_TOKEN_COOKIE_PATH,
+    )
+    return response
+
+
+def _clear_refresh_cookie(response):
+    """Clear the refresh token cookie on logout."""
+    if not auth_settings.REFRESH_TOKEN_COOKIE_ENABLED:
+        return response
+    response.delete_cookie(
+        key=auth_settings.REFRESH_TOKEN_COOKIE_NAME,
+        path=auth_settings.REFRESH_TOKEN_COOKIE_PATH,
+        samesite=auth_settings.REFRESH_TOKEN_COOKIE_SAMESITE,
+    )
+    return response
+
+
 def validate_application_required(request):
     """Validate that an application is present when required."""
     if auth_settings.APPLICATION_AUTH_ENABLED:
@@ -794,7 +822,13 @@ class LoginEmailView(APIView):
             except Exception:
                 pass
 
-        return Response(data)
+        # Set cookie and strip refresh token from body if cookie mode
+        response = Response(data)
+        if auth_settings.REFRESH_TOKEN_COOKIE_ENABLED and "refresh_token" in data:
+            response = _set_refresh_cookie(response, data["refresh_token"])
+            del data["refresh_token"]
+            response.data = data
+        return response
 
 
 class LoginPhoneView(APIView):
@@ -952,7 +986,13 @@ class LoginPhoneView(APIView):
             except Exception:
                 pass
 
-        return Response(data)
+        # Set cookie and strip refresh token from body if cookie mode
+        response = Response(data)
+        if auth_settings.REFRESH_TOKEN_COOKIE_ENABLED and "refresh_token" in data:
+            response = _set_refresh_cookie(response, data["refresh_token"])
+            del data["refresh_token"]
+            response.data = data
+        return response
 
 
 class RefreshTokenView(APIView):
@@ -1029,7 +1069,16 @@ class RefreshTokenView(APIView):
             )
 
         jwt_service = get_core_jwt_service()
-        refresh_token_str = serializer.validated_data["refresh_token"]
+
+        # Read refresh token from body or cookie
+        refresh_token_str = serializer.validated_data.get("refresh_token", "")
+        if not refresh_token_str and auth_settings.REFRESH_TOKEN_COOKIE_ENABLED:
+            refresh_token_str = request.COOKIES.get(auth_settings.REFRESH_TOKEN_COOKIE_NAME, "")
+        if not refresh_token_str:
+            return Response(
+                {"error": "refresh_token is required", "code": "MISSING_REFRESH_TOKEN"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Use core service refresh_tokens which handles all the logic
         result = jwt_service.refresh_tokens(refresh_token_str)
@@ -1061,7 +1110,13 @@ class RefreshTokenView(APIView):
         except Exception:
             pass
 
-        return Response(data)
+        # Set cookie and strip refresh token from body if cookie mode
+        response = Response(data)
+        if auth_settings.REFRESH_TOKEN_COOKIE_ENABLED and "refresh_token" in data:
+            response = _set_refresh_cookie(response, data["refresh_token"])
+            del data["refresh_token"]
+            response.data = data
+        return response
 
 
 class LogoutView(APIView):
@@ -1121,6 +1176,13 @@ class LogoutView(APIView):
                 {"error": "Validation error", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
+        refresh_token_str = serializer.validated_data.get("refresh_token", "")
+        if not refresh_token_str:
+            return Response(
+                {"error": "refresh_token is required", "code": "MISSING_REFRESH_TOKEN"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Extract access token from Authorization header for blacklisting
         access_token = None
         auth_header = request.headers.get("Authorization", "")
@@ -1163,7 +1225,8 @@ class LogoutView(APIView):
                 print(f"Exception blacklisting access token: {repr(e)}")
                 pass
 
-        return Response({"message": "Logged out successfully"})
+        response = Response({"message": "Logged out successfully"})
+        return _clear_refresh_cookie(response)
 
 
 class LogoutAllView(APIView):

@@ -205,7 +205,7 @@ If `login: true` in request, also includes:
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop"
 }
@@ -234,7 +234,7 @@ Login with email + password.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
@@ -333,7 +333,7 @@ Login with phone number + password.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
@@ -443,9 +443,11 @@ Authenticate via OAuth2 provider.
 {
   "code": "<authorization-code>",
   "redirect_uri": "https://yourapp.com/auth/callback",
+  "code_verifier": "<PKCE-code-verifier>",
   "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
+`code_verifier`: Optional PKCE code verifier (RFC 7636). Required if the authorization request included a `code_challenge`.
 
 **Request (Google ID token):**
 ```json
@@ -462,7 +464,7 @@ Authenticate via OAuth2 provider.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
@@ -530,6 +532,7 @@ OAuth2 callback endpoint for authorization code flow.
 **Query Parameters:**
 - `code` (required): Authorization code from provider
 - `redirect_uri` (required): Original redirect URI
+- `code_verifier` (optional): PKCE code verifier (RFC 7636)
 - `state` (optional): CSRF/state parameter
 
 **Response `200`:**
@@ -538,7 +541,7 @@ OAuth2 callback endpoint for authorization code flow.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
   "user": {
@@ -626,6 +629,14 @@ Location: https://yourapp.com/auth/callback?access_token=eyJ...&refresh_token=ey
 }
 ```
 
+**Response `400` (Invalid redirect URI):**
+```json
+{
+  "error": "redirect_uri is not in the application's whitelist",
+  "code": "INVALID_REDIRECT_URI"
+}
+```
+
 **Response `401` (Social auth failed):**
 ```json
 {
@@ -685,7 +696,7 @@ Verify a magic link token and receive JWT tokens.
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": null,
   "user": {
@@ -747,25 +758,25 @@ Refresh the access token.
 { "refresh_token": "eyJ..." }
 ```
 
+> **Cookie mode:** When `TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED=True`, the `refresh_token` field is optional. If omitted or empty, the server reads it from the `HttpOnly` cookie set during login. In this mode the response also omits `refresh_token` from the JSON body (it is rotated via `Set-Cookie` instead).
+
 **Response `200`:**
 ```json
 {
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 3600,
+  "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": null
 }
 ```
 
-**Response `400` (Validation error):**
+**Response `400` (Missing refresh token):**
 ```json
 {
-  "error": "Validation error",
-  "details": {
-    "refresh_token": ["This field is required."]
-  }
+  "error": "refresh_token is required",
+  "code": "MISSING_REFRESH_TOKEN"
 }
 ```
 
@@ -792,18 +803,18 @@ Logout (revokes refresh token + blacklists access token).
 Authorization: Bearer <access_token>
 ```
 
+> **Cookie mode:** When `TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED=True`, the server also clears the refresh token cookie via `Set-Cookie` with `max-age=0`.
+
 **Response `200`:**
 ```json
 { "message": "Logged out successfully" }
 ```
 
-**Response `400` (Validation error):**
+**Response `400` (Missing refresh token):**
 ```json
 {
-  "error": "Validation error",
-  "details": {
-    "refresh_token": ["This field is required."]
-  }
+  "error": "refresh_token is required",
+  "code": "MISSING_REFRESH_TOKEN"
 }
 ```
 
@@ -4669,6 +4680,27 @@ Authorization: Bearer <access_token>
   "code": "NOT_FOUND"
 }
 ```
+
+## AI Agent Endpoints (AIRS)
+
+Tenxyte includes a full set of AI/Agent Identity & Runtime Security endpoints for managing agent tokens, heartbeats, pending actions, and usage reporting:
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET/POST` | `/ai/tokens/` | List / create agent tokens |
+| `GET/PUT/DELETE` | `/ai/tokens/<id>/` | Agent token detail |
+| `POST` | `/ai/tokens/<id>/revoke/` | Revoke an agent token |
+| `POST` | `/ai/tokens/<id>/suspend/` | Suspend an agent token |
+| `POST` | `/ai/tokens/<id>/heartbeat/` | Agent heartbeat ping |
+| `POST` | `/ai/tokens/<id>/report-usage/` | Report agent usage metrics |
+| `POST` | `/ai/tokens/revoke-all/` | Revoke all agent tokens |
+| `GET` | `/ai/pending-actions/` | List pending human-in-the-loop actions |
+| `POST` | `/ai/pending-actions/<id>/approve/` | Approve a pending action |
+| `POST` | `/ai/pending-actions/<id>/reject/` | Reject a pending action |
+
+→ See [AIRS Guide](airs.md) for full request/response documentation, clearance levels, and agent lifecycle management.
+
+---
 
 ## Legend
 

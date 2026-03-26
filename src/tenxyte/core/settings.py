@@ -37,7 +37,7 @@ class SecureModePreset:
 SECURE_MODE_PRESETS = {
     "development": SecureModePreset(
         name="development",
-        jwt_access_token_lifetime=3600,
+        jwt_access_token_lifetime=3600,  # 1h in dev for convenience
         jwt_refresh_token_lifetime=86400,
         jwt_algorithm="HS256",
         password_min_length=6,
@@ -195,8 +195,8 @@ class Settings:
 
     @property
     def jwt_access_token_lifetime(self) -> int:
-        """Access token lifetime in seconds."""
-        return self._get("JWT_ACCESS_TOKEN_LIFETIME", 3600)
+        """Access token lifetime in seconds (default: 15 minutes)."""
+        return self._get("JWT_ACCESS_TOKEN_LIFETIME", 900)
 
     @property
     def jwt_refresh_token_lifetime(self) -> int:
@@ -212,6 +212,16 @@ class Settings:
     def jwt_audience(self) -> Optional[str]:
         """JWT audience claim."""
         return self._get("JWT_AUDIENCE", None)
+
+    @property
+    def jwt_previous_secret_key(self) -> Optional[str]:
+        """Previous JWT secret key for key rotation."""
+        return self._get("JWT_PREVIOUS_SECRET_KEY", None)
+
+    @property
+    def jwt_previous_public_key(self) -> Optional[str]:
+        """Previous JWT public key for key rotation (RS256)."""
+        return self._get("JWT_PREVIOUS_PUBLIC_KEY", None)
 
     # ============================================================
     # Security Settings
@@ -240,7 +250,7 @@ class Settings:
     @property
     def password_require_special(self) -> bool:
         """Require special characters in password."""
-        return self._get("PASSWORD_REQUIRE_SPECIAL", False)
+        return self._get("PASSWORD_REQUIRE_SPECIAL", True)
 
     @property
     def max_login_attempts(self) -> int:
@@ -251,6 +261,41 @@ class Settings:
     def lockout_duration(self) -> int:
         """Account lockout duration in seconds."""
         return self._get("LOCKOUT_DURATION", 300)
+
+    @property
+    def lockout_escalation_enabled(self) -> bool:
+        """Enable exponential lockout escalation."""
+        return self._get("LOCKOUT_ESCALATION_ENABLED", True)
+
+    @property
+    def lockout_max_duration_minutes(self) -> int:
+        """Maximum lockout duration in minutes (cap for exponential)."""
+        return self._get("LOCKOUT_MAX_DURATION_MINUTES", 1440)
+
+    @property
+    def password_min_length_no_mfa(self) -> int:
+        """Minimum password length for users without MFA (NIST SP 800-63B). 0 = disabled."""
+        return self._get("PASSWORD_MIN_LENGTH_NO_MFA", 0)
+
+    @property
+    def refresh_token_cookie_enabled(self) -> bool:
+        """Enable HttpOnly cookie for refresh tokens."""
+        return self._get("REFRESH_TOKEN_COOKIE_ENABLED", False)
+
+    @property
+    def refresh_token_cookie_name(self) -> str:
+        """Cookie name for refresh token."""
+        return self._get("REFRESH_TOKEN_COOKIE_NAME", "tenxyte_refresh")
+
+    @property
+    def refresh_token_cookie_samesite(self) -> str:
+        """SameSite attribute for refresh token cookie."""
+        return self._get("REFRESH_TOKEN_COOKIE_SAMESITE", "Strict")
+
+    @property
+    def refresh_token_cookie_path(self) -> str:
+        """Path attribute for refresh token cookie."""
+        return self._get("REFRESH_TOKEN_COOKIE_PATH", "/api/v1/auth/")
 
     @property
     def breach_check_enabled(self) -> bool:
