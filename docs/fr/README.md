@@ -10,6 +10,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Coverage](https://codecov.io/gh/tenxyte/tenxyte/graph/badge.svg)](https://codecov.io/gh/tenxyte/tenxyte)
 [![Tests](https://github.com/tenxyte/tenxyte/actions/workflows/ci.yml/badge.svg)](https://github.com/tenxyte/tenxyte/actions/workflows/ci.yml)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/tenxyte?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/tenxyte)
 
 ---
 
@@ -72,6 +73,355 @@ curl http://localhost:8000/api/v1/auth/me/ \
 > 💡 Incluez `"login": true` dans la requête d'inscription pour recevoir les tokens JWT directement dans la réponse.
 
 C'est tout — vous avez un backend d'authentification complet en fonctionnement.
+
+---
+
+## AIRS — AI Responsibility & Security (AI-Ready Start)
+
+Tenxyte n'authentifie pas seulement les humains — il rend votre backend **sûr à connecter à des agents IA**.
+
+**Principe fondamental** : un agent IA n'agit jamais de sa propre autorité. Il emprunte les permissions d'un utilisateur via un `AgentToken` à portée limitée et durée de vie courte, et chaque action devient auditable, contrôlable et suspendable.
+
+### Un flux "AI Ready" réel, de bout en bout
+
+#### 1) Un utilisateur délègue un token limité à un agent
+
+```http
+POST /ai/tokens/
+Authorization: Bearer <user_jwt>
+Content-Type: application/json
+
+{
+  "agent_id": "finance-agent-v2",
+  "expires_in": 3600,
+  "permissions": ["read:reports", "write:invoices"],
+  "organization": "acme-corp",
+  "budget_limit_usd": 5.00,
+  "circuit_breaker": {
+    "max_requests_per_minute": 30,
+    "max_requests_total": 500
+  },
+  "dead_mans_switch": {
+    "heartbeat_required_every": 300
+  }
+}
+```
+
+**Réponse (201) :**
+
+```json
+{
+  "id": 42,
+  "token": "eKj3...raw_token...Xz9",
+  "agent_id": "finance-agent-v2",
+  "status": "ACTIVE",
+  "expires_at": "2024-01-20T16:00:00Z"
+}
+```
+
+> ⚠️ Le `token` brut est retourné **une seule fois** à la création — seul son hash SHA-256 est persisté. Stockez-le de manière sécurisée.
+
+L'agent appelle ensuite vos APIs avec :
+
+```http
+Authorization: AgentBearer <raw_token>
+```
+
+#### 2) Chaque requête de l'agent est doublement vérifiée (scope Agent + RBAC Humain)
+
+Tenxyte applique une **Double Validation RBAC** :
+
+- **Vérification du scope agent** : la permission est-elle dans `granted_permissions` du token ?
+- **Vérification humaine** : l'utilisateur délégant la possède-t-il encore ?
+
+Si l'une échoue, la requête est rejetée (`403 Forbidden`).
+
+#### 3) Les actions dangereuses peuvent exiger une validation humaine (HITL)
+
+Les endpoints décorés avec `@require_agent_clearance(human_in_the_loop_required=True)` ne s'exécutent pas immédiatement lorsqu'ils sont appelés par un agent. Tenxyte crée un `AgentPendingAction` et retourne **`202 Accepted`** :
+
+```json
+{
+  "status": "pending_confirmation",
+  "message": "This action requires human approval.",
+  "confirmation_token": "hitl_a1b2c3d4e5f6...",
+  "expires_at": "2024-01-20T16:10:00Z"
+}
+```
+
+L'humain confirme via :
+
+```http
+POST /ai/pending-actions/<confirmation_token>/confirm/
+Authorization: Bearer <user_jwt>
+```
+
+L'agent relance ensuite l'appel original avec le token confirmé :
+
+```http
+X-Action-Confirmation: hitl_a1b2c3d4e5f6...
+```
+
+#### 4) Les agents incontrôlables sont stoppés automatiquement (Circuit Breaker + Dead Man's Switch)
+
+Si l'agent dépasse les limites RPM/totales, atteint des seuils d'anomalie, rate le heartbeat ou épuise son budget, le token est automatiquement **SUSPENDU**.
+
+```http
+POST /ai/tokens/{id}/heartbeat/
+Authorization: AgentBearer <raw_token>
+```
+
+#### 5) Le suivi de budget transforme les dépenses LLM en mécanisme d'application
+
+Votre code signale les coûts ; Tenxyte les accumule et suspend le token quand la limite est atteinte.
+
+```http
+POST /ai/tokens/{id}/report-usage/
+Authorization: AgentBearer <raw_token>
+Content-Type: application/json
+
+{
+  "cost_usd": 0.042,
+  "prompt_tokens": 1250,
+  "completion_tokens": 450
+}
+```
+
+#### 6) Audit forensique : tracez "quel prompt a causé quelle action"
+
+Attachez `X-Prompt-Trace-ID` aux requêtes agent et Tenxyte le lie aux actions en attente et à la piste d'audit.
+
+```http
+X-Prompt-Trace-ID: trace_7f3a2b9c-...
+```
+
+> Vous voulez la référence complète (rédaction PII, paramètres, raisons de suspension, etc.) ? Consultez le **[Guide AIRS](airs.md)**.
+
+---
+
+## Organisations — Multi-Tenant B2B, Prêt à l'Emploi
+
+Vous construisez un SaaS pour des entreprises ? Tenxyte embarque une hiérarchie multi-tenant complète avec RBAC par organisation, gestion des membres et flux d'invitation — aucune infrastructure supplémentaire nécessaire.
+
+### Activation en une ligne
+
+```python
+TENXYTE_ORGANIZATIONS_ENABLED = True
+```
+
+### Modélisez n'importe quelle structure organisationnelle
+
+```
+Acme Corp (racine)
+├── Ingénierie
+│   ├── Équipe Backend
+│   └── Équipe Frontend
+└── Ventes
+    └── EMEA
+```
+
+```http
+POST /api/v1/auth/organizations/
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "name": "Ingénierie", "slug": "acme-engineering", "parent_id": 1 }
+```
+
+### Invitez des membres par email
+
+```http
+POST /api/v1/auth/organizations/invitations/
+Authorization: Bearer <token>
+X-Org-Slug: acme-corp
+Content-Type: application/json
+
+{ "email": "newmember@example.com", "role_code": "member", "expires_in_days": 7 }
+```
+
+Un email d'invitation est envoyé. L'utilisateur accepte en s'inscrivant ou en se connectant.
+
+### Permissions par organisation dans les vues
+
+```python
+from tenxyte.decorators import require_jwt, require_org_context, require_org_permission
+
+class OrgSettingsView(APIView):
+    @require_jwt
+    @require_org_context
+    @require_org_permission('org.manage')
+    def post(self, request):
+        org = request.organization   # résolu depuis l'en-tête X-Org-Slug
+        ...
+```
+
+### Héritage des rôles
+
+Quand `TENXYTE_ORG_ROLE_INHERITANCE = True` (par défaut), les rôles se propagent vers le bas de la hiérarchie : un `admin` dans `Acme Corp` est automatiquement `admin` dans `Ingénierie`, `Équipe Backend`, etc.
+
+> Référence complète : **[Guide des Organisations](organizations.md)**
+
+---
+
+## Shortcut Secure Mode — Sécurité Production en Une Ligne
+
+Plutôt que de régler 115+ paramètres, choisissez un préréglage qui correspond à votre modèle de menace :
+
+```python
+TENXYTE_SHORTCUT_SECURE_MODE = 'medium'   # 'development' | 'medium' | 'robust'
+```
+
+| Paramètre | `development` | `medium` | `robust` |
+|---|---|---|---|
+| **Cible** | Prototypes, dev local | SaaS public, B2C | Fintech, santé, RGPD |
+| Durée de vie access token | 1h | 15min | **5min** |
+| Rotation du refresh token | ✗ | ✓ | ✓ |
+| Tentatives de connexion max | 10 | 5 | **3** |
+| Durée de verrouillage | 15min | 30min | **60min** |
+| Historique des mots de passe | ✗ | 5 | **12** |
+| Vérification fuites (HIBP) | ✗ | ✓ + blocage | ✓ + blocage |
+| Journaux d'audit | ✗ | ✓ | ✓ |
+| Limites d'appareils | ✗ | 5 | **2 (refus)** |
+| En-têtes de sécurité | ✗ | ✓ | ✓ |
+| Passkeys (WebAuthn) | ✗ | ✗ | **✓** |
+
+Chaque paramètre reste individuellement modifiable — le préréglage est un point de départ, pas une cage :
+
+```python
+TENXYTE_SHORTCUT_SECURE_MODE = 'robust'
+TENXYTE_WEBAUTHN_ENABLED = False         # désactiver les passkeys
+TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 600  # 10min au lieu de 5min
+```
+
+> Référence complète : **[Guide des Paramètres](settings.md)**
+
+---
+
+## Passkeys (WebAuthn / FIDO2) — Sans Mot de Passe, Anti-Hameçonnage
+
+Tenxyte embarque une stack WebAuthn/FIDO2 complète. Les utilisateurs s'inscrivent une fois avec Face ID, Touch ID ou une clé matérielle — puis s'authentifient sans jamais entrer de mot de passe.
+
+### Activation
+
+```python
+TENXYTE_WEBAUTHN_ENABLED = True          # activé automatiquement avec le préréglage 'robust'
+TENXYTE_WEBAUTHN_RP_ID = 'yourapp.com'
+TENXYTE_WEBAUTHN_RP_NAME = 'Your App'
+```
+
+> Prérequis : `pip install tenxyte[webauthn]`
+
+### 1) Enregistrer un passkey
+
+```http
+# Étape 1 — Obtenir le challenge navigateur
+POST /api/v1/auth/webauthn/register/begin/
+Authorization: Bearer <user_jwt>
+
+# Étape 2 — Soumettre la clé navigateur
+POST /api/v1/auth/webauthn/register/complete/
+Authorization: Bearer <user_jwt>
+Content-Type: application/json
+
+{
+  "challenge_id": 123,
+  "credential": { ...réponse WebAuthn du navigateur... },
+  "device_name": "MacBook Touch ID"
+}
+```
+
+**Réponse (201) :**
+
+```json
+{
+  "message": "Passkey registered successfully",
+  "credential": {
+    "id": "cred_abc123",
+    "device_name": "MacBook Touch ID",
+    "created_at": "2024-01-20T15:00:00Z"
+  }
+}
+```
+
+### 2) S'authentifier — sans mot de passe
+
+```http
+# Étape 1 — Obtenir le challenge navigateur
+POST /api/v1/auth/webauthn/authenticate/begin/
+Content-Type: application/json
+
+{ "email": "user@example.com" }
+
+# Étape 2 — Soumettre la clé navigateur
+POST /api/v1/auth/webauthn/authenticate/complete/
+Content-Type: application/json
+
+{
+  "challenge_id": 456,
+  "credential": { ...réponse WebAuthn du navigateur... }
+}
+```
+
+**Réponse (200) :**
+
+```json
+{
+  "access": "<jwt_access_token>",
+  "refresh": "<jwt_refresh_token>",
+  "user": { "id": 42, "email": "user@example.com" },
+  "message": "Authentication successful"
+}
+```
+
+Supporte les **resident keys** — le passkey lui-même identifie l'utilisateur, aucun email nécessaire.
+
+> Référence complète : **[Endpoints de l'API](endpoints.md)**
+
+---
+
+## Pourquoi Choisir Tenxyte ?
+
+Tenxyte est le seul package d'authentification conçu pour **les humains et les agents IA**, tout en restant entièrement auto-hébergé, open-source et agnostique au framework — avec support Django complet aujourd'hui, FastAPI (partiel), et Java, Node.js et PHP en roadmap.
+
+### Tableau Comparatif
+
+| Fonctionnalité | **Tenxyte** | django-allauth | Clerk | Auth0 |
+|---|:---:|:---:|:---:|:---:|
+| **Type** | Package Python | Package Django | SaaS | SaaS |
+| **Open source** | ✅ MIT | ✅ MIT | ❌ | ❌ |
+| **Auto-hébergé / propriété des données** | ✅ | ✅ | ❌ | ❌ ¹ |
+| **Support de frameworks** | ✅ Django (complet) · FastAPI (partiel) · Java, Node.js, PHP en cours | Django uniquement | SDK (JS en priorité) | SDK (20+ langages) |
+| **JWT (accès + rafraîchissement)** | ✅ | ❌ ² | ✅ | ✅ |
+| **Connexion sociale** | ✅ 4 providers | ✅ 50+ providers | ✅ 20+ providers | ✅ 30+ providers |
+| **Liens Magiques** | ✅ | ✅ | ✅ | ✅ |
+| **Passkeys / WebAuthn** | ✅ | ✅ | ✅ | ✅ |
+| **2FA / TOTP + codes de secours** | ✅ | ✅ | ✅ | ✅ |
+| **RBAC (rôles + permissions + décorateurs Python)** | ✅ complet | ❌ | ⚠️ par organisation | ⚠️ add-on |
+| **Organisations / multi-tenant** | ✅ hiérarchique | ❌ | ✅ plat | ✅ |
+| **Vérification fuites (HaveIBeenPwned)** | ✅ intégré | ❌ | ❌ | ✅ |
+| **Verrouillage progressif** | ✅ | ⚠️ basique | ✅ | ✅ |
+| **Journaux d'audit (API interrogeable)** | ✅ | ❌ | ⚠️ tableau de bord | ⚠️ flux de logs |
+| **Préréglages Shortcut Secure Mode** | ✅ | ❌ | ❌ | ❌ |
+| **Tokens agent IA (AIRS)** | ✅ | ❌ | ❌ | ⚠️ expérimental ³ |
+| **Human-in-the-Loop (HITL)** | ✅ | ❌ | ❌ | ❌ |
+| **Suivi budget LLM** | ✅ | ❌ | ❌ | ❌ |
+| **Circuit Breaker + Dead Man's Switch** | ✅ | ❌ | ❌ | ❌ |
+| **Trace forensique (X-Prompt-Trace-ID)** | ✅ | ❌ | ❌ | ❌ |
+| **Gratuit / tarification** | ✅ illimité | ✅ illimité | ⚠️ 10k MAU | ⚠️ 7,5k MAU |
+
+> ✅ = support natif · ⚠️ = partiel / limité · ❌ = non disponible
+
+¹ Auth0 propose une option "Private Cloud" aux tarifs entreprise.  
+² django-allauth utilise les sessions Django ; JWT nécessite un package séparé (ex. `djangorestframework-simplejwt`).  
+³ Auth0 a annoncé des flux OAuth pour agents IA en 2025 (`auth0.com/ai`), sans suivi de budget, HITL ni circuit breaker.
+
+### Quand choisir Tenxyte
+
+- **Vous avez besoin d'une infrastructure IA-ready** — tokens agent à portée limitée, HITL, application du budget et circuit breakers sont intégrés, pas ajoutés en surcouche.
+- **Vous possédez vos données** — utilisateurs, tokens, journaux d'audit et structures organisationnelles vivent dans votre propre base de données.
+- **Vous construisez un SaaS sérieux** — organisations multi-tenant hiérarchiques, double validation RBAC et pistes d'audit forensiques dès le départ.
+- **Vous voulez une ligne de config pour la sécurité en production** — `TENXYTE_SHORTCUT_SECURE_MODE = 'robust'` remplace une checklist d'audit de sécurité.
+- **Vous avez besoin d'une couverture multi-framework** — intégration Django complète aujourd'hui, FastAPI (partiel) déjà supporté, avec Java (Spring Boot), Node.js (Express, Nest.js) et PHP (Laravel, Symfony) en roadmap.
 
 ---
 

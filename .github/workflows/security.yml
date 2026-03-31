@@ -14,6 +14,9 @@ on:
     - cron: '0 8 * * 1'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   # ===========================================================================
   # SCA — Software Composition Analysis (R3, R7, R12)
