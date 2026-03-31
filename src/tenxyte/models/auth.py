@@ -314,7 +314,9 @@ class AbstractUser(models.Model):
         from ..conf import auth_settings
         import hashlib
 
-        pre_hash = hashlib.sha256(raw_password.encode("utf-8")).hexdigest()
+        pre_hash = hashlib.sha256(
+            raw_password.encode("utf-8")
+        ).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
         self.password = bcrypt.hashpw(
             pre_hash.encode("utf-8"), bcrypt.gensalt(rounds=auth_settings.BCRYPT_ROUNDS)
         ).decode("utf-8")
@@ -322,7 +324,9 @@ class AbstractUser(models.Model):
     def check_password(self, raw_password: str) -> bool:
         import hashlib
 
-        pre_hash = hashlib.sha256(raw_password.encode("utf-8")).hexdigest()
+        pre_hash = hashlib.sha256(
+            raw_password.encode("utf-8")
+        ).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
         return bcrypt.checkpw(pre_hash.encode("utf-8"), self.password.encode("utf-8"))
 
     def lock_account(self, duration_minutes: int = 30):

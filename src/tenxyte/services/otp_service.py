@@ -177,7 +177,8 @@ class OTPService:
 
         if not auth_settings.SMS_ENABLED:
             if auth_settings.SMS_DEBUG:
-                logger.info(f"[OTP][SMS_DEBUG] To: {phone_number} | Message: {message}")
+                masked = f"***{phone_number[-4:]}" if len(phone_number) >= 4 else "****"
+                logger.info(f"[OTP][SMS_DEBUG] To: {masked} | Message: {message}")
                 return True
             logger.warning("[OTP] SMS_ENABLED=False and SMS_DEBUG=False — SMS not sent.")
             return False

@@ -16,6 +16,9 @@ on:
       - 'src/tenxyte/serializers/**/*.py'
       - 'scripts/validate_*.py'
 
+permissions:
+  contents: read
+
 jobs:
   validate-canonical-spec:
     name: Validate Canonical Specification

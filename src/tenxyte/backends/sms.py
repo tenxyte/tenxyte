@@ -35,7 +35,8 @@ class ConsoleBackend(BaseSMSBackend):
 
     def send_sms(self, phone_number: str, message: str) -> bool:
         """Affiche le SMS dans la console."""
-        logger.info(f"[SMS Console] To: {phone_number}")
+        masked = f"***{phone_number[-4:]}" if len(phone_number) >= 4 else "****"
+        logger.info(f"[SMS Console] To: {masked}")
         logger.info(f"[SMS Console] Message: {message}")
         return True
 
@@ -75,7 +76,8 @@ class TwilioBackend(BaseSMSBackend):
 
             result = client.messages.create(body=message, from_=self.from_number, to=phone_number)
 
-            logger.info(f"[Twilio] SMS sent to {phone_number} | SID: {result.sid}")
+            masked = f"***{phone_number[-4:]}" if len(phone_number) >= 4 else "****"
+            logger.info(f"[Twilio] SMS sent to {masked} | SID: {result.sid}")
             return True
 
         except TwilioRestException as e:
@@ -137,8 +139,9 @@ class NGHBackend(BaseSMSBackend):
             data = json.loads(res.read().decode("utf-8"))
 
             if data.get("status") == 200:
+                masked = f"***{phone_number[-4:]}" if len(phone_number) >= 4 else "****"
                 logger.info(
-                    f"[NGH] SMS sent to {phone_number} | "
+                    f"[NGH] SMS sent to {masked} | "
                     f"MessageID: {data.get('messageid')} | "
                     f"Credits: {data.get('credits')}"
                 )
