@@ -43,7 +43,7 @@ class TestConsoleBackend:
         result = backend.send_sms("+33600000000", "Mon code OTP est 123456")
         
         assert result is True
-        assert "[SMS Console] To: +33600000000" in caplog.text
+        assert "[SMS Console] To: ***0000" in caplog.text
         assert "[SMS Console] Message: Mon code OTP est 123456" in caplog.text
 
 
