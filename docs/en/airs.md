@@ -135,10 +135,26 @@ Some actions are too sensitive for an AI agent to execute autonomously. HITL ens
 Endpoints decorated with `@require_agent_clearance(human_in_the_loop_required=True)` behave differently when called by an agent:
 
 1. The agent calls the endpoint normally.
-2. Instead of executing, Tenxyte creates an `AgentPendingAction` and returns **`202 Accepted`** (not `200`).
-3. The human is notified (email, webhook, etc.) with a `confirmation_token`.
+2. Instead of executing, Tenxyte creates an `AgentPendingAction` and returns **`202 Accepted`** (not `200`):
+
+```json
+{
+  "status": "pending_confirmation",
+  "message": "This action requires human approval.",
+  "confirmation_token": "hitl_a1b2c3d4e5f6...",
+  "expires_at": "2024-01-20T16:10:00Z"
+}
+```
+
+3. The human is notified (email, webhook, etc.) with the `confirmation_token`.
 4. The human confirms or denies via the API.
-5. The agent can poll or be notified to retry.
+5. The agent retries the original call, passing the confirmed token in the `X-Action-Confirmation` header:
+
+```http
+X-Action-Confirmation: hitl_a1b2c3d4e5f6...
+```
+
+Tenxyte validates the confirmation and lets the request through.
 
 ### Global HITL actions
 
