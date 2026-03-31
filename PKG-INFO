@@ -7,7 +7,7 @@ Project-URL: Documentation, https://tenxyte.readthedocs.io
 Project-URL: Repository, https://github.com/tenxyte/tenxyte
 Project-URL: Issues, https://github.com/tenxyte/tenxyte/issues
 Project-URL: Changelog, https://github.com/tenxyte/tenxyte/blob/main/CHANGELOG.md
-Author-email: Tenxyte Team <contact@tenxyte.com>
+Author-email: Tenxyte Team <boboprem1@gmail.com>
 License: MIT
 License-File: LICENSE
 Keywords: 2fa,authentication,django,google-authenticator,jwt,otp,rbac,role-based-access-control,totp
