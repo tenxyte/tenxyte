@@ -53,7 +53,9 @@ class BreachCheckService:
             return False, 0
 
         # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1
-        sha1_hash = hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
+        sha1_hash = (
+            hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
+        )  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
         prefix = sha1_hash[:5]
         suffix = sha1_hash[5:]
 

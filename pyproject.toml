@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tenxyte"
-version = "0.9.4"
+version = "0.9.4.1"
 
 description = "Framework-agnostic Python authentication — JWT, RBAC, 2FA, Magic Links, Passkeys, Social Login, B2B Organizations, multi-tenant support. Works with Django, FastAPI, and more."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
-    { name = "Tenxyte Team", email = "contact@tenxyte.com" }
+    { name = "Tenxyte Team", email = "boboprem1@gmail.com" }
 ]
 keywords = [
     "authentication",

@@ -57,7 +57,7 @@ class TestBreachCheckService:
     def test_is_pwned_returns_true_for_known_password(self):
         import hashlib
         password = "password123"
-        sha1 = hashlib.sha1(password.encode()).hexdigest().upper()
+        sha1 = hashlib.sha1(password.encode()).hexdigest().upper()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
         suffix = sha1[5:]
 
         mock_resp = MagicMock()
@@ -150,7 +150,7 @@ class TestBreachCheckService:
         """Verify k-anonymity: only first 5 chars of SHA-1 are sent."""
         import hashlib
         password = "testpassword"
-        sha1 = hashlib.sha1(password.encode()).hexdigest().upper()
+        sha1 = hashlib.sha1(password.encode()).hexdigest().upper()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
         expected_prefix = sha1[:5]
 
         mock_resp = MagicMock()
