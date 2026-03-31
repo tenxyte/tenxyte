@@ -316,7 +316,7 @@ def build_device_info_from_user_agent(user_agent: str) -> str:
     if not user_agent or not user_agent.strip():
         return ""
 
-    ua = user_agent
+    ua = user_agent[:512]
 
     # OS detection
     os_name = None
