@@ -299,7 +299,9 @@ class PasswordHistory(models.Model):
             try:
                 import hashlib
 
-                pre_hash = hashlib.sha256(raw_password.encode("utf-8")).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
+                pre_hash = hashlib.sha256(
+                    raw_password.encode("utf-8")
+                ).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
                 if bcrypt.checkpw(pre_hash.encode("utf-8"), history.password_hash.encode("utf-8")):
 
                     return True

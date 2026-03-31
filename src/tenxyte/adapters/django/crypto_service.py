@@ -47,7 +47,9 @@ class DjangoCryptoService:
         import bcrypt
 
         # Pre-hash with SHA256 for bcrypt length compatibility
-        pre_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
+        pre_hash = hashlib.sha256(
+            password.encode("utf-8")
+        ).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
         return bcrypt.hashpw(pre_hash.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
     def verify_password(self, password: str, hashed: str) -> bool:
@@ -63,7 +65,9 @@ class DjangoCryptoService:
         """
         import bcrypt
 
-        pre_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
+        pre_hash = hashlib.sha256(
+            password.encode("utf-8")
+        ).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
         return bcrypt.checkpw(pre_hash.encode("utf-8"), hashed.encode("utf-8"))
 
     def generate_random_string(self, length: int = 32) -> str:
