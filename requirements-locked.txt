@@ -102,7 +102,7 @@ sqlparse==0.5.5
     # via django
 typing-extensions==4.15.0
     # via referencing
-tzdata==2025.3
+tzdata==2026.1
     # via django
 uritemplate==4.2.0
     # via drf-spectacular
