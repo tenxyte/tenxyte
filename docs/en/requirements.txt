@@ -1,2 +1,2 @@
 mkdocs-material==9.7.5
-mkdocstrings[python]>=mkdocstrings[python]
+mkdocstrings[python]>=0.27.0
