@@ -22,7 +22,7 @@ charset-normalizer==3.4.7
     # via requests
 colorama==0.4.6
     # via qrcode
-cryptography==46.0.6
+cryptography==46.0.7
     # via
     #   django-cryptography
     #   google-auth
@@ -46,7 +46,7 @@ djangorestframework==3.17.1
     #   tenxyte (pyproject.toml)
 drf-spectacular==0.29.0
     # via tenxyte (pyproject.toml)
-google-auth==2.49.1
+google-auth==2.49.2
     # via
     #   google-auth-oauthlib
     #   tenxyte (pyproject.toml)
