@@ -46,7 +46,7 @@ djangorestframework==3.17.1
     #   tenxyte (pyproject.toml)
 drf-spectacular==0.29.0
     # via tenxyte (pyproject.toml)
-google-auth==2.49.1
+google-auth==2.49.2
     # via
     #   google-auth-oauthlib
     #   tenxyte (pyproject.toml)
