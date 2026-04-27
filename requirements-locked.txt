@@ -22,7 +22,7 @@ charset-normalizer==3.4.7
     # via requests
 colorama==0.4.6
     # via qrcode
-cryptography==46.0.7
+cryptography==47.0.0
     # via
     #   django-cryptography
     #   google-auth
