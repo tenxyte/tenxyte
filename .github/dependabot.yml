@@ -10,7 +10,7 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-      timezone: "Africa/Porto-Novo"
+      timezone: "UTC"
     # Group security patches together for quick review
     groups:
       security-patches:
@@ -32,7 +32,7 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "09:00"
-      timezone: "Africa/Porto-Novo"
+      timezone: "UTC"
     labels:
       - "dependencies"
       - "ci-cd"
