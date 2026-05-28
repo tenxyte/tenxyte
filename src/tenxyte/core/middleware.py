@@ -335,9 +335,7 @@ class ApplicationAuthCoreMiddleware(CoreMiddleware):
                 )
 
             if not application.is_origin_allowed(origin):
-                return MiddlewareResult.error(
-                    401, "APP_AUTH_ORIGIN_DENIED", "Origin not allowed for this application"
-                )
+                return MiddlewareResult.error(401, "APP_AUTH_ORIGIN_DENIED", "Origin not allowed for this application")
 
         # Attach application to request
         request.application_id = str(application.id)
