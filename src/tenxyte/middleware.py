@@ -57,7 +57,7 @@ class ApplicationAuthMiddleware:
         access_key = request.headers.get("X-Access-Key")
         access_secret = request.headers.get("X-Access-Secret")
 
-        if not access_key or not access_secret:
+        if not access_key:
             return JsonResponse({"error": "Missing application credentials", "code": "APP_AUTH_REQUIRED"}, status=401)
 
         try:
@@ -65,19 +65,35 @@ class ApplicationAuthMiddleware:
 
             application = Application.objects.get(access_key=access_key, is_active=True)
 
-            # VULN-006 Mitigation: Cache successful bcrypt verifications for 60 seconds to prevent DoS
-            from django.core.cache import cache
-            import hashlib
+            if access_secret:
+                # Mode serveur: key + secret (server-to-server)
+                from django.core.cache import cache
+                import hashlib
 
-            secret_hash = hashlib.sha256(access_secret.encode("utf-8")).hexdigest()
-            cache_key = f"app_auth_ok_{application.id}_{secret_hash}"
+                secret_hash = hashlib.sha256(access_secret.encode("utf-8")).hexdigest()
+                cache_key = f"app_auth_ok_{application.id}_{secret_hash}"
 
-            if not cache.get(cache_key):
-                if not application.verify_secret(access_secret):
+                if not cache.get(cache_key):
+                    if not application.verify_secret(access_secret):
+                        return JsonResponse(
+                            {"error": "Invalid application credentials", "code": "APP_AUTH_INVALID"}, status=401
+                        )
+                    cache.set(cache_key, True, 60)
+            else:
+                # Mode frontend: key-only + Origin validation
+                origin = request.META.get("HTTP_ORIGIN")
+
+                if not origin:
                     return JsonResponse(
-                        {"error": "Invalid application credentials", "code": "APP_AUTH_INVALID"}, status=401
+                        {"error": "Missing Origin header for key-only auth", "code": "APP_AUTH_ORIGIN_REQUIRED"},
+                        status=401,
                     )
-                cache.set(cache_key, True, 60)
+
+                if not application.is_origin_allowed(origin):
+                    return JsonResponse(
+                        {"error": "Origin not allowed for this application", "code": "APP_AUTH_ORIGIN_DENIED"},
+                        status=401,
+                    )
 
             # Attacher l'application à la requête
             request.application = application

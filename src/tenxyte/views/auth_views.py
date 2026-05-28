@@ -190,6 +190,17 @@ def register_user_with_core(**kwargs):
         user_repo.set_password(created_user.id, password)
         created_user = user_repo.get_by_id(created_user.id)  # Reload with hash
 
+    # Update additional fields that are not part of the standard User dataclass
+    update_data = {}
+    for field in ["phone_country_code", "phone_number", "username", "bio", "timezone", "language", "custom_fields"]:
+        if field in kwargs:
+            update_data[field] = kwargs[field]
+    
+    if update_data and hasattr(user_repo, "update_user"):
+        updated_user = user_repo.update_user(created_user.id, update_data)
+        if updated_user:
+            created_user = updated_user
+
     return True, created_user, None
 
 

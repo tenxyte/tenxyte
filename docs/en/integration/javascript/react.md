@@ -26,7 +26,7 @@ import App from './App';
 
 const tx = new TenxyteClient({
     baseUrl: 'https://api.my-backend.com',
-    headers: { 'X-Access-Key': '<your-access-key>' },
+    accessKey: 'pkg_abc123',
     storage: new LocalStorageAdapter(),
     // cookieMode: true, // Enable if backend uses HttpOnly refresh tokens
 });
@@ -75,6 +75,7 @@ Reactive authentication state and actions.
 const {
     isAuthenticated, // boolean — true if access token is valid and not expired
     loading,         // boolean — true during initial load from storage
+    isLoading,       // boolean — alias for loading (API consistency)
     accessToken,     // string | null — raw JWT token
     loginWithEmail,  // (data: { email, password, device_info?, totp_code? }) => Promise<void>
     loginWithPhone,  // (data: { phone_country_code, phone_number, password, device_info? }) => Promise<void>
@@ -373,7 +374,7 @@ function LoginForm() {
 }
 ```
 
-Common error codes: `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `2FA_REQUIRED`, `RATE_LIMITED`, `MISSING_REFRESH_TOKEN`, `INVALID_REDIRECT_URI`.
+Common error codes: `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `2FA_REQUIRED`, `RATE_LIMITED`, `MISSING_REFRESH_TOKEN`, `INVALID_REDIRECT_URI`, `APP_AUTH_REQUIRED`, `APP_AUTH_ORIGIN_REQUIRED`, `APP_AUTH_ORIGIN_DENIED`.
 
 ---
 
@@ -384,7 +385,7 @@ If the backend is configured with `TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED=True`:
 ```tsx
 const tx = new TenxyteClient({
     baseUrl: 'https://api.my-backend.com',
-    headers: { 'X-Access-Key': '<key>' },
+    accessKey: 'pkg_abc123',
     cookieMode: true,
 });
 ```

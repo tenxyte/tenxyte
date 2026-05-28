@@ -120,7 +120,9 @@ class ApplicationListView(APIView):
             )
 
         app, raw_secret = Application.create_application(
-            name=serializer.validated_data["name"], description=serializer.validated_data.get("description", "")
+            name=serializer.validated_data["name"],
+            description=serializer.validated_data.get("description", ""),
+            allowed_origins=serializer.validated_data.get("allowed_origins", []),
         )
 
         return Response(

@@ -18,18 +18,40 @@ pnpm add @tenxyte/core
 
 ## Initialization
 
+The SDK supports two application authentication modes:
+
+### Frontend (browser)
+
+Only the public key is needed. The backend validates the `Origin` against the application's `allowed_origins` list.
+
 ```typescript
 import { TenxyteClient, LocalStorageAdapter } from '@tenxyte/core';
 
 const tx = new TenxyteClient({
     baseUrl: 'https://api.my-backend.com',
-    headers: { 'X-Access-Key': '<your-access-key>' },
-    storage: new LocalStorageAdapter(), // Browser persistence
+    accessKey: 'pkg_abc123',
+    storage: new LocalStorageAdapter(),
     // cookieMode: true, // Enable if backend uses HttpOnly refresh tokens
 });
 ```
 
-> **Important:** Never expose `X-Access-Secret` in frontend bundles. Use it server-side only.
+### Backend (server → server)
+
+Key + secret required. The secret must **never** appear in a browser bundle.
+
+```typescript
+import { TenxyteClient } from '@tenxyte/core';
+
+const tx = new TenxyteClient({
+    baseUrl: 'https://api.my-backend.com',
+    accessKey: 'pkg_abc123',
+    accessSecret: process.env.TENXYTE_SECRET,
+});
+```
+
+> **Browser guardrail:** If `accessSecret` is provided in a browser environment (`typeof window !== 'undefined'`), the SDK emits a `console.warn` at startup.
+
+> **Backward compatibility:** `headers: { 'X-Access-Key': '...' }` still works. `accessKey`/`accessSecret` are simply merged into `headers` by `resolveConfig()`.
 
 See the [configuration reference](index.md#configuration-reference) for all available options.
 
@@ -268,14 +290,29 @@ tx.ai.clearTraceId();
 
 ```typescript
 const apps = await tx.applications.listApplications();
+
+// Create with allowed_origins for frontend key-only mode
 const app = await tx.applications.createApplication({
-    name: 'My API Client',
-    description: 'Backend service',
+    name: 'Web Frontend',
+    description: 'React SPA',
+    allowed_origins: ['https://app.example.com', 'http://localhost:3000'],
 });
-await tx.applications.updateApplication('app-id', { name: 'Renamed' });
+
+// Create without allowed_origins — requires key + secret
+const backendApp = await tx.applications.createApplication({
+    name: 'Backend Cron',
+    description: 'Cron job service',
+});
+
+await tx.applications.updateApplication('app-id', {
+    name: 'Renamed',
+    allowed_origins: ['https://new-domain.com'],
+});
 await tx.applications.deleteApplication('app-id');
 const newCreds = await tx.applications.regenerateCredentials('app-id');
 ```
+
+> **Note:** `allowed_origins: []` (empty array) disables key-only mode — the secret is then required for all requests.
 
 ---
 
@@ -329,14 +366,14 @@ To enable SDK-side support:
 ```typescript
 const tx = new TenxyteClient({
     baseUrl: 'https://api.my-backend.com',
-    headers: { 'X-Access-Key': '<key>' },
+    accessKey: 'pkg_abc123',
     cookieMode: true,
 });
 ```
 
 In cookie mode:
 - `TokenPair.refresh_token` is absent from the JSON response
-- The SDK adds `credentials: 'include'` to refresh/logout requests
+- The SDK automatically registers a `createCredentialsInterceptor()` that injects `credentials: 'include'` into every fetch request, required for the browser to send/receive HttpOnly cookies cross-origin
 - `tx.auth.logout()` and `tx.auth.refreshToken()` can be called without arguments
 - The auto-refresh interceptor works without a token stored in storage
 
