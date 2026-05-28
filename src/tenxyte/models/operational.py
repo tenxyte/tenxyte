@@ -117,6 +117,8 @@ class RefreshToken(models.Model):
         getattr(settings, "TENXYTE_APPLICATION_MODEL", "tenxyte.Application"),
         on_delete=models.CASCADE,
         related_name="refresh_tokens",
+        null=True,
+        blank=True,
     )
     token = models.CharField(
         max_length=191,

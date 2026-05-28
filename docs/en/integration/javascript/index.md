@@ -36,11 +36,12 @@ npm install @tenxyte/core @tenxyte/vue
 ## Minimal Example
 
 ```typescript
-import { TenxyteClient } from '@tenxyte/core';
+import { TenxyteClient, LocalStorageAdapter } from '@tenxyte/core';
 
 const tx = new TenxyteClient({
     baseUrl: 'https://api.my-backend.com',
-    headers: { 'X-Access-Key': '<your-access-key>' },
+    accessKey: 'pkg_abc123',            // ✅ frontend and backend
+    storage: new LocalStorageAdapter(),  // Browser persistence
 });
 
 // Register
@@ -63,6 +64,38 @@ const profile = await tx.user.getProfile();
 ```
 
 Tokens are stored automatically, 401s trigger silent refresh, and `Authorization: Bearer <token>` is injected on every request.
+
+---
+
+## Dual-Mode Application Authentication
+
+Tenxyte supports two application authentication modes:
+
+| Mode | SDK Configuration | Use Case |
+|------|------------------|----------|
+| **Frontend** (browser) | `accessKey` only | SPA, web apps — the `Origin` is validated server-side against `allowed_origins` |
+| **Backend** (server → server) | `accessKey` + `accessSecret` | Cron jobs, webhooks, admin scripts |
+
+```typescript
+// Frontend (browser) — only the public key is needed
+const tx = new TenxyteClient({
+    baseUrl: 'https://api.my-backend.com',
+    accessKey: 'pkg_abc123',
+    storage: new LocalStorageAdapter(),
+});
+
+// Backend (Node.js) — key + secret
+const tx = new TenxyteClient({
+    baseUrl: 'https://api.my-backend.com',
+    accessKey: 'pkg_abc123',
+    accessSecret: process.env.TENXYTE_SECRET,
+});
+```
+
+> **Browser guardrail:** If `accessSecret` is provided in a browser environment (`typeof window !== 'undefined'`), the SDK emits a `console.warn` at startup:
+> ```
+> [Tenxyte] ⚠️  `accessSecret` detected in a browser environment. ...
+> ```
 
 ---
 
@@ -92,8 +125,13 @@ const tx = new TenxyteClient({
     // Required
     baseUrl: 'https://api.my-service.com',
 
+    // Application authentication (recommended)
+    accessKey: 'pkg_abc123',                      // ✅ frontend and backend
+    accessSecret: process.env.TENXYTE_SECRET,      // ⚠️  backend only
+
     // Optional — extra headers for every request
-    headers: { 'X-Access-Key': 'pkg_abc123' },
+    // (backward-compatible, accessKey/accessSecret are preferred)
+    headers: {},
 
     // Optional — token storage (default: MemoryStorage)
     storage: new LocalStorageAdapter(),
@@ -129,6 +167,8 @@ const tx = new TenxyteClient({
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `baseUrl` | `string` | — | Base URL of the Tenxyte-powered API |
+| `accessKey` | `string` | `undefined` | Application public key — injects `X-Access-Key` |
+| `accessSecret` | `string` | `undefined` | Private secret (backend only) — injects `X-Access-Secret` |
 | `headers` | `Record<string, string>` | `{}` | Extra headers merged into every request |
 | `storage` | `TenxyteStorage` | `MemoryStorage` | Token persistence backend |
 | `autoRefresh` | `boolean` | `true` | Silent 401 → refresh → retry |
@@ -140,6 +180,8 @@ const tx = new TenxyteClient({
 | `logLevel` | `LogLevel` | `'silent'` | `'silent'` \| `'error'` \| `'warn'` \| `'debug'` |
 | `deviceInfoOverride` | `CustomDeviceInfo` | `undefined` | Override auto-detected device info |
 | `cookieMode` | `boolean` | `false` | Use HttpOnly cookie refresh token transport |
+
+> **Migration:** `headers: { 'X-Access-Key': '...' }` still works. `accessKey`/`accessSecret` are simply merged into `headers` by `resolveConfig()` before passing to the HTTP client.
 
 ---
 
@@ -160,6 +202,14 @@ try {
     console.error(e.retry_after); // Seconds to wait (on 429/423)
 }
 ```
+
+Common error codes: `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `2FA_REQUIRED`, `RATE_LIMITED`, `MISSING_REFRESH_TOKEN`, `INVALID_REDIRECT_URI`, `APP_AUTH_REQUIRED`, `APP_AUTH_ORIGIN_REQUIRED`, `APP_AUTH_ORIGIN_DENIED`.
+
+| Code | Meaning |
+|------|--------|
+| `APP_AUTH_REQUIRED` | No application auth header provided (`X-Access-Key` missing) |
+| `APP_AUTH_ORIGIN_REQUIRED` | Key-only provided but `Origin` header missing |
+| `APP_AUTH_ORIGIN_DENIED` | `Origin` not in the application's `allowed_origins` |
 
 See [Schemas Reference](../../schemas.md) for the complete list of error codes.
 

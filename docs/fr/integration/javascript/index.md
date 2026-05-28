@@ -36,11 +36,12 @@ npm install @tenxyte/core @tenxyte/vue
 ## Exemple minimal
 
 ```typescript
-import { TenxyteClient } from '@tenxyte/core';
+import { TenxyteClient, LocalStorageAdapter } from '@tenxyte/core';
 
 const tx = new TenxyteClient({
     baseUrl: 'https://api.my-backend.com',
-    headers: { 'X-Access-Key': '<votre-access-key>' },
+    accessKey: 'pkg_abc123',            // ✅ frontend et backend
+    storage: new LocalStorageAdapter(),  // Persistance navigateur
 });
 
 // Inscription
@@ -63,6 +64,38 @@ const profile = await tx.user.getProfile();
 ```
 
 Les tokens sont stockés automatiquement, les 401 déclenchent un refresh silencieux, et `Authorization: Bearer <token>` est injecté dans chaque requête.
+
+---
+
+## Authentification applicative (Dual-Mode)
+
+Tenxyte supporte deux modes d'authentification applicative :
+
+| Mode | Configuration SDK | Cas d'usage |
+|------|------------------|-------------|
+| **Frontend** (navigateur) | `accessKey` uniquement | SPA, apps web — l'`Origin` est validée côté serveur contre `allowed_origins` |
+| **Backend** (serveur → serveur) | `accessKey` + `accessSecret` | Cron jobs, webhooks, scripts admin |
+
+```typescript
+// Frontend (navigateur) — seule la clé publique est nécessaire
+const tx = new TenxyteClient({
+    baseUrl: 'https://api.my-backend.com',
+    accessKey: 'pkg_abc123',
+    storage: new LocalStorageAdapter(),
+});
+
+// Backend (Node.js) — clé + secret
+const tx = new TenxyteClient({
+    baseUrl: 'https://api.my-backend.com',
+    accessKey: 'pkg_abc123',
+    accessSecret: process.env.TENXYTE_SECRET,
+});
+```
+
+> **Guardrail navigateur :** Si `accessSecret` est fourni dans un environnement navigateur (`typeof window !== 'undefined'`), le SDK émet un `console.warn` au démarrage :
+> ```
+> [Tenxyte] ⚠️  `accessSecret` detected in a browser environment. ...
+> ```
 
 ---
 
@@ -92,8 +125,13 @@ const tx = new TenxyteClient({
     // Requis
     baseUrl: 'https://api.my-service.com',
 
+    // Authentification applicative (recommandé)
+    accessKey: 'pkg_abc123',                      // ✅ frontend et backend
+    accessSecret: process.env.TENXYTE_SECRET,      // ⚠️  backend uniquement
+
     // Optionnel — headers supplémentaires pour chaque requête
-    headers: { 'X-Access-Key': 'pkg_abc123' },
+    // (rétrocompatible, accessKey/accessSecret sont préférés)
+    headers: {},
 
     // Optionnel — stockage des tokens (défaut : MemoryStorage)
     storage: new LocalStorageAdapter(),
@@ -129,6 +167,8 @@ const tx = new TenxyteClient({
 | Option | Type | Défaut | Description |
 |---|---|---|---|
 | `baseUrl` | `string` | — | URL de base de l'API Tenxyte |
+| `accessKey` | `string` | `undefined` | Clé publique de l'application — injecte `X-Access-Key` |
+| `accessSecret` | `string` | `undefined` | Secret privé (backend uniquement) — injecte `X-Access-Secret` |
 | `headers` | `Record<string, string>` | `{}` | Headers supplémentaires fusionnés dans chaque requête |
 | `storage` | `TenxyteStorage` | `MemoryStorage` | Backend de persistance des tokens |
 | `autoRefresh` | `boolean` | `true` | Refresh silencieux 401 → refresh → retry |
@@ -140,6 +180,8 @@ const tx = new TenxyteClient({
 | `logLevel` | `LogLevel` | `'silent'` | `'silent'` \| `'error'` \| `'warn'` \| `'debug'` |
 | `deviceInfoOverride` | `CustomDeviceInfo` | `undefined` | Override du device info auto-détecté |
 | `cookieMode` | `boolean` | `false` | Transport du refresh token via cookie HttpOnly |
+
+> **Migration :** `headers: { 'X-Access-Key': '...' }` reste fonctionnel. `accessKey`/`accessSecret` sont simplement fusionnés dans `headers` par `resolveConfig()` avant de passer au client HTTP.
 
 ---
 
@@ -160,6 +202,14 @@ try {
     console.error(e.retry_after); // Secondes à attendre (pour les erreurs 429/423)
 }
 ```
+
+Codes d'erreur courants : `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `2FA_REQUIRED`, `RATE_LIMITED`, `MISSING_REFRESH_TOKEN`, `INVALID_REDIRECT_URI`, `APP_AUTH_REQUIRED`, `APP_AUTH_ORIGIN_REQUIRED`, `APP_AUTH_ORIGIN_DENIED`.
+
+| Code | Signification |
+|------|---------------|
+| `APP_AUTH_REQUIRED` | Aucun header d'auth applicative fourni (`X-Access-Key` manquant) |
+| `APP_AUTH_ORIGIN_REQUIRED` | Clé seule fournie mais header `Origin` manquant |
+| `APP_AUTH_ORIGIN_DENIED` | `Origin` non présente dans `allowed_origins` de l'application |
 
 Voir la [Référence des Schémas](../../schemas.md) pour la liste complète des codes d'erreur.
 

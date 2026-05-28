@@ -272,6 +272,86 @@ class TestApplicationAuthMiddlewareFull:
             assert request.application == mock_app
             mock_app.verify_secret.assert_not_called()
 
+class TestApplicationAuthKeyOnlyMode:
+    """Tests for frontend key-only auth mode (X-Access-Key + Origin, no secret)."""
+
+    @override_settings(TENXYTE_APPLICATION_AUTH_ENABLED=True, TENXYTE_EXEMPT_PATHS=[], TENXYTE_EXACT_EXEMPT_PATHS=[])
+    def test_key_only_valid_origin(self, rf, get_response_ok):
+        """Key-only + valid Origin → 200, application attached."""
+        request = rf.get("/api/v1/test/", HTTP_X_ACCESS_KEY="valid-key", HTTP_ORIGIN="https://app.example.com")
+        middleware = ApplicationAuthMiddleware(get_response_ok)
+        with patch("tenxyte.models.Application.objects.get") as mock_get:
+            mock_app = MagicMock()
+            mock_app.id = 1
+            mock_app.is_origin_allowed.return_value = True
+            mock_get.return_value = mock_app
+            response = middleware(request)
+            assert response.status_code == 200
+            assert request.application == mock_app
+            mock_app.is_origin_allowed.assert_called_once_with("https://app.example.com")
+
+    @override_settings(TENXYTE_APPLICATION_AUTH_ENABLED=True, TENXYTE_EXEMPT_PATHS=[], TENXYTE_EXACT_EXEMPT_PATHS=[])
+    def test_key_only_invalid_origin(self, rf, get_response_ok):
+        """Key-only + disallowed Origin → 401 APP_AUTH_ORIGIN_DENIED."""
+        request = rf.get("/api/v1/test/", HTTP_X_ACCESS_KEY="valid-key", HTTP_ORIGIN="https://evil.com")
+        middleware = ApplicationAuthMiddleware(get_response_ok)
+        with patch("tenxyte.models.Application.objects.get") as mock_get:
+            mock_app = MagicMock()
+            mock_app.id = 1
+            mock_app.is_origin_allowed.return_value = False
+            mock_get.return_value = mock_app
+            response = middleware(request)
+            assert response.status_code == 401
+            data = json.loads(response.content)
+            assert data["code"] == "APP_AUTH_ORIGIN_DENIED"
+
+    @override_settings(TENXYTE_APPLICATION_AUTH_ENABLED=True, TENXYTE_EXEMPT_PATHS=[], TENXYTE_EXACT_EXEMPT_PATHS=[])
+    def test_key_only_no_origin_header(self, rf, get_response_ok):
+        """Key-only + no Origin header → 401 APP_AUTH_ORIGIN_REQUIRED."""
+        request = rf.get("/api/v1/test/", HTTP_X_ACCESS_KEY="valid-key")
+        middleware = ApplicationAuthMiddleware(get_response_ok)
+        with patch("tenxyte.models.Application.objects.get") as mock_get:
+            mock_app = MagicMock()
+            mock_app.id = 1
+            mock_get.return_value = mock_app
+            response = middleware(request)
+            assert response.status_code == 401
+            data = json.loads(response.content)
+            assert data["code"] == "APP_AUTH_ORIGIN_REQUIRED"
+
+    @override_settings(TENXYTE_APPLICATION_AUTH_ENABLED=True, TENXYTE_EXEMPT_PATHS=[], TENXYTE_EXACT_EXEMPT_PATHS=[])
+    def test_key_only_empty_allowed_origins(self, rf, get_response_ok):
+        """Key-only + allowed_origins=[] → 401 (secret required)."""
+        request = rf.get("/api/v1/test/", HTTP_X_ACCESS_KEY="valid-key", HTTP_ORIGIN="https://app.example.com")
+        middleware = ApplicationAuthMiddleware(get_response_ok)
+        with patch("tenxyte.models.Application.objects.get") as mock_get:
+            mock_app = MagicMock()
+            mock_app.id = 1
+            mock_app.allowed_origins = []
+            mock_app.is_origin_allowed.return_value = False  # empty list → False
+            mock_get.return_value = mock_app
+            response = middleware(request)
+            assert response.status_code == 401
+            data = json.loads(response.content)
+            assert data["code"] == "APP_AUTH_ORIGIN_DENIED"
+
+    @override_settings(TENXYTE_APPLICATION_AUTH_ENABLED=True, TENXYTE_EXEMPT_PATHS=[], TENXYTE_EXACT_EXEMPT_PATHS=[])
+    def test_key_plus_secret_still_works(self, rf, get_response_ok):
+        """Key + Secret mode still works (backward compat)."""
+        request = rf.get("/api/v1/test/", HTTP_X_ACCESS_KEY="valid-key", HTTP_X_ACCESS_SECRET="valid-secret")
+        middleware = ApplicationAuthMiddleware(get_response_ok)
+        with patch("tenxyte.models.Application.objects.get") as mock_get, \
+             patch("django.core.cache.cache.get", return_value=None), \
+             patch("django.core.cache.cache.set"):
+            mock_app = MagicMock()
+            mock_app.id = 1
+            mock_app.verify_secret.return_value = True
+            mock_get.return_value = mock_app
+            response = middleware(request)
+            assert response.status_code == 200
+            assert request.application == mock_app
+
+
 class TestOrganizationContextMiddlewareFull:
     @override_settings(TENXYTE_ORGANIZATIONS_ENABLED=True)
     def test_valid_organization(self, rf, get_response_ok):

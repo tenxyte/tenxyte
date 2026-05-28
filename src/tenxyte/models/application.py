@@ -40,6 +40,11 @@ class AbstractApplication(models.Model):
     access_key = models.CharField(max_length=64, unique=True, db_index=True)
     access_secret = models.CharField(max_length=128)
     is_active = models.BooleanField(default=True)
+    allowed_origins = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of allowed origins for key-only (frontend) auth. Empty list requires secret.",
+    )
     redirect_uris = models.JSONField(
         default=list,
         blank=True,
@@ -75,6 +80,16 @@ class AbstractApplication(models.Model):
             return False
         return self._verify_hashed_secret(raw_secret, self.access_secret)
 
+    def is_origin_allowed(self, origin: str) -> bool:
+        """Check if an origin is allowed for key-only (frontend) auth.
+
+        Returns False if allowed_origins is empty (secret required).
+        Returns True if the origin exactly matches an entry.
+        """
+        if not self.allowed_origins:
+            return False
+        return origin in self.allowed_origins
+
     def is_redirect_uri_allowed(self, redirect_uri: str) -> bool:
         """Check if a redirect URI is in the application's whitelist.
 
@@ -100,13 +115,19 @@ class AbstractApplication(models.Model):
         return {"access_key": self.access_key, "access_secret": raw_secret}
 
     @classmethod
-    def create_application(cls, name: str, description: str = ""):
+    def create_application(cls, name: str, description: str = "", allowed_origins: list = None):
         """
         Crée une nouvelle application et retourne l'instance + le secret brut
         """
         raw_secret = secrets.token_hex(32)
         hashed_secret = cls._hash_secret(raw_secret)
-        app = cls(name=name, description=description, access_key=secrets.token_hex(32), access_secret=hashed_secret)
+        app = cls(
+            name=name,
+            description=description,
+            access_key=secrets.token_hex(32),
+            access_secret=hashed_secret,
+            allowed_origins=allowed_origins or [],
+        )
         app.save()
         return app, raw_secret
 
