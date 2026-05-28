@@ -27,7 +27,7 @@ import App from './App.vue';
 
 const tx = new TenxyteClient({
     baseUrl: 'https://api.my-backend.com',
-    headers: { 'X-Access-Key': '<your-access-key>' },
+    accessKey: 'pkg_abc123',
     storage: new LocalStorageAdapter(),
     // cookieMode: true, // Enable if backend uses HttpOnly refresh tokens
 });
@@ -371,7 +371,9 @@ async function handleLogin(email: string, password: string) {
 </template>
 ```
 
-Common error codes: `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `2FA_REQUIRED`, `RATE_LIMITED`, `MISSING_REFRESH_TOKEN`, `INVALID_REDIRECT_URI`.
+Common error codes: `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `2FA_REQUIRED`, `RATE_LIMITED`, `MISSING_REFRESH_TOKEN`, `INVALID_REDIRECT_URI`, `APP_AUTH_REQUIRED`, `APP_AUTH_ORIGIN_REQUIRED`, `APP_AUTH_ORIGIN_DENIED`.
+
+> **Note:** `useAuth()` in Vue does not yet have an `isLoading` alias (unlike React). Use `loading` for now.
 
 ---
 
@@ -382,7 +384,7 @@ If the backend is configured with `TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED=True`:
 ```ts
 const tx = new TenxyteClient({
     baseUrl: 'https://api.my-backend.com',
-    headers: { 'X-Access-Key': '<key>' },
+    accessKey: 'pkg_abc123',
     cookieMode: true,
 });
 ```

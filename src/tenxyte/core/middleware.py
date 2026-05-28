@@ -304,7 +304,7 @@ class ApplicationAuthCoreMiddleware(CoreMiddleware):
         access_key = request.get_header("X-Access-Key")
         access_secret = request.get_header("X-Access-Secret")
 
-        if not access_key or not access_secret:
+        if not access_key:
             return MiddlewareResult.error(401, "APP_AUTH_REQUIRED", "Missing application credentials")
 
         # Validate credentials via repository
@@ -313,17 +313,31 @@ class ApplicationAuthCoreMiddleware(CoreMiddleware):
         if not application or not application.is_active:
             return MiddlewareResult.error(401, "APP_AUTH_INVALID", "Invalid application credentials")
 
-        # Verify secret with caching to prevent DoS
-        import hashlib
+        if access_secret:
+            # Server mode: key + secret (server-to-server)
+            import hashlib
 
-        secret_hash = hashlib.sha256(access_secret.encode("utf-8")).hexdigest()
-        cache_key = f"app_auth_ok_{application.id}_{secret_hash}"
+            secret_hash = hashlib.sha256(access_secret.encode("utf-8")).hexdigest()
+            cache_key = f"app_auth_ok_{application.id}_{secret_hash}"
 
-        if not self.cache_service.get(cache_key):
-            if not application.verify_secret(access_secret):
-                return MiddlewareResult.error(401, "APP_AUTH_INVALID", "Invalid application credentials")
-            # Cache successful verification for 60 seconds
-            self.cache_service.set(cache_key, True, timeout=60)
+            if not self.cache_service.get(cache_key):
+                if not application.verify_secret(access_secret):
+                    return MiddlewareResult.error(401, "APP_AUTH_INVALID", "Invalid application credentials")
+                # Cache successful verification for 60 seconds
+                self.cache_service.set(cache_key, True, timeout=60)
+        else:
+            # Frontend mode: key-only + Origin validation
+            origin = request.get_header("Origin")
+
+            if not origin:
+                return MiddlewareResult.error(
+                    401, "APP_AUTH_ORIGIN_REQUIRED", "Missing Origin header for key-only auth"
+                )
+
+            if not application.is_origin_allowed(origin):
+                return MiddlewareResult.error(
+                    401, "APP_AUTH_ORIGIN_DENIED", "Origin not allowed for this application"
+                )
 
         # Attach application to request
         request.application_id = str(application.id)

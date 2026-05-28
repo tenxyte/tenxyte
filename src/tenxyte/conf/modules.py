@@ -3,7 +3,10 @@ class ModulesSettingsMixin:
     @property
     def APPLICATION_AUTH_ENABLED(self):
         """
-        Activer/désactiver l'authentification par application (X-Access-Key / X-Access-Secret).
+        Activer/désactiver l'authentification par application.
+        Deux modes supportés:
+        - Frontend (navigateur): X-Access-Key + Origin header (validé via allowed_origins)
+        - Backend (serveur-à-serveur): X-Access-Key + X-Access-Secret
         """
         return self._get("APPLICATION_AUTH_ENABLED", True)
 
