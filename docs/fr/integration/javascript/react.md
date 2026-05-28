@@ -26,7 +26,7 @@ import App from './App';
 
 const tx = new TenxyteClient({
     baseUrl: 'https://api.my-backend.com',
-    headers: { 'X-Access-Key': '<your-access-key>' },
+    accessKey: 'pkg_abc123',
     storage: new LocalStorageAdapter(),
     // cookieMode: true, // Activer si le backend utilise les refresh tokens HttpOnly
 });
@@ -75,6 +75,7 @@ function Dashboard() {
 const {
     isAuthenticated, // boolean — true si le token d'accès est valide et non expiré
     loading,         // boolean — true pendant le chargement initial depuis le storage
+    isLoading,       // boolean — alias de loading (cohérence API)
     accessToken,     // string | null — token JWT brut
     loginWithEmail,  // (data: { email, password, device_info?, totp_code? }) => Promise<void>
     loginWithPhone,  // (data: { phone_country_code, phone_number, password, device_info? }) => Promise<void>
@@ -373,7 +374,7 @@ function LoginForm() {
 }
 ```
 
-Codes d'erreur courants : `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `2FA_REQUIRED`, `RATE_LIMITED`, `MISSING_REFRESH_TOKEN`, `INVALID_REDIRECT_URI`.
+Codes d'erreur courants : `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `2FA_REQUIRED`, `RATE_LIMITED`, `MISSING_REFRESH_TOKEN`, `INVALID_REDIRECT_URI`, `APP_AUTH_REQUIRED`, `APP_AUTH_ORIGIN_REQUIRED`, `APP_AUTH_ORIGIN_DENIED`.
 
 ---
 
@@ -384,7 +385,7 @@ Si le backend est configuré avec `TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED=True` :
 ```tsx
 const tx = new TenxyteClient({
     baseUrl: 'https://api.my-backend.com',
-    headers: { 'X-Access-Key': '<key>' },
+    accessKey: 'pkg_abc123',
     cookieMode: true,
 });
 ```

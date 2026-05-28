@@ -603,4 +603,4 @@ class OrganizationService:
 
     def _audit_log(self, action: str, user, details: Dict[str, Any] = None):
         """Create an audit log entry."""
-        AuditLog.objects.create(action=action, user=user, ip_address="system", details=details or {})
+        AuditLog.objects.create(action=action, user=user, ip_address=None, details=details or {})

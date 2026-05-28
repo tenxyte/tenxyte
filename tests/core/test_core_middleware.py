@@ -251,9 +251,9 @@ class TestApplicationAuthMiddleware:
         assert not result.continue_processing
         assert result.response.status_code == 401
 
-    def test_missing_credentials(self, mw):
-        """Lines 301-305: missing key or secret."""
-        req = _make_request(path="/api/v1/users", headers={"X-Access-Key": "k"})
+    def test_missing_key(self, mw):
+        """Missing X-Access-Key → APP_AUTH_REQUIRED."""
+        req = _make_request(path="/api/v1/users", headers={})
         result = mw.process_request(req)
         assert result.response.json_data["code"] == "APP_AUTH_REQUIRED"
 
@@ -320,6 +320,47 @@ class TestApplicationAuthMiddleware:
         result = mw.process_request(req)
         assert result.continue_processing
         app.verify_secret.assert_not_called()
+
+    def test_key_only_valid_origin(self, mw, repo):
+        """Key-only + valid Origin → success."""
+        app = MagicMock()
+        app.is_active = True
+        app.id = "app1"
+        app.is_origin_allowed.return_value = True
+        repo.get_by_access_key.return_value = app
+        req = _make_request(path="/api/v1/users", headers={
+            "X-Access-Key": "k", "Origin": "https://app.example.com"
+        })
+        result = mw.process_request(req)
+        assert result.continue_processing
+        app.is_origin_allowed.assert_called_once_with("https://app.example.com")
+
+    def test_key_only_invalid_origin(self, mw, repo):
+        """Key-only + disallowed Origin → APP_AUTH_ORIGIN_DENIED."""
+        app = MagicMock()
+        app.is_active = True
+        app.id = "app1"
+        app.is_origin_allowed.return_value = False
+        repo.get_by_access_key.return_value = app
+        req = _make_request(path="/api/v1/users", headers={
+            "X-Access-Key": "k", "Origin": "https://evil.com"
+        })
+        result = mw.process_request(req)
+        assert not result.continue_processing
+        assert result.response.json_data["code"] == "APP_AUTH_ORIGIN_DENIED"
+
+    def test_key_only_no_origin(self, mw, repo):
+        """Key-only + no Origin → APP_AUTH_ORIGIN_REQUIRED."""
+        app = MagicMock()
+        app.is_active = True
+        app.id = "app1"
+        repo.get_by_access_key.return_value = app
+        req = _make_request(path="/api/v1/users", headers={
+            "X-Access-Key": "k"
+        })
+        result = mw.process_request(req)
+        assert not result.continue_processing
+        assert result.response.json_data["code"] == "APP_AUTH_ORIGIN_REQUIRED"
 
     def test_cache_service_lazy_init(self):
         """Lines 301-305: lazy init cache."""

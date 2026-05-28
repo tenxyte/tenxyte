@@ -31,7 +31,14 @@ For example, you could have:
 - `iOS Mobile` App
 - `Partner X Integration` App
 
-By passing the `X-Access-Key` and `X-Access-Secret` HTTP headers, Tenxyte identifies the client application performing the request.
+Tenxyte supports **two authentication modes** for applications:
+
+| Mode | Headers | Use Case |
+|------|---------|----------|
+| **Frontend** (browser) | `X-Access-Key` + `Origin` header | Web apps, SPAs |
+| **Backend** (server-to-server) | `X-Access-Key` + `X-Access-Secret` | Cron jobs, webhooks, admin scripts |
+
+The `X-Access-Secret` must **never** be exposed in a browser environment.
 
 ---
 
@@ -39,8 +46,31 @@ By passing the `X-Access-Key` and `X-Access-Secret` HTTP headers, Tenxyte identi
 
 1. **Creation**: An administrator creates an Application via the API (or Python code).
 2. **Credentials Display**: The system generates an `access_key` (public) and an `access_secret` (private). The raw `access_secret` is returned **only once** and then securely hashed (bcrypt + base64) in the database.
-3. **Usage**: Every request to protected Tenxyte auth endpoints must include the `X-Access-Key` and `X-Access-Secret` headers so the system can verify the application's identity.
+3. **Usage**:
+   - **Backend**: Pass `X-Access-Key` and `X-Access-Secret` headers.
+   - **Frontend**: Pass only `X-Access-Key`. The middleware validates the request's `Origin` header against the application's `allowed_origins` list.
 4. **Revocation**: If a secret leaks, administrators can regenerate credentials for that specific application or deactivate the application entirely.
+
+### Frontend (Key-Only) Mode
+
+For browser-based clients, configure `allowed_origins` on the application:
+
+```python
+# When creating the application
+app, secret = Application.create_application(
+    name="Web Frontend",
+    allowed_origins=["https://app.example.com", "http://localhost:3000"],
+)
+```
+
+The frontend only sends the public key:
+```http
+GET /api/v1/auth/me/
+X-Access-Key: pkg_abc123...
+Origin: https://app.example.com
+```
+
+If `allowed_origins` is empty, key-only mode is disabled and the secret is required.
 
 ---
 
@@ -237,9 +267,12 @@ Application (AbstractApplication)
 ├── access_key (string, unique, indexed)
 ├── access_secret (string, hashed)
 ├── is_active (boolean, default: true)
+├── allowed_origins (JSON array, default: [])
 ├── redirect_uris (JSON array, default: [])
 ├── created_at (datetime)
 └── updated_at (datetime)
 ```
+
+> **Note:** When `allowed_origins` is empty, key-only (frontend) auth is disabled and the `X-Access-Secret` is required. When populated, requests from those origins are accepted with only `X-Access-Key`.
 
 > **Note:** When `redirect_uris` is empty, all redirect URIs are permitted (backward-compatible). When populated, only exact matches are allowed during OAuth flows. See [Security Guide](security.md) for details.

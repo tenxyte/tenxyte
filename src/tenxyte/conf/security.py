@@ -154,7 +154,6 @@ class SecuritySettingsMixin:
                 "Content-Type",
                 "Authorization",
                 "X-Access-Key",
-                "X-Access-Secret",
                 "X-Requested-With",
             ],
         )

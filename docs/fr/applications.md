@@ -31,7 +31,14 @@ Par exemple, vous pourriez avoir :
 - Application `iOS Mobile`
 - Application `Partner X Integration`
 
-En transmettant les en-têtes HTTP `X-Access-Key` et `X-Access-Secret`, Tenxyte identifie l'application cliente effectuant la requête.
+Tenxyte supporte **deux modes d'authentification** pour les applications :
+
+| Mode | Headers | Cas d'usage |
+|------|---------|-------------|
+| **Frontend** (navigateur) | `X-Access-Key` + header `Origin` | Web apps, SPAs |
+| **Backend** (serveur-à-serveur) | `X-Access-Key` + `X-Access-Secret` | Cron jobs, webhooks, scripts admin |
+
+Le `X-Access-Secret` ne doit **jamais** être exposé dans un environnement navigateur.
 
 ---
 
@@ -39,8 +46,31 @@ En transmettant les en-têtes HTTP `X-Access-Key` et `X-Access-Secret`, Tenxyte 
 
 1. **Création** : Un administrateur crée une Application via l'API (ou via le code Python).
 2. **Affichage des identifiants** : Le système génère une `access_key` (publique) et un `access_secret` (privé). L' `access_secret` brut n'est renvoyé **qu'une seule fois**, puis est haché de manière sécurisée (bcrypt + base64) dans la base de données.
-3. **Utilisation** : Chaque requête vers les points de terminaison d'authentification protégés de Tenxyte doit inclure les en-têtes `X-Access-Key` et `X-Access-Secret` afin que le système puisse vérifier l'identité de l'application.
+3. **Utilisation** :
+   - **Backend** : Envoyez les headers `X-Access-Key` et `X-Access-Secret`.
+   - **Frontend** : Envoyez uniquement `X-Access-Key`. Le middleware valide le header `Origin` de la requête contre la liste `allowed_origins` de l'application.
 4. **Révocation** : Si un secret est divulgué, les administrateurs peuvent régénérer les identifiants pour cette application spécifique ou désactiver complètement l'application.
+
+### Mode Frontend (Key-Only)
+
+Pour les clients navigateur, configurez `allowed_origins` sur l'application :
+
+```python
+# Lors de la création de l'application
+app, secret = Application.create_application(
+    name="Web Frontend",
+    allowed_origins=["https://app.example.com", "http://localhost:3000"],
+)
+```
+
+Le frontend n'envoie que la clé publique :
+```http
+GET /api/v1/auth/me/
+X-Access-Key: pkg_abc123...
+Origin: https://app.example.com
+```
+
+Si `allowed_origins` est vide, le mode key-only est désactivé et le secret est obligatoire.
 
 ---
 
@@ -237,9 +267,12 @@ Application (AbstractApplication)
 ├── access_key (chaîne, unique, indexée)
 ├── access_secret (chaîne, hachée)
 ├── is_active (booléen, par défaut : true)
+├── allowed_origins (tableau JSON, par défaut : [])
 ├── redirect_uris (tableau JSON, par défaut : [])
 ├── created_at (datetime)
 └── updated_at (datetime)
 ```
+
+> **Note :** Lorsque `allowed_origins` est vide, l'auth key-only (frontend) est désactivée et le `X-Access-Secret` est obligatoire. Lorsqu'il est renseigné, les requêtes depuis ces origines sont acceptées avec uniquement `X-Access-Key`.
 
 > **Note :** Lorsque `redirect_uris` est vide, toutes les URI de redirection sont autorisées (rétrocompatible). Lorsqu'il est renseigné, seules les correspondances exactes sont acceptées lors des flux OAuth. Voir le [Guide de Sécurité](security.md) pour plus de détails.
