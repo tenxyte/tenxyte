@@ -24,9 +24,7 @@ class ApplicationCreateSerializer(serializers.Serializer):
 
     name = serializers.CharField(max_length=100)
     description = serializers.CharField(required=False, default="", allow_blank=True)
-    allowed_origins = serializers.ListField(
-        child=serializers.URLField(), required=False, default=list
-    )
+    allowed_origins = serializers.ListField(child=serializers.URLField(), required=False, default=list)
 
 
 class ApplicationUpdateSerializer(serializers.Serializer):
@@ -35,6 +33,4 @@ class ApplicationUpdateSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100, required=False)
     description = serializers.CharField(required=False, allow_blank=True)
     is_active = serializers.BooleanField(required=False)
-    allowed_origins = serializers.ListField(
-        child=serializers.URLField(), required=False
-    )
+    allowed_origins = serializers.ListField(child=serializers.URLField(), required=False)
