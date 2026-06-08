@@ -52,7 +52,7 @@ google-auth==2.53.0
     #   tenxyte (pyproject.toml)
 google-auth-oauthlib==1.4.0
     # via tenxyte (pyproject.toml)
-idna==3.17
+idna==3.18
     # via requests
 inflection==0.5.1
     # via drf-spectacular
