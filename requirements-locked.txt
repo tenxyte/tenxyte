@@ -46,13 +46,13 @@ djangorestframework==3.17.1
     #   tenxyte (pyproject.toml)
 drf-spectacular==0.29.0
     # via tenxyte (pyproject.toml)
-google-auth==2.53.0
+google-auth==2.54.0
     # via
     #   google-auth-oauthlib
     #   tenxyte (pyproject.toml)
 google-auth-oauthlib==1.4.0
     # via tenxyte (pyproject.toml)
-idna==3.17
+idna==3.18
     # via requests
 inflection==0.5.1
     # via drf-spectacular
@@ -76,7 +76,7 @@ pycparser==3.0
     # via cffi
 pyjwt==2.13.0
     # via tenxyte (pyproject.toml)
-pyotp==2.9.0
+pyotp==2.10.0
     # via tenxyte (pyproject.toml)
 pyyaml==6.0.3
     # via drf-spectacular
