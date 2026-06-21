@@ -485,3 +485,125 @@ class TestRemainingCoverage:
         req.user.has_org_permission.return_value = False
         with override_settings(TENXYTE_ORGANIZATIONS_ENABLED=True):
             assert require_org_permission('do.x')(lambda r: None)(req).status_code == 403
+
+
+from hypothesis import given, settings as hyp_settings, HealthCheck, strategies as st  # noqa: E402
+
+
+@pytest.mark.django_db
+class TestRequireJwtScopeEnforcement:
+    """Tests for token scope extraction and enforcement in require_jwt (Task 3.2).
+
+    Rules under test:
+    - Full-scope tokens (no "scope" claim) are accepted everywhere (preservation).
+    - Restricted tokens (non-empty "scope" claim) are only accepted on endpoints
+      that explicitly allow that scope via allowed_scopes; otherwise 403
+      INSUFFICIENT_SCOPE.
+    - The token scope is exposed on request.jwt_scope.
+    """
+
+    def _make_request(self):
+        req = MagicMock(META={}, method='GET')
+        req.headers = {'Authorization': 'Bearer test'}
+        req.application = None
+        return req
+
+    def _decoded(self, user, claims):
+        from tenxyte.core.jwt_service import DecodedToken
+        from datetime import datetime, timezone
+        return DecodedToken(
+            user_id=str(user.id), app_id='app123', jti='jti123', exp=datetime.now(timezone.utc),
+            iat=datetime.now(timezone.utc), type='access', claims=claims, is_valid=True
+        )
+
+    def _run(self, claims, allowed_scopes=None):
+        """Run a view protected by require_jwt with the given token claims."""
+        import uuid
+        user = User.objects.create(email=f'scope_{uuid.uuid4().hex}@test.com', is_active=True)
+        req = self._make_request()
+        with override_settings(TENXYTE_JWT_AUTH_ENABLED=True):
+            with patch('tenxyte.decorators.JWTService') as jwt:
+                jwt.return_value.decode_token.return_value = self._decoded(user, claims)
+                with patch('tenxyte.decorators.User.objects.get', return_value=user):
+                    if allowed_scopes is None:
+                        @require_jwt
+                        def view(request):
+                            return JsonResponse({"scope": request.jwt_scope})
+                    else:
+                        @require_jwt(allowed_scopes=allowed_scopes)
+                        def view(request):
+                            return JsonResponse({"scope": request.jwt_scope})
+                    return view(req), req
+
+    # --- Preservation: full-scope tokens (no scope claim) ---
+
+    def test_full_scope_token_accepted_without_allowed_scopes(self):
+        resp, req = self._run(claims={})
+        assert resp.status_code == 200
+        assert req.jwt_scope is None
+
+    def test_full_scope_token_accepted_on_scoped_endpoint(self):
+        # An endpoint that declares allowed_scopes still accepts full-scope tokens.
+        resp, req = self._run(claims={}, allowed_scopes=["2fa_setup_only"])
+        assert resp.status_code == 200
+        assert req.jwt_scope is None
+
+    # --- Restricted tokens ---
+
+    def test_restricted_token_rejected_on_unscoped_endpoint(self):
+        resp, req = self._run(claims={"scope": "2fa_setup_only"})
+        assert resp.status_code == 403
+        import json
+        assert json.loads(resp.content)["code"] == "INSUFFICIENT_SCOPE"
+        # Scope is still recorded on the request before rejection.
+        assert req.jwt_scope == "2fa_setup_only"
+
+    def test_restricted_token_accepted_on_matching_scoped_endpoint(self):
+        resp, req = self._run(claims={"scope": "2fa_setup_only"}, allowed_scopes=["2fa_setup_only"])
+        assert resp.status_code == 200
+        assert req.jwt_scope == "2fa_setup_only"
+
+    def test_restricted_token_rejected_when_scope_not_in_allowed(self):
+        resp, req = self._run(claims={"scope": "other_scope"}, allowed_scopes=["2fa_setup_only"])
+        assert resp.status_code == 403
+        import json
+        assert json.loads(resp.content)["code"] == "INSUFFICIENT_SCOPE"
+
+    def test_jwt_scope_set_when_disabled(self):
+        req = MagicMock(META={}, method='GET')
+        req.user = "x"
+        req.jwt_payload = "x"
+        with override_settings(TENXYTE_JWT_AUTH_ENABLED=False):
+            resp = require_jwt(lambda r: JsonResponse({"ok": "ok"}))(req)
+        assert resp.status_code == 200
+        assert req.jwt_scope is None
+
+    # --- Property-based: scope enforcement consistency ---
+
+    @hyp_settings(max_examples=40, suppress_health_check=[HealthCheck.function_scoped_fixture])
+    @given(
+        token_scope=st.one_of(st.none(), st.sampled_from(["2fa_setup_only", "other", "admin_only"])),
+        allowed=st.lists(st.sampled_from(["2fa_setup_only", "other", "admin_only"]), max_size=3, unique=True),
+    )
+    def test_scope_enforcement_property(self, token_scope, allowed):
+        """Validates: Requirements 2.4
+
+        For any token scope and any set of allowed scopes:
+        - A token with no scope (full-scope) is always accepted.
+        - A restricted token is accepted iff its scope is in allowed_scopes.
+        Rejection always uses 403 INSUFFICIENT_SCOPE.
+        """
+        import json
+        claims = {} if token_scope is None else {"scope": token_scope}
+        allowed_scopes = allowed if allowed else None
+        resp, req = self._run(claims=claims, allowed_scopes=allowed_scopes)
+
+        if token_scope is None:
+            assert resp.status_code == 200
+            assert req.jwt_scope is None
+        elif token_scope in (allowed or []):
+            assert resp.status_code == 200
+            assert req.jwt_scope == token_scope
+        else:
+            assert resp.status_code == 403
+            assert json.loads(resp.content)["code"] == "INSUFFICIENT_SCOPE"

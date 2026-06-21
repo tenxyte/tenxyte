@@ -6,7 +6,7 @@ They maintain 100% backward compatibility with existing endpoints and responses.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -793,9 +793,30 @@ class LoginEmailView(APIView):
                 mfa_type_value = "totp"
 
             if is_admin and mfa_type_value == "none":
+                # Super Admin 2FA Bootstrap: an admin (is_superuser or is_staff)
+                # without 2FA configured cannot enable 2FA because the setup
+                # endpoints require a valid token, yet login was previously
+                # rejected outright (ADMIN_2FA_SETUP_REQUIRED). To break this
+                # circular dependency, issue a short-lived, restricted-scope
+                # bootstrap token that may only access the 2FA setup/confirm
+                # endpoints. Once 2FA is confirmed, a full-scope token is issued.
+                jwt_service = get_core_jwt_service()
+                app_id = str(request.application.id) if getattr(request, "application", None) else "default"
+                bootstrap_token, _jti, _expires_at = jwt_service.generate_access_token(
+                    user_id=user.id,
+                    application_id=app_id,
+                    extra_claims={"scope": "2fa_setup_only"},
+                    custom_lifetime=timedelta(minutes=15),
+                )
                 return Response(
-                    {"error": "Administrators must have 2FA enabled to login.", "code": "ADMIN_2FA_SETUP_REQUIRED"},
-                    status=status.HTTP_403_FORBIDDEN,
+                    {
+                        "access_token": bootstrap_token,
+                        "token_type": "Bearer",
+                        "token_scope": "2fa_setup_only",
+                        "requires_2fa_setup": True,
+                        "expires_in": 900,
+                    },
+                    status=status.HTTP_200_OK,
                 )
 
             if mfa_type_value != "none":
@@ -959,9 +980,30 @@ class LoginPhoneView(APIView):
                 mfa_type_value = "totp"
 
             if is_admin and mfa_type_value == "none":
+                # Super Admin 2FA Bootstrap: an admin (is_superuser or is_staff)
+                # without 2FA configured cannot enable 2FA because the setup
+                # endpoints require a valid token, yet login was previously
+                # rejected outright (ADMIN_2FA_SETUP_REQUIRED). To break this
+                # circular dependency, issue a short-lived, restricted-scope
+                # bootstrap token that may only access the 2FA setup/confirm
+                # endpoints. Once 2FA is confirmed, a full-scope token is issued.
+                jwt_service = get_core_jwt_service()
+                app_id = str(request.application.id) if getattr(request, "application", None) else "default"
+                bootstrap_token, _jti, _expires_at = jwt_service.generate_access_token(
+                    user_id=user.id,
+                    application_id=app_id,
+                    extra_claims={"scope": "2fa_setup_only"},
+                    custom_lifetime=timedelta(minutes=15),
+                )
                 return Response(
-                    {"error": "Administrators must have 2FA enabled to login.", "code": "ADMIN_2FA_SETUP_REQUIRED"},
-                    status=status.HTTP_403_FORBIDDEN,
+                    {
+                        "access_token": bootstrap_token,
+                        "token_type": "Bearer",
+                        "token_scope": "2fa_setup_only",
+                        "requires_2fa_setup": True,
+                        "expires_in": 900,
+                    },
+                    status=status.HTTP_200_OK,
                 )
 
             if mfa_type_value != "none":
