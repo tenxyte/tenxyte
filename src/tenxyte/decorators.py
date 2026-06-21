@@ -146,9 +146,7 @@ def require_jwt(view_func=None, *, allowed_scopes=None):
             # accéder qu'aux endpoints qui autorisent explicitement ce scope.
             # Les tokens full-scope (scope None) passent partout.
             if scope is not None and scope not in allowed:
-                return JsonResponse(
-                    {"error": "Insufficient token scope", "code": "INSUFFICIENT_SCOPE"}, status=403
-                )
+                return JsonResponse({"error": "Insufficient token scope", "code": "INSUFFICIENT_SCOPE"}, status=403)
 
             return _call_view(func, view_instance, request, view_args, kwargs)
 
