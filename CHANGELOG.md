@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.6] - 2025-01-XX
+
+### Fixed
+- **Super Admin 2FA Bootstrap** — Resolved circular dependency preventing super admins from logging in without 2FA. Introduced restricted-scope JWT tokens (`scope: "2fa_setup_only"`) with 15-minute expiration that permit access exclusively to `/2fa/setup/` and `/2fa/confirm/` endpoints. After successful 2FA activation, the system automatically issues a full-scope token and invalidates the bootstrap token, enabling seamless first-time admin authentication flow.
+
+### Security
+- **Token Scope Enforcement** — Added `allowed_scopes` parameter to `@require_jwt` decorator, enforcing strict scope validation. Restricted tokens attempting to access unauthorized endpoints now receive `403 INSUFFICIENT_SCOPE` error.
+
 ## [0.9.4] - 2026-03-26
 
 ### Security
