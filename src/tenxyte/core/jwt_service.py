@@ -271,7 +271,11 @@ class JWTService:
             )
 
     def generate_access_token(
-        self, user_id: str, application_id: str, extra_claims: Optional[Dict[str, Any]] = None
+        self,
+        user_id: str,
+        application_id: str,
+        extra_claims: Optional[Dict[str, Any]] = None,
+        custom_lifetime: Optional[timedelta] = None,
     ) -> Tuple[str, str, datetime]:
         """
         Generate an access token JWT with JTI for blacklisting.
@@ -279,7 +283,21 @@ class JWTService:
         Args:
             user_id: User identifier
             application_id: Application identifier
-            extra_claims: Additional claims to include in token
+            extra_claims: Additional claims to include in token. This may include
+                a ``"scope"`` claim to restrict the access granted by the token.
+                For example, passing ``extra_claims={"scope": "2fa_setup_only"}``
+                produces a restricted-scope token that authorization layers (e.g.
+                the ``require_jwt`` decorator) can use to limit which endpoints the
+                token may access. The ``"scope"`` claim flows through unchanged and
+                is embedded directly in the token payload.
+            custom_lifetime: Optional override for the token's lifetime. When
+                provided, the token's expiration is computed as ``now +
+                custom_lifetime`` instead of the configured default access-token
+                lifetime. This is used for special cases such as the short-lived
+                ``2fa_setup_only`` bootstrap token (e.g.
+                ``custom_lifetime=timedelta(minutes=15)``). When ``None`` (the
+                default), the configured access-token lifetime is used and token
+                generation is unchanged.
 
         Returns:
             Tuple of (token, jti, expires_at)
@@ -301,7 +319,8 @@ class JWTService:
 
         now = datetime.now(timezone.utc)
         jti = str(uuid.uuid4())
-        expires_at = now + self.access_token_lifetime
+        lifetime = custom_lifetime if custom_lifetime is not None else self.access_token_lifetime
+        expires_at = now + lifetime
 
         payload: Dict[str, Any] = {
             "type": "access",

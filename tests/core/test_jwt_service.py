@@ -92,3 +92,99 @@ def test_blacklist_token(jwt_service):
     assert decoded_after.is_valid is False
     assert decoded_after.is_blacklisted is True
 
+
+def test_custom_lifetime_overrides_default(jwt_service):
+    """custom_lifetime should override the configured access token lifetime."""
+    from datetime import timedelta, timezone
+
+    custom = timedelta(minutes=15)
+    token, jti, expires = jwt_service.generate_access_token(
+        user_id="admin1",
+        application_id="app456",
+        custom_lifetime=custom,
+    )
+
+    now = datetime.now(timezone.utc)
+    delta = (expires - now).total_seconds()
+    # Bootstrap token must be ~15 minutes (<= 900 seconds), well under the
+    # default 900s configured here only by coincidence; assert it tracks custom.
+    assert 0 < delta <= 900
+    # Within a small tolerance of 15 minutes
+    assert abs(delta - 900) < 10
+
+
+def test_custom_lifetime_shorter_than_default(settings):
+    """A short custom_lifetime must produce a shorter-lived token than default."""
+    from datetime import timedelta, timezone
+
+    # Configure a long default lifetime so the override is clearly distinguishable
+    long_settings = Settings(provider=MockSettingsProvider(
+        jwt_secret_key="super-secret-key",
+        jwt_algorithm="HS256",
+        jwt_access_token_lifetime=3600,
+        jwt_refresh_token_lifetime=86400,
+        jwt_issuer="test-issuer",
+        jwt_audience="test-audience",
+    ))
+    service = JWTService(long_settings, blacklist_service=MockTokenBlacklist())
+
+    _, _, default_expires = service.generate_access_token(user_id="u", application_id="a")
+    _, _, custom_expires = service.generate_access_token(
+        user_id="u", application_id="a", custom_lifetime=timedelta(minutes=15)
+    )
+
+    assert custom_expires < default_expires
+    now = datetime.now(timezone.utc)
+    assert (custom_expires - now).total_seconds() <= 900
+
+
+def test_default_lifetime_unchanged_when_no_custom_lifetime(jwt_service):
+    """Preservation: omitting custom_lifetime keeps the configured lifetime."""
+    from datetime import timezone
+
+    token, jti, expires = jwt_service.generate_access_token(
+        user_id="user123", application_id="app456"
+    )
+    now = datetime.now(timezone.utc)
+    delta = (expires - now).total_seconds()
+    # Default configured lifetime is 900 seconds in the fixture
+    assert abs(delta - 900) < 10
+
+
+def test_scope_claim_flows_through_extra_claims(jwt_service):
+    """The 'scope' claim in extra_claims must be embedded in the token payload."""
+    token, jti, _ = jwt_service.generate_access_token(
+        user_id="admin1",
+        application_id="app456",
+        extra_claims={"scope": "2fa_setup_only"},
+    )
+
+    decoded = jwt_service.decode_token(token)
+    assert decoded.is_valid is True
+    assert decoded.claims.get("scope") == "2fa_setup_only"
+
+
+def test_bootstrap_token_scope_and_lifetime_together(jwt_service):
+    """Bootstrap case: scope claim + 15-minute lifetime in a single call."""
+    from datetime import timedelta, timezone
+
+    token, jti, expires = jwt_service.generate_access_token(
+        user_id="admin1",
+        application_id="app456",
+        extra_claims={"scope": "2fa_setup_only"},
+        custom_lifetime=timedelta(minutes=15),
+    )
+
+    decoded = jwt_service.decode_token(token)
+    assert decoded.claims.get("scope") == "2fa_setup_only"
+    now = datetime.now(timezone.utc)
+    assert (expires - now).total_seconds() <= 900
+
+
+def test_scope_claim_omitted_when_not_provided(jwt_service):
+    """Preservation: no scope claim appears when extra_claims is not supplied."""
+    token, jti, _ = jwt_service.generate_access_token(
+        user_id="user123", application_id="app456"
+    )
+    decoded = jwt_service.decode_token(token)
+    assert "scope" not in decoded.claims
