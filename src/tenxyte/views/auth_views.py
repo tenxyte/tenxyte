@@ -38,6 +38,7 @@ from tenxyte.core import JWTService, Settings
 from tenxyte.adapters.django.repositories import DjangoUserRepository
 from tenxyte.adapters.django.cache_service import DjangoCacheService
 from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
+from tenxyte.adapters.django.totp_storage import DjangoTOTPStorage
 
 
 # Lazy imports for legacy services still in use
@@ -832,7 +833,7 @@ class LoginEmailView(APIView):
                 # Use Core TOTP service
                 totp_service = TOTPService(settings=get_core_settings(), replay_protection=DjangoCacheService())
                 is_valid, error_msg = totp_service.verify_2fa(
-                    user_id=user.id, code=totp_code, storage=get_core_user_repo()
+                    user_id=user.id, code=totp_code, storage=DjangoTOTPStorage()
                 )
                 if not is_valid:
                     return Response(
@@ -1018,7 +1019,7 @@ class LoginPhoneView(APIView):
 
                 totp_service = TOTPService(settings=get_core_settings(), replay_protection=DjangoCacheService())
                 is_valid, error_msg = totp_service.verify_2fa(
-                    user_id=user.id, code=totp_code, storage=get_core_user_repo()
+                    user_id=user.id, code=totp_code, storage=DjangoTOTPStorage()
                 )
                 if not is_valid:
                     return Response(
