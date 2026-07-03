@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\migrations\0006_social.py
+# hypothesis_version: 6.155.7
+
+[100, 191, 500, '0001_core', 'Apple', 'Facebook', 'GitHub', 'Google', 'Microsoft', 'SocialConnection', 'access_token', 'apple', 'avatar_url', 'created_at', 'db_table', 'email', 'facebook', 'first_name', 'github', 'google', 'id', 'last_name', 'microsoft', 'provider', 'provider_user_id', 'refresh_token', 'social_connections', 'socialconnection', 'tenxyte', 'updated_at', 'user']

@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\middleware.py
+# hypothesis_version: 6.155.7
+
+[200, 300, 401, 403, 404, 500, '***REDACTED***', ', ', 'AIRS_DISABLED', 'AIRS_ENABLED', 'AIRS_REDACT_PII', 'APP_AUTH_INVALID', 'APP_AUTH_REQUIRED', 'AgentBearer ', 'Authorization', 'Bearer ', 'Content-Type', 'DELETE', 'HTTP_ORIGIN', 'HTTP_USER_AGENT', 'OPTIONS', 'ORG_ERROR', 'ORG_NOT_FOUND', 'Origin', 'PATCH', 'POST', 'PUT', 'REMOTE_ADDR', 'Vary', 'X-Access-Key', 'X-Access-Secret', 'X-Org-Slug', 'X-Prompt-Trace-ID', 'X-Request-ID', '^[\\w\\-]{1,128}$', 'actor', 'address', 'agent_action', 'agent_token', 'application', 'application/json', 'backup_codes', 'code', 'credit_card', 'date_of_birth', 'email', 'endpoint', 'error', 'method', 'password', 'phone', 'reason', 'slug', 'ssn', 'status_code', 'suspicious_activity', 'totp_secret', 'true', 'utf-8']

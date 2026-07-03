@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\throttles.py
+# hypothesis_version: 6.155.7
+
+[3600, '$', ',', '/', '10/day', '10/min', '127.0.0.1', '20/hour', '3/hour', '30/min', '5/hour', '5/min', 'HTTP_X_FORWARDED_FOR', 'NUM_PROXIES', 'REMOTE_ADDR', 'TRUSTED_PROXIES', '_', '_$', 'login', 'login_hourly', 'magic_link_request', 'magic_link_verify', 'otp_request', 'otp_verify', 'password_reset', 'password_reset_daily', 'progressive_login', 'refresh', 'register', 'register_daily', 'simple_rule', 'tenxyte.security']

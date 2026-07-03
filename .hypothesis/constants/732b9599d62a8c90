@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\migrations\0015_add_unique_phone_constraint.py
+# hypothesis_version: 6.155.7
+
+['is_deleted', 'phone_country_code', 'phone_number', 'phone_number__isnull', 'tenxyte', 'user']

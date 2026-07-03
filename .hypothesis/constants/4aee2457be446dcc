@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\services\organization_service.py
+# hypothesis_version: 6.155.7
+
+['-created_at', 'Admin', 'Member', 'Owner', 'Read-only access', 'User is not a member', 'Viewer', 'active', 'admin', 'children', 'code', 'depth', 'description', 'email', 'expired', 'id', 'invitation_created', 'invitation_id', 'is_default', 'is_root', 'is_system', 'max_members', 'member', 'member_added', 'member_count', 'member_removed', 'member_role_updated', 'metadata', 'name', 'new_parent_id', 'new_role', 'old_parent_id', 'old_role', 'org.*', 'org.members.invite', 'org.members.manage', 'org.members.read', 'org.members.remove', 'org.read', 'org.settings.read', 'org.settings.write', 'organization_created', 'organization_deleted', 'organization_id', 'organization_moved', 'organization_name', 'organization_updated', 'owner', 'parent_id', 'pending', 'permissions', 'role', 'role_code', 'slug', 'updates', 'user', 'user_id', 'viewer']

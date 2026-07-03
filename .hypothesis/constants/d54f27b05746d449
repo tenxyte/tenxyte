@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\core\jwt_service.py
+# hypothesis_version: 6.155.7
+
+[3600, 'Bearer', 'ES', 'PS', 'RS', 'access', 'address', 'app_id', 'aud', 'credit_card', 'date_of_birth', 'default', 'dob', 'email', 'error', 'exp', 'iat', 'ip', 'ip_address', 'is_blacklisted_async', 'is_revoked', 'iss', 'jti', 'nbf', 'no_django', 'not_found', 'password', 'password_change', 'phone', 'phone_number', 'refresh', 'require', 'ssn', 'token_rotation', 'type', 'unknown', 'user_id']

@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\adapters\django\totp_storage.py
+# hypothesis_version: 6.155.7
+
+['backup_codes', 'is_2fa_enabled', 'totp_secret']

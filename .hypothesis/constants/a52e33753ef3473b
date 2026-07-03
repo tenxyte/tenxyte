@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\backends\email.py
+# hypothesis_version: 6.155.7
+
+[200, 201, 202, 'DEFAULT_FROM_EMAIL', 'noreply@example.com', 'text/html']
