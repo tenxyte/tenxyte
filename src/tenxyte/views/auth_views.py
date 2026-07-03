@@ -387,11 +387,17 @@ class RegisterView(APIView):
         }
 
         if login_after:
-            # Generate tokens using Core JWT service
+            # Generate tokens using Core JWT service.
+            # Resolve the real application from the request (via X-Access-Key)
+            # so the token's app_id matches what @require_jwt validates later.
+            # Hardcoding "default" here caused TOKEN_APP_MISMATCH on subsequent
+            # protected calls (e.g. /otp/request/).
+            application = get_application_from_request(request)
+            app_id = str(application.id) if application else "default"
             jwt_service = get_core_jwt_service()
             tokens = jwt_service.generate_new_token_pair(
                 user_id=user.id,
-                application_id="default",
+                application_id=app_id,
                 extra_claims={"device_info": device_info, "ip_address": ip_address},
             )
             response_data.update(
