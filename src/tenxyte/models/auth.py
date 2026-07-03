@@ -36,10 +36,16 @@ class UserManager(BaseUserManager):
 
     def create_user(self, email=None, password=None, **extra_fields):
         """Crée et sauvegarde un utilisateur."""
-        if not email:
-            raise ValueError("L'email est requis")
+        # Vérifier qu'au moins un identifiant (email ou téléphone) est fourni
+        phone_country_code = extra_fields.get("phone_country_code")
+        phone_number = extra_fields.get("phone_number")
 
-        email = self.normalize_email(email)
+        if not email and not (phone_country_code and phone_number):
+            raise ValueError("L'email ou le numéro de téléphone est requis")
+
+        if email:
+            email = self.normalize_email(email)
+
         user = self.model(email=email, **extra_fields)
         if password:
             # nosemgrep: python.django.security.audit.unvalidated-password.unvalidated-password
@@ -242,6 +248,13 @@ class AbstractUser(models.Model):
         abstract = True
         indexes = [
             models.Index(fields=["phone_country_code", "phone_number"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["phone_country_code", "phone_number"],
+                condition=models.Q(phone_number__isnull=False) & models.Q(is_deleted=False),
+                name="unique_phone_when_not_deleted",
+            ),
         ]
 
     # Configuration Django Auth
