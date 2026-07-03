@@ -151,9 +151,10 @@ def register_user_with_core(**kwargs):
     email = kwargs.get("email")
 
     # Check if email exists (for anti-enumeration)
-    existing = user_repo.get_by_email(email)
-    if existing:
-        return False, None, "Email already registered"
+    if email:
+        existing = user_repo.get_by_email(email)
+        if existing:
+            return False, None, "Email already registered"
 
     # Check phone if provided
     phone_country_code = kwargs.get("phone_country_code")
