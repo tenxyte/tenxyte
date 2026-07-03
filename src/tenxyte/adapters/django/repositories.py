@@ -128,6 +128,11 @@ class DjangoUserRepository(UserRepository):
 
     def create(self, user: User) -> User:
         """Create a new user."""
+        # Extract phone info from metadata if present
+        metadata = user.metadata or {}
+        phone_country_code = metadata.get("phone_country_code")
+        phone_number = metadata.get("phone_number")
+        
         django_user = UserModel.objects.create_user(
             email=user.email,
             password=None,  # Set separately via set_password
@@ -137,6 +142,8 @@ class DjangoUserRepository(UserRepository):
             is_superuser=user.is_superuser,
             is_staff=user.is_staff,
             is_email_verified=user.email_verified,
+            phone_country_code=phone_country_code,
+            phone_number=phone_number,
         )
 
         # Set password if provided

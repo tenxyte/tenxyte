@@ -3,6 +3,7 @@ Tests unitaires pour l'inscription par téléphone uniquement
 """
 import pytest
 from django.test import TestCase, override_settings
+from django.db import transaction
 from django.db.utils import IntegrityError
 from tenxyte.models import get_user_model
 
@@ -96,16 +97,19 @@ class PhoneOnlyRegistrationTestCase(TestCase):
             last_name="One"
         )
 
-        # Tenter de créer un deuxième utilisateur avec le même téléphone
+        # Tenter de créer un deuxième utilisateur avec le même téléphone.
+        # Wrap in atomic() so the broken transaction is contained and tearDown
+        # can still run cleanup queries afterwards.
         with self.assertRaises(IntegrityError):
-            User.objects.create_user(
-                email=None,
-                password="Password2!",
-                phone_country_code="33",
-                phone_number="634567890",  # Même numéro
-                first_name="User",
-                last_name="Two"
-            )
+            with transaction.atomic():
+                User.objects.create_user(
+                    email=None,
+                    password="Password2!",
+                    phone_country_code="33",
+                    phone_number="634567890",  # Même numéro
+                    first_name="User",
+                    last_name="Two"
+                )
 
     def test_same_phone_different_country_code_allowed(self):
         """Test que le même numéro avec un code pays différent est autorisé"""
