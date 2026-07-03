@@ -47,11 +47,15 @@ jobs:
         # pygments: CVE-2026-4539 (transitive via rich)
         # Review periodically and remove ignores when a fix is released.
         run: >
-          pip-audit --desc on --format markdown
-          --ignore-vuln GHSA-rf74-v2fm-23pw
-          --ignore-vuln CVE-2026-33230
-          --ignore-vuln CVE-2026-33231
-          --ignore-vuln CVE-2026-4539
+          # Documentation des vulnérabilités ignorées : .pip-audit-ignore
+          # PYSEC-2026-597 : nltk path traversal (NOT a Tenxyte dependency)
+          #                  See SECURITY_ALERT_NLTK.md for full analysis
+          pip-audit --desc on --format markdown \
+            --ignore-vuln GHSA-rf74-v2fm-23pw \
+            --ignore-vuln CVE-2026-33230 \
+            --ignore-vuln CVE-2026-33231 \
+            --ignore-vuln CVE-2026-4539 \
+            --ignore-vuln PYSEC-2026-597
 
       - name: safety scan (known vulnerabilities)
         run: safety scan --full-report

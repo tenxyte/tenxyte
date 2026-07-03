@@ -1,0 +1,52 @@
+# pip-audit ignore file
+# Documentation: https://github.com/pypa/pip-audit
+#
+# Format: VULN-ID | Reason | Date Added | Review Date
+#
+
+# =============================================================================
+# VULNERABILITIES TO IGNORE
+# =============================================================================
+
+# PYSEC-2026-597: NLTK Path Traversal
+# Reason: nltk is NOT a dependency of Tenxyte (appears only in CI environment)
+# Investigation: See SECURITY_ALERT_NLTK.md for full analysis
+# Added: 2026-07-03
+# Review: 2026-10-03 (quarterly)
+PYSEC-2026-597
+
+# GHSA-rf74-v2fm-23pw: [Description needed]
+# Reason: [To be documented]
+# Added: [Date]
+# Review: [Date]
+GHSA-rf74-v2fm-23pw
+
+# CVE-2026-33230: [Description needed]
+# Reason: [To be documented]
+# Added: [Date]
+# Review: [Date]
+CVE-2026-33230
+
+# CVE-2026-33231: [Description needed]
+# Reason: [To be documented]
+# Added: [Date]
+# Review: [Date]
+CVE-2026-33231
+
+# CVE-2026-4539: [Description needed]
+# Reason: [To be documented]
+# Added: [Date]
+# Review: [Date]
+CVE-2026-4539
+
+# =============================================================================
+# NOTES
+# =============================================================================
+#
+# - Review ignored vulnerabilities quarterly
+# - Document reason for each ignore
+# - Link to detailed analysis documents
+# - Remove from ignore list when dependency is updated
+# - Add new vulnerabilities with proper documentation
+#
+# =============================================================================
