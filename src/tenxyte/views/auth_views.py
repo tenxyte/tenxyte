@@ -169,6 +169,17 @@ def register_user_with_core(**kwargs):
         ).exists():
             return False, None, "Phone number already registered"
 
+    # Identifier fields (phone) MUST be passed at creation time.
+    # The User model requires at least one identifier (email or phone) in
+    # create_user(); relying on a post-create update_user() would fail for
+    # phone-only accounts because the initial create_user() call would have
+    # no identifier. We therefore carry the phone into `metadata`, which the
+    # repository's create() unpacks into create_user().
+    metadata = {}
+    for field in ["phone_country_code", "phone_number"]:
+        if kwargs.get(field):
+            metadata[field] = kwargs[field]
+
     # Create Core User dataclass
     user_data = User(
         id="",  # Will be set by repository
@@ -181,9 +192,10 @@ def register_user_with_core(**kwargs):
         is_staff=False,
         status=UserStatus.ACTIVE,
         email_verified=False,
+        metadata=metadata,
     )
 
-    # Create via Core repository
+    # Create via Core repository (phone identifiers are set atomically here)
     created_user = user_repo.create(user_data)
 
     # Set password
@@ -192,9 +204,10 @@ def register_user_with_core(**kwargs):
         user_repo.set_password(created_user.id, password)
         created_user = user_repo.get_by_id(created_user.id)  # Reload with hash
 
-    # Update additional fields that are not part of the standard User dataclass
+    # Update remaining non-identifier profile fields. Phone is intentionally
+    # excluded here since it is already persisted during create().
     update_data = {}
-    for field in ["phone_country_code", "phone_number", "username", "bio", "timezone", "language", "custom_fields"]:
+    for field in ["username", "bio", "timezone", "language", "custom_fields"]:
         if field in kwargs:
             update_data[field] = kwargs[field]
 
