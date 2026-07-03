@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\migrations\0003_auth.py
-# hypothesis_version: 6.155.7
-
-[100, 128, 191, 255, '-created_at', '0001_core', 'BlacklistedToken', 'Email Verification', 'Login 2FA', 'LoginAttempt', 'MagicLinkToken', 'OTPCode', 'Password Reset', 'PasswordHistory', 'Phone Verification', 'RefreshToken', 'application', 'attempts', 'blacklisted_at', 'blacklisted_tokens', 'code', 'created_at', 'db_table', 'device_info', 'email_verification', 'expires_at', 'failure_reason', 'id', 'identifier', 'ip_address', 'is_revoked', 'is_used', 'last_used_at', 'login_2fa', 'login_attempts', 'magic_link_tokens', 'max_attempts', 'ordering', 'otp_codes', 'otp_type', 'password_hash', 'password_history', 'password_reset', 'phone_verification', 'reason', 'refresh_tokens', 'success', 'tenxyte', 'token', 'token_jti', 'used_at', 'user']

@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\migrations\0001_core.py
-# hypothesis_version: 6.155.7
-
-[100, 128, 191, 'Application', 'TENXYTE_USER_MODEL', 'User', 'abstract', 'access_key', 'access_secret', 'anonymization_token', 'applications', 'backup_codes', 'created_at', 'db_table', 'deleted_at', 'description', 'email', 'first_name', 'google_id', 'id', 'is_2fa_enabled', 'is_active', 'is_banned', 'is_deleted', 'is_email_verified', 'is_locked', 'is_phone_verified', 'is_staff', 'is_superuser', 'last_login', 'last_name', 'locked_until', 'max_devices', 'max_sessions', 'name', 'ordering', 'password', 'phone_country_code', 'phone_number', 'swappable', 'totp_secret', 'updated_at', 'user', 'users']

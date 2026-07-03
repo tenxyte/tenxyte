@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\filters.py
-# hypothesis_version: 6.155.7
-
-[',', '-', '-created_at', '0', '1', 'action', 'application_id', 'code', 'created_at', 'date_from', 'date_to', 'description', 'email', 'false', 'first_name', 'identifier', 'ip_address', 'is_2fa_enabled', 'is_active', 'is_banned', 'is_default', 'is_deleted', 'is_email_verified', 'is_locked', 'last_login', 'last_name', 'name', 'no', 'null', 'ordering', 'parent', 'role', 'role__code', 'search', 'slug', 'status', 'success', 'true', 'updated_at', 'user__email', 'user_id', 'yes']

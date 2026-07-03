@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\views\magic_link_views.py
-# hypothesis_version: 6.155.7
-
-[200, 400, 401, 429, 503, 3600, '$ref', 'Demander magic link', 'Doe', 'EMAIL_REQUIRED', 'Email is required', 'HTTP_USER_AGENT', 'INVALID_TOKEN', 'John', 'LINK_ALREADY_USED', 'LINK_EXPIRED', 'MAGIC_LINK_INVALID', 'Magic Link', 'Magic link désactivé', 'Magic link expiré', 'MagicLinkRequest', 'Referrer-Policy', 'SERVICE_UNAVAILABLE', 'Service unavailable', 'TOKEN_REQUIRED', 'Tenxyte', 'Token is required', 'access', 'application', 'code', 'default', 'description', 'details', 'device_id', 'device_info', 'email', 'error', 'expires_in_minutes', 'first_name', 'id', 'integer', 'last_name', 'magic_link_disabled', 'magic_link_expired', 'message', 'name', 'no-referrer', 'object', 'properties', 'refresh', 'request_magic_link', 'retry_after', 'sent_to', 'session_id', 'string', 'token', 'type', 'user', 'user@example.com', 'validation_url']

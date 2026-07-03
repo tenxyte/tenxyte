@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\core\settings.py
-# hypothesis_version: 6.155.7
-
-[300, 600, 900, 1440, 1800, 3600, 21600, 43200, 86400, '/', '/admin/', '/api/v1/auth/', 'API_PREFIX', 'API_VERSION', 'AUDIT_LOG_ENABLED', 'BASE_URL', 'BREACH_CHECK_ENABLED', 'DEBUG', 'EXACT_EXEMPT_PATHS', 'EXEMPT_PATHS', 'HS256', 'JWT_ALGORITHM', 'JWT_AUDIENCE', 'JWT_ISSUER', 'JWT_PUBLIC_KEY', 'JWT_SECRET_KEY', 'LOCKOUT_DURATION', 'MAGIC_LINK_ENABLED', 'MAX_DEVICES_PER_USER', 'MAX_LOGIN_ATTEMPTS', 'MFA_REQUIRED', 'ORG_MAX_DEPTH', 'ORG_MAX_MEMBERS', 'ORG_ROLE_INHERITANCE', 'PASSWORD_MIN_LENGTH', 'RS256', 'Strict', 'TOTP_ENCRYPTION_KEY', 'TOTP_ISSUER_NAME', 'Tenxyte', 'WEBAUTHN_ENABLED', 'WEBAUTHN_RP_ID', 'WEBAUTHN_RP_NAME', 'development', 'enterprise', 'localhost', 'production', 'tenxyte', 'tenxyte_refresh']
