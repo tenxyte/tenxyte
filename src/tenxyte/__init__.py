@@ -47,7 +47,7 @@ Extending Models:
 Documentation: https://tenxyte.readthedocs.io
 """
 
-__version__ = "0.9.6.1"
+__version__ = "0.9.6.2"
 __author__ = "Tenxyte Team"
 __license__ = "MIT"
 
