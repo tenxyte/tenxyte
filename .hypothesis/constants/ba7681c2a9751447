@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\conf\airs.py
-# hypothesis_version: 6.155.7
-
-[1000, 3600, 86400, 'AIRS_DEFAULT_EXPIRY', 'AIRS_DEFAULT_MAX_RPM', 'AIRS_ENABLED', 'AIRS_REDACT_PII']

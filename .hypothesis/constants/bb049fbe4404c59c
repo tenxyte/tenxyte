@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\conf\social.py
-# hypothesis_version: 6.155.7
-
-[300, 'FACEBOOK_APP_ID', 'FACEBOOK_APP_SECRET', 'GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'MAGIC_LINK_BASE_URL', 'MAGIC_LINK_ENABLED', 'MICROSOFT_CLIENT_ID', 'SOCIAL_GITHUB_SCOPES', 'SOCIAL_GOOGLE_SCOPES', 'SOCIAL_PROVIDERS', 'Tenxyte', 'WEBAUTHN_ENABLED', 'WEBAUTHN_RP_ID', 'WEBAUTHN_RP_NAME', 'email,public_profile', 'facebook', 'github', 'google', 'https://yourapp.com', 'localhost', 'microsoft', 'openid email profile', 'read:user user:email']

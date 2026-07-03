@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\exceptions.py
-# hypothesis_version: 6.155.7
-
-[401, 403, 404, 429, 'An error occurred', 'Invalid input.', 'NOT_FOUND', 'Not found.', 'PERMISSION_DENIED', 'Permission denied.', 'RATE_LIMITED', 'UNAUTHORIZED', 'UNKNOWN_ERROR', 'VALIDATION_ERROR', 'auth_code', 'code', 'detail', 'details', 'error', 'get_codes']
