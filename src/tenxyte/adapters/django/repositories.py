@@ -132,7 +132,7 @@ class DjangoUserRepository(UserRepository):
         metadata = user.metadata or {}
         phone_country_code = metadata.get("phone_country_code")
         phone_number = metadata.get("phone_number")
-        
+
         django_user = UserModel.objects.create_user(
             email=user.email,
             password=None,  # Set separately via set_password
