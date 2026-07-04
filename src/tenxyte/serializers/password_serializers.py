@@ -3,7 +3,7 @@ Password serializers - Password validation, reset, change.
 """
 
 from rest_framework import serializers
-from ..validators import validate_password
+from ..validators import validate_password, normalize_phone_country_code
 
 
 class PasswordSerializer(serializers.Serializer):
@@ -17,6 +17,10 @@ class PasswordResetRequestSerializer(serializers.Serializer):
     phone_country_code = serializers.CharField(max_length=5, required=False)
     phone_number = serializers.CharField(max_length=20, required=False)
 
+    def validate_phone_country_code(self, value):
+        """Normalise l'indicatif (sans '+') pour matcher le stockage en base."""
+        return normalize_phone_country_code(value)
+
     def validate(self, data):
         if not data.get("email") and not (data.get("phone_country_code") and data.get("phone_number")):
             raise serializers.ValidationError("Email or phone number is required")
@@ -24,7 +28,7 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
-    code = serializers.CharField(max_length=6, min_length=6)
+    otp_code = serializers.CharField(max_length=6, min_length=6)
     new_password = serializers.CharField(min_length=8)
 
     def validate_new_password(self, value):
