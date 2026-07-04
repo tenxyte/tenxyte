@@ -43,7 +43,7 @@ class TestPasswordResetRequestSerializer:
 class TestPasswordResetConfirmSerializer:
     def test_valid_reset(self):
         data = {
-            'code': '123456',
+            'otp_code': '123456',
             'new_password': 'SecurePassword123!'
         }
         serializer = PasswordResetConfirmSerializer(data=data)
@@ -51,16 +51,16 @@ class TestPasswordResetConfirmSerializer:
 
     def test_invalid_code_too_short(self):
         data = {
-            'code': '12345',
+            'otp_code': '12345',
             'new_password': 'SecurePassword123!'
         }
         serializer = PasswordResetConfirmSerializer(data=data)
         assert not serializer.is_valid()
-        assert 'code' in serializer.errors
+        assert 'otp_code' in serializer.errors
 
     def test_invalid_password_complexity(self):
         data = {
-            'code': '123456',
+            'otp_code': '123456',
             'new_password': 'weak'
         }
         serializer = PasswordResetConfirmSerializer(data=data)

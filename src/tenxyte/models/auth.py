@@ -266,6 +266,11 @@ class AbstractUser(models.Model):
             from django.contrib.auth.models import BaseUserManager
 
             self.email = BaseUserManager.normalize_email(self.email).lower()
+        # L'indicatif est stocké SANS le '+' (ex: "229"). Le '+' n'est ajouté
+        # qu'à l'affichage / la sérialisation (voir full_phone). On normalise
+        # ici pour garantir l'invariant quel que soit le chemin d'écriture.
+        if self.phone_country_code:
+            self.phone_country_code = self.phone_country_code.strip().lstrip("+")
         super().save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False, hard=False):

@@ -18,6 +18,7 @@ from ..services import OTPService
 from ..services.breach_check_service import breach_check_service
 from ..models import get_user_model
 from ..decorators import require_jwt
+from ..validators import normalize_phone_country_code
 from ..throttles import PasswordResetThrottle, PasswordResetDailyThrottle, OTPVerifyThrottle
 
 # Core imports
@@ -243,7 +244,8 @@ class PasswordResetConfirmView(APIView):
 
         # On a besoin de l'identifiant de l'utilisateur
         email = request.data.get("email")
-        phone_country_code = request.data.get("phone_country_code")
+        # Normalise l'indicatif (sans '+') pour matcher le format stocké en base.
+        phone_country_code = normalize_phone_country_code(request.data.get("phone_country_code"))
         phone_number = request.data.get("phone_number")
 
         user = None
@@ -258,7 +260,7 @@ class PasswordResetConfirmView(APIView):
             )
 
         otp_service = OTPService()
-        success, error = otp_service.verify_password_reset_otp(user, serializer.validated_data["code"])
+        success, error = otp_service.verify_password_reset_otp(user, serializer.validated_data["otp_code"])
 
         if not success:
             return Response({"error": error, "code": "RESET_FAILED"}, status=status.HTTP_400_BAD_REQUEST)

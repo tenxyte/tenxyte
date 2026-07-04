@@ -339,3 +339,20 @@ def get_password_strength(password: str) -> dict:
     """
     result = password_validator.validate(password)
     return {"score": result.score, "strength": result.strength, "is_valid": result.is_valid}
+
+
+def normalize_phone_country_code(country_code: Optional[str]) -> Optional[str]:
+    """
+    Normalise l'indicatif téléphonique pour le stockage.
+
+    L'indicatif est stocké SANS le '+' (ex: "229" et non "+229"). Le '+'
+    n'est réintroduit qu'à l'affichage / la sérialisation. Cela évite les
+    doubles préfixes ("++229") lorsqu'on formate un indicatif déjà préfixé.
+
+    Accepte les entrées avec ou sans '+' (et les espaces superflus) et
+    renvoie uniquement les chiffres. Les valeurs vides / None sont
+    retournées telles quelles.
+    """
+    if not country_code:
+        return country_code
+    return country_code.strip().lstrip("+")
