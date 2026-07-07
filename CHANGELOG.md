@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.6.3.2]
+## [0.9.6.3.1]
 
 ### Fixed
 - **Phone-Only Registration** — Resolved bug preventing user registration with phone number only. The `UserManager.create_user()` now accepts either email OR phone (with country code), aligning with `RegisterSerializer` validation. Added unique constraint on phone numbers for non-deleted users to prevent duplicates. Migration `0015_add_unique_phone_constraint` includes the database constraint.

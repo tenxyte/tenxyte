@@ -23,6 +23,7 @@ from tenxyte.adapters.django.totp_storage import DjangoTOTPStorage
 from tenxyte.adapters.django.email_service import DjangoEmailService
 from tenxyte.core import TOTPService, Settings
 from tenxyte.core.jwt_service import JWTService
+from tenxyte.services.reauth_service import ReauthService
 
 # Global Core services (lazy initialization)
 _core_user_repo = None
@@ -330,14 +331,22 @@ class TwoFactorDisableView(APIView):
         tags=["2FA"],
         summary="Désactiver 2FA",
         description="Désactive le 2FA après vérification du code TOTP ou d'un code de secours. "
-        "Pour des raisons de sécurité, le mot de passe de l'utilisateur est également requis. "
+        "Pour des raisons de sécurité, le mot de passe de l'utilisateur est également requis, "
+        "sauf si un code OTP de réauthentification valide (`otp_code`) est fourni à la place. "
         "Une fois désactivé, tous les codes de secours restants sont invalidés. "
         "Cette action est irréversible et nécessitera une nouvelle configuration complète.",
         request=inline_serializer(
             name="TwoFactorDisableRequest",
             fields={
                 "code": serializers.CharField(help_text="Code TOTP ou code de secours à 8 chiffres"),
-                "password": serializers.CharField(help_text="Mot de passe de l'utilisateur pour confirmation"),
+                "password": serializers.CharField(
+                    required=False, allow_blank=True, help_text="Mot de passe de l'utilisateur pour confirmation"
+                ),
+                "otp_code": serializers.CharField(
+                    required=False,
+                    allow_blank=True,
+                    help_text="Code OTP de réauthentification, alternative au mot de passe",
+                ),
             },
         ),
         responses={
@@ -386,6 +395,20 @@ class TwoFactorDisableView(APIView):
         code = request.data.get("code", "")
         if not code:
             return Response({"error": "Code is required", "code": "CODE_REQUIRED"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verify current password OR a fresh OTP_Reauth_Challenge (Requirement 6.4/6.5/6.6)
+        reauth_service = ReauthService()
+        is_valid_reauth, reauth_error_code, reauth_error_message = reauth_service.verify(
+            request.user,
+            password=request.data.get("password", ""),
+            otp_code=request.data.get("otp_code", ""),
+        )
+
+        if not is_valid_reauth:
+            return Response(
+                {"error": reauth_error_message, "code": reauth_error_code},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Use Core TOTP service with storage
         totp_service = get_core_totp_service()

@@ -197,6 +197,16 @@ class AbstractUser(models.Model):
     is_email_verified = models.BooleanField(default=False)
     is_phone_verified = models.BooleanField(default=False)
 
+    # Passwordless (login OTP)
+    has_usable_password = models.BooleanField(
+        default=True,
+        help_text=(
+            "False pour un Passwordless_Account : le mot de passe stocké est une "
+            "valeur aléatoire inutilisable (créé via login OTP auto-register, ou "
+            "jamais remplacé par un mot de passe choisi par l'utilisateur)."
+        ),
+    )
+
     # 2FA (TOTP)
     # SECURITY (R2): totp_secret is encrypted at rest using cryptography.fernet in the service layer.
     totp_secret = models.CharField(max_length=255, null=True, blank=True)

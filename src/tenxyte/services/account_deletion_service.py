@@ -23,10 +23,11 @@ class AccountDeletionService:
     def request_deletion(
         self,
         user: User,
-        password: str,
+        password: str = "",
         ip_address: str = None,
         user_agent: str = "",
         otp_code: str = "",
+        reauth_otp_code: str = "",
         reason: str = "",
     ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
         """
@@ -34,16 +35,27 @@ class AccountDeletionService:
 
         Args:
             user: L'utilisateur qui demande la suppression
-            password: Mot de passe pour vérification
+            password: Mot de passe pour vérification (preuve d'identité)
             ip_address: IP de la demande
             user_agent: User agent
+            otp_code: Code OTP à 6 chiffres pour la porte 2FA dédiée à la
+                suppression (requis uniquement si `user.is_2fa_enabled`).
+                Ce paramètre est distinct de `reauth_otp_code` ci-dessous.
+            reauth_otp_code: Login_OTP_Code frais, accepté comme alternative
+                au mot de passe pour la preuve d'identité (Requirement 6.4),
+                que 2FA soit activé ou non. Nommé différemment de `otp_code`
+                pour éviter toute collision avec la porte 2FA existante.
             reason: Raison optionnelle
 
         Returns:
             Tuple[success, data, error_message]
         """
-        # Vérifier le mot de passe
-        if not user.check_password(password):
+        # Vérifier la preuve d'identité : mot de passe actuel OU
+        # OTP_Reauth_Challenge frais (Requirements 6.4, 6.5, 6.6).
+        from .reauth_service import ReauthService
+
+        reauth_ok, _, _ = ReauthService().verify(user, password=password, otp_code=reauth_otp_code)
+        if not reauth_ok:
             self._audit_log(
                 "deletion_request_failed", user, ip_address, {"reason": "invalid_password", "user_agent": user_agent}
             )
@@ -174,7 +186,7 @@ class AccountDeletionService:
             return False, None, "An unexpected error occurred while confirming the deletion request."
 
     def cancel_deletion(
-        self, user: User, password: str, ip_address: str = None
+        self, user: User, password: str = "", ip_address: str = None, otp_code: str = ""
     ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
         """
         Annuler une demande de suppression.
@@ -183,12 +195,18 @@ class AccountDeletionService:
             user: L'utilisateur qui annule
             password: Mot de passe pour vérification
             ip_address: IP de l'annulation
+            otp_code: Login_OTP_Code frais, accepté comme alternative au mot
+                de passe pour la preuve d'identité (Requirement 6.4).
 
         Returns:
             Tuple[success, data, error_message]
         """
-        # Vérifier le mot de passe
-        if not user.check_password(password):
+        # Vérifier la preuve d'identité : mot de passe actuel OU
+        # OTP_Reauth_Challenge frais (Requirements 6.4, 6.5, 6.6).
+        from .reauth_service import ReauthService
+
+        reauth_ok, _, _ = ReauthService().verify(user, password=password, otp_code=otp_code)
+        if not reauth_ok:
             self._audit_log("deletion_cancel_failed", user, ip_address, {"reason": "invalid_password"})
             return False, None, "Invalid password"
 

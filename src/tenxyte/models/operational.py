@@ -29,6 +29,7 @@ class OTPCode(models.Model):
         ("phone_verification", "Phone Verification"),
         ("password_reset", "Password Reset"),
         ("login_2fa", "Login 2FA"),
+        ("login", "Login OTP"),
     ]
 
     user = models.ForeignKey(
