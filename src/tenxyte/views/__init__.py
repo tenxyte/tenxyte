@@ -1,11 +1,13 @@
 from .auth_views import RegisterView, LoginEmailView, LoginPhoneView, RefreshTokenView, LogoutView, LogoutAllView
 from .otp_views import RequestOTPView, VerifyEmailOTPView, VerifyPhoneOTPView
+from .login_otp_views import LoginOTPRequestView, LoginOTPVerifyView
 from .password_views import (
     PasswordResetRequestView,
     PasswordResetConfirmView,
     ChangePasswordView,
     PasswordStrengthView,
     PasswordRequirementsView,
+    SetInitialPasswordView,
 )
 from .user_views import (
     MeView,
@@ -65,11 +67,14 @@ __all__ = [
     "RequestOTPView",
     "VerifyEmailOTPView",
     "VerifyPhoneOTPView",
+    "LoginOTPRequestView",
+    "LoginOTPVerifyView",
     "PasswordResetRequestView",
     "PasswordResetConfirmView",
     "ChangePasswordView",
     "PasswordStrengthView",
     "PasswordRequirementsView",
+    "SetInitialPasswordView",
     "MeView",
     "MyRolesView",
     "UserListView",

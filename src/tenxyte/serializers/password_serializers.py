@@ -40,8 +40,14 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 
 class ChangePasswordSerializer(serializers.Serializer):
-    current_password = serializers.CharField(write_only=True)
+    # `current_password` reste le champ historique ; il devient optionnel car
+    # `otp_code` (Requirement 6.4) est désormais accepté comme preuve
+    # alternative via `ReauthService`. Aucun champ existant n'est retiré.
+    current_password = serializers.CharField(required=False, allow_blank=True, write_only=True)
     new_password = serializers.CharField(min_length=8, write_only=True)
+    otp_code = serializers.CharField(
+        required=False, allow_blank=True, max_length=6, min_length=6, write_only=True
+    )
 
     def validate_new_password(self, value):
         """Valide la complexite du nouveau mot de passe."""

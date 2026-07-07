@@ -13,9 +13,15 @@ from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializ
 from rest_framework import serializers
 from drf_spectacular.types import OpenApiTypes
 
-from ..serializers import PasswordResetRequestSerializer, PasswordResetConfirmSerializer, ChangePasswordSerializer
+from ..serializers import (
+    PasswordResetRequestSerializer,
+    PasswordResetConfirmSerializer,
+    ChangePasswordSerializer,
+    SetInitialPasswordSerializer,
+)
 from ..services import OTPService
 from ..services.breach_check_service import breach_check_service
+from ..services.reauth_service import ReauthService
 from ..models import get_user_model
 from ..decorators import require_jwt
 from ..validators import normalize_phone_country_code
@@ -360,19 +366,36 @@ class ChangePasswordView(APIView):
     @require_jwt
     def post(self, request):
         """Change password via Core repository."""
+        # Un Passwordless_Account n'a jamais de mot de passe utilisable : le
+        # changement de mot de passe existant ne peut jamais servir à en
+        # définir un premier (Requirement 6.7), quelle que soit la preuve
+        # fournie. Rejet immédiat, sans même consulter ReauthService.
+        if request.user.has_usable_password is False:
+            return Response(
+                {
+                    "error": "Passwordless accounts must set their first password via the dedicated endpoint",
+                    "code": "PASSWORDLESS_ACCOUNT_USE_SET_INITIAL_PASSWORD",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = ChangePasswordSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(
                 {"error": "Validation error", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Verify current password via Core repository
-        user_repo = get_core_user_repo()
-        is_valid = user_repo.check_password(str(request.user.id), serializer.validated_data["current_password"])
+        # Verify current password OR a fresh OTP_Reauth_Challenge (Requirement 6.4/6.6/8.4)
+        reauth_service = ReauthService()
+        is_valid, error_code, error_message = reauth_service.verify(
+            request.user,
+            password=serializer.validated_data.get("current_password", ""),
+            otp_code=serializer.validated_data.get("otp_code", ""),
+        )
 
         if not is_valid:
             return Response(
-                {"error": "Current password is incorrect", "code": "INVALID_PASSWORD"},
+                {"error": error_message, "code": error_code},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -392,6 +415,7 @@ class ChangePasswordView(APIView):
         )
 
         # Update password via Core repository
+        user_repo = get_core_user_repo()
         user_repo.update_password(str(request.user.id), serializer.validated_data["new_password"])
 
         # Révoquer toutes les sessions sauf la session actuelle
@@ -405,6 +429,100 @@ class ChangePasswordView(APIView):
                 "sessions_revoked": sessions_revoked,
             }
         )
+
+
+class SetInitialPasswordView(APIView):
+    """
+    POST {API_PREFIX}/auth/password/set-initial/
+    Définir le premier mot de passe d'un Passwordless_Account (utilisateur connecté).
+    """
+
+    @extend_schema(
+        tags=["Password"],
+        summary="Définir le premier mot de passe (compte passwordless)",
+        description="Permet à un Passwordless_Account (sans mot de passe utilisable) de définir "
+        "son premier mot de passe. Requiert un Login OTP valide — aucune substitution par mot "
+        "de passe n'est acceptée. Vérifie si le nouveau mot de passe a été exposé dans des "
+        "fuites de données. Échoue si le compte possède déjà un mot de passe utilisable.",
+        request=SetInitialPasswordSerializer,
+        responses={
+            200: {"type": "object", "properties": {"message": {"type": "string"}}},
+            400: {
+                "type": "object",
+                "properties": {"error": {"type": "string"}, "details": {"type": "object"}, "code": {"type": "string"}},
+            },
+            401: {"type": "object", "properties": {"error": {"type": "string"}, "details": {"type": "string"}}},
+        },
+        examples=[
+            OpenApiExample(
+                request_only=True,
+                name="set_initial_password_request",
+                summary="Définition du premier mot de passe",
+                value={"otp_code": "123456", "new_password": "NewSecureP@ss123!"},
+            ),
+            OpenApiExample(
+                response_only=True,
+                name="already_has_password",
+                summary="Le compte possède déjà un mot de passe",
+                value={
+                    "error": "Account already has a usable password. Use /password/change/ instead.",
+                    "code": "ALREADY_HAS_PASSWORD",
+                },
+            ),
+            OpenApiExample(
+                response_only=True,
+                name="otp_invalid",
+                summary="Code OTP invalide ou expiré",
+                value={"error": "Invalid code. 2 attempt(s) remaining.", "code": "OTP_INVALID"},
+            ),
+        ],
+    )
+    @require_jwt
+    def post(self, request):
+        """Set the initial password of a Passwordless_Account via Core repository."""
+        # Un compte qui a déjà un mot de passe utilisable ne peut pas passer
+        # par cet endpoint (Requirement 7.7) — il doit utiliser /password/change/.
+        if request.user.has_usable_password:
+            return Response(
+                {
+                    "error": "Account already has a usable password. Use /password/change/ instead.",
+                    "code": "ALREADY_HAS_PASSWORD",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = SetInitialPasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"error": "Validation error", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Un Login OTP valide est obligatoire, sans substitution possible par
+        # un mot de passe (Requirement 7.3/7.4) : aucun état n'est modifié en
+        # cas d'échec de la vérification.
+        # OTP_REQUIRED : aucun code de connexion n'a encore été demandé pour
+        # ce compte (DoesNotExist).
+        # OTP_INVALID  : un code existe mais est incorrect, expiré ou épuisé.
+        otp_service = OTPService()
+        otp_ok, otp_error = otp_service.verify_login_otp(request.user, serializer.validated_data["otp_code"])
+        if not otp_ok:
+            otp_error_code = "OTP_REQUIRED" if otp_error == "No login code found" else "OTP_INVALID"
+            return Response({"error": otp_error, "code": otp_error_code}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Breach password check (HIBP)
+        breach_ok, breach_error = breach_check_service.check_password(serializer.validated_data["new_password"])
+        if not breach_ok:
+            return Response({"error": breach_error, "code": "PASSWORD_BREACHED"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update password via Core repository, puis marquer le compte comme
+        # doté d'un mot de passe utilisable (Requirement 7.5, 6.3).
+        user_repo = get_core_user_repo()
+        user_repo.update_password(str(request.user.id), serializer.validated_data["new_password"])
+
+        request.user.has_usable_password = True
+        request.user.save(update_fields=["has_usable_password"])
+
+        return Response({"message": "Password set successfully"})
 
 
 class PasswordStrengthView(APIView):
