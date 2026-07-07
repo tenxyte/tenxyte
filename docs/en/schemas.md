@@ -40,6 +40,7 @@ Represents an authenticated Tenxyte user.
   "is_email_verified": true,
   "is_phone_verified": false,
   "is_2fa_enabled": false,
+  "has_usable_password": true,
   "created_at": "2026-01-01T00:00:00Z",
   "updated_at": "2026-03-15T10:30:00Z",
   "last_login": "2026-03-01T12:00:00Z",
@@ -69,6 +70,7 @@ Represents an authenticated Tenxyte user.
 | `is_email_verified` | boolean | Indicates if the email was verified |
 | `is_phone_verified` | boolean | Indicates if the phone number was verified |
 | `is_2fa_enabled` | boolean | Indicates if TOTP two-factor is active |
+| `has_usable_password` | boolean | `true` if the account has a user-defined password and can log in via `/login/email/` or `/login/phone/`. `false` for *Passwordless Accounts* created via the phone-OTP auto-registration flow — these accounts can only authenticate via `/login/otp/verify/` until a password is voluntarily set via `/password/set-initial/`. |
 | `created_at` | string (date-time) | Account creation timestamp |
 | `updated_at` | string (date-time) \| null | Last update timestamp |
 | `last_login` | string (date-time) \| null | Last login timestamp |
@@ -152,6 +154,12 @@ Returned on all `4xx` and `5xx` responses.
 | `RESET_FAILED` | 400 | Password reset failed |
 | `ORG_NOT_FOUND` | 404 | X-Org-Slug header does not match |
 | `NOT_ORG_MEMBER` | 403 | User is not a member of the provided org |
+| `FEATURE_DISABLED` | 404 | The requested feature is disabled (e.g., OTP login not enabled) |
+| `OTP_INVALID` | 401 | Login OTP code is wrong, expired, or exhausted — also returned when the phone number doesn't exist (anti-enumeration) |
+| `OTP_REQUIRED` | 400 | No login OTP was requested before calling `/password/set-initial/` |
+| `ALREADY_HAS_PASSWORD` | 400 | Account already has a user-defined password; use `/password/change/` instead of `/password/set-initial/` |
+| `PASSWORDLESS_ACCOUNT_USE_SET_INITIAL_PASSWORD` | 400 | Passwordless accounts cannot use `/password/change/`; use `/password/set-initial/` instead |
+| `REAUTH_REQUIRED` | 400 | Re-authentication required for a sensitive action: provide either `current_password` or a valid `otp_code` |
 
 ---
 
