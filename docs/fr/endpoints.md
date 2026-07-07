@@ -7,6 +7,8 @@
     - [`POST /register/`](#post-register)
     - [`POST /login/email/`](#post-loginemail)
     - [`POST /login/phone/`](#post-loginphone)
+    - [`POST /login/otp/request/`](#post-loginotprequest)
+    - [`POST /login/otp/verify/`](#post-loginotpverify)
   - [Connexion Sociale (Multi-Fournisseurs)](#connexion-sociale-multi-fournisseurs)
     - [`POST /social/<provider>/`](#post-socialprovider)
     - [`GET /social/<provider>/callback/`](#get-socialprovidercallback)
@@ -24,6 +26,7 @@
     - [`POST /password/reset/request/`](#post-passwordresetrequest)
     - [`POST /password/reset/confirm/`](#post-passwordresetconfirm)
     - [`POST /password/change/` ](#post-passwordchange)
+    - [`POST /password/set-initial/` ](#post-passwordset-initial)
     - [`POST /password/strength/`](#post-passwordstrength)
     - [`GET /password/requirements/`](#get-passwordrequirements)
   - [Profil Utilisateur](#profil-utilisateur)
@@ -417,6 +420,128 @@ Connexion avec numéro de téléphone + mot de passe.
   "code": "ACCOUNT_LOCKED",
   "details": {}
 }
+```
+
+---
+
+## Connexion sans mot de passe par téléphone (OTP)
+
+Nécessite `TENXYTE_OTP_LOGIN_ENABLED = True`.
+
+Ces endpoints permettent à un utilisateur de se connecter avec seulement un numéro de téléphone et un code à usage unique. Aucun mot de passe n'est jamais requis. Le flux se déroule en deux étapes : demande d'un code, puis vérification pour obtenir des jetons JWT.
+
+### `POST /login/otp/request/`
+Demander un code OTP de connexion envoyé par SMS au numéro de téléphone fourni.
+
+**Requête :**
+```json
+{
+  "phone_country_code": "+33",
+  "phone_number": "612345678"
+}
+```
+
+Si `TENXYTE_OTP_LOGIN_AUTO_REGISTER = True` (par défaut) et qu'aucun compte ne correspond au numéro fourni, un nouveau *compte passwordless* est créé automatiquement et reçoit le code.
+Si `OTP_LOGIN_AUTO_REGISTER = False` et qu'aucun compte n'existe, la réponse a la **même forme** qu'un succès (anti-énumération) mais aucun code n'est envoyé.
+
+**Réponse `200` :**
+```json
+{
+  "message": "Code de connexion envoyé",
+  "otp_id": "uuid-string",
+  "expires_at": "2026-07-07T12:10:00Z",
+  "channel": "sms"
+}
+```
+
+**Réponse `404` (Fonctionnalité désactivée) :**
+```json
+{
+  "error": "Feature not available",
+  "code": "FEATURE_DISABLED"
+}
+```
+
+**Réponse `400` (Erreur de validation) :**
+```json
+{
+  "error": "Erreur de validation",
+  "details": {
+    "phone_country_code": ["Ce champ est requis."],
+    "phone_number": ["Ce champ est requis."]
+  }
+}
+```
+
+**Réponse `429` (Limite de débit atteinte) :**
+```json
+{
+  "error": "Request was throttled.",
+  "retry_after": 60
+}
+```
+
+---
+
+### `POST /login/otp/verify/`
+Vérifier le code OTP de connexion et recevoir des jetons JWT. Applique les mêmes contrôles de compte que `/login/phone/` (actif, non banni, non verrouillé, 2FA optionnelle).
+
+**Requête :**
+```json
+{
+  "phone_country_code": "+33",
+  "phone_number": "612345678",
+  "otp_code": "847291",
+  "totp_code": "123456",
+  "device_info": "v=1|os=ios;osv=17|device=mobile"
+}
+```
+`otp_code` : Requis. Le code à 6 chiffres reçu par SMS.
+`totp_code` : Requis uniquement si le compte a la 2FA activée.
+`device_info` : Informations optionnelles sur l'appareil.
+
+**Réponse `200` (même forme que `/login/phone/`) :**
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "refresh_expires_in": 604800,
+  "user": {
+    "id": "uuid-string",
+    "email": null,
+    "phone": "+33612345678",
+    "is_phone_verified": true,
+    "has_usable_password": false,
+    "..."
+  },
+  "requires_2fa": false,
+  "session_id": "uuid-string",
+  "device_id": "uuid-string"
+}
+```
+`is_phone_verified` est automatiquement mis à `true` lors d'une connexion réussie.
+`has_usable_password` indique si le compte peut aussi se connecter avec un mot de passe.
+
+**Réponse `404` (Fonctionnalité désactivée) :**
+```json
+{ "error": "Feature not available", "code": "FEATURE_DISABLED" }
+```
+
+**Réponse `401` (Code invalide ou expiré — même réponse si téléphone inconnu) :**
+```json
+{ "error": "Invalid code.", "code": "OTP_INVALID" }
+```
+
+**Réponse `401` (2FA requise) :**
+```json
+{ "error": "Code 2FA requis", "code": "2FA_REQUIRED", "requires_2fa": true }
+```
+
+**Réponse `423` (Compte verrouillé) :**
+```json
+{ "error": "Compte verrouillé", "code": "ACCOUNT_LOCKED", "retry_after": "2026-07-07T12:30:00Z" }
 ```
 
 ---
@@ -1120,6 +1245,82 @@ Authorization: Bearer <access_token>
 {
   "error": "Le mot de passe actuel est incorrect",
   "code": "INVALID_PASSWORD"
+}
+```
+
+> **Comptes passwordless :** Si `has_usable_password = false`, cet endpoint renvoie `400 PASSWORDLESS_ACCOUNT_USE_SET_INITIAL_PASSWORD`. Utilisez [`POST /password/set-initial/`](#post-passwordset-initial) à la place.
+
+> **Réauthentification via OTP :** Les comptes avec un mot de passe peuvent aussi fournir `otp_code` (au lieu de `current_password`) comme preuve d'identité.
+
+---
+
+### `POST /password/set-initial/` 
+Définir le premier mot de passe d'un compte passwordless. Nécessite un OTP de connexion frais comme preuve de possession du téléphone. Distinct de `/password/change/` — ne demande pas de mot de passe actuel, car il n'en existe pas.
+
+Nécessite `TENXYTE_OTP_LOGIN_ENABLED = True`.
+
+**En-têtes (requis) :**
+```
+Authorization: Bearer <access_token>
+```
+
+**Requête :**
+```json
+{
+  "otp_code": "847291",
+  "new_password": "MonNouveauM0tdePasse!"
+}
+```
+`otp_code` : Un OTP de connexion frais pour le téléphone du compte (demandé via `/login/otp/request/`).
+`new_password` : Doit respecter les règles de complexité du mot de passe configurées.
+
+**Réponse `200` :**
+```json
+{
+  "message": "Password set successfully"
+}
+```
+Après succès : le compte peut se connecter via `/login/email/` ou `/login/phone/` avec le nouveau mot de passe **en plus de** `/login/otp/verify/`. Les deux méthodes restent disponibles.
+
+**Réponse `400` (Compte possède déjà un mot de passe) :**
+```json
+{
+  "error": "Account already has a usable password. Use /password/change/ instead.",
+  "code": "ALREADY_HAS_PASSWORD"
+}
+```
+
+**Réponse `400` (Aucun OTP de connexion existant) :**
+```json
+{
+  "error": "No login code found",
+  "code": "OTP_REQUIRED"
+}
+```
+
+**Réponse `400` (OTP invalide ou expiré) :**
+```json
+{
+  "error": "Invalid code. 2 attempt(s) remaining.",
+  "code": "OTP_INVALID"
+}
+```
+
+**Réponse `400` (Mot de passe ne respecte pas les règles de complexité) :**
+```json
+{
+  "error": "Erreur de validation",
+  "details": {
+    "new_password": ["Le mot de passe doit contenir au moins une lettre majuscule."]
+  }
+}
+```
+
+**Réponse `400` (Mot de passe trouvé dans une fuite de données) :**
+```json
+{
+  "error": "This password has appeared in a data breach and cannot be used.",
+  "code": "PASSWORD_BREACHED"
 }
 ```
 
