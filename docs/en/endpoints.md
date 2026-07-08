@@ -1255,7 +1255,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-**Response `200` (forced change completed — `must_change_password` was `true`):**
+**Response `200` (forced change completed — `must_change_password` was `true`, upgrade token):**
 ```json
 {
   "message": "Password changed successfully",
@@ -1264,7 +1264,8 @@ Authorization: Bearer <access_token>
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 900
+  "expires_in": 900,
+  "refresh_expires_in": 604800
 }
 ```
 > When the request was made with a `password_change_only` scoped token, a fresh **full-scope** token pair is returned so the user can continue without re-authenticating.
@@ -1329,7 +1330,8 @@ Authorization: Bearer <access_token>
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 900
+  "expires_in": 900,
+  "refresh_expires_in": 604800
 }
 ```
 > When the request was made with a `password_change_only` scoped token, a fresh **full-scope** token pair is returned so the user can continue without re-authenticating.
@@ -5085,7 +5087,8 @@ Authorization: Bearer <password_change_only_token>
   "access_token": "eyJ...",
   "refresh_token": "eyJ...",
   "token_type": "Bearer",
-  "expires_in": 900
+  "expires_in": 900,
+  "refresh_expires_in": 604800
 }
 ```
 `must_change_password` is now `false`. The new `access_token` is a full-scope token — the user can access all endpoints normally.

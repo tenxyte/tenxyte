@@ -17,7 +17,7 @@ from drf_spectacular.generators import SchemaGenerator  # noqa: E402
 
 generator = SchemaGenerator(
     title="Tenxyte API",
-    version="0.9.6.3.2",
+    version="0.9.6.4",
     description=(
         "Framework-agnostic Python authentication — JWT, RBAC, 2FA, Magic Links, "
         "Passkeys, Social Login, B2B Organizations, multi-tenant support. "

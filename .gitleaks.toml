@@ -74,7 +74,14 @@ tags = ["password"]
 
 [rules.allowlist]
   regexes = [
+    # Obvious placeholders and test values
     '''(?i)(your[-_]?password|changeme|placeholder|example|dummy|fake|test|SecureP@ss|<password>|\*{3,})''',
+    # Django model field declarations — not secrets (e.g. must_change_password = models.BooleanField(...))
+    '''(?i)(must_change_password|has_usable_password|change_password|reset_password)\s*=\s*(models\.|serializers\.|BooleanField|CharField|True|False)''',
+    # Python serializer field declarations (e.g. must_change_password = serializers.BooleanField(...))
+    '''(?i)\w+_password\s*=\s*(serializers\.|models\.|BooleanField|CharField|True|False)''',
+    # help_text strings that happen to contain the word password
+    '''help_text\s*=''',
   ]
 
 # ============================================================
