@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`/password/change/`** — Passwordless accounts (`has_usable_password=False`) are now rejected with `400 PASSWORDLESS_ACCOUNT_USE_SET_INITIAL_PASSWORD` and directed to the new `/password/set-initial/` endpoint.
 - **`/2fa/disable/`, account deletion endpoints, data export endpoint** — Now accept `otp_code` as an alternative to `current_password` for re-authentication, enabling passwordless users to perform sensitive actions without a password.
 
-## [0.9.6.3.1]
+## [0.9.6.3.2]
 
 ### Fixed
 - **Phone-Only Registration** — Resolved bug preventing user registration with phone number only. The `UserManager.create_user()` now accepts either email OR phone (with country code), aligning with `RegisterSerializer` validation. Added unique constraint on phone numbers for non-deleted users to prevent duplicates. Migration `0015_add_unique_phone_constraint` includes the database constraint.
