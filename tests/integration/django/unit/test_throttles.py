@@ -16,6 +16,9 @@ from django.core.cache import cache  # noqa: E402
 from tenxyte.throttles import (  # noqa: E402
     LoginThrottle,
     RegisterThrottle,
+    RegisterDailyThrottle,
+    LoginOTPRequestThrottle,
+    LoginOTPRequestDailyThrottle,
     ProgressiveLoginThrottle,
     SimpleThrottleRule,
     get_client_ip,
@@ -85,6 +88,16 @@ class TestIPBasedThrottle:
     def test_register_throttle_scope_and_rate(self):
         assert RegisterThrottle.scope == "register"
         assert RegisterThrottle.rate == "3/hour"
+
+    def test_login_otp_request_throttles_are_dedicated_and_distinct_from_register(self):
+        """Les scopes login_otp_request(_daily) doivent différer de register(_daily)."""
+        assert LoginOTPRequestThrottle.scope == "login_otp_request"
+        assert LoginOTPRequestThrottle.rate == "5/min"
+        assert LoginOTPRequestDailyThrottle.scope == "login_otp_request_daily"
+        assert LoginOTPRequestDailyThrottle.rate == "20/day"
+
+        assert LoginOTPRequestThrottle.scope != RegisterThrottle.scope
+        assert LoginOTPRequestDailyThrottle.scope != RegisterDailyThrottle.scope
 
 
 # ─── ProgressiveLoginThrottle ────────────────────────────────────────────────

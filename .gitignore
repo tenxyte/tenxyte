@@ -90,3 +90,7 @@ old_dists/*/*
 
 # Hypothesis
 .hypothesis/
+
+.kiro/
+/plan
+logs
