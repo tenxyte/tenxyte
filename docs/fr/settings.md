@@ -142,6 +142,31 @@ TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 600  # 10min au lieu de 5min
 
 ---
 
+## Connexion sans mot de passe par téléphone (OTP)
+
+Permet aux utilisateurs de se connecter avec leur numéro de téléphone et un code à usage unique envoyé par SMS — sans mot de passe.
+
+| Paramètre | Défaut | Description |
+|---|---|---|
+| `TENXYTE_OTP_LOGIN_ENABLED` | `False` | Active ou désactive l'ensemble de la fonctionnalité de connexion OTP par téléphone. **Désactivé par défaut** — aucun nouvel endpoint n'est actif tant que ce paramètre n'est pas `True`. |
+| `TENXYTE_OTP_LOGIN_AUTO_REGISTER` | `True` | Crée automatiquement un nouveau compte si le numéro de téléphone fourni n'existe pas. Le compte créé est un *compte passwordless* (`has_usable_password=False`). Mettre à `False` pour restreindre la connexion OTP aux utilisateurs déjà existants (une réponse anti-énumération est quand même renvoyée). |
+| `TENXYTE_OTP_LOGIN_VALIDITY_MINUTES` | `10` | Durée de validité (en minutes) d'un code OTP de connexion avant expiration. |
+
+**Configuration minimale :**
+```python
+# settings.py
+TENXYTE_OTP_LOGIN_ENABLED = True
+TENXYTE_SMS_ENABLED = True          # nécessaire pour l'envoi réel des codes
+TENXYTE_SMS_BACKEND = 'tenxyte.backends.sms.TwilioBackend'
+TWILIO_ACCOUNT_SID = '...'
+TWILIO_AUTH_TOKEN = '...'
+TWILIO_PHONE_NUMBER = '+15551234567'
+```
+
+Voir [`POST /login/otp/request/`](endpoints.md#post-loginotprequest) et [`POST /login/otp/verify/`](endpoints.md#post-loginotpverify) pour les endpoints correspondants.
+
+---
+
 ## Politique de Mot de Passe
 
 | Paramètre | Défaut | Description |

@@ -28,6 +28,14 @@ from .password_serializers import (
     ChangePasswordSerializer,
 )
 
+# Login OTP serializers
+from .login_otp_serializers import (
+    LoginOTPRequestSerializer,
+    LoginOTPVerifySerializer,
+    SetInitialPasswordSerializer,
+    ReauthSerializer,
+)
+
 # RBAC serializers
 from .rbac_serializers import (
     PermissionSerializer,
@@ -106,6 +114,11 @@ __all__ = [
     "PasswordResetRequestSerializer",
     "PasswordResetConfirmSerializer",
     "ChangePasswordSerializer",
+    # Login OTP
+    "LoginOTPRequestSerializer",
+    "LoginOTPVerifySerializer",
+    "SetInitialPasswordSerializer",
+    "ReauthSerializer",
     # RBAC
     "PermissionSerializer",
     "RoleSerializer",

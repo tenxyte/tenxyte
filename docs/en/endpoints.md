@@ -7,6 +7,8 @@
     - [`POST /register/`](#post-register)
     - [`POST /login/email/`](#post-loginemail)
     - [`POST /login/phone/`](#post-loginphone)
+    - [`POST /login/otp/request/`](#post-loginotprequest)
+    - [`POST /login/otp/verify/`](#post-loginotpverify)
   - [Social Login (Multi-Provider)](#social-login-multi-provider)
     - [`POST /social/<provider>/`](#post-socialprovider)
     - [`GET /social/<provider>/callback/`](#get-socialprovidercallback)
@@ -24,6 +26,7 @@
     - [`POST /password/reset/request/`](#post-passwordresetrequest)
     - [`POST /password/reset/confirm/`](#post-passwordresetconfirm)
     - [`POST /password/change/` ](#post-passwordchange)
+    - [`POST /password/set-initial/` ](#post-passwordset-initial)
     - [`POST /password/strength/`](#post-passwordstrength)
     - [`GET /password/requirements/`](#get-passwordrequirements)
   - [User Profile](#user-profile)
@@ -417,6 +420,127 @@ Login with phone number + password.
   "code": "ACCOUNT_LOCKED",
   "details": {}
 }
+```
+
+---
+
+## Passwordless Phone Login (OTP)
+
+Requires `TENXYTE_OTP_LOGIN_ENABLED = True`.
+
+These endpoints allow a user to log in with only a phone number and a one-time code. No password is ever required. The flow is a two-step process: request a code, then verify it to receive JWT tokens.
+
+### `POST /login/otp/request/`
+Request a login OTP sent by SMS to the supplied phone number.
+
+**Request:**
+```json
+{
+  "phone_country_code": "+33",
+  "phone_number": "612345678"
+}
+```
+
+If `TENXYTE_OTP_LOGIN_AUTO_REGISTER = True` (default) and the phone number has no matching account, a new *Passwordless Account* is created automatically and receives the code.
+If `OTP_LOGIN_AUTO_REGISTER = False` and no account exists, the response has the **same shape** as a success (anti-enumeration) but no code is sent.
+
+**Response `200`:**
+```json
+{
+  "message": "Login code sent",
+  "otp_id": "uuid-string",
+  "expires_at": "2026-07-07T12:10:00Z",
+  "channel": "sms"
+}
+```
+
+**Response `404` (Feature disabled):**
+```json
+{
+  "error": "Feature not available",
+  "code": "FEATURE_DISABLED"
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "phone_country_code": ["This field is required."],
+    "phone_number": ["This field is required."]
+  }
+}
+```
+
+**Response `429` (Rate limited):**
+```json
+{
+  "error": "Request was throttled.",
+  "retry_after": 60
+}
+```
+
+---
+
+### `POST /login/otp/verify/`
+Verify the login OTP code and receive JWT tokens. Applies all the same account checks as `/login/phone/` (active, not banned, not locked, optional 2FA).
+
+**Request:**
+```json
+{
+  "phone_country_code": "+33",
+  "phone_number": "612345678",
+  "otp_code": "847291",
+  "totp_code": "123456",
+  "device_info": "v=1|os=ios;osv=17|device=mobile"
+}
+```
+`otp_code`: Required. The 6-digit code received by SMS.
+`totp_code`: Only required if the account has 2FA enabled.
+`device_info`: Optional device fingerprinting info.
+
+**Response `200` (same shape as `/login/phone/`):**
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "refresh_expires_in": 604800,
+  "user": {
+    "id": "uuid-string",
+    "email": null,
+    "phone": "+33612345678",
+    "is_phone_verified": true,
+    "has_usable_password": false
+  },
+  "requires_2fa": false,
+  "session_id": "uuid-string",
+  "device_id": "uuid-string"
+}
+```
+`is_phone_verified` is automatically set to `true` on successful login.
+`has_usable_password` indicates whether the account can also log in with a password.
+
+**Response `404` (Feature disabled):**
+```json
+{ "error": "Feature not available", "code": "FEATURE_DISABLED" }
+```
+
+**Response `401` (Invalid or expired code — same response for unknown phone):**
+```json
+{ "error": "Invalid code.", "code": "OTP_INVALID" }
+```
+
+**Response `401` (2FA required):**
+```json
+{ "error": "2FA code required", "code": "2FA_REQUIRED", "requires_2fa": true }
+```
+
+**Response `423` (Account locked):**
+```json
+{ "error": "Account locked", "code": "ACCOUNT_LOCKED", "retry_after": "2026-07-07T12:30:00Z" }
 ```
 
 ---
@@ -1119,6 +1243,82 @@ Authorization: Bearer <access_token>
 {
   "error": "Current password is incorrect",
   "code": "INVALID_PASSWORD"
+}
+```
+
+> **Passwordless accounts:** If `has_usable_password = false`, this endpoint returns `400 PASSWORDLESS_ACCOUNT_USE_SET_INITIAL_PASSWORD`. Use [`POST /password/set-initial/`](#post-passwordset-initial) instead.
+
+> **Re-authentication via OTP:** Accounts with a usable password can also pass `otp_code` (instead of `current_password`) as proof of identity.
+
+---
+
+### `POST /password/set-initial/` 
+Set the first password on a Passwordless Account. Requires a fresh login OTP as proof of phone ownership. Distinct from `/password/change/` — does not require a current password, because none exists.
+
+Requires `TENXYTE_OTP_LOGIN_ENABLED = True`.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request:**
+```json
+{
+  "otp_code": "847291",
+  "new_password": "MyNewP@ssw0rd!"
+}
+```
+`otp_code`: A fresh Login OTP for the account's phone (requested via `/login/otp/request/`).
+`new_password`: Must pass the configured password complexity rules.
+
+**Response `200`:**
+```json
+{
+  "message": "Password set successfully"
+}
+```
+After success: the account can now log in via `/login/email/` or `/login/phone/` with the new password **in addition to** `/login/otp/verify/`. Both methods remain available.
+
+**Response `400` (Account already has a password):**
+```json
+{
+  "error": "Account already has a usable password. Use /password/change/ instead.",
+  "code": "ALREADY_HAS_PASSWORD"
+}
+```
+
+**Response `400` (No login OTP exists):**
+```json
+{
+  "error": "No login code found",
+  "code": "OTP_REQUIRED"
+}
+```
+
+**Response `400` (OTP invalid or expired):**
+```json
+{
+  "error": "Invalid code. 2 attempt(s) remaining.",
+  "code": "OTP_INVALID"
+}
+```
+
+**Response `400` (Password does not meet complexity rules):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "new_password": ["Password must contain at least one uppercase letter."]
+  }
+}
+```
+
+**Response `400` (Password found in breach database):**
+```json
+{
+  "error": "This password has appeared in a data breach and cannot be used.",
+  "code": "PASSWORD_BREACHED"
 }
 ```
 

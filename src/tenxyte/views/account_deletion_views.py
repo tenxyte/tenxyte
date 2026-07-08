@@ -13,7 +13,7 @@ from rest_framework import serializers
 from drf_spectacular.types import OpenApiTypes
 
 from ..services.account_deletion_service import AccountDeletionService
-from ..serializers import PasswordSerializer
+from ..services.reauth_service import ReauthService
 
 
 @extend_schema(
@@ -27,7 +27,17 @@ from ..serializers import PasswordSerializer
     request=inline_serializer(
         name="RequestAccountDeletion",
         fields={
-            "password": serializers.CharField(help_text="Mot de passe actuel requis pour confirmation"),
+            "password": serializers.CharField(
+                required=False,
+                allow_blank=True,
+                help_text="Mot de passe actuel (requis sauf si `reauth_otp_code` est fourni)",
+            ),
+            "reauth_otp_code": serializers.CharField(
+                required=False,
+                allow_blank=True,
+                help_text="Login_OTP_Code frais, alternative au mot de passe pour la preuve d'identité "
+                "(Requirement 6.4). Distinct de `otp_code` ci-dessous, qui reste dédié à la porte 2FA.",
+            ),
             "otp_code": serializers.CharField(
                 required=False, allow_blank=True, help_text="Code OTP à 6 chiffres (requis si 2FA activé)"
             ),
@@ -95,18 +105,31 @@ from ..serializers import PasswordSerializer
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def request_account_deletion(request: Request) -> Response:
-    serializer = PasswordSerializer(data=request.data)
-
-    if not serializer.is_valid():
-        return Response({"error": "Invalid password", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    # La preuve d'identité (mot de passe actuel OU Login_OTP_Code frais,
+    # Requirement 6.4/6.5/6.6) est déléguée à `AccountDeletionService`, qui
+    # s'appuie lui-même sur `ReauthService.verify`. `password` n'est donc
+    # plus validé comme obligatoire ici : une requête sans mot de passe mais
+    # avec un `reauth_otp_code` valide doit être acceptée.
+    #
+    # NOTE sur la collision de nom : ce endpoint utilisait déjà `otp_code`
+    # pour la porte 2FA existante (`is_2fa_enabled`, vérifiée via un code
+    # TOTP/2FA de type "login_2fa"). Pour ne pas modifier ce comportement
+    # existant, le Login_OTP_Code alternatif au mot de passe est accepté sous
+    # le nom **`reauth_otp_code`** (nouveau champ), distinct de `otp_code`.
+    if not request.data.get("password") and not request.data.get("reauth_otp_code"):
+        return Response(
+            {"error": "Current password or a valid OTP code is required", "code": "REAUTH_REQUIRED"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     service = AccountDeletionService()
     success, data, error = service.request_deletion(
         user=request.user,
-        password=serializer.validated_data["password"],
+        password=request.data.get("password", ""),
         ip_address=_get_client_ip(request),
         user_agent=request.META.get("HTTP_USER_AGENT", ""),
         otp_code=request.data.get("otp_code", ""),
+        reauth_otp_code=request.data.get("reauth_otp_code", ""),
         reason=request.data.get("reason", ""),
     )
 
@@ -198,7 +221,17 @@ def confirm_account_deletion(request: Request) -> Response:
     "L'annulation est possible jusqu'à la fin de la période de grâce.",
     request=inline_serializer(
         name="CancelAccountDeletion",
-        fields={"password": serializers.CharField(help_text="Mot de passe actuel requis pour annulation")},
+        fields={
+            "password": serializers.CharField(
+                required=False, allow_blank=True, help_text="Mot de passe actuel (requis sauf si `otp_code` est fourni)"
+            ),
+            "otp_code": serializers.CharField(
+                required=False,
+                allow_blank=True,
+                help_text="Login_OTP_Code frais, alternative au mot de passe pour la preuve d'identité "
+                "(Requirement 6.4).",
+            ),
+        },
     ),
     responses={
         200: {
@@ -238,14 +271,21 @@ def confirm_account_deletion(request: Request) -> Response:
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def cancel_account_deletion(request: Request) -> Response:
-    serializer = PasswordSerializer(data=request.data)
-
-    if not serializer.is_valid():
-        return Response({"error": "Invalid password", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    # Preuve d'identité : mot de passe actuel OU Login_OTP_Code frais
+    # (Requirement 6.4/6.5/6.6), déléguée à `AccountDeletionService.cancel_deletion`
+    # qui s'appuie sur `ReauthService.verify`.
+    if not request.data.get("password") and not request.data.get("otp_code"):
+        return Response(
+            {"error": "Current password or a valid OTP code is required", "code": "REAUTH_REQUIRED"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     service = AccountDeletionService()
     success, data, error = service.cancel_deletion(
-        user=request.user, password=serializer.validated_data["password"], ip_address=_get_client_ip(request)
+        user=request.user,
+        password=request.data.get("password", ""),
+        ip_address=_get_client_ip(request),
+        otp_code=request.data.get("otp_code", ""),
     )
 
     if success:
@@ -282,7 +322,17 @@ def account_deletion_status(request: Request) -> Response:
     "Nécessite le mot de passe actuel pour des raisons de sécurité.",
     request=inline_serializer(
         name="ExportUserData",
-        fields={"password": serializers.CharField(help_text="Mot de passe actuel requis pour exporter les données")},
+        fields={
+            "password": serializers.CharField(
+                required=False, allow_blank=True, help_text="Mot de passe actuel (requis sauf si `otp_code` est fourni)"
+            ),
+            "otp_code": serializers.CharField(
+                required=False,
+                allow_blank=True,
+                help_text="Login_OTP_Code frais, alternative au mot de passe pour la preuve d'identité "
+                "(Requirement 6.4).",
+            ),
+        },
     ),
     responses={
         200: {
@@ -335,14 +385,23 @@ def export_user_data(request: Request) -> Response:
         "password": "current_password"
     }
     """
-    serializer = PasswordSerializer(data=request.data)
+    # Preuve d'identité : mot de passe actuel OU Login_OTP_Code frais
+    # (Requirement 6.4/6.5/6.6), déléguée à `ReauthService.verify`.
+    if not request.data.get("password") and not request.data.get("otp_code"):
+        return Response(
+            {"error": "Current password or a valid OTP code is required", "code": "REAUTH_REQUIRED"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-    if not serializer.is_valid():
-        return Response({"error": "Invalid password", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    reauth_service = ReauthService()
+    is_valid, error_code, error_message = reauth_service.verify(
+        request.user,
+        password=request.data.get("password", ""),
+        otp_code=request.data.get("otp_code", ""),
+    )
 
-    # Vérifier le mot de passe
-    if not request.user.check_password(serializer.validated_data["password"]):
-        return Response({"error": "Invalid password"}, status=status.HTTP_400_BAD_REQUEST)
+    if not is_valid:
+        return Response({"error": error_message, "code": error_code}, status=status.HTTP_400_BAD_REQUEST)
 
     # Exporter les données de l'utilisateur (droit à la portabilité RGPD)
     try:

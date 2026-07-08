@@ -5,6 +5,7 @@ from .organization_service import OrganizationService
 from .account_deletion_service import AccountDeletionService
 from .breach_check_service import BreachCheckService
 from .stats_service import StatsService
+from .reauth_service import ReauthService
 
 __all__ = [
     "OTPService",
@@ -15,4 +16,5 @@ __all__ = [
     "AccountDeletionService",
     "BreachCheckService",
     "StatsService",
+    "ReauthService",
 ]

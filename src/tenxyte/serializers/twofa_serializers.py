@@ -4,6 +4,8 @@ Two-Factor Authentication serializers - 2FA setup, verify, status.
 
 from rest_framework import serializers
 
+from ..validators import normalize_phone_country_code
+
 
 class TwoFactorSetupSerializer(serializers.Serializer):
     """Response serializer pour le setup 2FA"""
@@ -35,3 +37,7 @@ class LoginWith2FASerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=20, required=False)
     password = serializers.CharField(write_only=True)
     totp_code = serializers.CharField(max_length=10, required=False, help_text="Code 2FA (requis si 2FA activé)")
+
+    def validate_phone_country_code(self, value):
+        """Normalise l'indicatif (sans '+') pour matcher le stockage en base."""
+        return normalize_phone_country_code(value)
