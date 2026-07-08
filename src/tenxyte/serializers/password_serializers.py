@@ -45,9 +45,7 @@ class ChangePasswordSerializer(serializers.Serializer):
     # alternative via `ReauthService`. Aucun champ existant n'est retiré.
     current_password = serializers.CharField(required=False, allow_blank=True, write_only=True)
     new_password = serializers.CharField(min_length=8, write_only=True)
-    otp_code = serializers.CharField(
-        required=False, allow_blank=True, max_length=6, min_length=6, write_only=True
-    )
+    otp_code = serializers.CharField(required=False, allow_blank=True, max_length=6, min_length=6, write_only=True)
 
     def validate_new_password(self, value):
         """Valide la complexite du nouveau mot de passe."""
