@@ -29,6 +29,7 @@ from .auth_views import (
     get_core_settings,
     get_core_user_repo,
     register_user_with_core,
+    resolve_forced_password_change_scope,
     validate_application_required,
 )
 
@@ -394,6 +395,37 @@ class LoginOTPVerifyView(APIView):
             "session_id": tokens.session_id if hasattr(tokens, "session_id") else None,
             "device_id": tokens.device_id if hasattr(tokens, "device_id") else None,
         }
+
+        # Force password change gating (feature: force_password_change_on_first_login).
+        # Précédence : le bootstrap 2FA (2fa_setup_only) est déjà retourné plus haut.
+        _forced_scope = resolve_forced_password_change_scope(django_user)
+        if _forced_scope == "password_change_only":
+            jwt_service_local = get_core_jwt_service()
+            app_id_forced = str(application.id) if application else "default"
+            restricted_token, _jti, _expires_at = jwt_service_local.generate_access_token(
+                user_id=user.id,
+                application_id=app_id_forced,
+                extra_claims={"scope": "password_change_only"},
+            )
+            return Response(
+                {
+                    "access_token": restricted_token,
+                    "refresh_token": data.get("refresh_token"),
+                    "token_type": "Bearer",
+                    "token_scope": "password_change_only",
+                    "must_change_password": True,
+                    "expires_in": data.get("expires_in"),
+                    "refresh_expires_in": data.get("refresh_expires_in"),
+                    "user": data.get("user"),
+                    "requires_2fa": data.get("requires_2fa", False),
+                    "session_id": data.get("session_id"),
+                    "device_id": data.get("device_id"),
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        # Champ additif must_change_password dans la réponse normale.
+        data["must_change_password"] = False
 
         response = Response(data, status=status.HTTP_200_OK)
         if auth_settings.REFRESH_TOKEN_COOKIE_ENABLED and "refresh_token" in data:
