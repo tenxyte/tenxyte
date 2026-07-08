@@ -513,8 +513,7 @@ Verify the login OTP code and receive JWT tokens. Applies all the same account c
     "email": null,
     "phone": "+33612345678",
     "is_phone_verified": true,
-    "has_usable_password": false,
-    "..."
+    "has_usable_password": false
   },
   "requires_2fa": false,
   "session_id": "uuid-string",
