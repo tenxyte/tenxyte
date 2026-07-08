@@ -563,12 +563,29 @@ class UserDetailView(APIView):
                 {"error": "Validation error", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Update via Core repository
+        # Séparer les champs gérés directement sur le modèle Django (non connus
+        # du Core repository) des champs délégués au Core.
+        DJANGO_ONLY_FIELDS = {"must_change_password"}
         update_data = {}
+        django_update_fields = {}
         for attr, value in serializer.validated_data.items():
-            update_data[attr] = value
+            if attr in DJANGO_ONLY_FIELDS:
+                django_update_fields[attr] = value
+            else:
+                update_data[attr] = value
 
-        user_repo.update_user(str(user_id), update_data)
+        if update_data:
+            user_repo.update_user(str(user_id), update_data)
+
+        # Appliquer les champs Django-only directement sur le modèle.
+        if django_update_fields:
+            try:
+                django_user_obj = User.objects.get(id=user_id)
+                for attr, value in django_update_fields.items():
+                    setattr(django_user_obj, attr, value)
+                django_user_obj.save(update_fields=list(django_update_fields.keys()))
+            except User.DoesNotExist:
+                pass
 
         # Get Django user for serialization
         try:

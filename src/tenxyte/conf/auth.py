@@ -54,6 +54,13 @@ class AuthSettingsMixin:
         """Durée de validité (minutes) d'un Login_OTP_Code."""
         return self._get("OTP_LOGIN_VALIDITY_MINUTES", 10)
 
+    @property
+    def FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED(self):
+        """Active l'émission/enforcement du token restreint password_change_only
+        pour les comptes must_change_password=True. Défaut désactivé pour
+        préserver 100 % du comportement existant."""
+        return self._get("FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED", False)
+
     # =============================================
     # SMS Backend
     # =============================================

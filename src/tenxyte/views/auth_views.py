@@ -124,6 +124,22 @@ def _clear_refresh_cookie(response):
     return response
 
 
+def resolve_forced_password_change_scope(user) -> str | None:
+    """Retourne "password_change_only" si le gating de changement forcé
+    s'applique à cet utilisateur, sinon None (token full-scope).
+
+    N'a d'effet que si TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED
+    est activé ET que l'utilisateur a must_change_password=True.
+
+    Feature: force_password_change_on_first_login
+    """
+    if not auth_settings.FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED:
+        return None
+    if getattr(user, "must_change_password", False):
+        return "password_change_only"
+    return None
+
+
 def validate_application_required(request):
     """Validate that an application is present when required."""
     if auth_settings.APPLICATION_AUTH_ENABLED:
@@ -875,6 +891,47 @@ class LoginEmailView(APIView):
             except Exception:
                 pass
 
+        # Force password change gating (feature: force_password_change_on_first_login).
+        # Précédence : le bootstrap 2FA (2fa_setup_only) est déjà retourné plus haut.
+        # user est un Core User (ports.User) — il faut le Django User pour lire
+        # must_change_password (champ Django-only, absent du Core User).
+        _forced_scope = None
+        if user:
+            try:
+                from ..models import get_user_model as _gum
+
+                _django_user_for_scope = _gum().objects.get(id=user.id)
+                _forced_scope = resolve_forced_password_change_scope(_django_user_for_scope)
+            except Exception:
+                pass
+        if _forced_scope == "password_change_only":
+            jwt_service = get_core_jwt_service()
+            app_id = str(request.application.id) if getattr(request, "application", None) else "default"
+            restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+                user_id=user.id,
+                application_id=app_id,
+                extra_claims={"scope": "password_change_only"},
+            )
+            return Response(
+                {
+                    "access_token": restricted_token,
+                    "refresh_token": data.get("refresh_token"),
+                    "token_type": "Bearer",
+                    "token_scope": "password_change_only",
+                    "must_change_password": True,
+                    "expires_in": data.get("expires_in"),
+                    "refresh_expires_in": data.get("refresh_expires_in"),
+                    "user": data.get("user"),
+                    "requires_2fa": data.get("requires_2fa", False),
+                    "session_id": data.get("session_id"),
+                    "device_id": data.get("device_id"),
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        # Champ additif must_change_password dans la réponse normale.
+        data["must_change_password"] = False
+
         # Set cookie and strip refresh token from body if cookie mode
         response = Response(data)
         if auth_settings.REFRESH_TOKEN_COOKIE_ENABLED and "refresh_token" in data:
@@ -1060,6 +1117,45 @@ class LoginPhoneView(APIView):
             except Exception:
                 pass
 
+        # Force password change gating (feature: force_password_change_on_first_login).
+        # user est un Core User — il faut le Django User pour lire must_change_password.
+        _forced_scope = None
+        if user:
+            try:
+                from ..models import get_user_model as _gum2
+
+                _django_user_for_scope2 = _gum2().objects.get(id=user.id)
+                _forced_scope = resolve_forced_password_change_scope(_django_user_for_scope2)
+            except Exception:
+                pass
+        if _forced_scope == "password_change_only":
+            jwt_service = get_core_jwt_service()
+            app_id = str(request.application.id) if getattr(request, "application", None) else "default"
+            restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+                user_id=user.id,
+                application_id=app_id,
+                extra_claims={"scope": "password_change_only"},
+            )
+            return Response(
+                {
+                    "access_token": restricted_token,
+                    "refresh_token": data.get("refresh_token"),
+                    "token_type": "Bearer",
+                    "token_scope": "password_change_only",
+                    "must_change_password": True,
+                    "expires_in": data.get("expires_in"),
+                    "refresh_expires_in": data.get("refresh_expires_in"),
+                    "user": data.get("user"),
+                    "requires_2fa": data.get("requires_2fa", False),
+                    "session_id": data.get("session_id"),
+                    "device_id": data.get("device_id"),
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        # Champ additif must_change_password dans la réponse normale.
+        data["must_change_password"] = False
+
         # Set cookie and strip refresh token from body if cookie mode
         response = Response(data)
         if auth_settings.REFRESH_TOKEN_COOKIE_ENABLED and "refresh_token" in data:
@@ -1172,17 +1268,46 @@ class RefreshTokenView(APIView):
             "refresh_expires_in": get_core_settings().jwt_refresh_token_lifetime,
         }
 
-        # Add user data if available
+        # Add user data if available; also resolve the Django user for the
+        # forced-password-change gating below.
+        _refresh_django_user = None
         try:
             decoded = jwt_service.decode_token(result.access_token, check_blacklist=False)
             if decoded and decoded.user_id:
                 from ..models import get_user_model
 
                 UserModel = get_user_model()
-                user = UserModel.objects.get(id=decoded.user_id)
-                data["user"] = UserSerializer(user).data
+                _refresh_django_user = UserModel.objects.get(id=decoded.user_id)
+                data["user"] = UserSerializer(_refresh_django_user).data
         except Exception:
             pass
+
+        # Force password change gating on refresh
+        # (feature: force_password_change_on_first_login).
+        _forced_scope = resolve_forced_password_change_scope(_refresh_django_user) if _refresh_django_user else None
+        if _forced_scope == "password_change_only":
+            app_id = str(request.application.id) if getattr(request, "application", None) else "default"
+            restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+                user_id=str(_refresh_django_user.id),
+                application_id=app_id,
+                extra_claims={"scope": "password_change_only"},
+            )
+            return Response(
+                {
+                    "access_token": restricted_token,
+                    "refresh_token": data.get("refresh_token"),
+                    "token_type": "Bearer",
+                    "token_scope": "password_change_only",
+                    "must_change_password": True,
+                    "expires_in": data.get("expires_in"),
+                    "refresh_expires_in": data.get("refresh_expires_in"),
+                    "user": data.get("user"),
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        # Champ additif must_change_password dans la réponse normale.
+        data["must_change_password"] = False
 
         # Set cookie and strip refresh token from body if cookie mode
         response = Response(data)
@@ -1340,7 +1465,7 @@ class LogoutAllView(APIView):
             )
         ],
     )
-    @require_jwt
+    @require_jwt(allowed_scopes=["password_change_only"])
     def post(self, request):
         # Extract access token from Authorization header for blacklisting
         access_token = None

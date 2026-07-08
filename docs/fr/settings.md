@@ -167,6 +167,38 @@ Voir [`POST /login/otp/request/`](endpoints.md#post-loginotprequest) et [`POST /
 
 ---
 
+## Changement de Mot de Passe Forcé à la Première Connexion
+
+Force un utilisateur provisionné à définir ou changer son mot de passe avant d'accéder à quoi que ce soit d'autre. Lorsque cette fonctionnalité est activée et qu'un compte a `must_change_password=True`, les endpoints de connexion émettent un jeton d'accès à portée restreinte (`scope: "password_change_only"`) au lieu d'un jeton pleine portée. Tous les endpoints protégés sauf `/password/change/`, `/password/set-initial/` et `/logout/` retournent `403 INSUFFICIENT_SCOPE` jusqu'au changement de mot de passe.
+
+| Paramètre | Défaut | Description |
+|---|---|---|
+| `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED` | `False` | Active l'émission et l'enforcement du jeton à portée restreinte. **Désactivé par défaut** — aucune restriction de jeton n'est appliquée tant que ce paramètre n'est pas `True`. Le flag `must_change_password` est toujours stocké et lisible indépendamment de ce paramètre. |
+
+**Configuration minimale :**
+```python
+# settings.py
+TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED = True
+```
+
+**Provisionnement d'un utilisateur avec changement forcé (API admin) :**
+```http
+PATCH /api/v1/auth/admin/users/<id>/
+Authorization: Bearer <jeton_admin>
+
+{ "must_change_password": true }
+```
+
+**Champ du modèle User ajouté par cette fonctionnalité :**
+
+| Champ | Type | Défaut | Description |
+|---|---|---|---|
+| `must_change_password` | `BooleanField` | `False` | `True` lorsque le compte doit changer son mot de passe à la prochaine connexion. Remis à `False` après un `/password/change/` ou `/password/set-initial/` réussi. |
+
+Voir [Changement de Mot de Passe Forcé à la Première Connexion](endpoints.md#changement-de-mot-de-passe-forcé-à-la-première-connexion) pour le flux complet et le tableau d'enforcement du scope de jeton.
+
+---
+
 ## Politique de Mot de Passe
 
 | Paramètre | Défaut | Description |
