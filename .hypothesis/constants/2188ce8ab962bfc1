@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\migrations\0005_hash_refresh_tokens_revoke_existing.py
+# hypothesis_version: 6.155.7
+
+[191, 'CharField', 'RefreshToken', 'django.db.models', 'refreshtoken', 'tenxyte', 'token']

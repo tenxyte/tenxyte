@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\migrations\0007_webauthn.py
+# hypothesis_version: 6.155.7
+
+[100, 191, '0001_core', 'Authenticate', 'Register', 'WebAuthnChallenge', 'WebAuthnCredential', 'aaguid', 'authenticate', 'challenge', 'created_at', 'credential_id', 'db_table', 'device_name', 'expires_at', 'id', 'is_used', 'last_used_at', 'operation', 'public_key', 'register', 'sign_count', 'tenxyte', 'transports', 'user', 'webauthn_challenges', 'webauthn_credentials']

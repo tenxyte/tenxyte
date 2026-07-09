@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\core\magic_link_service.py
+# hypothesis_version: 6.155.7
+
+['.', 'Account is disabled', 'Account is locked', 'Tenxyte', 'app_name', 'consume_async', 'create_async', 'email', 'first_name', 'get_by_email_async', 'get_by_token_async', 'id', 'is_active_async', 'is_locked_async', 'magic_link_enabled']

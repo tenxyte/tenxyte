@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\conf\presets.py
+# hypothesis_version: 6.155.7
+
+[300, 900, 3600, 86400, 'BREACH_CHECK_ENABLED', 'BREACH_CHECK_REJECT', 'DEFAULT_MAX_DEVICES', 'DEFAULT_MAX_SESSIONS', 'DEVICE_LIMIT_ACTION', 'DEVICE_LIMIT_ENABLED', 'MAGIC_LINK_ENABLED', 'MAX_LOGIN_ATTEMPTS', 'WEBAUTHN_ENABLED', 'deny', 'development', 'medium', 'robust']

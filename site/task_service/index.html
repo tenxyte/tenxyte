@@ -1,0 +1,2057 @@
+
+<!doctype html>
+<html lang="fr" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://tenxyte.readthedocs.io/fr/latest/task_service/">
+      
+      
+        <link rel="prev" href="../security/">
+      
+      
+        <link rel="next" href="../periodic_tasks/">
+      
+      
+      <link rel="icon" href="https://tenxyte-graphics.s3.us-east-1.amazonaws.com/tenxyte-graphics/out/custom/SVG/v1_logo-sharp.svg">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.15">
+    
+    
+      
+        <title>Service de Tâches - Documentation Tenxyte</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.7e359304.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#service-de-tâches--jobs-en-arrière-plan" class="md-skip">
+          Aller au contenu
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="En-tête">
+    <a href=".." title="Documentation Tenxyte" class="md-header__button md-logo" aria-label="Documentation Tenxyte" data-md-component="logo">
+      
+  <img src="https://tenxyte-graphics.s3.us-east-1.amazonaws.com/tenxyte-graphics/out/custom/SVG/v1_logo-sharp.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Documentation Tenxyte
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Service de Tâches
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Sélectionner la langue">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04M18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12m-2.62 7 1.62-4.33L19.12 17h-3.24Z"/></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="/en/" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="/fr/" hreflang="fr" class="md-select__link">
+              Français
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Rechercher" placeholder="Rechercher" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Recherche">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Effacer" aria-label="Effacer" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initialisation de la recherche
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/tenxyte/tenxyte" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    tenxyte/tenxyte
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Onglets" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+    
+  
+  Accueil
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../quickstart/" class="md-tabs__link">
+          
+  
+  Démarrage
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../endpoints/" class="md-tabs__link">
+          
+  
+  Référence API
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../admin/" class="md-tabs__link">
+          
+  
+  Fonctionnalités
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../periodic_tasks/" class="md-tabs__link">
+          
+  
+  Opérations & Maintenance
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../CONTRIBUTING/" class="md-tabs__link">
+          
+  
+  Contribution
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Documentation Tenxyte" class="md-nav__button md-logo" aria-label="Documentation Tenxyte" data-md-component="logo">
+      
+  <img src="https://tenxyte-graphics.s3.us-east-1.amazonaws.com/tenxyte-graphics/out/custom/SVG/v1_logo-sharp.svg" alt="logo">
+
+    </a>
+    Documentation Tenxyte
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/tenxyte/tenxyte" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    tenxyte/tenxyte
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Accueil
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Démarrage
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Démarrage
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Démarrage Rapide
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../fastapi_quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Démarrage Rapide FastAPI
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../settings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Référence des Paramètres
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Guide d'Architecture
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../custom_adapters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adaptateurs Personnalisés
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../async_guide/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Guide Asynchrone
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Référence API
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Référence API
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../endpoints/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Points d'Accès API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schemas/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Schémas de Données
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../airs/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Référence AIRs
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Fonctionnalités
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Fonctionnalités
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../admin/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Comptes Administrateur
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../applications/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Guide des Applications
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../organizations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Organisations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rbac/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Guide RBAC
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Guide de Sécurité
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Service de Tâches
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Service de Tâches
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-des-matières" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table des Matières
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#le-port-taskservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      Le Port TaskService
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adaptateurs-disponibles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adaptateurs Disponibles
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adaptateurs Disponibles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adaptateurs-django" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adaptateurs Django
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adaptateurs Django">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#syncthreadtaskservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      SyncThreadTaskService
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#celerytaskservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      CeleryTaskService
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rqtaskservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      RQTaskService
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adaptateur-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adaptateur FastAPI
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adaptateur FastAPI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#asynciotaskservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      AsyncIOTaskService
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exemples-dutilisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exemples d'Utilisation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Exemples d'Utilisation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mise-en-file-dattente-de-tâches-synchrones" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mise en File d'Attente de Tâches Synchrones
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mise-en-file-dattente-de-tâches-asynchrones" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mise en File d'Attente de Tâches Asynchrones
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-par-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration par Framework
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration par Framework">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration-django" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration Django
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration FastAPI
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#création-dadaptateurs-taskservice-personnalisés" class="md-nav__link">
+    <span class="md-ellipsis">
+      Création d'Adaptateurs TaskService Personnalisés
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#étapes-suivantes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Étapes Suivantes
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Opérations & Maintenance
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Opérations & Maintenance
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../periodic_tasks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tâches Périodiques
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dépannage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MIGRATION_GUIDE/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Guide de Migration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_4" id="__nav_6_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Guides d'Opération
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_4">
+            <span class="md-nav__icon md-icon"></span>
+            Guides d'Opération
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/deployment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Déploiement
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/incident_response/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Réponse aux Incidents
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runbooks/rollback/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Rollback
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Contribution
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Contribution
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Guide de Contribution
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../TESTING/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tests
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-des-matières" class="md-nav__link">
+    <span class="md-ellipsis">
+      Table des Matières
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#le-port-taskservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      Le Port TaskService
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adaptateurs-disponibles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adaptateurs Disponibles
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adaptateurs Disponibles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adaptateurs-django" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adaptateurs Django
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adaptateurs Django">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#syncthreadtaskservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      SyncThreadTaskService
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#celerytaskservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      CeleryTaskService
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rqtaskservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      RQTaskService
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adaptateur-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adaptateur FastAPI
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Adaptateur FastAPI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#asynciotaskservice" class="md-nav__link">
+    <span class="md-ellipsis">
+      AsyncIOTaskService
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exemples-dutilisation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exemples d'Utilisation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Exemples d'Utilisation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mise-en-file-dattente-de-tâches-synchrones" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mise en File d'Attente de Tâches Synchrones
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mise-en-file-dattente-de-tâches-asynchrones" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mise en File d'Attente de Tâches Asynchrones
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-par-framework" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration par Framework
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration par Framework">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration-django" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration Django
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-fastapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration FastAPI
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#création-dadaptateurs-taskservice-personnalisés" class="md-nav__link">
+    <span class="md-ellipsis">
+      Création d'Adaptateurs TaskService Personnalisés
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#étapes-suivantes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Étapes Suivantes
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="service-de-tâches--jobs-en-arrière-plan">Service de Tâches — Jobs en Arrière-plan<a class="headerlink" href="#service-de-tâches--jobs-en-arrière-plan" title="Permanent link">&para;</a></h1>
+<p>Tenxyte fournit une abstraction unifiée pour l'exécution de tâches en arrière-plan via le port <code>TaskService</code>. Cela permet à votre application de mettre des jobs en file d'attente sans se coupler à des implémentations spécifiques comme Celery, RQ ou les <code>BackgroundTasks</code> de FastAPI.</p>
+<h2 id="table-des-matières">Table des Matières<a class="headerlink" href="#table-des-matières" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="#le-port-taskservice">Le Port TaskService</a></li>
+<li><a href="#adaptateurs-disponibles">Adaptateurs Disponibles</a></li>
+<li><a href="#adaptateurs-django">Adaptateurs Django</a></li>
+<li><a href="#adaptateur-fastapi">Adaptateur FastAPI</a></li>
+<li><a href="#exemples-dutilisation">Exemples d'Utilisation</a></li>
+<li><a href="#mise-en-file-dattente-de-taches-synchrones">Mise en File d'Attente de Tâches Synchrones</a></li>
+<li><a href="#mise-en-file-dattente-de-taches-asynchrones">Mise en File d'Attente de Tâches Asynchrones</a></li>
+<li><a href="#configuration-par-framework">Configuration par Framework</a></li>
+<li><a href="#configuration-django">Configuration Django</a></li>
+<li><a href="#configuration-fastapi">Configuration FastAPI</a></li>
+<li><a href="#creation-dadaptateurs-taskservice-personnalises">Création d'Adaptateurs TaskService Personnalisés</a></li>
+</ul>
+<hr />
+<h2 id="le-port-taskservice">Le Port TaskService<a class="headerlink" href="#le-port-taskservice" title="Permanent link">&para;</a></h2>
+<p>La classe de base abstraite <code>TaskService</code> est définie dans <code>tenxyte.core.task_service</code> et propose deux méthodes :</p>
+<table>
+<thead>
+<tr>
+<th>Méthode</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enqueue(func, *args, **kwargs)</code></td>
+<td>Met en file d'attente une fonction synchrone pour une exécution en arrière-plan. Retourne une chaîne d'ID de tâche.</td>
+</tr>
+<tr>
+<td><code>enqueue_async(func, *args, **kwargs)</code></td>
+<td>Met en file d'attente une fonction (sync ou async) de manière non bloquante. Détecte automatiquement les coroutines et les gère nativement.</td>
+</tr>
+</tbody>
+</table>
+<p>L'implémentation de la classe de base pour <code>enqueue_async</code> délègue dynamiquement à une méthode asynchrone native (<code>_enqueue_async_native</code>) si elle est disponible, ou se rabat sur l'exécution du <code>enqueue</code> synchrone dans un pool de threads via <code>asyncio.to_thread()</code>.</p>
+<hr />
+<h2 id="adaptateurs-disponibles">Adaptateurs Disponibles<a class="headerlink" href="#adaptateurs-disponibles" title="Permanent link">&para;</a></h2>
+<h3 id="adaptateurs-django">Adaptateurs Django<a class="headerlink" href="#adaptateurs-django" title="Permanent link">&para;</a></h3>
+<p>Situés dans <code>tenxyte.adapters.django.task_service</code> :</p>
+<table>
+<thead>
+<tr>
+<th>Adaptateur</th>
+<th>Description</th>
+<th>Quand l'utiliser</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SyncThreadTaskService</code></td>
+<td>Exécute les tâches dans un thread d'arrière-plan à l'aide du module <code>threading</code> de Python.</td>
+<td>Développement, tests, ou quand vous ne voulez pas de dépendances externes. Zéro configuration requise.</td>
+</tr>
+<tr>
+<td><code>CeleryTaskService</code></td>
+<td>Délègue à la file d'attente de tâches Celery.</td>
+<td>Django en production avec Celery déjà configuré.</td>
+</tr>
+<tr>
+<td><code>RQTaskService</code></td>
+<td>Délègue à Django-RQ.</td>
+<td>Django en production avec Redis Queue (RQ).</td>
+</tr>
+</tbody>
+</table>
+<h4 id="syncthreadtaskservice">SyncThreadTaskService<a class="headerlink" href="#syncthreadtaskservice" title="Permanent link">&para;</a></h4>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.adapters.django.task_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">SyncThreadTaskService</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">task_service</span> <span class="o">=</span> <span class="n">SyncThreadTaskService</span><span class="p">()</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Envoi d&#39;un e-mail de bienvenue en arrière-plan</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">send_welcome_email</span><span class="p">(</span><span class="n">user_id</span><span class="p">):</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="c1"># ... logique d&#39;envoi d&#39;e-mail</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">task_id</span> <span class="o">=</span> <span class="n">task_service</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span><span class="n">send_welcome_email</span><span class="p">,</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tâche démarrée : </span><span class="si">{</span><span class="n">task_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Retourne le nom du thread</span>
+</span></code></pre></div>
+<h4 id="celerytaskservice">CeleryTaskService<a class="headerlink" href="#celerytaskservice" title="Permanent link">&para;</a></h4>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.adapters.django.task_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">CeleryTaskService</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">celery</span><span class="w"> </span><span class="kn">import</span> <span class="n">shared_task</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">task_service</span> <span class="o">=</span> <span class="n">CeleryTaskService</span><span class="p">()</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># Option 1 : Utiliser une tâche Celery existante</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nd">@shared_task</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">process_report</span><span class="p">(</span><span class="n">report_id</span><span class="p">):</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="c1"># ... traitement lourd</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="k">pass</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="n">task_id</span> <span class="o">=</span> <span class="n">task_service</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span><span class="n">process_report</span><span class="p">,</span> <span class="n">report_id</span><span class="o">=</span><span class="mi">123</span><span class="p">)</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="c1"># Option 2 : Utiliser une fonction classique (emballée automatiquement dans une tâche Celery)</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="k">def</span><span class="w"> </span><span class="nf">cleanup_old_sessions</span><span class="p">():</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">Session</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">expires__lt</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">now</span><span class="p">())</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">task_id</span> <span class="o">=</span> <span class="n">task_service</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span><span class="n">cleanup_old_sessions</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Prérequis :</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>tenxyte<span class="o">[</span>django<span class="o">]</span><span class="w"> </span>celery
+</span></code></pre></div></p>
+<h4 id="rqtaskservice">RQTaskService<a class="headerlink" href="#rqtaskservice" title="Permanent link">&para;</a></h4>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.adapters.django.task_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">RQTaskService</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">task_service</span> <span class="o">=</span> <span class="n">RQTaskService</span><span class="p">(</span><span class="n">queue_name</span><span class="o">=</span><span class="s2">&quot;high&quot;</span><span class="p">)</span>  <span class="c1"># ou &quot;default&quot;</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">generate_pdf</span><span class="p">(</span><span class="n">invoice_id</span><span class="p">):</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="c1"># ... logique de génération de PDF</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="k">pass</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">task_id</span> <span class="o">=</span> <span class="n">task_service</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span><span class="n">generate_pdf</span><span class="p">,</span> <span class="n">invoice_id</span><span class="o">=</span><span class="mi">456</span><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Prérequis :</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip<span class="w"> </span>install<span class="w"> </span>tenxyte<span class="o">[</span>django<span class="o">]</span><span class="w"> </span>django-rq
+</span></code></pre></div></p>
+<hr />
+<h3 id="adaptateur-fastapi">Adaptateur FastAPI<a class="headerlink" href="#adaptateur-fastapi" title="Permanent link">&para;</a></h3>
+<p>Situé dans <code>tenxyte.adapters.fastapi.task_service</code> :</p>
+<table>
+<thead>
+<tr>
+<th>Adaptateur</th>
+<th>Description</th>
+<th>Quand l'utiliser</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AsyncIOTaskService</code></td>
+<td>Exécution en arrière-plan basée sur asyncio natif via <code>asyncio.create_task()</code> et des pools de threads.</td>
+<td>Applications FastAPI ou toute application Python purement asynchrone.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="asynciotaskservice">AsyncIOTaskService<a class="headerlink" href="#asynciotaskservice" title="Permanent link">&para;</a></h4>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.adapters.fastapi.task_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIOTaskService</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">task_service</span> <span class="o">=</span> <span class="n">AsyncIOTaskService</span><span class="p">()</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Fonction synchrone - s&#39;exécute dans un pool de threads</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">send_sms_notification</span><span class="p">(</span><span class="n">phone_number</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="c1"># ... appel synchrone à une API SMS</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="k">pass</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="c1"># Fonction asynchrone - s&#39;exécute comme une tâche asyncio</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process_webhook</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    <span class="c1"># ... appels HTTP asynchrones vers des services externes</span>
+</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>    <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>        <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;https://partner-api.example.com/webhook&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>
+</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/orders/&quot;</span><span class="p">)</span>
+</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span><span class="n">order</span><span class="p">:</span> <span class="n">OrderCreate</span><span class="p">):</span>
+</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>    <span class="c1"># Sauvegarde de la commande (appel DB synchrone)</span>
+</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>    <span class="n">order_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">save_order</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>
+</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>    <span class="c1"># Mise en file d&#39;attente de tâches de fond sans bloquer la réponse</span>
+</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>    <span class="k">await</span> <span class="n">task_service</span><span class="o">.</span><span class="n">enqueue_async</span><span class="p">(</span><span class="n">send_sms_notification</span><span class="p">,</span> <span class="n">order</span><span class="o">.</span><span class="n">customer_phone</span><span class="p">,</span> <span class="s2">&quot;Commande reçue !&quot;</span><span class="p">)</span>
+</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a>    <span class="k">await</span> <span class="n">task_service</span><span class="o">.</span><span class="n">enqueue_async</span><span class="p">(</span><span class="n">process_webhook</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;order_id&quot;</span><span class="p">:</span> <span class="n">order_id</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;created&quot;</span><span class="p">})</span>
+</span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a>
+</span><span id="__span-5-27"><a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;order_id&quot;</span><span class="p">:</span> <span class="n">order_id</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;created&quot;</span><span class="p">}</span>
+</span></code></pre></div>
+<p><strong>Caractéristiques clés :</strong>
+- Détecte automatiquement si la fonction est sync ou async
+- Les fonctions async s'exécutent comme des <code>asyncio.Task</code> (non bloquant, même boucle d'événements)
+- Les fonctions sync s'exécutent dans <code>loop.run_in_executor()</code> (pool de threads)
+- Gestion des exceptions intégrée avec journalisation (logging)</p>
+<p><strong>Prérequis :</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>pip<span class="w"> </span>install<span class="w"> </span>tenxyte<span class="o">[</span>fastapi<span class="o">]</span>
+</span></code></pre></div></p>
+<hr />
+<h2 id="exemples-dutilisation">Exemples d'Utilisation<a class="headerlink" href="#exemples-dutilisation" title="Permanent link">&para;</a></h2>
+<h3 id="mise-en-file-dattente-de-tâches-synchrones">Mise en File d'Attente de Tâches Synchrones<a class="headerlink" href="#mise-en-file-dattente-de-tâches-synchrones" title="Permanent link">&para;</a></h3>
+<p>Tous les adaptateurs supportent la méthode synchrone <code>enqueue()</code> :</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.core.task_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskService</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">heavy_computation</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Un travail intensif pour le CPU.&quot;&quot;&quot;</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">process_item</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;processed&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)}</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="c1"># Dans votre vue/endpoint</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="n">job_id</span> <span class="o">=</span> <span class="n">task_service</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span><span class="n">heavy_computation</span><span class="p">,</span> <span class="n">large_dataset</span><span class="p">)</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="c1"># Retourne immédiatement, le calcul s&#39;exécute en arrière-plan</span>
+</span></code></pre></div>
+<h3 id="mise-en-file-dattente-de-tâches-asynchrones">Mise en File d'Attente de Tâches Asynchrones<a class="headerlink" href="#mise-en-file-dattente-de-tâches-asynchrones" title="Permanent link">&para;</a></h3>
+<p>Utilisez <code>enqueue_async()</code> pour une exécution non bloquante, en particulier dans des contextes asynchrones :</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Dans un endpoint asynchrone</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_request</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="c1"># Ceci ne bloquera pas la réponse même si la tâche est synchrone</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="k">await</span> <span class="n">task_service</span><span class="o">.</span><span class="n">enqueue_async</span><span class="p">(</span><span class="n">send_notification</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;accepted&quot;</span><span class="p">}</span>
+</span></code></pre></div>
+<p><strong>Comportement par adaptateur :</strong>
+- <strong>AsyncIOTaskService</strong> : Les fonctions async s'exécutent comme des <code>asyncio.Task</code> natives ; les fonctions sync utilisent le pool de threads.
+- <strong>CeleryTaskService/RQTaskService/SyncThreadTaskService</strong> : Se rabat sur <code>asyncio.to_thread(self.enqueue, ...)</code>.</p>
+<hr />
+<h2 id="configuration-par-framework">Configuration par Framework<a class="headerlink" href="#configuration-par-framework" title="Permanent link">&para;</a></h2>
+<h3 id="configuration-django">Configuration Django<a class="headerlink" href="#configuration-django" title="Permanent link">&para;</a></h3>
+<p>Ajoutez le service de tâches à vos réglages ou utilisez l'injection de dépendances :</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># settings.py</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">TENXYTE_TASK_SERVICE_CLASS</span> <span class="o">=</span> <span class="s2">&quot;tenxyte.adapters.django.task_service.CeleryTaskService&quot;</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">TENXYTE_TASK_SERVICE_QUEUE</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span>  <span class="c1"># Pour RQTaskService</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># Ou dans votre couche de service</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.adapters.django.task_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">CeleryTaskService</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.core.email_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmailService</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="k">class</span><span class="w"> </span><span class="nc">AuthService</span><span class="p">:</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">task_service</span> <span class="o">=</span> <span class="n">CeleryTaskService</span><span class="p">()</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">email_service</span> <span class="o">=</span> <span class="n">EmailService</span><span class="p">()</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">send_magic_link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>        <span class="c1"># Génération du lien magique de manière synchrone</span>
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>        <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_magic_token</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>
+</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>        <span class="c1"># Envoi de l&#39;e-mail de manière asynchrone</span>
+</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">task_service</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span>
+</span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">email_service</span><span class="o">.</span><span class="n">send_magic_link</span><span class="p">,</span>
+</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>            <span class="n">to_email</span><span class="o">=</span><span class="n">email</span><span class="p">,</span>
+</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>            <span class="n">magic_link_url</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;https://app.example.com/magic?token=</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>            <span class="n">expires_in_minutes</span><span class="o">=</span><span class="mi">15</span>
+</span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a>        <span class="p">)</span>
+</span></code></pre></div>
+<h3 id="configuration-fastapi">Configuration FastAPI<a class="headerlink" href="#configuration-fastapi" title="Permanent link">&para;</a></h3>
+<p>Avec FastAPI, instanciez le service et injectez-le via une dépendance :</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># dependencies.py</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.adapters.fastapi.task_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncIOTaskService</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">task_service</span> <span class="o">=</span> <span class="n">AsyncIOTaskService</span><span class="p">()</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_task_service</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">AsyncIOTaskService</span><span class="p">:</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="k">return</span> <span class="n">task_service</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="c1"># main.py</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_task_service</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>
+</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/auth/magic-link/&quot;</span><span class="p">)</span>
+</span><span id="__span-10-14"><a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">request_magic_link</span><span class="p">(</span>
+</span><span id="__span-10-15"><a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-10-16"><a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>    <span class="n">task_service</span><span class="p">:</span> <span class="n">AsyncIOTaskService</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_task_service</span><span class="p">)</span>
+</span><span id="__span-10-17"><a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="p">):</span>
+</span><span id="__span-10-18"><a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>    <span class="c1"># Validation de l&#39;existence de l&#39;e-mail</span>
+</span><span id="__span-10-19"><a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a>    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">find_user_by_email</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>
+</span><span id="__span-10-20"><a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="p">:</span>
+</span><span id="__span-10-21"><a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;sent_if_exists&quot;</span><span class="p">}</span>  <span class="c1"># Ne pas révéler si l&#39;e-mail existe</span>
+</span><span id="__span-10-22"><a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a>
+</span><span id="__span-10-23"><a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a>    <span class="c1"># Envoi du lien magique en arrière-plan (appel asynchrone du service e-mail)</span>
+</span><span id="__span-10-24"><a id="__codelineno-10-24" name="__codelineno-10-24" href="#__codelineno-10-24"></a>    <span class="k">await</span> <span class="n">task_service</span><span class="o">.</span><span class="n">enqueue_async</span><span class="p">(</span>
+</span><span id="__span-10-25"><a id="__codelineno-10-25" name="__codelineno-10-25" href="#__codelineno-10-25"></a>        <span class="n">email_service</span><span class="o">.</span><span class="n">send_magic_link_async</span><span class="p">,</span>
+</span><span id="__span-10-26"><a id="__codelineno-10-26" name="__codelineno-10-26" href="#__codelineno-10-26"></a>        <span class="n">to_email</span><span class="o">=</span><span class="n">email</span><span class="p">,</span>
+</span><span id="__span-10-27"><a id="__codelineno-10-27" name="__codelineno-10-27" href="#__codelineno-10-27"></a>        <span class="n">magic_link_url</span><span class="o">=</span><span class="n">generate_magic_link</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">),</span>
+</span><span id="__span-10-28"><a id="__codelineno-10-28" name="__codelineno-10-28" href="#__codelineno-10-28"></a>        <span class="n">expires_in_minutes</span><span class="o">=</span><span class="mi">15</span>
+</span><span id="__span-10-29"><a id="__codelineno-10-29" name="__codelineno-10-29" href="#__codelineno-10-29"></a>    <span class="p">)</span>
+</span><span id="__span-10-30"><a id="__codelineno-10-30" name="__codelineno-10-30" href="#__codelineno-10-30"></a>
+</span><span id="__span-10-31"><a id="__codelineno-10-31" name="__codelineno-10-31" href="#__codelineno-10-31"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;sent_if_exists&quot;</span><span class="p">}</span>
+</span></code></pre></div>
+<hr />
+<h2 id="création-dadaptateurs-taskservice-personnalisés">Création d'Adaptateurs TaskService Personnalisés<a class="headerlink" href="#création-dadaptateurs-taskservice-personnalisés" title="Permanent link">&para;</a></h2>
+<p>Pour intégrer un autre système de file d'attente (ex: Huey, ARQ, ou une file personnalisée), implémentez l'ABC <code>TaskService</code> :</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tenxyte.core.task_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskService</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">my_custom_queue</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">CustomQueueTaskService</span><span class="p">(</span><span class="n">TaskService</span><span class="p">):</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="sd">    Adaptateur pour un système de file d&#39;attente personnalisé.</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">queue_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">my_custom_queue</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">queue_url</span><span class="p">)</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">enqueue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="sd">        Met en file d&#39;attente une fonction synchrone.</span>
+</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>        <span class="c1"># Sérialisation de l&#39;appel de fonction</span>
+</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>        <span class="n">job</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a>        <span class="k">return</span> <span class="n">job</span><span class="o">.</span><span class="n">id</span>
+</span><span id="__span-11-20"><a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>
+</span><span id="__span-11-21"><a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a>    <span class="c1"># Optionnel : Implémenter le support async natif pour de meilleures performances</span>
+</span><span id="__span-11-22"><a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a>    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_enqueue_async_native</span><span class="p">(</span>
+</span><span id="__span-11-23"><a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a>        <span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+</span><span id="__span-11-24"><a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a>    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-11-25"><a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-11-26"><a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a><span class="sd">        Implémentation async native optionnelle.</span>
+</span><span id="__span-11-27"><a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a><span class="sd">        Si fournie, enqueue_async() l&#39;utilisera à la place de to_thread().</span>
+</span><span id="__span-11-28"><a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a><span class="sd">        &quot;&quot;&quot;</span>
+</span><span id="__span-11-29"><a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a>        <span class="c1"># Si votre file possède un client async</span>
+</span><span id="__span-11-30"><a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a>        <span class="n">job</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">async_submit</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">)</span>
+</span><span id="__span-11-31"><a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a>        <span class="k">return</span> <span class="n">job</span><span class="o">.</span><span class="n">id</span>
+</span></code></pre></div>
+<p>Puis utilisez-le :</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">task_service</span> <span class="o">=</span> <span class="n">CustomQueueTaskService</span><span class="p">(</span><span class="s2">&quot;https://queue.example.com&quot;</span><span class="p">)</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="c1"># Les utilisations sync et async fonctionnent toutes deux</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">task_service</span><span class="o">.</span><span class="n">enqueue</span><span class="p">(</span><span class="n">sync_function</span><span class="p">,</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">)</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="k">await</span> <span class="n">task_service</span><span class="o">.</span><span class="n">enqueue_async</span><span class="p">(</span><span class="n">async_or_sync_function</span><span class="p">,</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">)</span>
+</span></code></pre></div>
+<hr />
+<h2 id="étapes-suivantes">Étapes Suivantes<a class="headerlink" href="#étapes-suivantes" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../async_guide/">Guide Async</a> — Plongée au cœur des patterns async/await avec Tenxyte</li>
+<li><a href="../fastapi_quickstart/">Démarrage Rapide FastAPI</a> — Guide complet de configuration FastAPI</li>
+<li><a href="../custom_adapters/">Adaptateurs Personnalisés</a> — Création d'adaptateurs pour d'autres services (Cache, E-mail, etc.)</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/tenxyte/tenxyte" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copi\u00e9 dans le presse-papier", "clipboard.copy": "Copier dans le presse-papier", "search.result.more.one": "1 de plus sur cette page", "search.result.more.other": "# de plus sur cette page", "search.result.none": "Aucun document trouv\u00e9", "search.result.one": "1 document trouv\u00e9", "search.result.other": "# documents trouv\u00e9s", "search.result.placeholder": "Taper pour d\u00e9marrer la recherche", "search.result.term.missing": "Non trouv\u00e9", "select.version": "S\u00e9lectionner la version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.bd41221c.min.js"></script>
+      
+    
+  </body>
+</html>

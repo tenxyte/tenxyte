@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\conf\base.py
+# hypothesis_version: 6.155.7
+
+['/', '/admin/', 'API_PREFIX', 'API_VERSION', 'BASE_URL', 'DEBUG', 'EXACT_EXEMPT_PATHS', 'EXEMPT_PATHS', 'ORG_MAX_DEPTH', 'ORG_MAX_MEMBERS', 'ORG_ROLE_INHERITANCE', 'development']

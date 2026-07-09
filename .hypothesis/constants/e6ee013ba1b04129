@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\models\auth.py
+# hypothesis_version: 6.155.7
+
+[100, 128, 191, 255, 500, 1440, '+', 'Deleted', 'TENXYTE_ROLE_MODEL', 'TENXYTE_USER_MODEL', 'User', 'active', 'admin', 'anonymization_token', 'children', 'code', 'deleted_at', 'email', 'first_name', 'is_active', 'is_deleted', 'is_locked', 'is_staff', 'is_superuser', 'last_name', 'locked_until', 'lockout_count', 'name', 'owner', 'permissions', 'phone_country_code', 'phone_number', 'roles', 'self', 'tenxyte.Permission', 'tenxyte.Role', 'users', 'users_direct', 'utf-8']

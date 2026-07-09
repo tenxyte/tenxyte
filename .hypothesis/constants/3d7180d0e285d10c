@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\core\middleware.py
+# hypothesis_version: 6.155.7
+
+[200, 401, 'APP_AUTH_INVALID', 'APP_AUTH_REQUIRED', 'Authorization', 'Bearer ', 'CacheService', 'DENY', 'MiddlewareResult', 'Origin', 'Referrer-Policy', 'Settings', 'X-Access-Key', 'X-Access-Secret', 'X-Frame-Options', 'X-Org-Slug', 'X-Request-ID', 'application', 'code', 'error', 'jwt_token', 'nosniff', 'org_slug', 'request_id', 'security_headers', 'utf-8']

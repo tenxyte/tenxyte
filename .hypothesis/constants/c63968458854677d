@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\models\agent.py
+# hypothesis_version: 6.155.7
+
+[100, 128, 255, 1000, 'ACTIVE', 'ANOMALY', 'Active', 'BUDGET_EXCEEDED', 'Budget dépassé', 'EXPIRED', 'Expiré', 'HEARTBEAT_MISSING', 'Heartbeat manquant', 'MANUAL', 'RATE_LIMIT', 'REVOKED', 'Rate Limit dépassé', 'Révocation manuelle', 'Révoqué (manuel)', 'SUSPENDED', '_raw_token', 'agent_tokens', 'expires_at', 'pending_actions', 'revoked_agent_tokens', 'status', 'tenxyte.Application', 'tenxyte.Organization', 'tenxyte.Permission', 'triggered_by', 'utf-8']
