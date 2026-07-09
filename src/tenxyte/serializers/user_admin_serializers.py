@@ -94,6 +94,10 @@ class AdminUserUpdateSerializer(serializers.Serializer):
     is_superuser = serializers.BooleanField(required=False)
     max_sessions = serializers.IntegerField(required=False, min_value=0)
     max_devices = serializers.IntegerField(required=False, min_value=0)
+    # Force password change on first login (feature: force_password_change_on_first_login).
+    # Permet à un admin de forcer un utilisateur à (re)définir son mot de passe
+    # à sa prochaine connexion.
+    must_change_password = serializers.BooleanField(required=False)
 
 
 class BanUserSerializer(serializers.Serializer):

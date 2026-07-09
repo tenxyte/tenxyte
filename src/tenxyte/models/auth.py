@@ -207,6 +207,17 @@ class AbstractUser(models.Model):
         ),
     )
 
+    # Force password change on first login
+    must_change_password = models.BooleanField(
+        default=False,
+        help_text=(
+            "True lorsqu'un compte a été provisionné par un tiers (admin ou "
+            "invitation) et doit (re)définir son mot de passe à la première "
+            "connexion avant tout autre accès. Remis à False après un changement "
+            "réussi via /password/change/ ou /password/set-initial/."
+        ),
+    )
+
     # 2FA (TOTP)
     # SECURITY (R2): totp_secret is encrypted at rest using cryptography.fernet in the service layer.
     totp_secret = models.CharField(max_length=255, null=True, blank=True)

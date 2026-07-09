@@ -363,7 +363,7 @@ class ChangePasswordView(APIView):
             ),
         ],
     )
-    @require_jwt
+    @require_jwt(allowed_scopes=["password_change_only"])
     def post(self, request):
         """Change password via Core repository."""
         # Un Passwordless_Account n'a jamais de mot de passe utilisable : le
@@ -422,13 +422,31 @@ class ChangePasswordView(APIView):
         jwt_service = get_core_jwt_service()
         sessions_revoked = jwt_service.revoke_all_user_tokens(str(request.user.id))
 
-        return Response(
-            {
-                "message": "Password changed successfully",
-                "password_strength": password_strength,
-                "sessions_revoked": sessions_revoked,
-            }
-        )
+        response_data = {
+            "message": "Password changed successfully",
+            "password_strength": password_strength,
+            "sessions_revoked": sessions_revoked,
+        }
+
+        # Force password change: lever le flag et émettre un token full-scope
+        # (feature: force_password_change_on_first_login).
+        if request.user.must_change_password:
+            request.user.must_change_password = False
+            request.user.save(update_fields=["must_change_password"])
+            # Upgrade full-scope si l'appel a été fait avec un Restricted_Password_Token,
+            # exactement comme TwoFactorConfirmView après le bootstrap 2FA.
+            if getattr(request, "jwt_scope", None) == "password_change_only":
+                app_id = str(request.application.id) if getattr(request, "application", None) else "default"
+                token_pair = jwt_service.generate_new_token_pair(
+                    user_id=str(request.user.id),
+                    application_id=app_id,
+                )
+                response_data["access_token"] = token_pair.access_token
+                response_data["refresh_token"] = token_pair.refresh_token
+                response_data["token_type"] = "Bearer"
+                response_data["expires_in"] = get_core_settings().jwt_access_token_lifetime
+
+        return Response(response_data)
 
 
 class SetInitialPasswordView(APIView):
@@ -477,7 +495,7 @@ class SetInitialPasswordView(APIView):
             ),
         ],
     )
-    @require_jwt
+    @require_jwt(allowed_scopes=["password_change_only"])
     def post(self, request):
         """Set the initial password of a Passwordless_Account via Core repository."""
         # Un compte qui a déjà un mot de passe utilisable ne peut pas passer
@@ -519,10 +537,34 @@ class SetInitialPasswordView(APIView):
         user_repo = get_core_user_repo()
         user_repo.update_password(str(request.user.id), serializer.validated_data["new_password"])
 
+        update_fields = ["has_usable_password"]
         request.user.has_usable_password = True
-        request.user.save(update_fields=["has_usable_password"])
 
-        return Response({"message": "Password set successfully"})
+        # Force password change: lever le flag si positionné
+        # (feature: force_password_change_on_first_login).
+        was_forced = request.user.must_change_password
+        if was_forced:
+            request.user.must_change_password = False
+            update_fields.append("must_change_password")
+
+        request.user.save(update_fields=update_fields)
+
+        response_data = {"message": "Password set successfully"}
+
+        # Upgrade full-scope si l'appel a été fait avec un Restricted_Password_Token.
+        if was_forced and getattr(request, "jwt_scope", None) == "password_change_only":
+            jwt_service = get_core_jwt_service()
+            app_id = str(request.application.id) if getattr(request, "application", None) else "default"
+            token_pair = jwt_service.generate_new_token_pair(
+                user_id=str(request.user.id),
+                application_id=app_id,
+            )
+            response_data["access_token"] = token_pair.access_token
+            response_data["refresh_token"] = token_pair.refresh_token
+            response_data["token_type"] = "Bearer"
+            response_data["expires_in"] = get_core_settings().jwt_access_token_lifetime
+
+        return Response(response_data)
 
 
 class PasswordStrengthView(APIView):
