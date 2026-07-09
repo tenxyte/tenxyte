@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\migrations\0009_magiclinktoken_user_agent_alter_user_totp_secret.py
-# hypothesis_version: 6.155.7
-
-[255, 'magiclinktoken', 'tenxyte', 'totp_secret', 'user', 'user_agent']

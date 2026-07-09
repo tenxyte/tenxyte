@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\conf\communication.py
-# hypothesis_version: 6.155.7
-
-['EMAIL_BACKEND', 'NGH_API_KEY', 'NGH_API_SECRET', 'NGH_SENDER_ID', 'SENDGRID_API_KEY', 'SENDGRID_FROM_EMAIL', 'SMS_BACKEND', 'SMS_DEBUG', 'SMS_ENABLED', 'TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER', 'noreply@example.com']

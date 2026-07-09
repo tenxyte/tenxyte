@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\models\base.py
-# hypothesis_version: 6.155.7
-
-['ENGINE', 'TENXYTE_ROLE_MODEL', 'TENXYTE_USER_MODEL', 'default', 'mongodb', 'tenxyte.Application', 'tenxyte.Permission', 'tenxyte.Role', 'tenxyte.User']
