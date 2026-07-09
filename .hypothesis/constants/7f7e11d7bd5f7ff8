@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\conf\security.py
+# hypothesis_version: 6.155.7
+
+[86400, '1; mode=block', 'Accept', 'Accept-Language', 'Authorization', 'BREACH_CHECK_ENABLED', 'BREACH_CHECK_REJECT', 'CORS_ALLOWED_HEADERS', 'CORS_ALLOWED_METHODS', 'CORS_ALLOWED_ORIGINS', 'CORS_ENABLED', 'CORS_EXPOSE_HEADERS', 'CORS_MAX_AGE', 'Content-Type', 'DEFAULT_MAX_DEVICES', 'DEFAULT_MAX_SESSIONS', 'DELETE', 'DENY', 'DEVICE_LIMIT_ACTION', 'DEVICE_LIMIT_ENABLED', 'GET', 'NUM_PROXIES', 'OPTIONS', 'PATCH', 'POST', 'PUT', 'Permissions-Policy', 'Referrer-Policy', 'SECURITY_HEADERS', 'TRUSTED_PROXIES', 'VERBOSE_ERRORS', 'X-Access-Key', 'X-Frame-Options', 'X-Requested-With', 'X-XSS-Protection', 'deny', 'nosniff', 'revoke_oldest', 'same-origin']

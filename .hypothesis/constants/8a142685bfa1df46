@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\conf\modules.py
+# hypothesis_version: 6.155.7
+
+['ORGANIZATION_MODEL', 'tenxyte.Organization']

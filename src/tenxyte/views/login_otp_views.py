@@ -255,11 +255,6 @@ class LoginOTPVerifyView(APIView):
         if django_user is None:
             return invalid_code_response
 
-        success, error = otp_service.verify_login_otp(django_user, otp_code)
-        if not success:
-            code = "OTP_EXPIRED" if "expired" in error.lower() else "OTP_INVALID"
-            return Response({"error": error, "code": code}, status=status.HTTP_401_UNAUTHORIZED)
-
         # Account_Status_Checks (identiques à authenticate_by_phone_with_core)
         user_repo = get_core_user_repo()
         jwt_service = get_core_jwt_service()
@@ -267,6 +262,34 @@ class LoginOTPVerifyView(APIView):
         user = user_repo.get_by_id(str(django_user.id))
         if not user:
             return invalid_code_response
+
+        # Pré-contrôle 2FA AVANT la consommation de l'OTP.
+        #
+        # `verify_login_otp` est destructif : il marque l'OTP `is_used=True`
+        # dès qu'il est valide. Si on le consommait puis qu'on renvoyait
+        # `2FA_REQUIRED`, la 2ème passe (OTP + TOTP) échouerait car l'OTP
+        # serait déjà consommé. On vérifie donc la présence du `totp_code`
+        # pour les comptes 2FA AVANT de toucher à l'OTP, afin que la 1ère
+        # passe (sans TOTP) renvoie `2FA_REQUIRED` sans rien consommer.
+        #
+        # NB : le Super Admin 2FA Bootstrap (admin sans 2FA) est traité plus
+        # bas car il nécessite un OTP valide pour émettre le token restreint.
+        _pre_mfa = "none"
+        if hasattr(user, "mfa_type"):
+            _pre_mfa = user.mfa_type.value if hasattr(user.mfa_type, "value") else str(user.mfa_type)
+        elif getattr(user, "is_2fa_enabled", False):
+            _pre_mfa = "totp"
+
+        if _pre_mfa != "none" and not (serializer.validated_data.get("totp_code", "") or "").strip():
+            return Response(
+                {"error": "2FA code required", "code": "2FA_REQUIRED", "requires_2fa": True},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        success, error = otp_service.verify_login_otp(django_user, otp_code)
+        if not success:
+            code = "OTP_EXPIRED" if "expired" in error.lower() else "OTP_INVALID"
+            return Response({"error": error, "code": code}, status=status.HTTP_401_UNAUTHORIZED)
 
         if user_repo.is_account_locked(user.id):
             return Response(

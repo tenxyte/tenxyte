@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\migrations\0002_rbac.py
+# hypothesis_version: 6.155.7
+
+[100, '0001_core', 'Display name', 'OrganizationRole', 'Permission', 'Role', 'TENXYTE_ROLE_MODEL', 'abstract', 'children', 'code', 'created_at', 'db_table', 'description', 'direct_permissions', 'id', 'is_default', 'is_system', 'name', 'ordering', 'organization_roles', 'parent', 'permissions', 'roles', 'swappable', 'tenxyte', 'updated_at', 'user', 'users', 'users_direct']

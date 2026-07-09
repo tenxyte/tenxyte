@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\migrations\0013_alter_refreshtoken_application.py
+# hypothesis_version: 6.155.7
+
+['application', 'refresh_tokens', 'refreshtoken', 'tenxyte']

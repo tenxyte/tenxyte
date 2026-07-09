@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\serializers\security_serializers.py
+# hypothesis_version: 6.155.7
+
+['action', 'application', 'application.name', 'application_name', 'blacklisted_at', 'created_at', 'details', 'device_info', 'expires_at', 'failure_reason', 'id', 'identifier', 'ip_address', 'is_expired', 'is_revoked', 'last_used_at', 'reason', 'success', 'token_jti', 'user', 'user.email', 'user_agent', 'user_email']

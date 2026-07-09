@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\migrations\0004_auditlog_prompt_trace_id_alter_auditlog_action.py
+# hypothesis_version: 6.155.7
+
+[128, '2FA Backup Code Used', '2FA Disabled', '2FA Enabled', '2fa_backup_used', '2fa_disabled', '2fa_enabled', 'Account Created', 'Account Deleted', 'Account Locked', 'Account Unlocked', 'Application Created', 'Email Verified', 'Login', 'Login Failed', 'Logout', 'Logout All Devices', 'New Device Detected', 'Password Changed', 'Permission Changed', 'Phone Verified', 'Role Assigned', 'Role Removed', 'Token Refresh', 'account_created', 'account_deleted', 'account_locked', 'account_unlocked', 'action', 'agent_action', 'app_created', 'auditlog', 'email_verified', 'login', 'login_failed', 'logout', 'logout_all', 'new_device_detected', 'password_change', 'permission_changed', 'phone_verified', 'prompt_trace_id', 'role_assigned', 'role_removed', 'suspicious_activity', 'tenxyte', 'token_refresh']

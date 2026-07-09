@@ -1,0 +1,19 @@
+{
+  "spec_name": "z_aud_4",
+  "title": "Phase 4 — Enterprise : mode OIDC Provider, SSO/SCIM entrant, offre commerciale HITL",
+  "version": "1.0.0",
+  "status": "draft",
+  "source": "AUDIT.md §9 Phase 4 (T+8 → T+16 mois), §8 écarts P2/P3",
+  "depends_on": ["z_aud_1", "z_aud_2", "z_aud_3"],
+  "files": [
+    "readme.md",
+    "base.md",
+    "requirements.md",
+    "design.md",
+    "tasks.md",
+    "manual_tests.md"
+  ],
+  "language": "fr",
+  "test_framework": "pytest + hypothesis",
+  "min_property_examples": 100
+}

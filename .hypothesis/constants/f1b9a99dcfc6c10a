@@ -1,0 +1,4 @@
+# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\serializers\user_admin_serializers.py
+# hypothesis_version: 6.155.7
+
+[100, 500, 43200, 'code', 'created_at', 'deleted_at', 'email', 'first_name', 'id', 'is_2fa_enabled', 'is_active', 'is_banned', 'is_deleted', 'is_email_verified', 'is_locked', 'is_phone_verified', 'is_staff', 'is_superuser', 'last_login', 'last_name', 'locked_until', 'max_devices', 'max_sessions', 'permissions', 'phone_country_code', 'phone_number', 'roles', 'updated_at']

@@ -1,0 +1,79 @@
+J'envoie {
+  "email": "boboprem1@gmail.com",
+  "phone_country_code": "228",
+  "phone_number": "96858912",
+  "password": "66Azrety23.",
+  "first_name": "Bobo",
+  "last_name": "Premier",
+  "login": true,
+  "device_info": "v=1|os=windows;osv=10|device=desktop|arch=x64|runtime=chrome;rtv=122"
+}
+
+à 
+
+{{TENXYTE_BASE_URL}}/api/v1/auth/register/
+
+
+{
+    "message": "Registration successful",
+    "user": {
+        "id": "1",
+        "email": "boboprem1@gmail.com",
+        "username": null,
+        "phone": null,
+        "avatar": null,
+        "bio": "",
+        "timezone": "",
+        "language": "",
+        "first_name": "Bobo",
+        "last_name": "Premier",
+        "is_active": true,
+        "is_email_verified": false,
+        "is_phone_verified": false,
+        "is_2fa_enabled": false,
+        "created_at": "2026-05-27T16:45:53.397638Z",
+        "updated_at": "2026-05-27T16:45:53.398144Z",
+        "last_login": null,
+        "custom_fields": null,
+        "preferences": {
+            "email_notifications": true,
+            "sms_notifications": false,
+            "marketing_emails": false
+        },
+        "roles": [],
+        "permissions": []
+    },
+    "verification_required": {
+        "email": true,
+        "phone": false
+    },
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWNjZXNzIiwianRpIjoiZTYyMmJmMjEtZTYwZS00YmI2LWFjMDctNmM5ZDUwMjRhZDIxIiwidXNlcl9pZCI6IjEiLCJhcHBfaWQiOiJkZWZhdWx0IiwiaWF0IjoxNzc5OTAwMzU0LCJleHAiOjE3Nzk5MDM5NTQsIm5iZiI6MTc3OTkwMDM1NCwiaXNzIjoidGVueHl0ZSIsImRldmljZV9pbmZvIjoidj0xfG9zPXdpbmRvd3M7b3N2PTEwfGRldmljZT1kZXNrdG9wfGFyY2g9eDY0fHJ1bnRpbWU9Y2hyb21lO3J0dj0xMjIiLCJpcF9hZGRyZXNzIjoiMTI3LjAuMC4xIn0.c42FEVA51ILCrIqmA5cMcK_G0a1abpzB-eRLqVVRlbw",
+    "refresh_token": "44899ca8-9048-45c7-b3af-d6ff6782183a",
+    "token_type": "Bearer",
+    "expires_in": 3600,
+    "refresh_expires_in": 86400
+}
+
+
+Pourquoi le phone est nul ???
+
+
+(env) PS C:\Users\bobop\Documents\own\folio\frontend\apps\api> python manage.py runserver
+Watching for file changes with StatReloader
+Performing system checks...
+
+System check identified no issues (0 silenced).
+May 27, 2026 - 16:45:38
+Django version 5.2.14, using settings 'config.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+[OTP] Email service error: 'DjangoEmailService' object has no attribute 'send_otp_email'
+[OTP] User 1 has no phone number
+C:\Users\bobop\Documents\own\tenxyte\src\tenxyte\views\auth_views.py:78: SecurityWarning: TENXYTE_JWT_ALGORITHM is 'HS256' (symmetric HMAC). For production deployments, switch to an asymmetric algorithm (RS256, PS256, EdDSA) to avoid sharing the signing secret. Set TENXYTE_JWT_ALGORITHM = 'RS256' and configure TENXYTE_JWT_PRIVATE_KEY / TENXYTE_JWT_PUBLIC_KEY.
+  _core_jwt_service = JWTService(settings=get_core_settings(), blacklist_service=DjangoCacheService())
+C:\Users\bobop\Documents\own\tenxyte\src\tenxyte\views\auth_views.py:366: SecurityWarning: Sensitive key 'ip_address' detected in JWT extra_claims. Including PII in JWT payloads violates GDPR data minimization principles. Store sensitive attributes server-side and look them up by user_id.
+  tokens = jwt_service.generate_new_token_pair(
+[27/May/2026 16:45:54] "POST /api/v1/auth/register/ HTTP/1.1" 201 1183
