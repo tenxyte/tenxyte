@@ -1,6 +1,6 @@
 # Audit Stratégique — Tenxyte Auth
 
-> **Date :** Juillet 2026 · **Version auditée :** 0.9.6.4 · **Licence :** MIT
+> **Date :** Juillet 2026 · **Version auditée :** 0.9.6.4.1 · **Licence :** MIT
 > **Objet :** État des lieux technique, analyse concurrentielle et évaluation du potentiel « game-changer »
 
 ---
@@ -49,7 +49,7 @@ d'adoption, de maturité (pré-1.0) et de crédibilité sécurité non encore é
 
 | Indicateur | Valeur | Lecture |
 |---|---|---|
-| Version | 0.9.6.4 (Beta, pré-1.0) | Cadence de release soutenue (14+ tags) |
+| Version | 0.9.6.4.1 (Beta, pré-1.0) | Cadence de release soutenue (14+ tags) |
 | Code source | 147 fichiers · ~36 400 lignes Python | Base substantielle, bien découpée |
 | Tests | 187 fichiers · ~45 100 lignes · **2 605 tests collectés** | Ratio tests/code de 1,24 — supérieur au code de prod |
 | Couverture exigée en CI | ≥ 90 % (`--cov-fail-under=90`) | Discipline rare pour un projet de cette taille |
@@ -441,6 +441,6 @@ gagne en dehors du dépôt Git.**
 
 ---
 
-*Audit réalisé sur la base du code source (v0.9.6.4, branche `develop`), de la suite de tests
+*Audit réalisé sur la base du code source (v0.9.6.4.1, branche `develop`), de la suite de tests
 (2 605 tests collectés), de la documentation (`docs/en`, `docs/fr`), des spécifications internes
 (`.kiro/specs/`) et d'une analyse du paysage concurrentiel public à date de juillet 2026.*
