@@ -6,3 +6,11 @@
 # The value 'validation-script-only' is a placeholder required by Django's settings.configure().
 # The gitleaks:allow annotation was added in a subsequent commit.
 1347f3e8aa2789b053001d45722dedf3ed76b1ef:scripts/validate_canonical_spec.py:secret-key:31
+
+# False positives: Django model/serializer field declarations for must_change_password.
+# These are BooleanField declarations (not secrets) introduced by the
+# force_password_change_on_first_login feature. The allowlist in .gitleaks.toml
+# covers future commits; these fingerprints suppress the already-pushed commit.
+df8b9dee9172c67037f5db9635a8dd2af275cc2e:src/tenxyte/models/auth.py:password:211
+df8b9dee9172c67037f5db9635a8dd2af275cc2e:src/tenxyte/serializers/user_admin_serializers.py:password:100
+df8b9dee9172c67037f5db9635a8dd2af275cc2e:src/tenxyte/views/password_views.py:password:433
