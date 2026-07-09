@@ -36,10 +36,16 @@ class UserManager(BaseUserManager):
 
     def create_user(self, email=None, password=None, **extra_fields):
         """Crée et sauvegarde un utilisateur."""
-        if not email:
-            raise ValueError("L'email est requis")
+        # Vérifier qu'au moins un identifiant (email ou téléphone) est fourni
+        phone_country_code = extra_fields.get("phone_country_code")
+        phone_number = extra_fields.get("phone_number")
 
-        email = self.normalize_email(email)
+        if not email and not (phone_country_code and phone_number):
+            raise ValueError("L'email ou le numéro de téléphone est requis")
+
+        if email:
+            email = self.normalize_email(email)
+
         user = self.model(email=email, **extra_fields)
         if password:
             # nosemgrep: python.django.security.audit.unvalidated-password.unvalidated-password
@@ -191,6 +197,27 @@ class AbstractUser(models.Model):
     is_email_verified = models.BooleanField(default=False)
     is_phone_verified = models.BooleanField(default=False)
 
+    # Passwordless (login OTP)
+    has_usable_password = models.BooleanField(
+        default=True,
+        help_text=(
+            "False pour un Passwordless_Account : le mot de passe stocké est une "
+            "valeur aléatoire inutilisable (créé via login OTP auto-register, ou "
+            "jamais remplacé par un mot de passe choisi par l'utilisateur)."
+        ),
+    )
+
+    # Force password change on first login
+    must_change_password = models.BooleanField(
+        default=False,
+        help_text=(
+            "True lorsqu'un compte a été provisionné par un tiers (admin ou "
+            "invitation) et doit (re)définir son mot de passe à la première "
+            "connexion avant tout autre accès. Remis à False après un changement "
+            "réussi via /password/change/ ou /password/set-initial/."
+        ),
+    )
+
     # 2FA (TOTP)
     # SECURITY (R2): totp_secret is encrypted at rest using cryptography.fernet in the service layer.
     totp_secret = models.CharField(max_length=255, null=True, blank=True)
@@ -243,6 +270,13 @@ class AbstractUser(models.Model):
         indexes = [
             models.Index(fields=["phone_country_code", "phone_number"]),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["phone_country_code", "phone_number"],
+                condition=models.Q(phone_number__isnull=False) & models.Q(is_deleted=False),
+                name="unique_phone_when_not_deleted",
+            ),
+        ]
 
     # Configuration Django Auth
     USERNAME_FIELD = "email"
@@ -253,6 +287,11 @@ class AbstractUser(models.Model):
             from django.contrib.auth.models import BaseUserManager
 
             self.email = BaseUserManager.normalize_email(self.email).lower()
+        # L'indicatif est stocké SANS le '+' (ex: "229"). Le '+' n'est ajouté
+        # qu'à l'affichage / la sérialisation (voir full_phone). On normalise
+        # ici pour garantir l'invariant quel que soit le chemin d'écriture.
+        if self.phone_country_code:
+            self.phone_country_code = self.phone_country_code.strip().lstrip("+")
         super().save(*args, **kwargs)
 
     def delete(self, using=None, keep_parents=False, hard=False):

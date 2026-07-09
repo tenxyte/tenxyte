@@ -34,7 +34,9 @@ class TestRegisterSerializer:
         }
         serializer = RegisterSerializer(data=data)
         assert serializer.is_valid(), serializer.errors
-        assert serializer.validated_data['phone_country_code'] == '+33'
+        # L'indicatif est normalisé sans le '+' pour le stockage en base
+        # (le '+' n'est réintroduit qu'à l'affichage / la sérialisation).
+        assert serializer.validated_data['phone_country_code'] == '33'
         assert serializer.validated_data['phone_number'] == '612345678'
         
     def test_missing_email_and_phone(self):

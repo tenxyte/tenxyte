@@ -7,6 +7,8 @@
     - [`POST /register/`](#post-register)
     - [`POST /login/email/`](#post-loginemail)
     - [`POST /login/phone/`](#post-loginphone)
+    - [`POST /login/otp/request/`](#post-loginotprequest)
+    - [`POST /login/otp/verify/`](#post-loginotpverify)
   - [Connexion Sociale (Multi-Fournisseurs)](#connexion-sociale-multi-fournisseurs)
     - [`POST /social/<provider>/`](#post-socialprovider)
     - [`GET /social/<provider>/callback/`](#get-socialprovidercallback)
@@ -24,8 +26,10 @@
     - [`POST /password/reset/request/`](#post-passwordresetrequest)
     - [`POST /password/reset/confirm/`](#post-passwordresetconfirm)
     - [`POST /password/change/` ](#post-passwordchange)
+    - [`POST /password/set-initial/` ](#post-passwordset-initial)
     - [`POST /password/strength/`](#post-passwordstrength)
     - [`GET /password/requirements/`](#get-passwordrequirements)
+  - [Changement de Mot de Passe Forcé à la Première Connexion](#changement-de-mot-de-passe-forcé-à-la-première-connexion)
   - [Profil Utilisateur](#profil-utilisateur)
     - [`GET /me/` ](#get-me)
     - [`PATCH /me/` ](#patch-me)
@@ -66,6 +70,7 @@
   - [Admin — Gestion des Utilisateurs](#admin--gestion-des-utilisateurs)
     - [`GET /admin/users/`  `users.view`](#get-adminusers-usersview)
     - [`GET /admin/users/<id>/`  `users.view`](#get-adminusersid-usersview)
+    - [`PATCH /admin/users/<id>/`  `users.update`](#patch-adminusersid-usersupdate)
     - [`POST /admin/users/<id>/ban/`  `users.ban`](#post-adminusersidban-usersban)
     - [`POST /admin/users/<id>/unban/`  `users.ban`](#post-adminusersidunban-usersban)
     - [`POST /admin/users/<id>/lock/`  `users.lock`](#post-adminusersidlock-userslock)
@@ -237,6 +242,7 @@ Connexion avec email + mot de passe.
   "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
+  "must_change_password": false,
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
@@ -265,6 +271,24 @@ Connexion avec email + mot de passe.
   }
 }
 ```
+
+**Réponse `200` (changement de mot de passe forcé — `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True`) :**
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "token_scope": "password_change_only",
+  "must_change_password": true,
+  "expires_in": 900,
+  "refresh_expires_in": 604800,
+  "user": { "..." : "..." },
+  "requires_2fa": false,
+  "session_id": "uuid-string",
+  "device_id": "uuid-string"
+}
+```
+> Le `access_token` porte `scope: "password_change_only"` et n'est accepté que sur `/password/change/`, `/password/set-initial/` et `/logout/`. Tous les autres endpoints protégés retournent `403 INSUFFICIENT_SCOPE` jusqu'au changement de mot de passe. Voir [Changement de Mot de Passe Forcé à la Première Connexion](#changement-de-mot-de-passe-forcé-à-la-première-connexion).
 
 **Réponse `401` (2FA requise) :**
 ```json
@@ -336,6 +360,7 @@ Connexion avec numéro de téléphone + mot de passe.
   "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
+  "must_change_password": false,
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
@@ -417,6 +442,130 @@ Connexion avec numéro de téléphone + mot de passe.
   "code": "ACCOUNT_LOCKED",
   "details": {}
 }
+```
+
+---
+
+## Connexion sans mot de passe par téléphone (OTP)
+
+Nécessite `TENXYTE_OTP_LOGIN_ENABLED = True`.
+
+Ces endpoints permettent à un utilisateur de se connecter avec seulement un numéro de téléphone et un code à usage unique. Aucun mot de passe n'est jamais requis. Le flux se déroule en deux étapes : demande d'un code, puis vérification pour obtenir des jetons JWT.
+
+### `POST /login/otp/request/`
+Demander un code OTP de connexion envoyé par SMS au numéro de téléphone fourni.
+
+**Requête :**
+```json
+{
+  "phone_country_code": "+33",
+  "phone_number": "612345678"
+}
+```
+
+Si `TENXYTE_OTP_LOGIN_AUTO_REGISTER = True` (par défaut) et qu'aucun compte ne correspond au numéro fourni, un nouveau *compte passwordless* est créé automatiquement et reçoit le code.
+Si `OTP_LOGIN_AUTO_REGISTER = False` et qu'aucun compte n'existe, la réponse a la **même forme** qu'un succès (anti-énumération) mais aucun code n'est envoyé.
+
+**Réponse `200` :**
+```json
+{
+  "message": "Code de connexion envoyé",
+  "otp_id": "uuid-string",
+  "expires_at": "2026-07-07T12:10:00Z",
+  "channel": "sms"
+}
+```
+
+**Réponse `404` (Fonctionnalité désactivée) :**
+```json
+{
+  "error": "Feature not available",
+  "code": "FEATURE_DISABLED"
+}
+```
+
+**Réponse `400` (Erreur de validation) :**
+```json
+{
+  "error": "Erreur de validation",
+  "details": {
+    "phone_country_code": ["Ce champ est requis."],
+    "phone_number": ["Ce champ est requis."]
+  }
+}
+```
+
+**Réponse `429` (Limite de débit atteinte) :**
+```json
+{
+  "error": "Request was throttled.",
+  "retry_after": 60
+}
+```
+
+---
+
+### `POST /login/otp/verify/`
+Vérifier le code OTP de connexion et recevoir des jetons JWT. Applique les mêmes contrôles de compte que `/login/phone/` (actif, non banni, non verrouillé, 2FA optionnelle).
+
+**Requête :**
+```json
+{
+  "phone_country_code": "+33",
+  "phone_number": "612345678",
+  "otp_code": "847291",
+  "totp_code": "123456",
+  "device_info": "v=1|os=ios;osv=17|device=mobile"
+}
+```
+`otp_code` : Requis. Le code à 6 chiffres reçu par SMS.
+`totp_code` : Requis uniquement si le compte a la 2FA activée.
+`device_info` : Informations optionnelles sur l'appareil.
+
+**Réponse `200` (même forme que `/login/phone/`) :**
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "refresh_expires_in": 604800,
+  "must_change_password": false,
+  "user": {
+    "id": "uuid-string",
+    "email": null,
+    "phone": "+33612345678",
+    "is_phone_verified": true,
+    "has_usable_password": false,
+    "..."
+  },
+  "requires_2fa": false,
+  "session_id": "uuid-string",
+  "device_id": "uuid-string"
+}
+```
+`is_phone_verified` est automatiquement mis à `true` lors d'une connexion réussie.
+`has_usable_password` indique si le compte peut aussi se connecter avec un mot de passe.
+`must_change_password` est `true` si le compte a été provisionné avec un changement de mot de passe forcé (voir [Changement de Mot de Passe Forcé à la Première Connexion](#changement-de-mot-de-passe-forcé-à-la-première-connexion)).
+
+**Réponse `404` (Fonctionnalité désactivée) :**
+```json
+{ "error": "Feature not available", "code": "FEATURE_DISABLED" }
+```
+
+**Réponse `401` (Code invalide ou expiré — même réponse si téléphone inconnu) :**
+```json
+{ "error": "Invalid code.", "code": "OTP_INVALID" }
+```
+
+**Réponse `401` (2FA requise) :**
+```json
+{ "error": "Code 2FA requis", "code": "2FA_REQUIRED", "requires_2fa": true }
+```
+
+**Réponse `423` (Compte verrouillé) :**
+```json
+{ "error": "Compte verrouillé", "code": "ACCOUNT_LOCKED", "retry_after": "2026-07-07T12:30:00Z" }
 ```
 
 ---
@@ -768,9 +917,10 @@ Rafraîchir le jeton d'accès.
   "token_type": "Bearer",
   "expires_in": 900,
   "refresh_expires_in": 86400,
-  "device_summary": null
+  "must_change_password": false
 }
 ```
+> Si le compte a toujours `must_change_password=true` et que `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True`, le nouvel `access_token` portera à nouveau `scope: "password_change_only"` et `must_change_password` sera `true`.
 
 **Réponse `400` (Jeton de rafraîchissement manquant) :**
 ```json
@@ -1081,7 +1231,9 @@ Confirmer la réinitialisation du mot de passe avec le code OTP.
 ---
 
 ### `POST /password/change/` 
-Changer le mot de passe (nécessite le mot de passe actuel).
+Changer le mot de passe (nécessite le mot de passe actuel ou un OTP de connexion frais comme preuve de réauthentification).
+
+Accepte un jeton de portée `password_change_only` (émis quand `must_change_password=true`) en plus d'un jeton pleine portée.
 
 **En-têtes (requis) :**
 ```
@@ -1096,7 +1248,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-**Réponse `200` :**
+**Réponse `200` (normal) :**
 ```json
 {
   "message": "Mot de passe changé avec succès",
@@ -1104,6 +1256,20 @@ Authorization: Bearer <access_token>
   "sessions_revoked": 2
 }
 ```
+
+**Réponse `200` (changement forcé terminé — `must_change_password` était `true`) :**
+```json
+{
+  "message": "Mot de passe changé avec succès",
+  "password_strength": "strong",
+  "sessions_revoked": 2,
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 900
+}
+```
+> Lorsque la requête a été faite avec un jeton `password_change_only`, une nouvelle paire de jetons **pleine portée** est retournée pour que l'utilisateur puisse continuer sans se reconnecter.
 
 **Réponse `400` (Erreur de validation) :**
 ```json
@@ -1115,11 +1281,102 @@ Authorization: Bearer <access_token>
 }
 ```
 
-**Réponse `401` (Mot de passe actuel invalide) :**
+**Réponse `400` (Mot de passe actuel invalide) :**
 ```json
 {
   "error": "Le mot de passe actuel est incorrect",
   "code": "INVALID_PASSWORD"
+}
+```
+
+> **Comptes passwordless :** Si `has_usable_password = false`, cet endpoint renvoie `400 PASSWORDLESS_ACCOUNT_USE_SET_INITIAL_PASSWORD`. Utilisez [`POST /password/set-initial/`](#post-passwordset-initial) à la place.
+
+> **Réauthentification via OTP :** Les comptes avec un mot de passe peuvent aussi fournir `otp_code` (au lieu de `current_password`) comme preuve d'identité.
+
+---
+
+### `POST /password/set-initial/` 
+Définir le premier mot de passe d'un compte passwordless. Nécessite un OTP de connexion frais comme preuve de possession du téléphone. Distinct de `/password/change/` — ne demande pas de mot de passe actuel, car il n'en existe pas.
+
+Accepte un jeton de portée `password_change_only` (émis quand `must_change_password=true`) en plus d'un jeton pleine portée.
+
+Nécessite `TENXYTE_OTP_LOGIN_ENABLED = True`.
+
+**En-têtes (requis) :**
+```
+Authorization: Bearer <access_token>
+```
+
+**Requête :**
+```json
+{
+  "otp_code": "847291",
+  "new_password": "MonNouveauM0tdePasse!"
+}
+```
+`otp_code` : Un OTP de connexion frais pour le téléphone du compte (demandé via `/login/otp/request/`).
+`new_password` : Doit respecter les règles de complexité du mot de passe configurées.
+
+**Réponse `200` (normal) :**
+```json
+{
+  "message": "Password set successfully"
+}
+```
+
+**Réponse `200` (changement forcé terminé — `must_change_password` était `true`) :**
+```json
+{
+  "message": "Password set successfully",
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 900
+}
+```
+> Lorsque la requête a été faite avec un jeton `password_change_only`, une nouvelle paire de jetons **pleine portée** est retournée pour que l'utilisateur puisse continuer sans se reconnecter.
+
+Après succès : le compte peut se connecter via `/login/email/` ou `/login/phone/` avec le nouveau mot de passe **en plus de** `/login/otp/verify/`. Les deux méthodes restent disponibles.
+
+**Réponse `400` (Compte possède déjà un mot de passe) :**
+```json
+{
+  "error": "Account already has a usable password. Use /password/change/ instead.",
+  "code": "ALREADY_HAS_PASSWORD"
+}
+```
+
+**Réponse `400` (Aucun OTP de connexion existant) :**
+```json
+{
+  "error": "No login code found",
+  "code": "OTP_REQUIRED"
+}
+```
+
+**Réponse `400` (OTP invalide ou expiré) :**
+```json
+{
+  "error": "Invalid code. 2 attempt(s) remaining.",
+  "code": "OTP_INVALID"
+}
+```
+
+**Réponse `400` (Mot de passe ne respecte pas les règles de complexité) :**
+```json
+{
+  "error": "Erreur de validation",
+  "details": {
+    "new_password": ["Le mot de passe doit contenir au moins une lettre majuscule."]
+  }
+}
+```
+
+**Réponse `400` (Mot de passe trouvé dans une fuite de données) :**
+```json
+{
+  "error": "This password has appeared in a data breach and cannot be used.",
+  "code": "PASSWORD_BREACHED"
 }
 ```
 
@@ -2604,6 +2861,46 @@ Authorization: Bearer <access_token>
   "code": "NOT_FOUND"
 }
 ```
+
+### `PATCH /admin/users/<id>/`  `users.update`
+Mettre à jour partiellement le profil ou les indicateurs d'un utilisateur.
+
+**En-têtes (requis) :**
+```
+Authorization: Bearer <access_token>
+```
+
+**Requête (tous les champs sont optionnels) :**
+```json
+{
+  "first_name": "Jane",
+  "last_name": "Smith",
+  "is_active": true,
+  "is_staff": false,
+  "is_superuser": false,
+  "max_sessions": 3,
+  "max_devices": 2,
+  "must_change_password": true
+}
+```
+`must_change_password` : Mettre à `true` pour forcer l'utilisateur à changer son mot de passe à la prochaine connexion (nécessite `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True` pour l'enforcement du scope de jeton). Mettre à `false` pour lever l'obligation.
+
+**Réponse `200` :** Objet utilisateur complet (même forme que `GET /admin/users/<id>/`).
+
+**Réponse `400` (Erreur de validation) :**
+```json
+{
+  "error": "Erreur de validation",
+  "details": { "max_sessions": ["Assurez-vous que cette valeur est supérieure ou égale à 0."] }
+}
+```
+
+**Réponse `404` (Non trouvé) :**
+```json
+{ "error": "Utilisateur non trouvé", "code": "NOT_FOUND" }
+```
+
+---
 
 ### `POST /admin/users/<id>/ban/`  `users.ban`
 Bannir un utilisateur.
@@ -4756,6 +5053,102 @@ Tenxyte inclut un ensemble complet de points de terminaison pour la sécurité d
 | `POST` | `/ai/pending-actions/<id>/reject/` | Rejeter une action en attente |
 
 → Voir le [Guide AIRS](airs.md) pour la documentation complète des requêtes/réponses, les niveaux d'habilitation et la gestion du cycle de vie des agents.
+
+---
+
+## Changement de Mot de Passe Forcé à la Première Connexion
+
+Nécessite `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED = True`.
+
+Cette fonctionnalité force un utilisateur à définir ou changer son mot de passe avant d'accéder à quoi que ce soit d'autre. Elle couvre deux scénarios de provisionnement :
+
+| Scénario | `has_usable_password` | `must_change_password` | Endpoint de sortie |
+|---|---|---|---|
+| Admin crée un compte avec mot de passe temporaire | `true` | `true` | `POST /password/change/` |
+| Invitation sans mot de passe (Compte Passwordless) | `false` | `true` | `POST /password/set-initial/` |
+
+### Flux
+
+**1. L'admin provisionne le compte :**
+```http
+PATCH /api/v1/auth/admin/users/<id>/
+Authorization: Bearer <jeton_admin>
+
+{ "must_change_password": true }
+```
+
+**2. L'utilisateur se connecte — reçoit un jeton à portée restreinte :**
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "token_scope": "password_change_only",
+  "must_change_password": true,
+  "expires_in": 900,
+  "refresh_expires_in": 604800,
+  "user": { "..." : "..." }
+}
+```
+Le client **doit** détecter `must_change_password: true` et rediriger vers l'écran de changement de mot de passe. Le `access_token` porte `scope: "password_change_only"` — tous les autres endpoints protégés retournent `403 INSUFFICIENT_SCOPE`.
+
+**3a. L'utilisateur change son mot de passe (compte avec mot de passe temporaire) :**
+```http
+POST /api/v1/auth/password/change/
+Authorization: Bearer <jeton_password_change_only>
+
+{
+  "current_password": "MotDePasseTemporaire123!",
+  "new_password": "MonNouveauMotDePasse456!"
+}
+```
+
+**3b. L'utilisateur définit son premier mot de passe (Compte Passwordless) :**
+```http
+POST /api/v1/auth/password/set-initial/
+Authorization: Bearer <jeton_password_change_only>
+
+{
+  "otp_code": "847291",
+  "new_password": "MonNouveauMotDePasse456!"
+}
+```
+
+**4. Succès — paire de jetons pleine portée retournée :**
+```json
+{
+  "message": "Mot de passe changé avec succès",
+  "password_strength": "strong",
+  "sessions_revoked": 2,
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 900
+}
+```
+`must_change_password` est maintenant `false`. Le nouvel `access_token` est un jeton pleine portée — l'utilisateur peut accéder à tous les endpoints normalement.
+
+### Enforcement du scope de jeton
+
+| Endpoint | Accepte le jeton `password_change_only` ? |
+|---|---|
+| `POST /password/change/` | ✅ Oui |
+| `POST /password/set-initial/` | ✅ Oui |
+| `POST /logout/` | ✅ Oui (AllowAny) |
+| `POST /logout/all/` | ✅ Oui |
+| Tout autre endpoint protégé | ❌ Non — `403 INSUFFICIENT_SCOPE` |
+
+### Codes d'erreur
+
+| Code | HTTP | Signification |
+|---|---|---|
+| `INSUFFICIENT_SCOPE` | `403` | Jeton `password_change_only` utilisé sur un endpoint non autorisé |
+| `PASSWORDLESS_ACCOUNT_USE_SET_INITIAL_PASSWORD` | `400` | Compte passwordless a essayé `/password/change/` — utiliser `/password/set-initial/` |
+| `ALREADY_HAS_PASSWORD` | `400` | Compte avec mot de passe a essayé `/password/set-initial/` — utiliser `/password/change/` |
+
+### Précédence avec le Bootstrap 2FA Admin
+
+Si un compte admin (`is_superuser` ou `is_staff`) a à la fois `must_change_password=true` et aucune 2FA configurée, le **bootstrap 2FA est prioritaire** : la réponse de connexion porte `scope: "2fa_setup_only"` (et non `password_change_only`). Après que l'admin a confirmé sa 2FA et reçu un jeton pleine portée, la prochaine connexion appliquera le scope `password_change_only`.
 
 ---
 

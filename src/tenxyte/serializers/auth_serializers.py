@@ -5,7 +5,7 @@ Auth serializers - Registration, Login, Token, Google Auth, User profile.
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from ..models import get_user_model
-from ..validators import validate_password
+from ..validators import validate_password, normalize_phone_country_code
 from ..device_info import validate_device_info as _validate_device_info
 
 User = get_user_model()
@@ -46,6 +46,10 @@ class RegisterSerializer(serializers.Serializer):
         if not is_valid:
             raise serializers.ValidationError(errors)
         return value
+
+    def validate_phone_country_code(self, value):
+        """Stocke l'indicatif sans le '+' (ex: 229)."""
+        return normalize_phone_country_code(value)
 
     def validate(self, data):
         if not data.get("email") and not (data.get("phone_country_code") and data.get("phone_number")):
@@ -90,6 +94,10 @@ class LoginPhoneSerializer(serializers.Serializer):
         help_text="Device info au format v1 (ex: v=1|os=windows;osv=11|device=desktop)",
     )
 
+    def validate_phone_country_code(self, value):
+        """Normalise l'indicatif (sans '+') pour matcher le stockage en base."""
+        return normalize_phone_country_code(value)
+
     def validate_device_info(self, value):
         if value:
             is_valid, errors = _validate_device_info(value)
@@ -111,6 +119,10 @@ class UpdateProfileSerializer(serializers.Serializer):
     timezone = serializers.CharField(max_length=63, required=False, allow_blank=True)
     language = serializers.CharField(max_length=10, required=False, allow_blank=True)
     custom_fields = serializers.JSONField(required=False, allow_null=True)
+
+    def validate_phone_country_code(self, value):
+        """Normalise l'indicatif (sans '+') pour matcher le stockage en base."""
+        return normalize_phone_country_code(value)
 
 
 class RefreshTokenSerializer(serializers.Serializer):

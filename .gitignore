@@ -87,3 +87,10 @@ Thumbs.db
 old_dists/
 old_dists/*
 old_dists/*/*
+
+# Hypothesis
+.hypothesis/
+
+.kiro/
+/plan
+logs

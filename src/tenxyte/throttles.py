@@ -103,6 +103,25 @@ class OTPVerifyThrottle(IPBasedThrottle):
     rate = "5/min"
 
 
+class LoginOTPRequestThrottle(IPBasedThrottle):
+    """
+    Rate limit pour les demandes d'OTP de connexion (passwordless).
+    Dedie a /login/otp/request/, jamais partage avec /register/.
+
+    5 demandes par minute
+    """
+
+    scope = "login_otp_request"
+    rate = "5/min"
+
+
+class LoginOTPRequestDailyThrottle(IPBasedThrottle):
+    """Rate limit journalier pour les demandes d'OTP de connexion (passwordless)."""
+
+    scope = "login_otp_request_daily"
+    rate = "20/day"
+
+
 class RefreshTokenThrottle(IPBasedThrottle):
     """
     Rate limit pour le refresh de token.

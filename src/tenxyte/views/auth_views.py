@@ -6,7 +6,7 @@ They maintain 100% backward compatibility with existing endpoints and responses.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -38,6 +38,7 @@ from tenxyte.core import JWTService, Settings
 from tenxyte.adapters.django.repositories import DjangoUserRepository
 from tenxyte.adapters.django.cache_service import DjangoCacheService
 from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
+from tenxyte.adapters.django.totp_storage import DjangoTOTPStorage
 
 
 # Lazy imports for legacy services still in use
@@ -123,6 +124,22 @@ def _clear_refresh_cookie(response):
     return response
 
 
+def resolve_forced_password_change_scope(user) -> str | None:
+    """Retourne "password_change_only" si le gating de changement forcé
+    s'applique à cet utilisateur, sinon None (token full-scope).
+
+    N'a d'effet que si TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED
+    est activé ET que l'utilisateur a must_change_password=True.
+
+    Feature: force_password_change_on_first_login
+    """
+    if not auth_settings.FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED:
+        return None
+    if getattr(user, "must_change_password", False):
+        return "password_change_only"
+    return None
+
+
 def validate_application_required(request):
     """Validate that an application is present when required."""
     if auth_settings.APPLICATION_AUTH_ENABLED:
@@ -150,9 +167,10 @@ def register_user_with_core(**kwargs):
     email = kwargs.get("email")
 
     # Check if email exists (for anti-enumeration)
-    existing = user_repo.get_by_email(email)
-    if existing:
-        return False, None, "Email already registered"
+    if email:
+        existing = user_repo.get_by_email(email)
+        if existing:
+            return False, None, "Email already registered"
 
     # Check phone if provided
     phone_country_code = kwargs.get("phone_country_code")
@@ -167,6 +185,17 @@ def register_user_with_core(**kwargs):
         ).exists():
             return False, None, "Phone number already registered"
 
+    # Identifier fields (phone) MUST be passed at creation time.
+    # The User model requires at least one identifier (email or phone) in
+    # create_user(); relying on a post-create update_user() would fail for
+    # phone-only accounts because the initial create_user() call would have
+    # no identifier. We therefore carry the phone into `metadata`, which the
+    # repository's create() unpacks into create_user().
+    metadata = {}
+    for field in ["phone_country_code", "phone_number"]:
+        if kwargs.get(field):
+            metadata[field] = kwargs[field]
+
     # Create Core User dataclass
     user_data = User(
         id="",  # Will be set by repository
@@ -179,9 +208,10 @@ def register_user_with_core(**kwargs):
         is_staff=False,
         status=UserStatus.ACTIVE,
         email_verified=False,
+        metadata=metadata,
     )
 
-    # Create via Core repository
+    # Create via Core repository (phone identifiers are set atomically here)
     created_user = user_repo.create(user_data)
 
     # Set password
@@ -190,9 +220,10 @@ def register_user_with_core(**kwargs):
         user_repo.set_password(created_user.id, password)
         created_user = user_repo.get_by_id(created_user.id)  # Reload with hash
 
-    # Update additional fields that are not part of the standard User dataclass
+    # Update remaining non-identifier profile fields. Phone is intentionally
+    # excluded here since it is already persisted during create().
     update_data = {}
-    for field in ["phone_country_code", "phone_number", "username", "bio", "timezone", "language", "custom_fields"]:
+    for field in ["username", "bio", "timezone", "language", "custom_fields"]:
         if field in kwargs:
             update_data[field] = kwargs[field]
 
@@ -372,11 +403,17 @@ class RegisterView(APIView):
         }
 
         if login_after:
-            # Generate tokens using Core JWT service
+            # Generate tokens using Core JWT service.
+            # Resolve the real application from the request (via X-Access-Key)
+            # so the token's app_id matches what @require_jwt validates later.
+            # Hardcoding "default" here caused TOKEN_APP_MISMATCH on subsequent
+            # protected calls (e.g. /otp/request/).
+            application = get_application_from_request(request)
+            app_id = str(application.id) if application else "default"
             jwt_service = get_core_jwt_service()
             tokens = jwt_service.generate_new_token_pair(
                 user_id=user.id,
-                application_id="default",
+                application_id=app_id,
                 extra_claims={"device_info": device_info, "ip_address": ip_address},
             )
             response_data.update(
@@ -793,9 +830,30 @@ class LoginEmailView(APIView):
                 mfa_type_value = "totp"
 
             if is_admin and mfa_type_value == "none":
+                # Super Admin 2FA Bootstrap: an admin (is_superuser or is_staff)
+                # without 2FA configured cannot enable 2FA because the setup
+                # endpoints require a valid token, yet login was previously
+                # rejected outright (ADMIN_2FA_SETUP_REQUIRED). To break this
+                # circular dependency, issue a short-lived, restricted-scope
+                # bootstrap token that may only access the 2FA setup/confirm
+                # endpoints. Once 2FA is confirmed, a full-scope token is issued.
+                jwt_service = get_core_jwt_service()
+                app_id = str(request.application.id) if getattr(request, "application", None) else "default"
+                bootstrap_token, _jti, _expires_at = jwt_service.generate_access_token(
+                    user_id=user.id,
+                    application_id=app_id,
+                    extra_claims={"scope": "2fa_setup_only"},
+                    custom_lifetime=timedelta(minutes=15),
+                )
                 return Response(
-                    {"error": "Administrators must have 2FA enabled to login.", "code": "ADMIN_2FA_SETUP_REQUIRED"},
-                    status=status.HTTP_403_FORBIDDEN,
+                    {
+                        "access_token": bootstrap_token,
+                        "token_type": "Bearer",
+                        "token_scope": "2fa_setup_only",
+                        "requires_2fa_setup": True,
+                        "expires_in": 900,
+                    },
+                    status=status.HTTP_200_OK,
                 )
 
             if mfa_type_value != "none":
@@ -811,7 +869,7 @@ class LoginEmailView(APIView):
                 # Use Core TOTP service
                 totp_service = TOTPService(settings=get_core_settings(), replay_protection=DjangoCacheService())
                 is_valid, error_msg = totp_service.verify_2fa(
-                    user_id=user.id, code=totp_code, storage=get_core_user_repo()
+                    user_id=user.id, code=totp_code, storage=DjangoTOTPStorage()
                 )
                 if not is_valid:
                     return Response(
@@ -832,6 +890,47 @@ class LoginEmailView(APIView):
                 data["user"] = UserSerializer(django_user).data
             except Exception:
                 pass
+
+        # Force password change gating (feature: force_password_change_on_first_login).
+        # Précédence : le bootstrap 2FA (2fa_setup_only) est déjà retourné plus haut.
+        # user est un Core User (ports.User) — il faut le Django User pour lire
+        # must_change_password (champ Django-only, absent du Core User).
+        _forced_scope = None
+        if user:
+            try:
+                from ..models import get_user_model as _gum
+
+                _django_user_for_scope = _gum().objects.get(id=user.id)
+                _forced_scope = resolve_forced_password_change_scope(_django_user_for_scope)
+            except Exception:
+                pass
+        if _forced_scope == "password_change_only":
+            jwt_service = get_core_jwt_service()
+            app_id = str(request.application.id) if getattr(request, "application", None) else "default"
+            restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+                user_id=user.id,
+                application_id=app_id,
+                extra_claims={"scope": "password_change_only"},
+            )
+            return Response(
+                {
+                    "access_token": restricted_token,
+                    "refresh_token": data.get("refresh_token"),
+                    "token_type": "Bearer",
+                    "token_scope": "password_change_only",
+                    "must_change_password": True,
+                    "expires_in": data.get("expires_in"),
+                    "refresh_expires_in": data.get("refresh_expires_in"),
+                    "user": data.get("user"),
+                    "requires_2fa": data.get("requires_2fa", False),
+                    "session_id": data.get("session_id"),
+                    "device_id": data.get("device_id"),
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        # Champ additif must_change_password dans la réponse normale.
+        data["must_change_password"] = False
 
         # Set cookie and strip refresh token from body if cookie mode
         response = Response(data)
@@ -959,9 +1058,30 @@ class LoginPhoneView(APIView):
                 mfa_type_value = "totp"
 
             if is_admin and mfa_type_value == "none":
+                # Super Admin 2FA Bootstrap: an admin (is_superuser or is_staff)
+                # without 2FA configured cannot enable 2FA because the setup
+                # endpoints require a valid token, yet login was previously
+                # rejected outright (ADMIN_2FA_SETUP_REQUIRED). To break this
+                # circular dependency, issue a short-lived, restricted-scope
+                # bootstrap token that may only access the 2FA setup/confirm
+                # endpoints. Once 2FA is confirmed, a full-scope token is issued.
+                jwt_service = get_core_jwt_service()
+                app_id = str(request.application.id) if getattr(request, "application", None) else "default"
+                bootstrap_token, _jti, _expires_at = jwt_service.generate_access_token(
+                    user_id=user.id,
+                    application_id=app_id,
+                    extra_claims={"scope": "2fa_setup_only"},
+                    custom_lifetime=timedelta(minutes=15),
+                )
                 return Response(
-                    {"error": "Administrators must have 2FA enabled to login.", "code": "ADMIN_2FA_SETUP_REQUIRED"},
-                    status=status.HTTP_403_FORBIDDEN,
+                    {
+                        "access_token": bootstrap_token,
+                        "token_type": "Bearer",
+                        "token_scope": "2fa_setup_only",
+                        "requires_2fa_setup": True,
+                        "expires_in": 900,
+                    },
+                    status=status.HTTP_200_OK,
                 )
 
             if mfa_type_value != "none":
@@ -976,7 +1096,7 @@ class LoginPhoneView(APIView):
 
                 totp_service = TOTPService(settings=get_core_settings(), replay_protection=DjangoCacheService())
                 is_valid, error_msg = totp_service.verify_2fa(
-                    user_id=user.id, code=totp_code, storage=get_core_user_repo()
+                    user_id=user.id, code=totp_code, storage=DjangoTOTPStorage()
                 )
                 if not is_valid:
                     return Response(
@@ -996,6 +1116,45 @@ class LoginPhoneView(APIView):
                 data["user"] = UserSerializer(django_user).data
             except Exception:
                 pass
+
+        # Force password change gating (feature: force_password_change_on_first_login).
+        # user est un Core User — il faut le Django User pour lire must_change_password.
+        _forced_scope = None
+        if user:
+            try:
+                from ..models import get_user_model as _gum2
+
+                _django_user_for_scope2 = _gum2().objects.get(id=user.id)
+                _forced_scope = resolve_forced_password_change_scope(_django_user_for_scope2)
+            except Exception:
+                pass
+        if _forced_scope == "password_change_only":
+            jwt_service = get_core_jwt_service()
+            app_id = str(request.application.id) if getattr(request, "application", None) else "default"
+            restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+                user_id=user.id,
+                application_id=app_id,
+                extra_claims={"scope": "password_change_only"},
+            )
+            return Response(
+                {
+                    "access_token": restricted_token,
+                    "refresh_token": data.get("refresh_token"),
+                    "token_type": "Bearer",
+                    "token_scope": "password_change_only",
+                    "must_change_password": True,
+                    "expires_in": data.get("expires_in"),
+                    "refresh_expires_in": data.get("refresh_expires_in"),
+                    "user": data.get("user"),
+                    "requires_2fa": data.get("requires_2fa", False),
+                    "session_id": data.get("session_id"),
+                    "device_id": data.get("device_id"),
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        # Champ additif must_change_password dans la réponse normale.
+        data["must_change_password"] = False
 
         # Set cookie and strip refresh token from body if cookie mode
         response = Response(data)
@@ -1109,17 +1268,46 @@ class RefreshTokenView(APIView):
             "refresh_expires_in": get_core_settings().jwt_refresh_token_lifetime,
         }
 
-        # Add user data if available
+        # Add user data if available; also resolve the Django user for the
+        # forced-password-change gating below.
+        _refresh_django_user = None
         try:
             decoded = jwt_service.decode_token(result.access_token, check_blacklist=False)
             if decoded and decoded.user_id:
                 from ..models import get_user_model
 
                 UserModel = get_user_model()
-                user = UserModel.objects.get(id=decoded.user_id)
-                data["user"] = UserSerializer(user).data
+                _refresh_django_user = UserModel.objects.get(id=decoded.user_id)
+                data["user"] = UserSerializer(_refresh_django_user).data
         except Exception:
             pass
+
+        # Force password change gating on refresh
+        # (feature: force_password_change_on_first_login).
+        _forced_scope = resolve_forced_password_change_scope(_refresh_django_user) if _refresh_django_user else None
+        if _forced_scope == "password_change_only":
+            app_id = str(request.application.id) if getattr(request, "application", None) else "default"
+            restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+                user_id=str(_refresh_django_user.id),
+                application_id=app_id,
+                extra_claims={"scope": "password_change_only"},
+            )
+            return Response(
+                {
+                    "access_token": restricted_token,
+                    "refresh_token": data.get("refresh_token"),
+                    "token_type": "Bearer",
+                    "token_scope": "password_change_only",
+                    "must_change_password": True,
+                    "expires_in": data.get("expires_in"),
+                    "refresh_expires_in": data.get("refresh_expires_in"),
+                    "user": data.get("user"),
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        # Champ additif must_change_password dans la réponse normale.
+        data["must_change_password"] = False
 
         # Set cookie and strip refresh token from body if cookie mode
         response = Response(data)
@@ -1277,7 +1465,7 @@ class LogoutAllView(APIView):
             )
         ],
     )
-    @require_jwt
+    @require_jwt(allowed_scopes=["password_change_only"])
     def post(self, request):
         # Extract access token from Authorization header for blacklisting
         access_token = None

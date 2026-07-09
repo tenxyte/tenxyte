@@ -1,9 +1,8 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Tenxyte API",
-    "version": "0.9.1",
-    "description": "Complete Django authentication package — JWT, RBAC, 2FA (TOTP), Magic Links, Passkeys (WebAuthn), Social Login, Organizations B2B."
+    "title": "",
+    "version": "0.0.0"
   },
   "paths": {
     "/api/v1/auth/2fa/backup-codes/": {
@@ -18,7 +17,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorBackupCodesRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorBackupCodesRequest"
               },
               "examples": {
                 "RegenerateBackupCodes": {
@@ -31,12 +30,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorBackupCodesRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorBackupCodesRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorBackupCodesRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorBackupCodesRequest"
               }
             }
           },
@@ -82,12 +81,6 @@
                   }
                 },
                 "examples": {
-                  "RegenerateBackupCodes": {
-                    "value": {
-                      "code": "123456"
-                    },
-                    "summary": "Régénérer codes de secours"
-                  },
                   "BackupCodesResponse": {
                     "value": {
                       "message": "Backup codes regenerated",
@@ -157,17 +150,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorConfirmRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorConfirmRequest"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorConfirmRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorConfirmRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorConfirmRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorConfirmRequest"
               }
             }
           },
@@ -256,7 +249,7 @@
     "/api/v1/auth/2fa/disable/": {
       "post": {
         "operationId": "2fa_disable_create",
-        "description": "Désactive le 2FA après vérification du code TOTP ou d'un code de secours. Pour des raisons de sécurité, le mot de passe de l'utilisateur est également requis. Une fois désactivé, tous les codes de secours restants sont invalidés. Cette action est irréversible et nécessitera une nouvelle configuration complète.",
+        "description": "Désactive le 2FA après vérification du code TOTP ou d'un code de secours. Pour des raisons de sécurité, le mot de passe de l'utilisateur est également requis, sauf si un code OTP de réauthentification valide (`otp_code`) est fourni à la place. Une fois désactivé, tous les codes de secours restants sont invalidés. Cette action est irréversible et nécessitera une nouvelle configuration complète.",
         "summary": "Désactiver 2FA",
         "tags": [
           "2FA"
@@ -265,7 +258,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorDisableRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorDisableRequest"
               },
               "examples": {
                 "Disable2faTotp": {
@@ -286,12 +279,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorDisableRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorDisableRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/TwoFactorDisableRequestRequest"
+                "$ref": "#/components/schemas/TwoFactorDisableRequest"
               }
             }
           },
@@ -1046,17 +1039,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProcessDeletionRequestRequest"
+                "$ref": "#/components/schemas/ProcessDeletionRequest"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ProcessDeletionRequestRequest"
+                "$ref": "#/components/schemas/ProcessDeletionRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ProcessDeletionRequestRequest"
+                "$ref": "#/components/schemas/ProcessDeletionRequest"
               }
             }
           },
@@ -1705,7 +1698,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedAdminUserUpdateRequest"
+                "$ref": "#/components/schemas/PatchedAdminUserUpdate"
               },
               "examples": {
                 "UpdateProfileFields": {
@@ -1736,12 +1729,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedAdminUserUpdateRequest"
+                "$ref": "#/components/schemas/PatchedAdminUserUpdate"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedAdminUserUpdateRequest"
+                "$ref": "#/components/schemas/PatchedAdminUserUpdate"
               }
             }
           }
@@ -1801,7 +1794,7 @@
       },
       "delete": {
         "operationId": "admin_users_destroy",
-        "description": "Suppression logique d'un utilisateur (anonymisation RGPD).",
+        "description": "Suppression logique d'un utilisateur via Core repository (anonymisation RGPD).",
         "summary": "Supprimer un utilisateur (soft delete)",
         "parameters": [
           {
@@ -1873,7 +1866,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BanUserRequest"
+                "$ref": "#/components/schemas/BanUser"
               },
               "examples": {
                 "BanWithReason": {
@@ -1892,12 +1885,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/BanUserRequest"
+                "$ref": "#/components/schemas/BanUser"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/BanUserRequest"
+                "$ref": "#/components/schemas/BanUser"
               }
             }
           }
@@ -2001,7 +1994,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LockUserRequest"
+                "$ref": "#/components/schemas/LockUser"
               },
               "examples": {
                 "LockDefault": {
@@ -2023,12 +2016,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/LockUserRequest"
+                "$ref": "#/components/schemas/LockUser"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/LockUserRequest"
+                "$ref": "#/components/schemas/LockUser"
               }
             }
           }
@@ -2279,7 +2272,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AgentConfirmRequestRequest"
+                "$ref": "#/components/schemas/AgentConfirmRequest"
               },
               "examples": {
                 "ConfirmAction": {
@@ -2293,12 +2286,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/AgentConfirmRequestRequest"
+                "$ref": "#/components/schemas/AgentConfirmRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/AgentConfirmRequestRequest"
+                "$ref": "#/components/schemas/AgentConfirmRequest"
               }
             }
           },
@@ -2374,7 +2367,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TokenRequestRequest"
+                "$ref": "#/components/schemas/TokenRequest"
               },
               "examples": {
                 "DenyAction": {
@@ -2388,12 +2381,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/TokenRequestRequest"
+                "$ref": "#/components/schemas/TokenRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/TokenRequestRequest"
+                "$ref": "#/components/schemas/TokenRequest"
               }
             }
           },
@@ -2510,7 +2503,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AgentTokenCreateRequestRequest"
+                "$ref": "#/components/schemas/AgentTokenCreateRequest"
               },
               "examples": {
                 "CreateMinimal": {
@@ -2542,12 +2535,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/AgentTokenCreateRequestRequest"
+                "$ref": "#/components/schemas/AgentTokenCreateRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/AgentTokenCreateRequestRequest"
+                "$ref": "#/components/schemas/AgentTokenCreateRequest"
               }
             }
           },
@@ -2770,7 +2763,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AgentReportUsageRequestRequest"
+                "$ref": "#/components/schemas/AgentReportUsageRequest"
               },
               "examples": {
                 "ReportUsage": {
@@ -2786,12 +2779,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/AgentReportUsageRequestRequest"
+                "$ref": "#/components/schemas/AgentReportUsageRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/AgentReportUsageRequestRequest"
+                "$ref": "#/components/schemas/AgentReportUsageRequest"
               }
             }
           },
@@ -3080,13 +3073,13 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ApplicationCreateRequest"
+                "$ref": "#/components/schemas/ApplicationCreate"
               },
               "examples": {
                 "SecretWarning": {
                   "value": {
-                    "client_secret": "sk_live_1234567890abcdef...",
-                    "secret_rotation_warning": "Save this secret securely. It will not be shown again."
+                    "access_secret": "as_def456ghi789...",
+                    "warning": "Save the access_secret now! It will never be shown again."
                   },
                   "summary": "Avertissement secret"
                 }
@@ -3094,12 +3087,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ApplicationCreateRequest"
+                "$ref": "#/components/schemas/ApplicationCreate"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ApplicationCreateRequest"
+                "$ref": "#/components/schemas/ApplicationCreate"
               }
             }
           },
@@ -3121,31 +3114,50 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "id": {
-                      "type": "integer"
-                    },
-                    "name": {
+                    "message": {
                       "type": "string"
                     },
-                    "description": {
+                    "application": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "access_key": {
+                          "type": "string"
+                        },
+                        "is_active": {
+                          "type": "boolean"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "credentials": {
+                      "type": "object",
+                      "properties": {
+                        "access_key": {
+                          "type": "string"
+                        },
+                        "access_secret": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "warning": {
                       "type": "string"
-                    },
-                    "client_id": {
-                      "type": "string"
-                    },
-                    "client_secret": {
-                      "type": "string"
-                    },
-                    "is_active": {
-                      "type": "boolean"
-                    },
-                    "created_at": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "secret_rotation_warning": {
-                      "type": "string",
-                      "description": "Avertissement sur la sauvegarde du secret"
                     }
                   }
                 },
@@ -3163,8 +3175,8 @@
                   },
                   "SecretWarning": {
                     "value": {
-                      "client_secret": "sk_live_1234567890abcdef...",
-                      "secret_rotation_warning": "Save this secret securely. It will not be shown again."
+                      "access_secret": "as_def456ghi789...",
+                      "warning": "Save the access_secret now! It will never be shown again."
                     },
                     "summary": "Avertissement secret"
                   }
@@ -3301,7 +3313,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ApplicationUpdateRequest"
+                "$ref": "#/components/schemas/ApplicationUpdate"
               },
               "examples": {
                 "UpdateApp": {
@@ -3317,12 +3329,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ApplicationUpdateRequest"
+                "$ref": "#/components/schemas/ApplicationUpdate"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ApplicationUpdateRequest"
+                "$ref": "#/components/schemas/ApplicationUpdate"
               }
             }
           }
@@ -3349,7 +3361,7 @@
                       "id": 10,
                       "name": "Production External API",
                       "description": "Handles all incoming requests from the new frontend v3",
-                      "client_id": "app_abc123...",
+                      "access_key": "ak_abc123...",
                       "is_active": true,
                       "created_at": "2024-01-01T10:00:00Z",
                       "updated_at": "2024-01-20T14:30:00Z"
@@ -3415,7 +3427,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedToggleApplicationStatusRequest"
+                "$ref": "#/components/schemas/PatchedToggleApplicationStatus"
               },
               "examples": {
                 "DeactivateApp": {
@@ -3434,12 +3446,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedToggleApplicationStatusRequest"
+                "$ref": "#/components/schemas/PatchedToggleApplicationStatus"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedToggleApplicationStatusRequest"
+                "$ref": "#/components/schemas/PatchedToggleApplicationStatus"
               }
             }
           }
@@ -3572,17 +3584,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RegenerateApplicationCredentialsRequest"
+                "$ref": "#/components/schemas/RegenerateApplicationCredentials"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RegenerateApplicationCredentialsRequest"
+                "$ref": "#/components/schemas/RegenerateApplicationCredentials"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RegenerateApplicationCredentialsRequest"
+                "$ref": "#/components/schemas/RegenerateApplicationCredentials"
               }
             }
           },
@@ -3699,7 +3711,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CancelAccountDeletionRequest"
+                "$ref": "#/components/schemas/CancelAccountDeletion"
               },
               "examples": {
                 "CancelSuccess": {
@@ -3712,16 +3724,15 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/CancelAccountDeletionRequest"
+                "$ref": "#/components/schemas/CancelAccountDeletion"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/CancelAccountDeletionRequest"
+                "$ref": "#/components/schemas/CancelAccountDeletion"
               }
             }
-          },
-          "required": true
+          }
         },
         "security": [
           {
@@ -3827,17 +3838,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TokenRequestRequest"
+                "$ref": "#/components/schemas/TokenRequest"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/TokenRequestRequest"
+                "$ref": "#/components/schemas/TokenRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/TokenRequestRequest"
+                "$ref": "#/components/schemas/TokenRequest"
               }
             }
           },
@@ -4271,7 +4282,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ExportUserDataRequest"
+                "$ref": "#/components/schemas/ExportUserData"
               },
               "examples": {
                 "ExportSuccess": {
@@ -4284,16 +4295,15 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ExportUserDataRequest"
+                "$ref": "#/components/schemas/ExportUserData"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ExportUserDataRequest"
+                "$ref": "#/components/schemas/ExportUserData"
               }
             }
-          },
-          "required": true
+          }
         },
         "security": [
           {
@@ -4428,7 +4438,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginEmailRequest"
+                "$ref": "#/components/schemas/LoginEmail"
               },
               "examples": {
                 "LoginSuccess": {
@@ -4450,12 +4460,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/LoginEmailRequest"
+                "$ref": "#/components/schemas/LoginEmail"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/LoginEmailRequest"
+                "$ref": "#/components/schemas/LoginEmail"
               }
             }
           },
@@ -4608,6 +4618,325 @@
         }
       }
     },
+    "/api/v1/auth/login/otp/request/": {
+      "post": {
+        "operationId": "login_otp_request_create",
+        "description": "Envoie un code OTP par SMS permettant de se connecter sans mot de passe. Si aucun compte n'existe pour ce numéro et que l'auto-enregistrement est activé, un nouveau compte passwordless est créé. Sinon, une réponse anti-énumération de forme identique est retournée sans effet de bord.",
+        "summary": "Demander un code OTP de connexion passwordless",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginOTPRequest"
+              },
+              "examples": {
+                "LoginOtpRequest": {
+                  "value": {
+                    "phone_country_code": "+33",
+                    "phone_number": "612345678"
+                  },
+                  "summary": "Demande de code OTP de connexion"
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginOTPRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginOTPRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "jwtAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "otp_id": {
+                      "type": "string"
+                    },
+                    "expires_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "channel": {
+                      "type": "string",
+                      "enum": [
+                        "sms"
+                      ]
+                    }
+                  }
+                },
+                "examples": {
+                  "LoginOtpRequest": {
+                    "value": {
+                      "phone_country_code": "+33",
+                      "phone_number": "612345678"
+                    },
+                    "summary": "Demande de code OTP de connexion"
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "object"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "retry_after": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login/otp/verify/": {
+      "post": {
+        "operationId": "login_otp_verify_create",
+        "description": "Vérifie le code OTP reçu par SMS et, en cas de succès, émet une paire de jetons access/refresh, exactement comme /login/phone/. Si le compte a un type de MFA différent de none, le champ totp_code est également requis.",
+        "summary": "Vérifier le code OTP de connexion passwordless",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginOTPVerify"
+              },
+              "examples": {
+                "LoginOtpVerify": {
+                  "value": {
+                    "phone_country_code": "+33",
+                    "phone_number": "612345678",
+                    "otp_code": "123456"
+                  },
+                  "summary": "Vérification du code OTP de connexion"
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginOTPVerify"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginOTPVerify"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "jwtAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "refresh_token": {
+                      "type": "string"
+                    },
+                    "token_type": {
+                      "type": "string"
+                    },
+                    "expires_in": {
+                      "type": "integer"
+                    },
+                    "refresh_expires_in": {
+                      "type": "integer"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "requires_2fa": {
+                      "type": "boolean"
+                    },
+                    "session_id": {
+                      "type": "string"
+                    },
+                    "device_id": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "examples": {
+                  "LoginOtpVerify": {
+                    "value": {
+                      "phone_country_code": "+33",
+                      "phone_number": "612345678",
+                      "otp_code": "123456"
+                    },
+                    "summary": "Vérification du code OTP de connexion"
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "423": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "retry_after": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/auth/login/phone/": {
       "post": {
         "operationId": "login_phone_create",
@@ -4620,7 +4949,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/LoginPhoneRequest"
+                "$ref": "#/components/schemas/LoginPhone"
               },
               "examples": {
                 "LoginPhoneSuccess": {
@@ -4658,12 +4987,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/LoginPhoneRequest"
+                "$ref": "#/components/schemas/LoginPhone"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/LoginPhoneRequest"
+                "$ref": "#/components/schemas/LoginPhone"
               }
             }
           },
@@ -4790,7 +5119,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenRequest"
+                "$ref": "#/components/schemas/RefreshToken"
               },
               "examples": {
                 "LogoutWithAccessToken": {
@@ -4803,16 +5132,15 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenRequest"
+                "$ref": "#/components/schemas/RefreshToken"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenRequest"
+                "$ref": "#/components/schemas/RefreshToken"
               }
             }
-          },
-          "required": true
+          }
         },
         "security": [
           {
@@ -4962,7 +5290,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MagicLinkRequestRequest"
+                "$ref": "#/components/schemas/MagicLinkRequest"
               },
               "examples": {
                 "RequestMagicLink": {
@@ -4976,12 +5304,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/MagicLinkRequestRequest"
+                "$ref": "#/components/schemas/MagicLinkRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/MagicLinkRequestRequest"
+                "$ref": "#/components/schemas/MagicLinkRequest"
               }
             }
           },
@@ -5390,7 +5718,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateProfileRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateProfileRequest"
               },
               "examples": {
                 "UpdateProfile": {
@@ -5407,12 +5735,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateProfileRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateProfileRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateProfileRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateProfileRequest"
               }
             }
           }
@@ -5684,7 +6012,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateOrganizationRequestRequest"
+                "$ref": "#/components/schemas/CreateOrganizationRequest"
               },
               "examples": {
                 "CreateOrgWithParent": {
@@ -5700,12 +6028,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/CreateOrganizationRequestRequest"
+                "$ref": "#/components/schemas/CreateOrganizationRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/CreateOrganizationRequestRequest"
+                "$ref": "#/components/schemas/CreateOrganizationRequest"
               }
             }
           },
@@ -6081,7 +6409,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/InviteOrganizationMemberRequestRequest"
+                "$ref": "#/components/schemas/InviteOrganizationMemberRequest"
               },
               "examples": {
                 "InviteSuccess": {
@@ -6096,12 +6424,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/InviteOrganizationMemberRequestRequest"
+                "$ref": "#/components/schemas/InviteOrganizationMemberRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/InviteOrganizationMemberRequestRequest"
+                "$ref": "#/components/schemas/InviteOrganizationMemberRequest"
               }
             }
           },
@@ -6578,17 +6906,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequest"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateOrganizationMemberRoleRequest"
               }
             }
           }
@@ -6866,17 +7194,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AddOrganizationMemberRequestRequest"
+                "$ref": "#/components/schemas/AddOrganizationMemberRequest"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/AddOrganizationMemberRequestRequest"
+                "$ref": "#/components/schemas/AddOrganizationMemberRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/AddOrganizationMemberRequestRequest"
+                "$ref": "#/components/schemas/AddOrganizationMemberRequest"
               }
             }
           },
@@ -7072,17 +7400,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateOrganizationRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateOrganizationRequest"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateOrganizationRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateOrganizationRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PatchedUpdateOrganizationRequestRequest"
+                "$ref": "#/components/schemas/PatchedUpdateOrganizationRequest"
               }
             }
           }
@@ -7200,7 +7528,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RequestOTPRequest"
+                "$ref": "#/components/schemas/RequestOTP"
               },
               "examples": {
                 "RequestEmailOtp": {
@@ -7219,12 +7547,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RequestOTPRequest"
+                "$ref": "#/components/schemas/RequestOTP"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RequestOTPRequest"
+                "$ref": "#/components/schemas/RequestOTP"
               }
             }
           },
@@ -7354,17 +7682,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/VerifyOTPRequest"
+                "$ref": "#/components/schemas/VerifyOTP"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/VerifyOTPRequest"
+                "$ref": "#/components/schemas/VerifyOTP"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/VerifyOTPRequest"
+                "$ref": "#/components/schemas/VerifyOTP"
               }
             }
           },
@@ -7488,17 +7816,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/VerifyOTPRequest"
+                "$ref": "#/components/schemas/VerifyOTP"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/VerifyOTPRequest"
+                "$ref": "#/components/schemas/VerifyOTP"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/VerifyOTPRequest"
+                "$ref": "#/components/schemas/VerifyOTP"
               }
             }
           },
@@ -7625,17 +7953,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChangePasswordRequest"
+                "$ref": "#/components/schemas/ChangePassword"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ChangePasswordRequest"
+                "$ref": "#/components/schemas/ChangePassword"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ChangePasswordRequest"
+                "$ref": "#/components/schemas/ChangePassword"
               }
             }
           },
@@ -7791,7 +8119,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordResetConfirmRequest"
+                "$ref": "#/components/schemas/PasswordResetConfirm"
               },
               "examples": {
                 "ResetConfirmEmail": {
@@ -7817,12 +8145,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordResetConfirmRequest"
+                "$ref": "#/components/schemas/PasswordResetConfirm"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordResetConfirmRequest"
+                "$ref": "#/components/schemas/PasswordResetConfirm"
               }
             }
           },
@@ -7934,7 +8262,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordResetRequestRequest"
+                "$ref": "#/components/schemas/PasswordResetRequest"
               },
               "examples": {
                 "ResetRequestEmail": {
@@ -7954,12 +8282,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordResetRequestRequest"
+                "$ref": "#/components/schemas/PasswordResetRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordResetRequestRequest"
+                "$ref": "#/components/schemas/PasswordResetRequest"
               }
             }
           }
@@ -8051,6 +8379,126 @@
         }
       }
     },
+    "/api/v1/auth/password/set-initial/": {
+      "post": {
+        "operationId": "password_set_initial_create",
+        "description": "Permet à un Passwordless_Account (sans mot de passe utilisable) de définir son premier mot de passe. Requiert un Login OTP valide — aucune substitution par mot de passe n'est acceptée. Vérifie si le nouveau mot de passe a été exposé dans des fuites de données. Échoue si le compte possède déjà un mot de passe utilisable.",
+        "summary": "Définir le premier mot de passe (compte passwordless)",
+        "tags": [
+          "Password"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetInitialPassword"
+              },
+              "examples": {
+                "SetInitialPasswordRequest": {
+                  "value": {
+                    "otp_code": "123456",
+                    "new_password": "NewSecureP@ss123!"
+                  },
+                  "summary": "Définition du premier mot de passe"
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/SetInitialPassword"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/SetInitialPassword"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "jwtAuth": []
+          },
+          {
+            "jwtAuth": []
+          },
+          {}
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "examples": {
+                  "AlreadyHasPassword": {
+                    "value": {
+                      "error": "Account already has a usable password. Use /password/change/ instead.",
+                      "code": "ALREADY_HAS_PASSWORD"
+                    },
+                    "summary": "Le compte possède déjà un mot de passe"
+                  },
+                  "OtpInvalid": {
+                    "value": {
+                      "error": "Invalid code. 2 attempt(s) remaining.",
+                      "code": "OTP_INVALID"
+                    },
+                    "summary": "Code OTP invalide ou expiré"
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "object"
+                    },
+                    "code": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/v1/auth/password/strength/": {
       "post": {
         "operationId": "password_strength_create",
@@ -8063,7 +8511,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordStrengthRequestRequest"
+                "$ref": "#/components/schemas/PasswordStrengthRequest"
               },
               "examples": {
                 "StrongPassword": {
@@ -8078,12 +8526,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordStrengthRequestRequest"
+                "$ref": "#/components/schemas/PasswordStrengthRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PasswordStrengthRequestRequest"
+                "$ref": "#/components/schemas/PasswordStrengthRequest"
               }
             }
           },
@@ -8242,7 +8690,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PermissionRequest"
+                "$ref": "#/components/schemas/Permission"
               },
               "examples": {
                 "CreateStandalonePermission": {
@@ -8268,12 +8716,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PermissionRequest"
+                "$ref": "#/components/schemas/Permission"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PermissionRequest"
+                "$ref": "#/components/schemas/Permission"
               }
             }
           },
@@ -8402,7 +8850,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PermissionRequest"
+                "$ref": "#/components/schemas/Permission"
               },
               "examples": {
                 "UpdatePermission": {
@@ -8417,12 +8865,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/PermissionRequest"
+                "$ref": "#/components/schemas/Permission"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/PermissionRequest"
+                "$ref": "#/components/schemas/Permission"
               }
             }
           },
@@ -8565,21 +9013,20 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenRequest"
+                "$ref": "#/components/schemas/RefreshToken"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenRequest"
+                "$ref": "#/components/schemas/RefreshToken"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RefreshTokenRequest"
+                "$ref": "#/components/schemas/RefreshToken"
               }
             }
-          },
-          "required": true
+          }
         },
         "security": [
           {
@@ -8597,12 +9044,18 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "access": {
+                    "access_token": {
                       "type": "string"
                     },
-                    "refresh": {
+                    "refresh_token": {
                       "type": "string",
                       "description": "Nouveau refresh token (rotation)"
+                    },
+                    "token_type": {
+                      "type": "string"
+                    },
+                    "expires_in": {
+                      "type": "integer"
                     },
                     "user": {
                       "$ref": "#/components/schemas/User"
@@ -8691,7 +9144,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
+                "$ref": "#/components/schemas/Register"
               },
               "examples": {
                 "RegisterSuccess": {
@@ -8723,12 +9176,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
+                "$ref": "#/components/schemas/Register"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
+                "$ref": "#/components/schemas/Register"
               }
             }
           },
@@ -8862,7 +9315,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RequestAccountDeletionRequest"
+                "$ref": "#/components/schemas/RequestAccountDeletion"
               },
               "examples": {
                 "DeletionRequestSuccess": {
@@ -8877,16 +9330,15 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RequestAccountDeletionRequest"
+                "$ref": "#/components/schemas/RequestAccountDeletion"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RequestAccountDeletionRequest"
+                "$ref": "#/components/schemas/RequestAccountDeletion"
               }
             }
-          },
-          "required": true
+          }
         },
         "security": [
           {
@@ -9089,7 +9541,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RoleRequest"
+                "$ref": "#/components/schemas/Role"
               },
               "examples": {
                 "CreateRole": {
@@ -9110,12 +9562,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RoleRequest"
+                "$ref": "#/components/schemas/Role"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RoleRequest"
+                "$ref": "#/components/schemas/Role"
               }
             }
           },
@@ -9253,7 +9705,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/RoleRequest"
+                "$ref": "#/components/schemas/Role"
               },
               "examples": {
                 "UpdateRole": {
@@ -9274,12 +9726,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/RoleRequest"
+                "$ref": "#/components/schemas/Role"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/RoleRequest"
+                "$ref": "#/components/schemas/Role"
               }
             }
           },
@@ -9494,7 +9946,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+                "$ref": "#/components/schemas/ManageRolePermissions"
               },
               "examples": {
                 "AddPermissionsRequest": {
@@ -9511,12 +9963,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+                "$ref": "#/components/schemas/ManageRolePermissions"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+                "$ref": "#/components/schemas/ManageRolePermissions"
               }
             }
           },
@@ -9731,7 +10183,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SocialAuthRequestRequest"
+                "$ref": "#/components/schemas/SocialAuthRequest"
               },
               "examples": {
                 "SocialAuthGoogleToken": {
@@ -9757,12 +10209,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/SocialAuthRequestRequest"
+                "$ref": "#/components/schemas/SocialAuthRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/SocialAuthRequestRequest"
+                "$ref": "#/components/schemas/SocialAuthRequest"
               }
             }
           }
@@ -9783,11 +10235,17 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "access": {
+                    "access_token": {
                       "type": "string"
                     },
-                    "refresh": {
+                    "refresh_token": {
                       "type": "string"
+                    },
+                    "token_type": {
+                      "type": "string"
+                    },
+                    "expires_in": {
+                      "type": "integer"
                     },
                     "user": {
                       "$ref": "#/components/schemas/User"
@@ -10088,7 +10546,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+                "$ref": "#/components/schemas/ManageRolePermissions"
               },
               "examples": {
                 "AddDirectPermissionsRequest": {
@@ -10105,12 +10563,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+                "$ref": "#/components/schemas/ManageRolePermissions"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ManageRolePermissionsRequest"
+                "$ref": "#/components/schemas/ManageRolePermissions"
               }
             }
           },
@@ -10320,7 +10778,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AssignRoleRequest"
+                "$ref": "#/components/schemas/AssignRole"
               },
               "examples": {
                 "AssignRoleRequest": {
@@ -10334,12 +10792,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/AssignRoleRequest"
+                "$ref": "#/components/schemas/AssignRole"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/AssignRoleRequest"
+                "$ref": "#/components/schemas/AssignRole"
               }
             }
           },
@@ -10484,7 +10942,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequest"
               },
               "examples": {
                 "AuthBeginResidentKey": {
@@ -10501,12 +10959,12 @@
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnAuthenticateBeginRequest"
               }
             }
           }
@@ -10599,17 +11057,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequest"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnAuthenticateCompleteRequest"
               }
             }
           },
@@ -10973,17 +11431,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequest"
               }
             },
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequest"
               }
             },
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequestRequest"
+                "$ref": "#/components/schemas/WebAuthnRegisterCompleteRequest"
               }
             }
           },
@@ -11107,7 +11565,7 @@
         "type": "string",
         "description": "* `login` - Login\n* `login_failed` - Login Failed\n* `logout` - Logout\n* `logout_all` - Logout All Devices\n* `token_refresh` - Token Refresh\n* `password_change` - Password Changed\n* `password_reset_request` - Password Reset Requested\n* `password_reset_complete` - Password Reset Completed\n* `2fa_enabled` - 2FA Enabled\n* `2fa_disabled` - 2FA Disabled\n* `2fa_backup_used` - 2FA Backup Code Used\n* `account_created` - Account Created\n* `account_locked` - Account Locked\n* `account_unlocked` - Account Unlocked\n* `email_verified` - Email Verified\n* `phone_verified` - Phone Verified\n* `role_assigned` - Role Assigned\n* `role_removed` - Role Removed\n* `permission_changed` - Permission Changed\n* `app_created` - Application Created\n* `app_credentials_regenerated` - Application Credentials Regenerated\n* `account_deleted` - Account Deleted\n* `suspicious_activity` - Suspicious Activity Detected\n* `session_limit_exceeded` - Session Limit Exceeded\n* `device_limit_exceeded` - Device Limit Exceeded\n* `new_device_detected` - New Device Detected\n* `agent_action` - Agent Action Executed"
       },
-      "AddOrganizationMemberRequestRequest": {
+      "AddOrganizationMemberRequest": {
         "type": "object",
         "properties": {
           "user_id": {
@@ -11116,7 +11574,6 @@
           },
           "role_code": {
             "type": "string",
-            "minLength": 1,
             "description": "Rôle du membre (owner non autorisé)"
           }
         },
@@ -11173,7 +11630,8 @@
             "description": "Permanent ban (manual admin action). Cannot be auto-lifted."
           },
           "is_deleted": {
-            "type": "boolean"
+            "type": "boolean",
+            "default": false
           },
           "deleted_at": {
             "type": "string",
@@ -11315,12 +11773,11 @@
           "roles"
         ]
       },
-      "AgentConfirmRequestRequest": {
+      "AgentConfirmRequest": {
         "type": "object",
         "properties": {
           "token": {
             "type": "string",
-            "minLength": 1,
             "description": "Confirmation token de l'action"
           }
         },
@@ -11400,7 +11857,7 @@
           "status"
         ]
       },
-      "AgentReportUsageRequestRequest": {
+      "AgentReportUsageRequest": {
         "type": "object",
         "properties": {
           "cost_usd": {
@@ -11450,12 +11907,11 @@
           "status"
         ]
       },
-      "AgentTokenCreateRequestRequest": {
+      "AgentTokenCreateRequest": {
         "type": "object",
         "properties": {
           "agent_id": {
             "type": "string",
-            "minLength": 1,
             "description": "Identifiant de l'agent (ex: 'my-bot-v1')"
           },
           "expires_in": {
@@ -11465,14 +11921,12 @@
           "permissions": {
             "type": "array",
             "items": {
-              "type": "string",
-              "minLength": 1
+              "type": "string"
             },
             "description": "Liste des permissions demandées"
           },
           "organization": {
             "type": "string",
-            "minLength": 1,
             "description": "Slug organisation (alternatif à X-Org-Slug header)"
           },
           "budget_limit_usd": {
@@ -11620,6 +12074,9 @@
           "is_active": {
             "type": "boolean"
           },
+          "allowed_origins": {
+            "description": "List of allowed origins for key-only (frontend) auth. Empty list requires secret."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -11639,31 +12096,36 @@
           "updated_at"
         ]
       },
-      "ApplicationCreateRequest": {
+      "ApplicationCreate": {
         "type": "object",
         "description": "Serializer pour créer une application",
         "properties": {
           "name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 100
           },
           "description": {
             "type": "string",
             "default": ""
+          },
+          "allowed_origins": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
           }
         },
         "required": [
           "name"
         ]
       },
-      "ApplicationUpdateRequest": {
+      "ApplicationUpdate": {
         "type": "object",
         "description": "Serializer pour mettre à jour une application",
         "properties": {
           "name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 100
           },
           "description": {
@@ -11671,15 +12133,21 @@
           },
           "is_active": {
             "type": "boolean"
+          },
+          "allowed_origins": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
           }
         }
       },
-      "AssignRoleRequest": {
+      "AssignRole": {
         "type": "object",
         "properties": {
           "role_code": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           }
         },
         "required": [
@@ -11736,13 +12204,12 @@
           "user_email"
         ]
       },
-      "BanUserRequest": {
+      "BanUser": {
         "type": "object",
         "description": "Serializer for banning a user.",
         "properties": {
           "reason": {
             "type": "string",
-            "minLength": 1,
             "default": "",
             "description": "Reason for the ban (stored in audit log)",
             "maxLength": 500
@@ -11796,44 +12263,47 @@
           "user_email"
         ]
       },
-      "CancelAccountDeletionRequest": {
+      "CancelAccountDeletion": {
         "type": "object",
         "properties": {
           "password": {
             "type": "string",
-            "minLength": 1,
-            "description": "Mot de passe actuel requis pour annulation"
+            "description": "Mot de passe actuel (requis sauf si `otp_code` est fourni)"
+          },
+          "otp_code": {
+            "type": "string",
+            "description": "Login_OTP_Code frais, alternative au mot de passe pour la preuve d'identité (Requirement 6.4)."
           }
-        },
-        "required": [
-          "password"
-        ]
+        }
       },
-      "ChangePasswordRequest": {
+      "ChangePassword": {
         "type": "object",
         "properties": {
           "current_password": {
             "type": "string",
-            "writeOnly": true,
-            "minLength": 1
+            "writeOnly": true
           },
           "new_password": {
             "type": "string",
             "writeOnly": true,
             "minLength": 8
+          },
+          "otp_code": {
+            "type": "string",
+            "writeOnly": true,
+            "maxLength": 6,
+            "minLength": 6
           }
         },
         "required": [
-          "current_password",
           "new_password"
         ]
       },
-      "CreateOrganizationRequestRequest": {
+      "CreateOrganizationRequest": {
         "type": "object",
         "properties": {
           "name": {
             "type": "string",
-            "minLength": 1,
             "description": "Nom de l'organisation"
           },
           "slug": {
@@ -11936,31 +12406,29 @@
           "user_email"
         ]
       },
-      "ExportUserDataRequest": {
+      "ExportUserData": {
         "type": "object",
         "properties": {
           "password": {
             "type": "string",
-            "minLength": 1,
-            "description": "Mot de passe actuel requis pour exporter les données"
+            "description": "Mot de passe actuel (requis sauf si `otp_code` est fourni)"
+          },
+          "otp_code": {
+            "type": "string",
+            "description": "Login_OTP_Code frais, alternative au mot de passe pour la preuve d'identité (Requirement 6.4)."
           }
-        },
-        "required": [
-          "password"
-        ]
+        }
       },
-      "InviteOrganizationMemberRequestRequest": {
+      "InviteOrganizationMemberRequest": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
             "format": "email",
-            "minLength": 1,
             "description": "Email de l'utilisateur à inviter"
           },
           "role_code": {
             "type": "string",
-            "minLength": 1,
             "description": "Rôle attribué après acceptation"
           },
           "expires_in_days": {
@@ -11976,7 +12444,7 @@
           "role_code"
         ]
       },
-      "LockUserRequest": {
+      "LockUser": {
         "type": "object",
         "description": "Serializer for locking a user account.",
         "properties": {
@@ -11989,7 +12457,6 @@
           },
           "reason": {
             "type": "string",
-            "minLength": 1,
             "default": "",
             "description": "Reason for the lock (stored in audit log)",
             "maxLength": 500
@@ -12035,18 +12502,16 @@
           "ip_address"
         ]
       },
-      "LoginEmailRequest": {
+      "LoginEmail": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
-            "format": "email",
-            "minLength": 1
+            "format": "email"
           },
           "password": {
             "type": "string",
-            "writeOnly": true,
-            "minLength": 1
+            "writeOnly": true
           },
           "totp_code": {
             "type": "string",
@@ -12065,23 +12530,71 @@
           "password"
         ]
       },
-      "LoginPhoneRequest": {
+      "LoginOTPRequest": {
         "type": "object",
         "properties": {
           "phone_country_code": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 5
           },
           "phone_number": {
             "type": "string",
-            "minLength": 1,
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "phone_country_code",
+          "phone_number"
+        ]
+      },
+      "LoginOTPVerify": {
+        "type": "object",
+        "properties": {
+          "phone_country_code": {
+            "type": "string",
+            "maxLength": 5
+          },
+          "phone_number": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "otp_code": {
+            "type": "string",
+            "maxLength": 6,
+            "minLength": 6
+          },
+          "totp_code": {
+            "type": "string",
+            "description": "Code 2FA (requis si 2FA activé)",
+            "maxLength": 10
+          },
+          "device_info": {
+            "type": "string",
+            "default": "",
+            "description": "Device info au format v1 (ex: v=1|os=windows;osv=11|device=desktop)",
+            "maxLength": 255
+          }
+        },
+        "required": [
+          "otp_code",
+          "phone_country_code",
+          "phone_number"
+        ]
+      },
+      "LoginPhone": {
+        "type": "object",
+        "properties": {
+          "phone_country_code": {
+            "type": "string",
+            "maxLength": 5
+          },
+          "phone_number": {
+            "type": "string",
             "maxLength": 20
           },
           "password": {
             "type": "string",
-            "writeOnly": true,
-            "minLength": 1
+            "writeOnly": true
           },
           "totp_code": {
             "type": "string",
@@ -12101,19 +12614,17 @@
           "phone_number"
         ]
       },
-      "MagicLinkRequestRequest": {
+      "MagicLinkRequest": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
             "format": "email",
-            "minLength": 1,
             "description": "Adresse email pour recevoir le magic link"
           },
           "validation_url": {
             "type": "string",
             "format": "uri",
-            "minLength": 1,
             "description": "URL pour construire le lien de vérification (obligatoire)"
           }
         },
@@ -12122,14 +12633,13 @@
           "validation_url"
         ]
       },
-      "ManageRolePermissionsRequest": {
+      "ManageRolePermissions": {
         "type": "object",
         "properties": {
           "permission_codes": {
             "type": "array",
             "items": {
-              "type": "string",
-              "minLength": 1
+              "type": "string"
             },
             "description": "Liste des codes de permissions à ajouter ou retirer",
             "minItems": 1
@@ -12523,13 +13033,13 @@
           }
         }
       },
-      "PasswordResetConfirmRequest": {
+      "PasswordResetConfirm": {
         "type": "object",
         "properties": {
-          "code": {
+          "otp_code": {
             "type": "string",
-            "minLength": 6,
-            "maxLength": 6
+            "maxLength": 6,
+            "minLength": 6
           },
           "new_password": {
             "type": "string",
@@ -12537,36 +13047,32 @@
           }
         },
         "required": [
-          "code",
-          "new_password"
+          "new_password",
+          "otp_code"
         ]
       },
-      "PasswordResetRequestRequest": {
+      "PasswordResetRequest": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
-            "format": "email",
-            "minLength": 1
+            "format": "email"
           },
           "phone_country_code": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 5
           },
           "phone_number": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 20
           }
         }
       },
-      "PasswordStrengthRequestRequest": {
+      "PasswordStrengthRequest": {
         "type": "object",
         "properties": {
           "password": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
           },
           "email": {
             "type": "string",
@@ -12577,18 +13083,16 @@
           "password"
         ]
       },
-      "PatchedAdminUserUpdateRequest": {
+      "PatchedAdminUserUpdate": {
         "type": "object",
         "description": "Serializer for admin user updates (partial).",
         "properties": {
           "first_name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 100
           },
           "last_name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 100
           },
           "is_active": {
@@ -12610,7 +13114,7 @@
           }
         }
       },
-      "PatchedToggleApplicationStatusRequest": {
+      "PatchedToggleApplicationStatus": {
         "type": "object",
         "properties": {
           "is_active": {
@@ -12619,17 +13123,16 @@
           }
         }
       },
-      "PatchedUpdateOrganizationMemberRoleRequestRequest": {
+      "PatchedUpdateOrganizationMemberRoleRequest": {
         "type": "object",
         "properties": {
           "role_code": {
             "type": "string",
-            "minLength": 1,
             "description": "Nouveau rôle (owner nécessite droits appropriés)"
           }
         }
       },
-      "PatchedUpdateOrganizationRequestRequest": {
+      "PatchedUpdateOrganizationRequest": {
         "type": "object",
         "properties": {
           "name": {
@@ -12667,30 +13170,26 @@
           }
         }
       },
-      "PatchedUpdateProfileRequestRequest": {
+      "PatchedUpdateProfileRequest": {
         "type": "object",
         "properties": {
           "first_name": {
             "type": "string",
-            "minLength": 1,
             "description": "Prénom (max 30 caractères)",
             "maxLength": 30
           },
           "last_name": {
             "type": "string",
-            "minLength": 1,
             "description": "Nom (max 30 caractères)",
             "maxLength": 30
           },
           "username": {
             "type": "string",
-            "minLength": 1,
             "description": "Nom d'utilisateur unique (alphanumérique + underscores)",
             "maxLength": 20
           },
           "phone": {
             "type": "string",
-            "minLength": 1,
             "description": "Numéro de téléphone au format international (+33612345678)"
           },
           "bio": {
@@ -12700,12 +13199,10 @@
           },
           "timezone": {
             "type": "string",
-            "minLength": 1,
             "description": "Fuseau horaire (ex: Europe/Paris, America/New_York)"
           },
           "language": {
             "type": "string",
-            "minLength": 1,
             "description": "Langue préférée"
           },
           "custom_fields": {
@@ -12739,6 +13236,12 @@
             "nullable": true,
             "readOnly": true
           },
+          "parent_code": {
+            "type": "string",
+            "writeOnly": true,
+            "nullable": true,
+            "description": "Code de la permission parente (hiérarchie)"
+          },
           "children": {
             "type": "array",
             "items": {
@@ -12751,6 +13254,11 @@
             "type": "string",
             "format": "date-time",
             "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "readOnly": true
           }
         },
         "required": [
@@ -12759,44 +13267,15 @@
           "created_at",
           "id",
           "name",
-          "parent"
+          "parent",
+          "updated_at"
         ]
       },
-      "PermissionRequest": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "description": {
-            "type": "string"
-          },
-          "parent_code": {
-            "type": "string",
-            "writeOnly": true,
-            "nullable": true,
-            "minLength": 1,
-            "description": "Code de la permission parente (hiérarchie)"
-          }
-        },
-        "required": [
-          "code",
-          "name"
-        ]
-      },
-      "ProcessDeletionRequestRequest": {
+      "ProcessDeletionRequest": {
         "type": "object",
         "properties": {
           "confirmation": {
             "type": "string",
-            "minLength": 1,
             "description": "Texte de confirmation \"PERMANENTLY DELETE\""
           },
           "admin_notes": {
@@ -12807,6 +13286,15 @@
         "required": [
           "confirmation"
         ]
+      },
+      "RefreshToken": {
+        "type": "object",
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "default": ""
+          }
+        }
       },
       "RefreshTokenAdmin": {
         "type": "object",
@@ -12824,7 +13312,8 @@
             "readOnly": true
           },
           "application": {
-            "type": "integer"
+            "type": "integer",
+            "nullable": true
           },
           "application_name": {
             "type": "string",
@@ -12861,7 +13350,6 @@
           }
         },
         "required": [
-          "application",
           "application_name",
           "created_at",
           "expires_at",
@@ -12872,24 +13360,11 @@
           "user_email"
         ]
       },
-      "RefreshTokenRequest": {
-        "type": "object",
-        "properties": {
-          "refresh_token": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "refresh_token"
-        ]
-      },
-      "RegenerateApplicationCredentialsRequest": {
+      "RegenerateApplicationCredentials": {
         "type": "object",
         "properties": {
           "confirmation": {
             "type": "string",
-            "minLength": 1,
             "description": "Texte de confirmation \"REGENERATE\""
           }
         },
@@ -12897,25 +13372,22 @@
           "confirmation"
         ]
       },
-      "RegisterRequest": {
+      "Register": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
             "format": "email",
-            "nullable": true,
-            "minLength": 1
+            "nullable": true
           },
           "phone_country_code": {
             "type": "string",
             "nullable": true,
-            "minLength": 1,
             "maxLength": 5
           },
           "phone_number": {
             "type": "string",
             "nullable": true,
-            "minLength": 1,
             "maxLength": 20
           },
           "password": {
@@ -12925,13 +13397,11 @@
           },
           "first_name": {
             "type": "string",
-            "minLength": 1,
             "default": "",
             "maxLength": 100
           },
           "last_name": {
             "type": "string",
-            "minLength": 1,
             "default": "",
             "maxLength": 100
           },
@@ -12951,13 +13421,16 @@
           "password"
         ]
       },
-      "RequestAccountDeletionRequest": {
+      "RequestAccountDeletion": {
         "type": "object",
         "properties": {
           "password": {
             "type": "string",
-            "minLength": 1,
-            "description": "Mot de passe actuel requis pour confirmation"
+            "description": "Mot de passe actuel (requis sauf si `reauth_otp_code` est fourni)"
+          },
+          "reauth_otp_code": {
+            "type": "string",
+            "description": "Login_OTP_Code frais, alternative au mot de passe pour la preuve d'identité (Requirement 6.4). Distinct de `otp_code` ci-dessous, qui reste dédié à la porte 2FA."
           },
           "otp_code": {
             "type": "string",
@@ -12967,12 +13440,9 @@
             "type": "string",
             "description": "Raison optionnelle de la suppression"
           }
-        },
-        "required": [
-          "password"
-        ]
+        }
       },
-      "RequestOTPRequest": {
+      "RequestOTP": {
         "type": "object",
         "properties": {
           "otp_type": {
@@ -13007,6 +13477,13 @@
               "$ref": "#/components/schemas/Permission"
             },
             "readOnly": true
+          },
+          "permission_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "writeOnly": true
           },
           "is_default": {
             "type": "boolean"
@@ -13057,55 +13534,43 @@
           "name"
         ]
       },
-      "RoleRequest": {
+      "SetInitialPassword": {
         "type": "object",
         "properties": {
-          "code": {
+          "otp_code": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 50
+            "maxLength": 6,
+            "minLength": 6
           },
-          "name": {
+          "new_password": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "description": {
-            "type": "string"
-          },
-          "permission_codes": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            },
-            "writeOnly": true
-          },
-          "is_default": {
-            "type": "boolean"
+            "writeOnly": true,
+            "minLength": 8
           }
         },
         "required": [
-          "code",
-          "name"
+          "new_password",
+          "otp_code"
         ]
       },
-      "SocialAuthRequestRequest": {
+      "SocialAuthRequest": {
         "type": "object",
         "properties": {
           "access_token": {
             "type": "string",
-            "minLength": 1,
             "description": "OAuth2 access token du provider"
           },
           "code": {
             "type": "string",
-            "minLength": 1,
             "description": "Authorization code flow"
           },
           "redirect_uri": {
             "type": "string",
             "description": "URI de redirection (requis avec code)"
+          },
+          "code_verifier": {
+            "type": "string",
+            "description": "PKCE code_verifier (recommended)"
           },
           "id_token": {
             "type": "string",
@@ -13147,11 +13612,24 @@
       "SocialCallbackResponse": {
         "type": "object",
         "properties": {
-          "access": {
+          "access_token": {
             "type": "string"
           },
-          "refresh": {
+          "refresh_token": {
             "type": "string"
+          },
+          "token_type": {
+            "type": "string"
+          },
+          "expires_in": {
+            "type": "integer"
+          },
+          "device_summary": {
+            "type": "string"
+          },
+          "user": {
+            "type": "object",
+            "additionalProperties": {}
           },
           "provider": {
             "type": "string"
@@ -13161,10 +13639,13 @@
           }
         },
         "required": [
-          "access",
+          "access_token",
+          "expires_in",
           "is_new_user",
           "provider",
-          "refresh"
+          "refresh_token",
+          "token_type",
+          "user"
         ]
       },
       "SocialCallbackUnauthorized": {
@@ -13193,12 +13674,11 @@
         "type": "string",
         "description": "* `pending` - Pending\n* `confirmation_sent` - Confirmation Sent\n* `confirmed` - Confirmed\n* `completed` - Completed\n* `cancelled` - Cancelled"
       },
-      "TokenRequestRequest": {
+      "TokenRequest": {
         "type": "object",
         "properties": {
           "token": {
             "type": "string",
-            "minLength": 1,
             "description": "Confirmation token de l'action"
           }
         },
@@ -13206,12 +13686,11 @@
           "token"
         ]
       },
-      "TwoFactorBackupCodesRequestRequest": {
+      "TwoFactorBackupCodesRequest": {
         "type": "object",
         "properties": {
           "code": {
             "type": "string",
-            "minLength": 1,
             "description": "Code TOTP à 6 chiffres pour validation"
           }
         },
@@ -13219,12 +13698,11 @@
           "code"
         ]
       },
-      "TwoFactorConfirmRequestRequest": {
+      "TwoFactorConfirmRequest": {
         "type": "object",
         "properties": {
           "code": {
             "type": "string",
-            "minLength": 1,
             "description": "Code TOTP à 6 chiffres"
           }
         },
@@ -13232,50 +13710,50 @@
           "code"
         ]
       },
-      "TwoFactorDisableRequestRequest": {
+      "TwoFactorDisableRequest": {
         "type": "object",
         "properties": {
           "code": {
             "type": "string",
-            "minLength": 1,
             "description": "Code TOTP ou code de secours à 8 chiffres"
           },
           "password": {
             "type": "string",
-            "minLength": 1,
             "description": "Mot de passe de l'utilisateur pour confirmation"
-          }
-        },
-        "required": [
-          "code",
-          "password"
-        ]
-      },
-      "VerifyOTPRequest": {
-        "type": "object",
-        "properties": {
-          "code": {
+          },
+          "otp_code": {
             "type": "string",
-            "minLength": 6,
-            "maxLength": 6
+            "description": "Code OTP de réauthentification, alternative au mot de passe"
           }
         },
         "required": [
           "code"
         ]
       },
-      "WebAuthnAuthenticateBeginRequestRequest": {
+      "VerifyOTP": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 6,
+            "minLength": 6
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "WebAuthnAuthenticateBeginRequest": {
         "type": "object",
         "properties": {
           "email": {
             "type": "string",
             "format": "email",
-            "minLength": 1,
             "description": "Optionnel — pour credentials utilisateur spécifiques"
           }
         }
       },
-      "WebAuthnAuthenticateCompleteRequestRequest": {
+      "WebAuthnAuthenticateCompleteRequest": {
         "type": "object",
         "properties": {
           "challenge_id": {
@@ -13297,7 +13775,7 @@
           "credential"
         ]
       },
-      "WebAuthnRegisterCompleteRequestRequest": {
+      "WebAuthnRegisterCompleteRequest": {
         "type": "object",
         "properties": {
           "challenge_id": {
@@ -13327,10 +13805,5 @@
         "bearerFormat": "JWT"
       }
     }
-  },
-  "security": [
-    {
-      "jwtAuth": []
-    }
-  ]
+  }
 }

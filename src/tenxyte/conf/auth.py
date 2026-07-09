@@ -39,6 +39,28 @@ class AuthSettingsMixin:
         """Nombre maximum de tentatives OTP."""
         return self._get("OTP_MAX_ATTEMPTS", 5)
 
+    @property
+    def OTP_LOGIN_ENABLED(self):
+        """Active/désactive la connexion passwordless par OTP téléphonique."""
+        return self._get("OTP_LOGIN_ENABLED", False)
+
+    @property
+    def OTP_LOGIN_AUTO_REGISTER(self):
+        """Crée automatiquement un compte phone-only si le numéro n'existe pas."""
+        return self._get("OTP_LOGIN_AUTO_REGISTER", True)
+
+    @property
+    def OTP_LOGIN_VALIDITY_MINUTES(self):
+        """Durée de validité (minutes) d'un Login_OTP_Code."""
+        return self._get("OTP_LOGIN_VALIDITY_MINUTES", 10)
+
+    @property
+    def FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED(self):
+        """Active l'émission/enforcement du token restreint password_change_only
+        pour les comptes must_change_password=True. Défaut désactivé pour
+        préserver 100 % du comportement existant."""
+        return self._get("FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED", False)
+
     # =============================================
     # SMS Backend
     # =============================================

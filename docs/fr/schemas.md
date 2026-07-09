@@ -40,6 +40,7 @@ Représente un utilisateur Tenxyte authentifié.
   "is_email_verified": true,
   "is_phone_verified": false,
   "is_2fa_enabled": false,
+  "has_usable_password": true,
   "created_at": "2026-01-01T00:00:00Z",
   "updated_at": "2026-03-15T10:30:00Z",
   "last_login": "2026-03-01T12:00:00Z",
@@ -69,6 +70,7 @@ Représente un utilisateur Tenxyte authentifié.
 | `is_email_verified` | boolean | Indique si l'email a été vérifié |
 | `is_phone_verified` | boolean | Indique si le numéro de téléphone a été vérifié |
 | `is_2fa_enabled` | boolean | Indique si l'authentification à deux facteurs TOTP est active |
+| `has_usable_password` | boolean | `true` si le compte possède un mot de passe défini par son propriétaire et peut se connecter via `/login/email/` ou `/login/phone/`. `false` pour les *comptes passwordless* créés via le flux d'auto-inscription OTP téléphonique — ces comptes ne peuvent s'authentifier que via `/login/otp/verify/` jusqu'à la définition volontaire d'un mot de passe via `/password/set-initial/`. |
 | `created_at` | string (date-time) | Horodatage de la création du compte |
 | `updated_at` | string (date-time) \| null | Horodatage de la dernière mise à jour |
 | `last_login` | string (date-time) \| null | Horodatage de la dernière connexion |
@@ -152,6 +154,12 @@ Renvoyée pour toutes les réponses `4xx` et `5xx`.
 | `RESET_FAILED` | 400 | Échec de la réinitialisation du mot de passe |
 | `ORG_NOT_FOUND` | 404 | L'en-tête X-Org-Slug ne correspond pas |
 | `NOT_ORG_MEMBER` | 403 | L'utilisateur n'est pas membre de l'organisation fournie |
+| `FEATURE_DISABLED` | 404 | La fonctionnalité demandée est désactivée (ex : connexion OTP non activée) |
+| `OTP_INVALID` | 401 | Le code OTP de connexion est incorrect, expiré ou épuisé — renvoyé aussi quand le numéro de téléphone n'existe pas (anti-énumération) |
+| `OTP_REQUIRED` | 400 | Aucun OTP de connexion n'a été demandé avant d'appeler `/password/set-initial/` |
+| `ALREADY_HAS_PASSWORD` | 400 | Le compte possède déjà un mot de passe utilisable ; utiliser `/password/change/` au lieu de `/password/set-initial/` |
+| `PASSWORDLESS_ACCOUNT_USE_SET_INITIAL_PASSWORD` | 400 | Les comptes passwordless ne peuvent pas utiliser `/password/change/` ; utiliser `/password/set-initial/` à la place |
+| `REAUTH_REQUIRED` | 400 | Réauthentification requise pour une action sensible : fournir `current_password` ou un `otp_code` valide |
 
 ---
 

@@ -32,6 +32,7 @@ from ..filters import apply_user_filters
 from tenxyte.adapters.django.repositories import DjangoUserRepository
 from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
 from tenxyte.core import Settings
+from tenxyte.services.reauth_service import ReauthService
 
 User = get_user_model()
 
@@ -562,12 +563,29 @@ class UserDetailView(APIView):
                 {"error": "Validation error", "details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Update via Core repository
+        # Séparer les champs gérés directement sur le modèle Django (non connus
+        # du Core repository) des champs délégués au Core.
+        DJANGO_ONLY_FIELDS = {"must_change_password"}
         update_data = {}
+        django_update_fields = {}
         for attr, value in serializer.validated_data.items():
-            update_data[attr] = value
+            if attr in DJANGO_ONLY_FIELDS:
+                django_update_fields[attr] = value
+            else:
+                update_data[attr] = value
 
-        user_repo.update_user(str(user_id), update_data)
+        if update_data:
+            user_repo.update_user(str(user_id), update_data)
+
+        # Appliquer les champs Django-only directement sur le modèle.
+        if django_update_fields:
+            try:
+                django_user_obj = User.objects.get(id=user_id)
+                for attr, value in django_update_fields.items():
+                    setattr(django_user_obj, attr, value)
+                django_user_obj.save(update_fields=list(django_update_fields.keys()))
+            except User.DoesNotExist:
+                pass
 
         # Get Django user for serialization
         try:
@@ -897,7 +915,16 @@ class DeleteAccountView(APIView):
             name="DeleteAccountRequest",
             fields={
                 "confirmation": serializers.CharField(help_text='Texte de confirmation "DELETE MY ACCOUNT"'),
-                "password": serializers.CharField(help_text="Mot de passe actuel requis pour confirmation"),
+                "password": serializers.CharField(
+                    required=False,
+                    allow_blank=True,
+                    help_text="Mot de passe actuel. Requis sauf si otp_code est fourni.",
+                ),
+                "otp_code": serializers.CharField(
+                    required=False,
+                    allow_blank=True,
+                    help_text="Code OTP de connexion frais, alternative au mot de passe (OTP_Reauth_Challenge).",
+                ),
                 "reason": serializers.CharField(
                     required=False, allow_blank=True, help_text="Raison optionnelle de la suppression"
                 ),
@@ -957,7 +984,6 @@ class DeleteAccountView(APIView):
     def delete(self, request):
         """Delete account using Core repository for password verification."""
         confirmation = request.data.get("confirmation")
-        password = request.data.get("password")
 
         if confirmation != "DELETE MY ACCOUNT":
             return Response(
@@ -965,18 +991,20 @@ class DeleteAccountView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if not password:
-            return Response(
-                {"error": "Password is required", "code": "PASSWORD_REQUIRED"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        # Vérifier le mot de passe actuel OU un OTP_Reauth_Challenge frais
+        # (Requirement 6.4/6.5/6.6) : ReauthService reste la porte unique de
+        # preuve d'identité pour toute Sensitive_Password_Action.
+        reauth_service = ReauthService()
+        is_valid_reauth, reauth_error_code, reauth_error_message = reauth_service.verify(
+            request.user,
+            password=request.data.get("password", ""),
+            otp_code=request.data.get("otp_code", ""),
+        )
 
-        # Vérifier le mot de passe via Core repository
-        user_repo = get_core_user_repo()
-        is_valid = user_repo.check_password(str(request.user.id), password)
-
-        if not is_valid:
+        if not is_valid_reauth:
             return Response(
-                {"error": "Invalid password", "code": "INVALID_PASSWORD"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": reauth_error_message, "code": reauth_error_code},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Vérifier les restrictions (propriétaire d'organisations)
@@ -995,6 +1023,7 @@ class DeleteAccountView(APIView):
             )
 
         # Soft delete via Core repository
+        user_repo = get_core_user_repo()
         user_repo.soft_delete(str(request.user.id))
         deleted_at = timezone.now()
 
