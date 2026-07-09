@@ -16,9 +16,9 @@ bcrypt==5.0.0
     # via tenxyte (pyproject.toml)
 certifi==2026.6.17
     # via requests
-cffi==2.0.0
+cffi==2.1.0
     # via cryptography
-charset-normalizer==3.4.7
+charset-normalizer==3.4.9
     # via requests
 colorama==0.4.6
     # via qrcode
@@ -44,9 +44,9 @@ djangorestframework==3.17.1
     # via
     #   drf-spectacular
     #   tenxyte (pyproject.toml)
-drf-spectacular==0.29.0
+drf-spectacular==0.30.0
     # via tenxyte (pyproject.toml)
-google-auth==2.55.1
+google-auth==2.55.2
     # via
     #   google-auth-oauthlib
     #   tenxyte (pyproject.toml)
