@@ -1,96 +1,96 @@
-# # Python
-# __pycache__/
-# *.py[cod]
-# *$py.class
-# *.so
-# .Python
-# build/
-# develop-eggs/
-# dist/
-# downloads/
-# eggs/
-# .eggs/
-# lib/
-# lib64/
-# parts/
-# sdist/
-# var/
-# wheels/
-# pip-wheel-metadata/
-# share/python-wheels/
-# *.egg-info/
-# .installed.cfg
-# *.egg
-# MANIFEST
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# # Virtual environments
-# venv/
-# ENV/
-# env/
-# .venv
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
 
-# # IDE
-# .vscode/
-# .idea/
-# *.swp
-# *.swo
-# *~
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# # Testing
-# .coverage
-# .coverage.*
-# htmlcov/
-# .pytest_cache/
-# .tox/
-# .nox/
-# coverage.xml
-# *.cover
+# Testing
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+coverage.xml
+*.cover
 
-# checklist.md
-# log.md
-# site
-# site/*
+checklist.md
+log.md
+site
+site/*
 
-# next-steps.md
-# next-steps-phases.md
+next-steps.md
+next-steps-phases.md
 
-# # Django
-# *.log
-# local_settings.py
-# db.sqlite3
-# db.sqlite3-journal
-# media/
-# staticfiles/
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
 
-# # Jupyter Notebook
-# .ipynb_checkpoints
+# Jupyter Notebook
+.ipynb_checkpoints
 
-# # pyenv
-# .python-version
+# pyenv
+.python-version
 
-# # mypy
-# .mypy_cache/
-# .dmypy.json
-# dmypy.json
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
-# # Pyre type checker
-# .pyre/
+# Pyre type checker
+.pyre/
 
-# # OS
-# .DS_Store
-# Thumbs.db
+# OS
+.DS_Store
+Thumbs.db
 
-# # Distribution / packaging
-# *.tar.gz
-# *.whl
+# Distribution / packaging
+*.tar.gz
+*.whl
 
-# old_dists/
-# old_dists/*
-# old_dists/*/*
+old_dists/
+old_dists/*
+old_dists/*/*
 
-# # Hypothesis
-# .hypothesis/
+# Hypothesis
+.hypothesis/
 
-# .kiro/
-# /plan
-# logs
+.kiro/
+/plan
+logs

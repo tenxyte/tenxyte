@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\migrations\0005_organizations.py
-# hypothesis_version: 6.155.7
-
-[191, 200, '-created_at', '0002_rbac', 'Accepted', 'Active', 'Declined', 'Email of invitee', 'Expired', 'Invitation Pending', 'Organization', 'Organization name', 'Pending', 'Suspended', 'abstract', 'accepted', 'accepted_at', 'active', 'children', 'created_at', 'created_by', 'db_table', 'declined', 'description', 'email', 'expired', 'expires_at', 'id', 'invitations', 'invited_at', 'invited_by', 'is_active', 'max_members', 'memberships', 'metadata', 'name', 'ordering', 'org_memberships', 'organization', 'organizations', 'parent', 'pending', 'role', 'sent_org_invitations', 'slug', 'status', 'suspended', 'swappable', 'tenxyte', 'token', 'updated_at', 'user']

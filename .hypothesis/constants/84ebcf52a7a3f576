@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\migrations\0017_login_otp_type_and_passwordless_account.py
-# hypothesis_version: 6.155.7
-
-['Email Verification', 'Login 2FA', 'Login OTP', 'Password Reset', 'Phone Verification', 'email_verification', 'has_usable_password', 'login', 'login_2fa', 'otp_type', 'otpcode', 'password_reset', 'phone_verification', 'tenxyte', 'user']

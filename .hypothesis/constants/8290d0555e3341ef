@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\serializers\auth_serializers.py
-# hypothesis_version: 6.155.7
-
-[100, 191, 255, 500, 'avatar', 'avatar_url', 'bio', 'created_at', 'custom_fields', 'email', 'email_notifications', 'first_name', 'id', 'is_2fa_enabled', 'is_active', 'is_banned', 'is_deleted', 'is_email_verified', 'is_locked', 'is_phone_verified', 'is_staff', 'is_superuser', 'language', 'last_login', 'last_name', 'marketing_emails', 'permissions', 'phone', 'phone_country_code', 'phone_number', 'preferences', 'roles', 'sms_notifications', 'timezone', 'updated_at', 'username']

@@ -1,4 +1,0 @@
-# file: C:\Users\_bobo\Documents\own\tenxyte\src\tenxyte\adapters\django\repositories.py
-# hypothesis_version: 6.155.7
-
-[100, 1800, '-created_at', 'DjangoRoleRepository', 'DjangoUserRepository', 'Role not found', 'active', 'argon2', 'backup_codes', 'ban_account', 'bcrypt', 'bio', 'code', 'created_at', 'custom_fields', 'email', 'email_verified', 'first_name', 'google_id', 'is_2fa_enabled', 'is_account_locked', 'is_active', 'is_banned', 'is_default', 'is_deleted', 'is_email_verified', 'is_locked', 'is_phone_verified', 'is_staff', 'is_used', 'language', 'last_login', 'last_name', 'lock_account', 'locked_until', 'max_devices', 'max_sessions', 'organization_id', 'password', 'pbkdf2', 'phone_country_code', 'phone_number', 'role_id', 'roles', 'sha256', 'status', 'timezone', 'totp_secret', 'unban_account', 'unlock_account', 'updated_at', 'used_at', 'username']
