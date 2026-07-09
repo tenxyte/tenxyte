@@ -3,6 +3,8 @@ from .views import (
     RegisterView,
     LoginEmailView,
     LoginPhoneView,
+    LoginOTPRequestView,
+    LoginOTPVerifyView,
     RefreshTokenView,
     LogoutView,
     LogoutAllView,
@@ -14,6 +16,7 @@ from .views import (
     ChangePasswordView,
     PasswordStrengthView,
     PasswordRequirementsView,
+    SetInitialPasswordView,
     MeView,
     MyRolesView,
     TwoFactorStatusView,
@@ -100,6 +103,8 @@ urlpatterns = [
     # Login
     path("login/email/", LoginEmailView.as_view(), name="login_email"),
     path("login/phone/", LoginPhoneView.as_view(), name="login_phone"),
+    path("login/otp/request/", LoginOTPRequestView.as_view(), name="login_otp_request"),
+    path("login/otp/verify/", LoginOTPVerifyView.as_view(), name="login_otp_verify"),
     # Social Login Multi-Provider
     path("social/<str:provider>/", SocialAuthView.as_view(), name="social_auth"),
     path("social/<str:provider>/callback/", SocialAuthCallbackView.as_view(), name="social_auth_callback"),
@@ -115,6 +120,7 @@ urlpatterns = [
     path("password/reset/request/", PasswordResetRequestView.as_view(), name="password_reset_request"),
     path("password/reset/confirm/", PasswordResetConfirmView.as_view(), name="password_reset_confirm"),
     path("password/change/", ChangePasswordView.as_view(), name="password_change"),
+    path("password/set-initial/", SetInitialPasswordView.as_view(), name="password_set_initial"),
     path("password/strength/", PasswordStrengthView.as_view(), name="password_strength"),
     path("password/requirements/", PasswordRequirementsView.as_view(), name="password_requirements"),
     # User profile

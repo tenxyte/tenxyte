@@ -374,7 +374,7 @@ class Test2FAViews:
         totp = pyotp.TOTP(user_with_2fa.totp_secret)
         valid_code = totp.now()
 
-        data = {'code': valid_code}
+        data = {'code': valid_code, 'password': 'TestPassword123!'}
         response = api_client.post(f'{api_prefix}/auth/2fa/disable/', data)
 
         assert response.status_code == status.HTTP_200_OK

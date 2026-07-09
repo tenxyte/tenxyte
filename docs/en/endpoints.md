@@ -7,6 +7,8 @@
     - [`POST /register/`](#post-register)
     - [`POST /login/email/`](#post-loginemail)
     - [`POST /login/phone/`](#post-loginphone)
+    - [`POST /login/otp/request/`](#post-loginotprequest)
+    - [`POST /login/otp/verify/`](#post-loginotpverify)
   - [Social Login (Multi-Provider)](#social-login-multi-provider)
     - [`POST /social/<provider>/`](#post-socialprovider)
     - [`GET /social/<provider>/callback/`](#get-socialprovidercallback)
@@ -24,8 +26,10 @@
     - [`POST /password/reset/request/`](#post-passwordresetrequest)
     - [`POST /password/reset/confirm/`](#post-passwordresetconfirm)
     - [`POST /password/change/` ](#post-passwordchange)
+    - [`POST /password/set-initial/` ](#post-passwordset-initial)
     - [`POST /password/strength/`](#post-passwordstrength)
     - [`GET /password/requirements/`](#get-passwordrequirements)
+  - [Force Password Change on First Login](#force-password-change-on-first-login)
   - [User Profile](#user-profile)
     - [`GET /me/` ](#get-me)
     - [`PATCH /me/` ](#patch-me)
@@ -66,6 +70,7 @@
   - [Admin — User Management](#admin-user-management)
     - [`GET /admin/users/`  `users.view`](#get-adminusers-usersview)
     - [`GET /admin/users/<id>/`  `users.view`](#get-adminusersid-usersview)
+    - [`PATCH /admin/users/<id>/`  `users.update`](#patch-adminusersid-usersupdate)
     - [`POST /admin/users/<id>/ban/`  `users.ban`](#post-adminusersidban-usersban)
     - [`POST /admin/users/<id>/unban/`  `users.ban`](#post-adminusersidunban-usersban)
     - [`POST /admin/users/<id>/lock/`  `users.lock`](#post-adminusersidlock-userslock)
@@ -237,6 +242,7 @@ Login with email + password.
   "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
+  "must_change_password": false,
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
@@ -282,6 +288,24 @@ Login with email + password.
   "code": "LOGIN_FAILED"
 }
 ```
+
+**Response `200` (forced password change — `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True`):**
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "token_scope": "password_change_only",
+  "must_change_password": true,
+  "expires_in": 900,
+  "refresh_expires_in": 604800,
+  "user": { "..." : "..." },
+  "requires_2fa": false,
+  "session_id": "uuid-string",
+  "device_id": "uuid-string"
+}
+```
+> The `access_token` carries `scope: "password_change_only"` and is only accepted on `/password/change/`, `/password/set-initial/`, and `/logout/`. All other protected endpoints return `403 INSUFFICIENT_SCOPE` until the password is changed and a full-scope token is issued. See [Force Password Change on First Login](#force-password-change-on-first-login).
 
 **Response `403` (Admin 2FA required):**
 ```json
@@ -336,6 +360,7 @@ Login with phone number + password.
   "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop",
+  "must_change_password": false,
   "user": {
     "id": "uuid-string",
     "email": "user@example.com",
@@ -417,6 +442,129 @@ Login with phone number + password.
   "code": "ACCOUNT_LOCKED",
   "details": {}
 }
+```
+
+---
+
+## Passwordless Phone Login (OTP)
+
+Requires `TENXYTE_OTP_LOGIN_ENABLED = True`.
+
+These endpoints allow a user to log in with only a phone number and a one-time code. No password is ever required. The flow is a two-step process: request a code, then verify it to receive JWT tokens.
+
+### `POST /login/otp/request/`
+Request a login OTP sent by SMS to the supplied phone number.
+
+**Request:**
+```json
+{
+  "phone_country_code": "+33",
+  "phone_number": "612345678"
+}
+```
+
+If `TENXYTE_OTP_LOGIN_AUTO_REGISTER = True` (default) and the phone number has no matching account, a new *Passwordless Account* is created automatically and receives the code.
+If `OTP_LOGIN_AUTO_REGISTER = False` and no account exists, the response has the **same shape** as a success (anti-enumeration) but no code is sent.
+
+**Response `200`:**
+```json
+{
+  "message": "Login code sent",
+  "otp_id": "uuid-string",
+  "expires_at": "2026-07-07T12:10:00Z",
+  "channel": "sms"
+}
+```
+
+**Response `404` (Feature disabled):**
+```json
+{
+  "error": "Feature not available",
+  "code": "FEATURE_DISABLED"
+}
+```
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "phone_country_code": ["This field is required."],
+    "phone_number": ["This field is required."]
+  }
+}
+```
+
+**Response `429` (Rate limited):**
+```json
+{
+  "error": "Request was throttled.",
+  "retry_after": 60
+}
+```
+
+---
+
+### `POST /login/otp/verify/`
+Verify the login OTP code and receive JWT tokens. Applies all the same account checks as `/login/phone/` (active, not banned, not locked, optional 2FA).
+
+**Request:**
+```json
+{
+  "phone_country_code": "+33",
+  "phone_number": "612345678",
+  "otp_code": "847291",
+  "totp_code": "123456",
+  "device_info": "v=1|os=ios;osv=17|device=mobile"
+}
+```
+`otp_code`: Required. The 6-digit code received by SMS.
+`totp_code`: Only required if the account has 2FA enabled.
+`device_info`: Optional device fingerprinting info.
+
+**Response `200` (same shape as `/login/phone/`):**
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "refresh_expires_in": 604800,
+  "must_change_password": false,
+  "user": {
+    "id": "uuid-string",
+    "email": null,
+    "phone": "+33612345678",
+    "is_phone_verified": true,
+    "has_usable_password": false
+  },
+  "requires_2fa": false,
+  "session_id": "uuid-string",
+  "device_id": "uuid-string"
+}
+```
+`is_phone_verified` is automatically set to `true` on successful login.
+`has_usable_password` indicates whether the account can also log in with a password.
+`must_change_password` is `true` when the account was provisioned with a forced password change (see [Force Password Change on First Login](#force-password-change-on-first-login)).
+
+**Response `404` (Feature disabled):**
+```json
+{ "error": "Feature not available", "code": "FEATURE_DISABLED" }
+```
+
+**Response `401` (Invalid or expired code — same response for unknown phone):**
+```json
+{ "error": "Invalid code.", "code": "OTP_INVALID" }
+```
+
+**Response `401` (2FA required):**
+```json
+{ "error": "2FA code required", "code": "2FA_REQUIRED", "requires_2fa": true }
+```
+
+**Response `423` (Account locked):**
+```json
+{ "error": "Account locked", "code": "ACCOUNT_LOCKED", "retry_after": "2026-07-07T12:30:00Z" }
 ```
 
 ---
@@ -768,9 +916,10 @@ Refresh the access token.
   "token_type": "Bearer",
   "expires_in": 900,
   "refresh_expires_in": 86400,
-  "device_summary": null
+  "must_change_password": false
 }
 ```
+> If the account still has `must_change_password=true` and `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True`, the refreshed `access_token` will again carry `scope: "password_change_only"` and `must_change_password` will be `true`.
 
 **Response `400` (Missing refresh token):**
 ```json
@@ -1080,7 +1229,9 @@ Confirm password reset with OTP code.
 ---
 
 ### `POST /password/change/` 
-Change password (requires current password).
+Change password (requires current password or a fresh login OTP as re-authentication proof).
+
+Accepts a `password_change_only` scoped token (issued when `must_change_password=true`) in addition to a full-scope token.
 
 **Headers (required):**
 ```
@@ -1095,7 +1246,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-**Response `200`:**
+**Response `200` (normal):**
 ```json
 {
   "message": "Password changed successfully",
@@ -1103,6 +1254,21 @@ Authorization: Bearer <access_token>
   "sessions_revoked": 2
 }
 ```
+
+**Response `200` (forced change completed — `must_change_password` was `true`, upgrade token):**
+```json
+{
+  "message": "Password changed successfully",
+  "password_strength": "strong",
+  "sessions_revoked": 2,
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "refresh_expires_in": 604800
+}
+```
+> When the request was made with a `password_change_only` scoped token, a fresh **full-scope** token pair is returned so the user can continue without re-authenticating.
 
 **Response `400` (Validation error):**
 ```json
@@ -1114,11 +1280,103 @@ Authorization: Bearer <access_token>
 }
 ```
 
-**Response `401` (Invalid current password):**
+**Response `400` (Invalid current password):**
 ```json
 {
   "error": "Current password is incorrect",
   "code": "INVALID_PASSWORD"
+}
+```
+
+> **Passwordless accounts:** If `has_usable_password = false`, this endpoint returns `400 PASSWORDLESS_ACCOUNT_USE_SET_INITIAL_PASSWORD`. Use [`POST /password/set-initial/`](#post-passwordset-initial) instead.
+
+> **Re-authentication via OTP:** Accounts with a usable password can also pass `otp_code` (instead of `current_password`) as proof of identity.
+
+---
+
+### `POST /password/set-initial/` 
+Set the first password on a Passwordless Account. Requires a fresh login OTP as proof of phone ownership. Distinct from `/password/change/` — does not require a current password, because none exists.
+
+Accepts a `password_change_only` scoped token (issued when `must_change_password=true`) in addition to a full-scope token.
+
+Requires `TENXYTE_OTP_LOGIN_ENABLED = True`.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request:**
+```json
+{
+  "otp_code": "847291",
+  "new_password": "MyNewP@ssw0rd!"
+}
+```
+`otp_code`: A fresh Login OTP for the account's phone (requested via `/login/otp/request/`).
+`new_password`: Must pass the configured password complexity rules.
+
+**Response `200` (normal):**
+```json
+{
+  "message": "Password set successfully"
+}
+```
+
+**Response `200` (forced change completed — `must_change_password` was `true`):**
+```json
+{
+  "message": "Password set successfully",
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "refresh_expires_in": 604800
+}
+```
+> When the request was made with a `password_change_only` scoped token, a fresh **full-scope** token pair is returned so the user can continue without re-authenticating.
+
+After success: the account can now log in via `/login/email/` or `/login/phone/` with the new password **in addition to** `/login/otp/verify/`. Both methods remain available.
+
+**Response `400` (Account already has a password):**
+```json
+{
+  "error": "Account already has a usable password. Use /password/change/ instead.",
+  "code": "ALREADY_HAS_PASSWORD"
+}
+```
+
+**Response `400` (No login OTP exists):**
+```json
+{
+  "error": "No login code found",
+  "code": "OTP_REQUIRED"
+}
+```
+
+**Response `400` (OTP invalid or expired):**
+```json
+{
+  "error": "Invalid code. 2 attempt(s) remaining.",
+  "code": "OTP_INVALID"
+}
+```
+
+**Response `400` (Password does not meet complexity rules):**
+```json
+{
+  "error": "Validation error",
+  "details": {
+    "new_password": ["Password must contain at least one uppercase letter."]
+  }
+}
+```
+
+**Response `400` (Password found in breach database):**
+```json
+{
+  "error": "This password has appeared in a data breach and cannot be used.",
+  "code": "PASSWORD_BREACHED"
 }
 ```
 
@@ -2603,6 +2861,46 @@ Authorization: Bearer <access_token>
   "code": "NOT_FOUND"
 }
 ```
+
+### `PATCH /admin/users/<id>/`  `users.update`
+Partially update a user's profile or account flags.
+
+**Headers (required):**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request (all fields optional):**
+```json
+{
+  "first_name": "Jane",
+  "last_name": "Smith",
+  "is_active": true,
+  "is_staff": false,
+  "is_superuser": false,
+  "max_sessions": 3,
+  "max_devices": 2,
+  "must_change_password": true
+}
+```
+`must_change_password`: Set to `true` to force the user to change their password at next login (requires `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True` to enforce the token scope restriction). Setting to `false` clears the flag.
+
+**Response `200`:** Full user object (same shape as `GET /admin/users/<id>/`).
+
+**Response `400` (Validation error):**
+```json
+{
+  "error": "Validation error",
+  "details": { "max_sessions": ["Ensure this value is greater than or equal to 0."] }
+}
+```
+
+**Response `404` (Not found):**
+```json
+{ "error": "User not found", "code": "NOT_FOUND" }
+```
+
+---
 
 ### `POST /admin/users/<id>/ban/`  `users.ban`
 Ban a user.
@@ -4719,6 +5017,103 @@ Tenxyte includes a full set of AI/Agent Identity & Runtime Security endpoints fo
 | `POST` | `/ai/pending-actions/<id>/reject/` | Reject a pending action |
 
 → See [AIRS Guide](airs.md) for full request/response documentation, clearance levels, and agent lifecycle management.
+
+---
+
+## Force Password Change on First Login
+
+Requires `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED = True`.
+
+This feature forces a user to set or change their password before accessing anything else. It covers two provisioning scenarios:
+
+| Scenario | `has_usable_password` | `must_change_password` | Password endpoint |
+|---|---|---|---|
+| Admin creates account with temporary password | `true` | `true` | `POST /password/change/` |
+| Invitation without password (Passwordless Account) | `false` | `true` | `POST /password/set-initial/` |
+
+### Flow
+
+**1. Admin provisions the account:**
+```http
+PATCH /api/v1/auth/admin/users/<id>/
+Authorization: Bearer <admin_token>
+
+{ "must_change_password": true }
+```
+
+**2. User logs in — receives a restricted-scope token:**
+```json
+{
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "token_scope": "password_change_only",
+  "must_change_password": true,
+  "expires_in": 900,
+  "refresh_expires_in": 604800,
+  "user": { "..." : "..." }
+}
+```
+The client **must** detect `must_change_password: true` and redirect to the password change screen. The `access_token` carries `scope: "password_change_only"` — all other protected endpoints return `403 INSUFFICIENT_SCOPE`.
+
+**3a. User changes their password (account with temporary password):**
+```http
+POST /api/v1/auth/password/change/
+Authorization: Bearer <password_change_only_token>
+
+{
+  "current_password": "TemporaryPass123!",
+  "new_password": "MyNewSecurePass456!"
+}
+```
+
+**3b. User sets their first password (Passwordless Account):**
+```http
+POST /api/v1/auth/password/set-initial/
+Authorization: Bearer <password_change_only_token>
+
+{
+  "otp_code": "847291",
+  "new_password": "MyNewSecurePass456!"
+}
+```
+
+**4. Success — full-scope token pair returned:**
+```json
+{
+  "message": "Password changed successfully",
+  "password_strength": "strong",
+  "sessions_revoked": 2,
+  "access_token": "eyJ...",
+  "refresh_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "refresh_expires_in": 604800
+}
+```
+`must_change_password` is now `false`. The new `access_token` is a full-scope token — the user can access all endpoints normally.
+
+### Token scope enforcement
+
+| Endpoint | Accepts `password_change_only` token? |
+|---|---|
+| `POST /password/change/` | ✅ Yes |
+| `POST /password/set-initial/` | ✅ Yes |
+| `POST /logout/` | ✅ Yes (AllowAny) |
+| `POST /logout/all/` | ✅ Yes |
+| Any other protected endpoint | ❌ No — `403 INSUFFICIENT_SCOPE` |
+
+### Error codes
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `INSUFFICIENT_SCOPE` | `403` | Token scope `password_change_only` used on a non-allowed endpoint |
+| `PASSWORDLESS_ACCOUNT_USE_SET_INITIAL_PASSWORD` | `400` | Passwordless account tried `/password/change/` — use `/password/set-initial/` |
+| `ALREADY_HAS_PASSWORD` | `400` | Account with password tried `/password/set-initial/` — use `/password/change/` |
+
+### Precedence with Admin 2FA Bootstrap
+
+If an admin account (`is_superuser` or `is_staff`) has **both** `must_change_password=true` and no 2FA configured, the **2FA bootstrap takes priority**: the login response carries `scope: "2fa_setup_only"` (not `password_change_only`). After the admin confirms 2FA and receives a full-scope token, the next login will enforce the `password_change_only` scope.
 
 ---
 

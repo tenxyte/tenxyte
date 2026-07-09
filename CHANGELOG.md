@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Passwordless Phone Login (OTP)** — Users can now log in with only a phone number and a one-time SMS code, with no password required.
+  - `POST /login/otp/request/` — Request a login OTP. If `TENXYTE_OTP_LOGIN_AUTO_REGISTER=True` (default) and the phone number has no account, a *Passwordless Account* is created automatically.
+  - `POST /login/otp/verify/` — Verify the OTP and receive JWT tokens. Applies all the same security checks as `/login/phone/` (account status, 2FA gate, device/session limits). Response shape is identical to `/login/phone/`.
+  - `POST /password/set-initial/` — Passwordless accounts can voluntarily set a first password via a fresh OTP as proof of phone ownership. After success, both OTP and password-based login remain available.
+  - New `has_usable_password` field on the `User` model (default `True`). Set to `False` for auto-registered passwordless accounts; reset to `True` by `Set_Initial_Password_Operation`.
+  - Three new settings: `TENXYTE_OTP_LOGIN_ENABLED` (default `False`), `TENXYTE_OTP_LOGIN_AUTO_REGISTER` (default `True`), `TENXYTE_OTP_LOGIN_VALIDITY_MINUTES` (default `10`).
+  - Dedicated throttle classes `LoginOTPRequestThrottle` (5/min) and `LoginOTPRequestDailyThrottle` (20/day), independent of `/register/`.
+  - New serializers: `LoginOTPRequestSerializer`, `LoginOTPVerifySerializer`, `SetInitialPasswordSerializer`, `ReauthSerializer`.
+  - `ReauthService` — centralised re-authentication service for sensitive actions. All sensitive endpoints (`/password/change/`, `/2fa/disable/`, account deletion, data export) now accept a valid login OTP (`otp_code`) as an alternative to the current password.
+  - Migration `0017_login_otp_type_and_passwordless_account`: additive — adds `User.has_usable_password` field and `"login"` choice to `OTPCode.otp_type`. No existing field or constraint is removed.
+
+### Changed
+- **`/password/change/`** — Passwordless accounts (`has_usable_password=False`) are now rejected with `400 PASSWORDLESS_ACCOUNT_USE_SET_INITIAL_PASSWORD` and directed to the new `/password/set-initial/` endpoint.
+- **`/2fa/disable/`, account deletion endpoints, data export endpoint** — Now accept `otp_code` as an alternative to `current_password` for re-authentication, enabling passwordless users to perform sensitive actions without a password.
+
+## [0.9.6.4]
+
+### Fixed
+- **Phone-Only Registration** — Resolved bug preventing user registration with phone number only. The `UserManager.create_user()` now accepts either email OR phone (with country code), aligning with `RegisterSerializer` validation. Added unique constraint on phone numbers for non-deleted users to prevent duplicates. Migration `0015_add_unique_phone_constraint` includes the database constraint.
+
+### Changed
+- **UserManager.create_user()** — Modified to accept `None` for email if valid phone number is provided (`phone_country_code` + `phone_number`). Error message updated to: "L'email ou le numéro de téléphone est requis".
+- **User Model Constraints** — Added `UniqueConstraint` on `(phone_country_code, phone_number)` with condition `phone_number__isnull=False & is_deleted=False`.
+
+## [0.9.6] - 2025-01-XX
+
+### Fixed
+- **Super Admin 2FA Bootstrap** — Resolved circular dependency preventing super admins from logging in without 2FA. Introduced restricted-scope JWT tokens (`scope: "2fa_setup_only"`) with 15-minute expiration that permit access exclusively to `/2fa/setup/` and `/2fa/confirm/` endpoints. After successful 2FA activation, the system automatically issues a full-scope token and invalidates the bootstrap token, enabling seamless first-time admin authentication flow.
+
+### Security
+- **Token Scope Enforcement** — Added `allowed_scopes` parameter to `@require_jwt` decorator, enforcing strict scope validation. Restricted tokens attempting to access unauthorized endpoints now receive `403 INSUFFICIENT_SCOPE` error.
+
 ## [0.9.4] - 2026-03-26
 
 ### Security

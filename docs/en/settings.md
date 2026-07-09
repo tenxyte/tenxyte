@@ -142,6 +142,63 @@ TENXYTE_JWT_ACCESS_TOKEN_LIFETIME = 600  # 10min instead of 5min
 
 ---
 
+## Passwordless Phone Login (OTP)
+
+Allows users to log in with their phone number and a one-time code sent by SMS — no password required.
+
+| Setting | Default | Description |
+|---|---|---|
+| `TENXYTE_OTP_LOGIN_ENABLED` | `False` | Enable or disable the entire phone-OTP login feature. Defaults to **disabled** — no new endpoints are active until this is `True`. |
+| `TENXYTE_OTP_LOGIN_AUTO_REGISTER` | `True` | Automatically create a new account when the supplied phone number doesn't exist yet. The created account is a *Passwordless Account* (`has_usable_password=False`). Set to `False` to restrict OTP login to pre-existing users only (anti-enumeration response is still returned). |
+| `TENXYTE_OTP_LOGIN_VALIDITY_MINUTES` | `10` | How long (in minutes) a login OTP code remains valid before expiring. |
+
+**Minimal setup:**
+```python
+# settings.py
+TENXYTE_OTP_LOGIN_ENABLED = True
+TENXYTE_SMS_ENABLED = True          # required to actually send codes
+TENXYTE_SMS_BACKEND = 'tenxyte.backends.sms.TwilioBackend'
+TWILIO_ACCOUNT_SID = '...'
+TWILIO_AUTH_TOKEN = '...'
+TWILIO_PHONE_NUMBER = '+15551234567'
+```
+
+See [`POST /login/otp/request/`](endpoints.md#post-loginotprequest) and [`POST /login/otp/verify/`](endpoints.md#post-loginotpverify) for the corresponding endpoints.
+
+---
+
+## Force Password Change on First Login
+
+Forces a provisioned user to set or change their password before accessing anything else. When enabled and a user account has `must_change_password=True`, login endpoints issue a restricted-scope access token (`scope: "password_change_only"`) instead of a full-scope token. All protected endpoints except `/password/change/`, `/password/set-initial/`, and `/logout/` return `403 INSUFFICIENT_SCOPE` until the password is changed.
+
+| Setting | Default | Description |
+|---|---|---|
+| `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED` | `False` | Enable the restricted-scope token issuance and enforcement. **Disabled by default** — no token restriction is applied until this is `True`. The `must_change_password` flag is always stored and readable regardless of this setting. |
+
+**Minimal setup:**
+```python
+# settings.py
+TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED = True
+```
+
+**Provisioning a user with forced password change (admin API):**
+```http
+PATCH /api/v1/auth/admin/users/<id>/
+Authorization: Bearer <admin_token>
+
+{ "must_change_password": true }
+```
+
+**User model field added by this feature:**
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `must_change_password` | `BooleanField` | `False` | `True` when the account must change its password at next login. Cleared to `False` after a successful `/password/change/` or `/password/set-initial/`. |
+
+See [Force Password Change on First Login](endpoints.md#force-password-change-on-first-login) for the full flow and token scope enforcement table.
+
+---
+
 ## Password Policy
 
 | Setting | Default | Description |

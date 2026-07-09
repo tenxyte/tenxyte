@@ -54,6 +54,42 @@ class OTPService:
 
         return OTPCode.generate(user, "password_reset", validity_minutes=15)
 
+    def generate_login_otp(self, user: User) -> Tuple[OTPCode, str]:
+        """
+        Génère un code OTP pour connexion passwordless.
+
+        Returns:
+            Tuple of (OTPCode instance, raw_code)
+        """
+        from ..conf import auth_settings
+
+        # Invalider les anciens codes
+        OTPCode.objects.filter(user=user, otp_type="login", is_used=False).update(is_used=True)
+
+        validity = auth_settings.OTP_LOGIN_VALIDITY_MINUTES
+        return OTPCode.generate(user, "login", validity_minutes=validity)
+
+    def verify_login_otp(self, user: User, code: str) -> Tuple[bool, str]:
+        """
+        Vérifie un code OTP pour connexion passwordless.
+        """
+        try:
+            otp = OTPCode.objects.filter(user=user, otp_type="login", is_used=False).latest("created_at")
+        except OTPCode.DoesNotExist:
+            return False, "No login code found"
+
+        if not otp.is_valid():
+            return False, "Code expired or too many attempts. Please request a new code."
+
+        if otp.verify(code):
+            return True, ""
+
+        otp.refresh_from_db()
+        if otp.attempts >= otp.max_attempts:
+            return False, "Too many attempts. Please request a new code."
+
+        return False, f"Invalid code. {otp.max_attempts - otp.attempts} attempt(s) remaining."
+
     def verify_email_otp(self, user: User, code: str) -> Tuple[bool, str]:
         """
         Vérifie un code OTP pour email

@@ -210,7 +210,7 @@ class TestTwoFactorDisableView:
         with patch("tenxyte.views.twofa_views.get_core_totp_service") as mock_svc:
             mock_svc.return_value.disable_2fa.return_value = (True, "")
             resp = _authed_post(TwoFactorDisableView, "/auth/2fa/disable/", user, app,
-                                {"code": "123456"})
+                                {"code": "123456", "password": "Pass123!"})
 
         assert resp.status_code == 200
         assert resp.data["is_enabled"] is False
@@ -223,7 +223,7 @@ class TestTwoFactorDisableView:
         with patch("tenxyte.views.twofa_views.get_core_totp_service") as mock_svc:
             mock_svc.return_value.disable_2fa.return_value = (False, "Invalid code")
             resp = _authed_post(TwoFactorDisableView, "/auth/2fa/disable/", user, app,
-                                {"code": "000000"})
+                                {"code": "000000", "password": "Pass123!"})
 
         assert resp.status_code == 400
         assert resp.data["code"] == "INVALID_CODE"

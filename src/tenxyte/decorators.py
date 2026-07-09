@@ -41,7 +41,7 @@ def _call_view(view_func, view_instance, request, view_args, kwargs):
         return view_func(request, *view_args, **kwargs)
 
 
-def require_jwt(view_func):
+def require_jwt(view_func=None, *, allowed_scopes=None):
     """
     Décorateur pour exiger un JWT valide.
     Fonctionne avec les fonctions ET les méthodes de classe.
@@ -50,59 +50,112 @@ def require_jwt(view_func):
         TENXYTE_JWT_AUTH_ENABLED = False
 
     WARNING: Disabling JWT auth is dangerous and should only be used for testing.
+
+    Token scope enforcement
+    ------------------------
+    Access tokens may carry a ``"scope"`` claim that restricts which endpoints
+    they are allowed to reach (for example the short-lived ``"2fa_setup_only"``
+    bootstrap token issued when an admin must configure 2FA). After a token is
+    validated, its scope (or ``None`` when the claim is absent) is exposed on the
+    request as ``request.jwt_scope`` so views can inspect it.
+
+    The decorator can be used in two interchangeable forms:
+
+        @require_jwt
+        def my_view(request): ...
+
+        @require_jwt(allowed_scopes=["2fa_setup_only"])
+        def setup_view(request): ...
+
+    Scope rules:
+    - **Full-scope tokens** (no ``"scope"`` claim, i.e. ``request.jwt_scope is
+      None``) are accepted on every endpoint, exactly as before this feature was
+      introduced. This preserves the existing behavior for all normal tokens.
+    - **Restricted tokens** (a non-empty ``"scope"`` claim) are accepted ONLY on
+      endpoints that explicitly list that scope in ``allowed_scopes``. On any
+      other endpoint they are rejected with HTTP 403 and code
+      ``INSUFFICIENT_SCOPE``.
+
+    Args:
+        view_func: The view being decorated (supplied automatically when the
+            decorator is used without parentheses).
+        allowed_scopes: Optional iterable of scope strings that restricted tokens
+            are permitted to use on this endpoint. Defaults to ``None`` (no
+            restricted scopes allowed; only full-scope tokens may pass).
     """
 
-    @wraps(view_func)
-    def wrapper(*args, **kwargs):
-        view_instance, request, view_args = _extract_request(*args)
+    allowed = set(allowed_scopes) if allowed_scopes else set()
 
-        if request is None:
-            return JsonResponse({"error": "Invalid request object", "code": "INVALID_REQUEST"}, status=400)
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            view_instance, request, view_args = _extract_request(*args)
 
-        # Skip JWT validation if disabled (DANGEROUS - for testing only)
-        if not auth_settings.JWT_AUTH_ENABLED:
-            request.user = None
-            request.jwt_payload = None
-            return _call_view(view_func, view_instance, request, view_args, kwargs)
+            if request is None:
+                return JsonResponse({"error": "Invalid request object", "code": "INVALID_REQUEST"}, status=400)
 
-        auth_header = request.headers.get("Authorization", "")
+            # Skip JWT validation if disabled (DANGEROUS - for testing only)
+            if not auth_settings.JWT_AUTH_ENABLED:
+                request.user = None
+                request.jwt_payload = None
+                request.jwt_scope = None
+                return _call_view(func, view_instance, request, view_args, kwargs)
 
-        if not auth_header.startswith("Bearer "):
-            return JsonResponse({"error": "Authorization header required", "code": "AUTH_REQUIRED"}, status=401)
+            auth_header = request.headers.get("Authorization", "")
 
-        token = auth_header[7:]
-        jwt_service = JWTService(settings=get_django_settings(), blacklist_service=DjangoCacheService())
-        payload = jwt_service.decode_token(token)
+            if not auth_header.startswith("Bearer "):
+                return JsonResponse({"error": "Authorization header required", "code": "AUTH_REQUIRED"}, status=401)
 
-        if not payload or not payload.is_valid:
-            return JsonResponse({"error": "Invalid or expired token", "code": "TOKEN_INVALID"}, status=401)
+            token = auth_header[7:]
+            jwt_service = JWTService(settings=get_django_settings(), blacklist_service=DjangoCacheService())
+            payload = jwt_service.decode_token(token)
 
-        # Vérifier que l'application du token correspond
-        application = getattr(request, "application", None)
-        if application:
-            if str(application.id) != payload.app_id:
-                return JsonResponse(
-                    {"error": "Token does not match application", "code": "TOKEN_APP_MISMATCH"}, status=401
-                )
+            if not payload or not payload.is_valid:
+                return JsonResponse({"error": "Invalid or expired token", "code": "TOKEN_INVALID"}, status=401)
 
-        # Récupérer l'utilisateur
-        try:
-            user = User.objects.get(id=payload.user_id)
-            if not user.is_active:
-                return JsonResponse({"error": "User account is inactive", "code": "USER_INACTIVE"}, status=401)
+            # Extraire le scope du token (claim optionnel). Absence de claim =>
+            # token "full-scope" accepté partout, comme avant.
+            claims = getattr(payload, "claims", None) or {}
+            scope = claims.get("scope")
 
-            if auth_settings.ACCOUNT_LOCKOUT_ENABLED and user.is_account_locked():
-                return JsonResponse({"error": "User account is locked", "code": "USER_LOCKED"}, status=401)
+            # Vérifier que l'application du token correspond
+            application = getattr(request, "application", None)
+            if application:
+                if str(application.id) != payload.app_id:
+                    return JsonResponse(
+                        {"error": "Token does not match application", "code": "TOKEN_APP_MISMATCH"}, status=401
+                    )
 
-            request.user = user
-            request.jwt_payload = payload
+            # Récupérer l'utilisateur
+            try:
+                user = User.objects.get(id=payload.user_id)
+                if not user.is_active:
+                    return JsonResponse({"error": "User account is inactive", "code": "USER_INACTIVE"}, status=401)
 
-        except User.DoesNotExist:
-            return JsonResponse({"error": "User not found", "code": "USER_NOT_FOUND"}, status=401)
+                if auth_settings.ACCOUNT_LOCKOUT_ENABLED and user.is_account_locked():
+                    return JsonResponse({"error": "User account is locked", "code": "USER_LOCKED"}, status=401)
 
-        return _call_view(view_func, view_instance, request, view_args, kwargs)
+                request.user = user
+                request.jwt_payload = payload
+                request.jwt_scope = scope
 
-    return wrapper
+            except User.DoesNotExist:
+                return JsonResponse({"error": "User not found", "code": "USER_NOT_FOUND"}, status=401)
+
+            # Enforcement du scope : un token restreint (scope non vide) ne peut
+            # accéder qu'aux endpoints qui autorisent explicitement ce scope.
+            # Les tokens full-scope (scope None) passent partout.
+            if scope is not None and scope not in allowed:
+                return JsonResponse({"error": "Insufficient token scope", "code": "INSUFFICIENT_SCOPE"}, status=403)
+
+            return _call_view(func, view_instance, request, view_args, kwargs)
+
+        return wrapper
+
+    # Support à la fois @require_jwt et @require_jwt(allowed_scopes=[...])
+    if view_func is not None and callable(view_func):
+        return decorator(view_func)
+    return decorator
 
 
 def require_verified_email(view_func):
