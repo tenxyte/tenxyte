@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements-locked.txt pyproject.toml
 #
-asgiref==3.11.1
+asgiref==3.12.1
     # via
     #   django
     #   django-cors-headers
@@ -14,9 +14,9 @@ attrs==26.1.0
     #   referencing
 bcrypt==5.0.0
     # via tenxyte (pyproject.toml)
-certifi==2026.6.17
+certifi==2026.7.22
     # via requests
-cffi==2.1.0
+cffi==2.1.1
     # via cryptography
 charset-normalizer==3.4.9
     # via requests
@@ -40,13 +40,13 @@ django-cors-headers==4.9.0
     # via tenxyte (pyproject.toml)
 django-cryptography==1.1
     # via tenxyte (pyproject.toml)
-djangorestframework==3.17.1
+djangorestframework==3.17.2
     # via
     #   drf-spectacular
     #   tenxyte (pyproject.toml)
 drf-spectacular==0.30.0
     # via tenxyte (pyproject.toml)
-google-auth==2.55.2
+google-auth==2.56.3
     # via
     #   google-auth-oauthlib
     #   tenxyte (pyproject.toml)
@@ -66,7 +66,7 @@ pillow==12.3.0
     # via
     #   qrcode
     #   tenxyte (pyproject.toml)
-pyasn1==0.6.3
+pyasn1==0.6.4
     # via
     #   pyasn1-modules
     #   rsa
@@ -102,7 +102,7 @@ sqlparse==0.5.5
     # via django
 typing-extensions==4.16.0
     # via referencing
-tzdata==2026.2
+tzdata==2026.3
     # via django
 uritemplate==4.2.0
     # via drf-spectacular
