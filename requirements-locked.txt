@@ -98,7 +98,7 @@ rpds-py==0.30.0
     #   referencing
 rsa==4.9.1
     # via google-auth
-sqlparse==0.5.5
+sqlparse==0.6.0
     # via django
 typing-extensions==4.16.0
     # via referencing
