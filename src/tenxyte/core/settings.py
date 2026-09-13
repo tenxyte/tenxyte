@@ -302,6 +302,13 @@ class Settings:
         """Enable HaveIBeenPwned breach check."""
         return self._get("BREACH_CHECK_ENABLED", True)
 
+    @property
+    def bcrypt_rounds(self) -> int:
+        """Bcrypt cost factor for password hashing (also used for the dummy
+        hash computed by AuthenticationService's timing-attack mitigation —
+        must stay in sync with real password hashing cost)."""
+        return self._get("BCRYPT_ROUNDS", 12)
+
     # ============================================================
     # 2FA Settings
     # ============================================================

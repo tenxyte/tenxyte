@@ -53,6 +53,11 @@ from .magic_link_service import (
     MagicLinkRepository,
     UserLookup,
 )
+from .auth_service import (
+    AuthenticationService,
+    AuthResult,
+    PasswordUserLookup,
+)
 from .task_service import TaskService
 from .schemas import (
     UserBase,
@@ -123,4 +128,8 @@ __all__ = [
     "MagicLinkRepository",
     "UserLookup",
     "TaskService",
+    # Services - Authentication
+    "AuthenticationService",
+    "AuthResult",
+    "PasswordUserLookup",
 ]

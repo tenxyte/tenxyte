@@ -427,7 +427,7 @@ Tenxyte seeds 47 permissions via `tenxyte_seed`. Parent permissions (bold) grant
 | **`users`** | All user permissions (parent) |
 | `users.view` | View user list and details |
 | `users.create` | Create new users |
-| `users.edit` | Edit user information |
+| `users.update` | Update user information |
 | `users.delete` | Delete users |
 | `users.ban` | Ban/unban users |
 | `users.lock` | Lock/unlock user accounts |
@@ -511,6 +511,16 @@ python manage.py tenxyte_seed --force              # Delete and recreate all
 ```
 
 This command is idempotent — running it multiple times will not create duplicates.
+
+> **Note:** idempotent means no duplicate rows, not "read-only after the first run." Every run
+> (with or without `--force`) re-syncs the permission set of each role defined in `DEFAULT_ROLES`
+> (`viewer`, `editor`, `admin`, `super_admin`) to match the current code — including
+> `super_admin`, which is re-assigned every permission that exists in the database at that moment.
+> If you customize the permissions of one of these built-in role codes by hand, a later
+> `tenxyte_seed` run (even without `--force`) will overwrite that customization back to the
+> package defaults. `--force` additionally overwrites the role's `name`/`description`. To keep a
+> manual customization across seed runs, use a different role `code`, or a custom `DEFAULT_ROLES`
+> entry, instead of a code Tenxyte ships by default.
 
 ### Swappable Models
 

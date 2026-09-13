@@ -674,6 +674,15 @@ class AbstractUser(models.Model):
 
     def has_permission(self, permission_code: str) -> bool:
         """Vérifie si l'utilisateur a une permission (via rôles, directe, ou hiérarchie)."""
+        # Un superutilisateur, ou un porteur du rôle super_admin, passe toutes les
+        # vérifications RBAC — aligné sur has_perm() et sur ce que documente rbac.md.
+        # Insensible au timing du seed : contrairement à `__all__` (résolu une fois par
+        # tenxyte_seed), une permission créée après coup reste couverte par super_admin.
+        if getattr(self, "is_superuser", False):
+            return True
+        if self.roles.filter(code="super_admin").exists():
+            return True
+
         from .base import get_permission_model
 
         Permission = get_permission_model()

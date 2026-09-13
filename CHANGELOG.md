@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.6.4.2] - 2026-09-13
+
+### Security
+- **RBAC permission contract (audit.view / users.edit)** — `@require_permission("audit.view")` on
+  `AuditLogListView`/`AuditLogDetailView` referenced a code never injected by `tenxyte_seed`,
+  making both endpoints a permanent `403` for every RBAC role — including `super_admin`, since
+  `has_permission()` had no `is_superuser` short-circuit. Both views now require `security.view`
+  (the code their sibling views in `security_views.py` already used, and that `DEFAULT_PERMISSIONS`
+  actually seeds). Separately, `DEFAULT_PERMISSIONS`/the `admin` role used `users.edit` while
+  `UserDetailView.patch` required `users.update`, blocking `PATCH /admin/users/<id>/` for the
+  `admin` and `super_admin` roles; the seed now uses `users.update` everywhere. Existing
+  installations are repaired by migration `0019_rename_users_edit_permission` (renames the
+  `Permission` row in place, preserving role/user assignments) or by re-running `tenxyte_seed`.
+- **`has_permission()` now short-circuits for `is_superuser` and `super_admin`** — previously only
+  `has_perm()` (the Django-admin compatibility shim) bypassed RBAC checks for superusers, contrary
+  to what `rbac.md` documented; `has_permission()` (the method `@require_permission` actually calls)
+  had no such bypass. `super_admin` is now also treated as "all permissions" dynamically instead of
+  via a `Permission.objects.all()` snapshot resolved once at `tenxyte_seed` time — a permission
+  code added after the last seed run (by an integrator, another package, or a future Tenxyte
+  release) is no longer silently invisible to `super_admin`, which is the exact mechanism that
+  masked the `audit.view`/`users.edit` bugs above.
+- Added `tests/test_permission_contract.py` — a static-analysis test asserting every
+  `@require_permission(...)`/`@require_any_permission(...)`/`@require_all_permissions(...)` code
+  referenced anywhere in `src/tenxyte` is covered by `DEFAULT_PERMISSIONS` (directly, or via an
+  injected ancestor), to catch this class of bug in CI going forward.
+
 ### Added
 - **Passwordless Phone Login (OTP)** — Users can now log in with only a phone number and a one-time SMS code, with no password required.
   - `POST /login/otp/request/` — Request a login OTP. If `TENXYTE_OTP_LOGIN_AUTO_REGISTER=True` (default) and the phone number has no account, a *Passwordless Account* is created automatically.
@@ -19,9 +45,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ReauthService` — centralised re-authentication service for sensitive actions. All sensitive endpoints (`/password/change/`, `/2fa/disable/`, account deletion, data export) now accept a valid login OTP (`otp_code`) as an alternative to the current password.
   - Migration `0017_login_otp_type_and_passwordless_account`: additive — adds `User.has_usable_password` field and `"login"` choice to `OTPCode.otp_type`. No existing field or constraint is removed.
 
+- **`tenxyte.core.AuthenticationService`** — the email/password credential-verification decision
+  (lookup → active/banned/locked checks → password check) that used to live inline in
+  `views/auth_views.py` is now a framework-agnostic Core service, consistent with the
+  Core & Adapters architecture (`architecture.md`): `authenticate_by_email_with_core` is now a thin
+  Django adapter around it (same error strings, same `LoginAttempt` audit records — pure
+  extraction, no behavior change for existing callers).
+- **Timing-attack mitigation for login account enumeration** — when the identifier does not
+  resolve to any account, `AuthenticationService` now runs a same-cost `bcrypt.checkpw` comparison
+  against a cached dummy hash before returning, so "no such account" and "wrong password" take a
+  comparable amount of time. This closes a gap that had been tracked as a skipped/unimplemented
+  test stub (`tests/core/test_timing_attack_mitigation.py`) with no corresponding code — the
+  mitigation described there did not previously exist anywhere in the codebase. The dummy hash uses
+  the same `TENXYTE_BCRYPT_ROUNDS` cost as real password hashes (new `Settings.bcrypt_rounds`
+  property) so it can't be distinguished from a real hash by cost alone.
+- **`authenticate_by_phone_with_core` unified onto the same `AuthenticationService`** — phone login
+  previously had a lighter check sequence than email login (no active/banned check, no enumeration
+  mitigation): a banned or deactivated account could still authenticate by phone. It now goes
+  through the exact same Core decision (lookup → active/banned/locked → password, with the same
+  timing mitigation), via a `_PhonePasswordLookup` adapter that resolves `(country_code,
+  phone_number)` through Django ORM and hands the rest to Core. This is a deliberate behavior
+  change (previously-permitted logins for banned/inactive accounts via phone are now rejected,
+  matching email); no existing test relied on the previous gap, and the full suite is green.
+  `LoginAttempt` audit records are still only written for the email flow — phone login recording
+  no attempt at all on any failure branch is a separate, pre-existing asymmetry not addressed here.
+
 ### Changed
 - **`/password/change/`** — Passwordless accounts (`has_usable_password=False`) are now rejected with `400 PASSWORDLESS_ACCOUNT_USE_SET_INITIAL_PASSWORD` and directed to the new `/password/set-initial/` endpoint.
 - **`/2fa/disable/`, account deletion endpoints, data export endpoint** — Now accept `otp_code` as an alternative to `current_password` for re-authentication, enabling passwordless users to perform sensitive actions without a password.
+- Clarified in `rbac.md` and in the `tenxyte_seed` module docstring that the command's idempotency
+  guarantee ("no duplicate rows") does not extend to the permission assignments of the built-in
+  `DEFAULT_ROLES` codes (`viewer`/`editor`/`admin`/`super_admin`): every run, with or without
+  `--force`, re-syncs those roles' permissions to the package's current definitions, overwriting
+  any manual customization made under the same role code.
 
 ## [0.9.6.4.1]
 
