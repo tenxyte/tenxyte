@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- CI's Lint job was still red after the fix above on 4 files deliberately left out of it (`src/tenxyte/__init__.py`, `src/tenxyte/exceptions.py`, `services/social_auth_service.py`, `views/social_auth_views.py`) — confirmed by the actual CI run on this branch. Fixed: `__all__` sorting in `__init__.py`, import ordering in `exceptions.py`, and the full set of RUF012/BLE001/SIM102/G201/UP035/UP045/UP006 findings in the two social-auth files (same treatment as the rest of this fix — ClassVar annotations, `# noqa: BLE001` on adapter-boundary excepts, `logger.exception`, implicit-Optional/legacy-typing modernization). `ruff check src/tenxyte/` is now green from a fresh CI checkout, not just locally.
 - **Non-deterministic lint gate** — `ruff`/`black` were unpinned (`ruff>=0.9`) in both dev
   dependencies and CI's `pip install ruff black`. Ruff's own unconfigured default rule set grew
   substantially between 0.15 and 0.16 (added, among others, flake8-bandit, flake8-bugbear,

@@ -5,18 +5,19 @@ Endpoint générique: POST {API_PREFIX}/auth/social/<provider>/
 Providers supportés: google, github, microsoft, facebook
 """
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny
-from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer, OpenApiParameter
-from drf_spectacular.types import OpenApiTypes
-from rest_framework import serializers
+from typing import ClassVar
 
-from ..services.social_auth_service import SocialAuthService, get_provider
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from ..decorators import get_client_ip
 from ..device_info import build_device_info_from_user_agent
-from ..throttles import LoginThrottle, LoginHourlyThrottle
+from ..services.social_auth_service import SocialAuthService, get_provider
+from ..throttles import LoginHourlyThrottle, LoginThrottle
 
 
 class SocialAuthView(APIView):
@@ -32,8 +33,8 @@ class SocialAuthView(APIView):
     - id_token: pour Google uniquement
     """
 
-    permission_classes = [AllowAny]
-    throttle_classes = [LoginThrottle, LoginHourlyThrottle]
+    permission_classes: ClassVar[list] = [AllowAny]
+    throttle_classes: ClassVar[list] = [LoginThrottle, LoginHourlyThrottle]
 
     @extend_schema(
         tags=["Social Auth"],
@@ -168,12 +169,15 @@ class SocialAuthView(APIView):
 
             # Validate redirect_uri against application whitelist
             application = getattr(request, "application", None)
-            if application and hasattr(application, "is_redirect_uri_allowed"):
-                if not application.is_redirect_uri_allowed(redirect_uri):
-                    return Response(
-                        {"error": "redirect_uri is not in the application's whitelist", "code": "INVALID_REDIRECT_URI"},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
+            if (
+                application
+                and hasattr(application, "is_redirect_uri_allowed")
+                and not application.is_redirect_uri_allowed(redirect_uri)
+            ):
+                return Response(
+                    {"error": "redirect_uri is not in the application's whitelist", "code": "INVALID_REDIRECT_URI"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             code_verifier = request.data.get("code_verifier", None)
             tokens = oauth_provider.exchange_code(request.data["code"], redirect_uri, code_verifier=code_verifier)
@@ -235,7 +239,7 @@ class SocialAuthCallbackView(APIView):
     après autorisation avec un authorization code.
     """
 
-    permission_classes = [AllowAny]
+    permission_classes: ClassVar[list] = [AllowAny]
 
     @extend_schema(
         tags=["Social Auth"],
@@ -395,10 +399,10 @@ class SocialAuthCallbackView(APIView):
 
             return Response(data)
 
-        except Exception as e:
+        except Exception:  # noqa: BLE001, RUF100
             import logging
 
-            logging.getLogger(__name__).error(f"OAuth callback failed: {e}", exc_info=True)
+            logging.getLogger(__name__).exception("OAuth callback failed")
             return Response(
                 {
                     "error": "OAuth2 callback processing failed",
