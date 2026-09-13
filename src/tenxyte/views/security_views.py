@@ -56,7 +56,7 @@ class AuditLogListView(APIView):
         ],
         responses={200: AuditLogSerializer(many=True)},
     )
-    @require_permission("audit.view")
+    @require_permission("security.view")
     def get(self, request):
         queryset = AuditLog.objects.select_related("user", "application").all()
         queryset = apply_audit_log_filters(queryset, request)
@@ -81,7 +81,7 @@ class AuditLogDetailView(APIView):
         summary="Détails d'un audit log",
         responses={200: AuditLogSerializer, 404: OpenApiTypes.OBJECT},
     )
-    @require_permission("audit.view")
+    @require_permission("security.view")
     def get(self, request, log_id):
         try:
             log = AuditLog.objects.select_related("user", "application").get(id=log_id)

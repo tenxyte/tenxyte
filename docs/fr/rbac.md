@@ -427,7 +427,7 @@ Tenxyte injecte 47 permissions via `tenxyte_seed`. Les permissions parentes (en 
 | **`users`** | Toutes les permissions utilisateur (parent) |
 | `users.view` | Voir la liste et les détails des utilisateurs |
 | `users.create` | Créer de nouveaux utilisateurs |
-| `users.edit` | Modifier les informations des utilisateurs |
+| `users.update` | Mettre à jour les informations des utilisateurs |
 | `users.delete` | Supprimer des utilisateurs |
 | `users.ban` | Bannir/débannir des utilisateurs |
 | `users.lock` | Verrouiller/déverrouiller des comptes utilisateurs |
@@ -511,6 +511,17 @@ python manage.py tenxyte_seed --force              # Supprimer et tout recréer
 ```
 
 Cette commande est idempotente — l'exécuter plusieurs fois ne créera pas de doublons.
+
+> **Remarque :** idempotente signifie « pas de doublons », pas « sans effet après le premier
+> passage ». Chaque exécution (avec ou sans `--force`) resynchronise l'ensemble des permissions
+> de chaque rôle défini dans `DEFAULT_ROLES` (`viewer`, `editor`, `admin`, `super_admin`) sur l'état
+> actuel du code — y compris `super_admin`, qui se voit réassigner toutes les permissions
+> présentes en base à cet instant. Si vous personnalisez à la main les permissions de l'un de ces
+> rôles intégrés, un `tenxyte_seed` ultérieur (même sans `--force`) écrasera cette personnalisation
+> pour revenir aux valeurs par défaut du paquet. `--force` écrase en plus `name`/`description` du
+> rôle. Pour conserver une personnalisation manuelle à travers les exécutions du seed, utilisez un
+> `code` de rôle différent, ou une entrée `DEFAULT_ROLES` personnalisée, plutôt qu'un code fourni
+> par défaut par Tenxyte.
 
 ### Modèles Interchangeables
 

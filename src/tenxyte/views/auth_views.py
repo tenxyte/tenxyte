@@ -34,7 +34,7 @@ from ..throttles import (
 from ..conf import auth_settings
 
 # Core imports
-from tenxyte.core import JWTService, Settings
+from tenxyte.core import JWTService, Settings, AuthenticationService
 from tenxyte.adapters.django.repositories import DjangoUserRepository
 from tenxyte.adapters.django.cache_service import DjangoCacheService
 from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
@@ -429,6 +429,45 @@ class RegisterView(APIView):
         return Response(response_data, status=status.HTTP_201_CREATED)
 
 
+class _EmailPasswordLookup:
+    """Adapts DjangoUserRepository to AuthenticationService's PasswordUserLookup protocol."""
+
+    def __init__(self, user_repo):
+        self._repo = user_repo
+
+    def get_by_identifier(self, identifier):
+        return self._repo.get_by_email(identifier)
+
+    def is_account_locked(self, user_id):
+        return self._repo.is_account_locked(user_id)
+
+    def check_password(self, user_id, password):
+        return self._repo.check_password(user_id, password)
+
+    def record_failed_login(self, user_id):
+        return self._repo.record_failed_login(user_id)
+
+
+# Maps AuthResult.failure_reason (Core, generic) to the exact LoginAttempt.failure_reason
+# strings and user-facing error messages this endpoint has always returned — Core stays
+# agnostic of adapter-specific wording (e.g. "email" vs "phone number").
+_EMAIL_LOGIN_ATTEMPT_REASONS = {
+    "user_not_found": "User not found",
+    "account_inactive": "Account inactive",
+    "account_banned": "Account banned",
+    "account_locked": "Account locked",
+    "invalid_password": "Invalid password",
+}
+
+_EMAIL_LOGIN_ERROR_MESSAGES = {
+    "user_not_found": "Invalid email or password",
+    "account_inactive": "Account is inactive",
+    "account_banned": "Account has been banned",
+    "account_locked": "Account has been locked due to too many failed login attempts",
+    "invalid_password": "Invalid email or password",
+}
+
+
 def authenticate_by_email_with_core(email, password, ip_address=None, device_info="", application=None):
     """
     Authenticate user by email using Core repository.
@@ -439,9 +478,10 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
     user_repo = get_core_user_repo()
     jwt_service = get_core_jwt_service()
 
-    user = user_repo.get_by_email(email)
-    if not user:
-        # Record failed attempt for non-existent user
+    auth_service = AuthenticationService(settings=get_core_settings(), user_lookup=_EmailPasswordLookup(user_repo))
+    result = auth_service.authenticate(email, password)
+
+    if not result.success:
         try:
             from tenxyte.models import LoginAttempt
 
@@ -450,81 +490,13 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
                 ip_address=ip_address or "127.0.0.1",
                 application=application,
                 success=False,
-                failure_reason="User not found",
+                failure_reason=_EMAIL_LOGIN_ATTEMPT_REASONS.get(result.failure_reason, result.failure_reason),
             )
         except Exception:
             pass
-        return False, None, "Invalid email or password"
+        return False, None, _EMAIL_LOGIN_ERROR_MESSAGES.get(result.failure_reason, result.error)
 
-    # Check if user is active
-    if not user.is_active:
-        # Record failed attempt for inactive user
-        try:
-            from tenxyte.models import LoginAttempt
-
-            LoginAttempt.record(
-                identifier=email,
-                ip_address=ip_address or "127.0.0.1",
-                application=application,
-                success=False,
-                failure_reason="Account inactive",
-            )
-        except Exception:
-            pass
-        return False, None, "Account is inactive"
-
-    # Check if user is banned (stored in metadata)
-    if user.metadata and user.metadata.get("is_banned"):
-        # Record failed attempt for banned user
-        try:
-            from tenxyte.models import LoginAttempt
-
-            LoginAttempt.record(
-                identifier=email,
-                ip_address=ip_address or "127.0.0.1",
-                application=application,
-                success=False,
-                failure_reason="Account banned",
-            )
-        except Exception:
-            pass
-        return False, None, "Account has been banned"
-
-    # Check if account is locked
-    if user_repo.is_account_locked(user.id):
-        # Record failed attempt for locked account
-        try:
-            from tenxyte.models import LoginAttempt
-
-            LoginAttempt.record(
-                identifier=email,
-                ip_address=ip_address or "127.0.0.1",
-                application=application,
-                success=False,
-                failure_reason="Account locked",
-            )
-        except Exception:
-            pass
-        return False, None, "Account has been locked due to too many failed login attempts"
-
-    # Verify password
-    if not user_repo.check_password(user.id, password):
-        # Record failed attempt
-        try:
-            from tenxyte.models import LoginAttempt
-
-            LoginAttempt.record(
-                identifier=email,
-                ip_address=ip_address or "127.0.0.1",
-                application=application,
-                success=False,
-                failure_reason="Invalid password",
-            )
-        except Exception:
-            pass
-        # Record failed attempt via repository for account locking
-        user_repo.record_failed_login(user.id)
-        return False, None, "Invalid email or password"
+    user = result.user
 
     # Update last login
     user_repo.update_last_login(user.id, datetime.now(timezone.utc))
@@ -599,6 +571,54 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
     return True, data, None
 
 
+class _PhonePasswordLookup:
+    """
+    Adapts phone-based Django ORM lookup to AuthenticationService's PasswordUserLookup protocol.
+
+    `identifier` is a `(country_code, phone_number)` tuple — phone lookup is a
+    Django-specific extension (Core has no concept of a phone number), but
+    once the Django user is resolved, credential-decision logic is identical
+    to the email flow and goes through the same Core service. The resolved
+    `django_user` is cached on the instance so the caller can reuse it for
+    serialization after a successful check, without a second query.
+    """
+
+    def __init__(self, user_repo):
+        self._repo = user_repo
+        self.django_user = None
+
+    def get_by_identifier(self, identifier):
+        country_code, phone_number = identifier
+        from ..models import get_user_model
+
+        UserModel = get_user_model()
+        try:
+            self.django_user = UserModel.objects.get(
+                phone_country_code=country_code, phone_number=phone_number, is_deleted=False
+            )
+        except UserModel.DoesNotExist:
+            return None
+        return self._repo.get_by_id(str(self.django_user.id))
+
+    def is_account_locked(self, user_id):
+        return self._repo.is_account_locked(user_id)
+
+    def check_password(self, user_id, password):
+        return self._repo.check_password(user_id, password)
+
+    def record_failed_login(self, user_id):
+        return self._repo.record_failed_login(user_id)
+
+
+_PHONE_LOGIN_ERROR_MESSAGES = {
+    "user_not_found": "Invalid phone number or password",
+    "account_inactive": "Account is inactive",
+    "account_banned": "Account has been banned",
+    "account_locked": "Account has been locked due to too many failed login attempts",
+    "invalid_password": "Invalid phone number or password",
+}
+
+
 def authenticate_by_phone_with_core(
     country_code, phone_number, password, ip_address=None, device_info="", application=None
 ):
@@ -608,34 +628,18 @@ def authenticate_by_phone_with_core(
     """
     from tenxyte.ports.repositories import MFAType
 
-    # Phone lookup requires Django ORM for now
-    from ..models import get_user_model
-
-    UserModel = get_user_model()
-
-    try:
-        django_user = UserModel.objects.get(
-            phone_country_code=country_code, phone_number=phone_number, is_deleted=False
-        )
-    except UserModel.DoesNotExist:
-        return False, None, "Invalid phone number or password"
-
-    # Use Core repository for user operations
     user_repo = get_core_user_repo()
     jwt_service = get_core_jwt_service()
 
-    user = user_repo.get_by_id(str(django_user.id))
-    if not user:
-        return False, None, "Invalid phone number or password"
+    phone_lookup = _PhonePasswordLookup(user_repo)
+    auth_service = AuthenticationService(settings=get_core_settings(), user_lookup=phone_lookup)
+    result = auth_service.authenticate((country_code, phone_number), password)
 
-    # Check if account is locked
-    if user_repo.is_account_locked(user.id):
-        return False, None, "Account has been locked due to too many failed login attempts"
+    if not result.success:
+        return False, None, _PHONE_LOGIN_ERROR_MESSAGES.get(result.failure_reason, result.error)
 
-    # Verify password
-    if not user_repo.check_password(user.id, password):
-        user_repo.record_failed_login(user.id)
-        return False, None, "Invalid phone number or password"
+    user = result.user
+    django_user = phone_lookup.django_user
 
     # Update last login
     user_repo.update_last_login(user.id, datetime.now(timezone.utc))

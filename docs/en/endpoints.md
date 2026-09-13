@@ -76,15 +76,15 @@
     - [`POST /admin/users/<id>/lock/`  `users.lock`](#post-adminusersidlock-userslock)
     - [`POST /admin/users/<id>/unlock/`  `users.lock`](#post-adminusersidunlock-userslock)
   - [Admin — Security](#admin-security)
-    - [`GET /admin/audit-logs/`  `audit.view`](#get-adminaudit-logs-auditview)
-    - [`GET /admin/audit-logs/<id>/`  `audit.view`](#get-adminaudit-logsid-auditview)
-    - [`GET /admin/login-attempts/`  `audit.view`](#get-adminlogin-attempts-auditview)
-    - [`GET /admin/blacklisted-tokens/`  `audit.view`](#get-adminblacklisted-tokens-auditview)
+    - [`GET /admin/audit-logs/`  `security.view`](#get-adminaudit-logs-securityview)
+    - [`GET /admin/audit-logs/<id>/`  `security.view`](#get-adminaudit-logsid-securityview)
+    - [`GET /admin/login-attempts/`  `security.view`](#get-adminlogin-attempts-securityview)
+    - [`GET /admin/blacklisted-tokens/`  `security.view`](#get-adminblacklisted-tokens-securityview)
     - [`POST /admin/blacklisted-tokens/cleanup/`  `security.view`](#post-adminblacklisted-tokenscleanup-securityview)
-    - [`GET /admin/refresh-tokens/`  `audit.view`](#get-adminrefresh-tokens-auditview)
+    - [`GET /admin/refresh-tokens/`  `security.view`](#get-adminrefresh-tokens-securityview)
     - [`POST /admin/refresh-tokens/<id>/revoke/`  `security.view`](#post-adminrefresh-tokensidrevoke-securityview)
   - [Admin — GDPR](#admin-gdpr)
-    - [`GET /admin/deletion-requests/`  `gdpr.view`](#get-admindeletion-requests-gdprview)
+    - [`GET /admin/deletion-requests/`  `gdpr.admin`](#get-admindeletion-requests-gdpradmin)
     - [`GET /admin/deletion-requests/<id>/`  `gdpr.admin`](#get-admindeletion-requestsid-gdpradmin)
     - [`POST /admin/deletion-requests/<id>/process/`  `gdpr.process`](#post-admindeletion-requestsidprocess-gdprprocess)
     - [`POST /admin/deletion-requests/process-expired/`  `gdpr.process`](#post-admindeletion-requestsprocess-expired-gdprprocess)
@@ -571,12 +571,12 @@ Verify the login OTP code and receive JWT tokens. Applies all the same account c
 
 ## Social Login (Multi-Provider)
 
-Requires social provider configuration (Google, GitHub, Microsoft, Facebook).
+Requires social provider configuration (Google, GitHub, Microsoft, Facebook, Apple).
 
 ### `POST /social/<provider>/`
 Authenticate via OAuth2 provider.
 
-**Providers:** `google`, `github`, `microsoft`, `facebook`
+**Providers:** `google`, `github`, `microsoft`, `facebook`, `apple`
 
 **Request (access_token):**
 ```json
@@ -597,14 +597,45 @@ Authenticate via OAuth2 provider.
 ```
 `code_verifier`: Optional PKCE code verifier (RFC 7636). Required if the authorization request included a `code_challenge`.
 
-**Request (Google ID token):**
+**Request (Google or Apple ID token):**
 ```json
 {
-  "id_token": "<google-id-token>",
+  "id_token": "<google-or-apple-id-token>",
   "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
 `device_info`: Optional device fingerprinting info.
+
+**Request (Apple — authorization code, first authorization):**
+```json
+{
+  "code": "<apple-authorization-code>",
+  "redirect_uri": "https://yourapp.com/auth/apple/callback",
+  "user": {
+    "name": {
+      "firstName": "John",
+      "lastName": "Doe"
+    }
+  }
+}
+```
+
+> **Apple Sign-In specifics**
+>
+> - Apple has no userinfo endpoint: identity comes from the `id_token` it issues, validated
+>   server-side against Apple's JWKS (`https://appleid.apple.com/auth/keys`). Both the
+>   `code` + `redirect_uri` flow and the direct `id_token` flow are supported, exactly like Google.
+> - The `user` field is sent by Apple **only on the very first authorization** for a given user/app
+>   pair — it contains the name, which never appears in the `id_token`. Omit it on subsequent
+>   logins; the response will simply carry empty `first_name`/`last_name` for a returning user
+>   whose name Tenxyte hasn't seen before (the name from the first login is preserved once stored).
+> - Apple requires `response_mode=form_post` on the frontend authorization request whenever the
+>   requested `scope` includes `name` or `email` — this is a frontend/Apple-side requirement only;
+>   this backend endpoint always accepts and returns JSON regardless of how the frontend obtained
+>   the `code`/`id_token`.
+> - A user who chooses "Hide My Email" authenticates with a `@privaterelay.appleid.com` address.
+>   Tenxyte treats it as a normal, valid, verified email — configure Apple's private relay in your
+>   outbound email provider if you need to email these users.
 
 **Response `200`:**
 ```json
@@ -652,7 +683,7 @@ Authenticate via OAuth2 provider.
 {
   "error": "Unsupported provider",
   "code": "INVALID_PROVIDER",
-  "supported_providers": ["google", "github", "microsoft", "facebook"]
+  "supported_providers": ["google", "github", "microsoft", "facebook", "apple"]
 }
 ```
 
@@ -682,6 +713,12 @@ OAuth2 callback endpoint for authorization code flow.
 - `redirect_uri` (required): Original redirect URI
 - `code_verifier` (optional): PKCE code verifier (RFC 7636)
 - `state` (optional): CSRF/state parameter
+
+> **Apple note:** because Apple requires `response_mode=form_post` for scopes including
+> `name`/`email`, Apple delivers its authorization result via a `POST` to your `redirect_uri`, not
+> a `GET` redirect — your frontend/backend route handling that `POST` should forward `code` (and
+> `user`, on first authorization) to `POST /social/apple/` above rather than relying on this `GET`
+> callback endpoint for the Apple flow.
 
 **Response `200`:**
 ```json
@@ -3101,7 +3138,7 @@ POST /admin/users/123/unlock/
 
 ## Admin — Security
 
-### `GET /admin/audit-logs/`  `audit.view`
+### `GET /admin/audit-logs/`  `security.view`
 List audit log entries.
 
 **Headers (required):**
@@ -3146,7 +3183,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /admin/audit-logs/<id>/`  `audit.view`
+### `GET /admin/audit-logs/<id>/`  `security.view`
 Get a single audit log entry.
 
 **Headers (required):**
@@ -3181,7 +3218,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /admin/login-attempts/`  `audit.view`
+### `GET /admin/login-attempts/`  `security.view`
 List login attempts.
 
 **Headers (required):**
@@ -3219,7 +3256,7 @@ Authorization: Bearer <access_token>
 }
 ```
 
-### `GET /admin/blacklisted-tokens/`  `audit.view`
+### `GET /admin/blacklisted-tokens/`  `security.view`
 List active blacklisted tokens.
 
 **Headers (required):**
@@ -3277,7 +3314,7 @@ POST /admin/blacklisted-tokens/cleanup/
 }
 ```
 
-### `GET /admin/refresh-tokens/`  `audit.view`
+### `GET /admin/refresh-tokens/`  `security.view`
 List active refresh tokens.
 
 **Headers (required):**
@@ -3373,7 +3410,7 @@ POST /admin/refresh-tokens/123/revoke/
 
 ## Admin — GDPR
 
-### `GET /admin/deletion-requests/`  `gdpr.view`
+### `GET /admin/deletion-requests/`  `gdpr.admin`
 List account deletion requests.
 
 **Headers (required):**

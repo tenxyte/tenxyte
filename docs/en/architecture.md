@@ -20,8 +20,8 @@ Tenxyte is built on a **Framework-Agnostic Core** architecture, specifically des
 ├──────────────────┴───────────────────┴──────────────────────┤
 │                     tenxyte.core                            │
 │  jwt_service · totp_service · webauthn_service              │
-│  magic_link_service · cache_service · email_service         │
-│  session_service · schemas · settings                       │
+│  magic_link_service · auth_service · cache_service           │
+│  email_service · session_service · schemas · settings        │
 ├─────────────────────────────────────────────────────────────┤
 │                     tenxyte.ports                           │
 │  UserRepository · OrganizationRepository · RoleRepository   │
@@ -48,6 +48,8 @@ It strictly handles:
 - TOTP-based 2FA setup, verification, and backup codes (`TOTPService`).
 - WebAuthn/Passkey registration and authentication (`WebAuthnService`).
 - Passwordless login via magic links (`MagicLinkService`).
+- Password-based credential verification, including timing-attack mitigation for
+  account enumeration (`AuthenticationService`).
 - Cache abstractions and in-memory fallbacks (`CacheService`, `InMemoryCacheService`).
 - Email dispatch abstractions (`EmailService`, `ConsoleEmailService`).
 - Session lifecycle management (`SessionService`).
