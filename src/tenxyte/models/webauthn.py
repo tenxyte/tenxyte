@@ -7,10 +7,12 @@ Contains:
 """
 
 import secrets
+from datetime import timedelta
+from typing import ClassVar
+
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
-from django.conf import settings
-from datetime import timedelta
 
 from .base import AutoFieldClass
 
@@ -60,7 +62,7 @@ class WebAuthnChallenge(models.Model):
     OPERATION_REGISTER = "register"
     OPERATION_AUTHENTICATE = "authenticate"
 
-    OPERATION_CHOICES = [
+    OPERATION_CHOICES: ClassVar[list] = [
         (OPERATION_REGISTER, "Register"),
         (OPERATION_AUTHENTICATE, "Authenticate"),
     ]

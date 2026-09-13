@@ -5,34 +5,35 @@ These views act as adapters between Django/DRF and the framework-agnostic Core.
 They maintain 100% backward compatibility with existing endpoints and responses.
 """
 
-from django.utils import timezone
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
-from drf_spectacular.types import OpenApiTypes
-from rest_framework import serializers
+from typing import ClassVar
 
-from ..serializers import UserSerializer
-from ..serializers.auth_serializers import UpdateProfileSerializer
-from ..serializers.user_admin_serializers import (
-    AdminUserListSerializer,
-    AdminUserDetailSerializer,
-    AdminUserUpdateSerializer,
-    BanUserSerializer,
-    LockUserSerializer,
-)
-from ..models import get_user_model
-from ..decorators import require_jwt, require_permission
-from ..pagination import TenxytePagination
-from ..filters import apply_user_filters
+from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 # Core imports
 from tenxyte.adapters.django.repositories import DjangoUserRepository
 from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
 from tenxyte.core import Settings
 from tenxyte.services.reauth_service import ReauthService
+
+from ..decorators import require_jwt, require_permission
+from ..filters import apply_user_filters
+from ..models import get_user_model
+from ..pagination import TenxytePagination
+from ..serializers import UserSerializer
+from ..serializers.auth_serializers import UpdateProfileSerializer
+from ..serializers.user_admin_serializers import (
+    AdminUserDetailSerializer,
+    AdminUserListSerializer,
+    AdminUserUpdateSerializer,
+    BanUserSerializer,
+    LockUserSerializer,
+)
 
 User = get_user_model()
 
@@ -61,7 +62,7 @@ class MeView(APIView):
     Récupérer le profil de l'utilisateur connecté
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes: ClassVar[list] = [IsAuthenticated]
 
     @extend_schema(
         tags=["User"],
@@ -303,7 +304,7 @@ class AvatarUploadView(APIView):
     Upload et met à jour l'avatar de l'utilisateur
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes: ClassVar[list] = [IsAuthenticated]
 
     @extend_schema(
         tags=["User"],
@@ -900,7 +901,7 @@ class DeleteAccountView(APIView):
     Supprime le compte de l'utilisateur connecté
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes: ClassVar[list] = [IsAuthenticated]
 
     @extend_schema(
         tags=["User"],

@@ -1,6 +1,8 @@
 import logging
 import threading
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
+
 from tenxyte.core.task_service import TaskService
 
 logger = logging.getLogger(__name__)
@@ -9,8 +11,8 @@ logger = logging.getLogger(__name__)
 def _run_in_thread(func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
     try:
         func(*args, **kwargs)
-    except Exception as e:
-        logger.exception("Error executing background task in SyncThreadTaskService: %s", str(e))
+    except Exception:
+        logger.exception("Error executing background task in SyncThreadTaskService")
 
 
 class SyncThreadTaskService(TaskService):

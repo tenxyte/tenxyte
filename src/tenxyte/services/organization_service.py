@@ -9,19 +9,20 @@ Handles:
 - Permission checks
 """
 
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Any
+
 from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
+from ..conf import org_settings
 from ..models import (
+    AuditLog,
+    get_organization_membership_model,
     get_organization_model,
     get_organization_role_model,
-    get_organization_membership_model,
     get_user_model,
-    AuditLog,
 )
-from ..conf import org_settings
 
 
 class OrganizationService:
@@ -42,12 +43,12 @@ class OrganizationService:
         self,
         name: str,
         created_by,
-        slug: str = None,
+        slug: str | None = None,
         description: str = "",
-        parent_id: int = None,
-        metadata: dict = None,
+        parent_id: int | None = None,
+        metadata: dict | None = None,
         max_members: int = 0,
-    ) -> Tuple[bool, Optional[Any], str]:
+    ) -> tuple[bool, Any | None, str]:
         """
         Create a new organization.
 
@@ -130,13 +131,13 @@ class OrganizationService:
 
             return True, organization, ""
 
-        except Exception as e:
+        except Exception:
             import logging
 
-            logging.getLogger(__name__).error(f"Error creating organization: {e}", exc_info=True)
+            logging.getLogger(__name__).exception("Error creating organization")
             return False, None, "An unexpected error occurred while creating the organization."
 
-    def get_organization(self, slug: str = None, org_id: int = None) -> Optional[Any]:
+    def get_organization(self, slug: str | None = None, org_id: int | None = None) -> Any | None:
         """
         Get an organization by slug or ID.
 
@@ -157,7 +158,7 @@ class OrganizationService:
             return None
 
     @transaction.atomic
-    def update_organization(self, organization, user, **updates) -> Tuple[bool, str]:
+    def update_organization(self, organization, user, **updates) -> tuple[bool, str]:
         """
         Update an organization.
 
@@ -198,7 +199,7 @@ class OrganizationService:
         return True, ""
 
     @transaction.atomic
-    def delete_organization(self, organization, user) -> Tuple[bool, str]:
+    def delete_organization(self, organization, user) -> tuple[bool, str]:
         """
         Delete an organization (soft delete).
 
@@ -232,7 +233,7 @@ class OrganizationService:
     # Hierarchy Management
     # =============================================
 
-    def get_organization_tree(self, organization) -> Dict[str, Any]:
+    def get_organization_tree(self, organization) -> dict[str, Any]:
         """
         Get the complete organization tree.
 
@@ -257,7 +258,7 @@ class OrganizationService:
         root = organization.get_root()
         return build_tree(root)
 
-    def move_organization(self, organization, new_parent_id: int, user) -> Tuple[bool, str]:
+    def move_organization(self, organization, new_parent_id: int, user) -> tuple[bool, str]:
         """
         Move an organization to a new parent.
 
@@ -318,7 +319,7 @@ class OrganizationService:
 
     def add_member(
         self, organization, user_to_add, role_code: str, added_by, status: str = "active"
-    ) -> Tuple[bool, Optional[Any], str]:
+    ) -> tuple[bool, Any | None, str]:
         """
         Add a member to an organization.
 
@@ -369,7 +370,7 @@ class OrganizationService:
 
         return True, membership, ""
 
-    def update_member_role(self, organization, user_to_update, new_role_code: str, updated_by) -> Tuple[bool, str]:
+    def update_member_role(self, organization, user_to_update, new_role_code: str, updated_by) -> tuple[bool, str]:
         """
         Update a member's role in an organization.
 
@@ -420,7 +421,7 @@ class OrganizationService:
 
         return True, ""
 
-    def remove_member(self, organization, user_to_remove, removed_by) -> Tuple[bool, str]:
+    def remove_member(self, organization, user_to_remove, removed_by) -> tuple[bool, str]:
         """
         Remove a member from an organization.
 
@@ -455,7 +456,7 @@ class OrganizationService:
 
         return True, ""
 
-    def get_members(self, organization, status: str = "active") -> List[Any]:
+    def get_members(self, organization, status: str = "active") -> list[Any]:
         """
         Get all members of an organization.
 
@@ -480,7 +481,7 @@ class OrganizationService:
     @transaction.atomic
     def create_invitation(
         self, organization, email: str, role_code: str, invited_by, expires_in_days: int = 7
-    ) -> Tuple[bool, Optional[Any], str]:
+    ) -> tuple[bool, Any | None, str]:
         """
         Create an invitation to join an organization.
 
@@ -596,11 +597,11 @@ class OrganizationService:
 
         created_roles = []
         for role_data in system_roles:
-            role, created = self.OrganizationRole.objects.get_or_create(code=role_data["code"], defaults=role_data)
+            role, _created = self.OrganizationRole.objects.get_or_create(code=role_data["code"], defaults=role_data)
             created_roles.append(role)
 
         return created_roles
 
-    def _audit_log(self, action: str, user, details: Dict[str, Any] = None):
+    def _audit_log(self, action: str, user, details: dict[str, Any] | None = None):
         """Create an audit log entry."""
         AuditLog.objects.create(action=action, user=user, ip_address=None, details=details or {})

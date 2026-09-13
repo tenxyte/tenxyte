@@ -6,10 +6,12 @@ Contains:
 """
 
 import secrets
+from datetime import timedelta
+from typing import ClassVar
+
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
-from django.conf import settings
-from datetime import timedelta
 
 from .base import AutoFieldClass
 
@@ -26,7 +28,7 @@ class AccountDeletionRequest(models.Model):
     5. User cancels → status=CANCELLED
     """
 
-    STATUS_CHOICES = [
+    STATUS_CHOICES: ClassVar[list] = [
         ("pending", "Pending"),
         ("confirmation_sent", "Confirmation Sent"),
         ("confirmed", "Confirmed"),
@@ -70,8 +72,8 @@ class AccountDeletionRequest(models.Model):
 
     class Meta:
         db_table = "account_deletion_requests"
-        ordering = ["-requested_at"]
-        indexes = [
+        ordering: ClassVar[list] = ["-requested_at"]
+        indexes: ClassVar[list] = [
             models.Index(fields=["user", "status"]),
             models.Index(fields=["status", "grace_period_ends_at"]),
             models.Index(fields=["confirmation_token"]),
@@ -107,10 +109,10 @@ class AccountDeletionRequest(models.Model):
             email_service = DjangoEmailService()
             email_service.send_account_deletion_confirmation(self)
             return True
-        except Exception as e:
+        except Exception:
             import logging
 
-            logging.getLogger(__name__).error(f"Error sending deletion confirmation email: {e}", exc_info=True)
+            logging.getLogger(__name__).exception("Error sending deletion confirmation email")
             from .security import AuditLog
 
             AuditLog.objects.create(
@@ -150,10 +152,10 @@ class AccountDeletionRequest(models.Model):
 
                 email_service = DjangoEmailService()
                 email_service.send_account_deletion_completed(self)
-            except Exception as e:
+            except Exception:
                 import logging
 
-                logging.getLogger(__name__).error(f"Error sending deletion completion email: {e}", exc_info=True)
+                logging.getLogger(__name__).exception("Error sending deletion completion email")
                 from .security import AuditLog
 
                 AuditLog.objects.create(

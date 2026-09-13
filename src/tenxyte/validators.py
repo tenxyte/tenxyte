@@ -9,8 +9,8 @@ Validation robuste des mots de passe avec:
 """
 
 import re
-from typing import Tuple, List, Optional
 from dataclasses import dataclass
+from typing import ClassVar
 
 from .conf import auth_settings
 
@@ -20,7 +20,7 @@ class PasswordValidationResult:
     """Resultat de la validation d'un mot de passe."""
 
     is_valid: bool
-    errors: List[str]
+    errors: list[str]
     score: int  # 0-100, force du mot de passe
     strength: str  # 'weak', 'fair', 'good', 'strong', 'excellent'
 
@@ -37,7 +37,7 @@ class PasswordValidator:
     """
 
     # Mots de passe courants a rejeter (top 100 + variations)
-    COMMON_PASSWORDS = {
+    COMMON_PASSWORDS: ClassVar[dict] = {
         "password",
         "password1",
         "password123",
@@ -121,7 +121,7 @@ class PasswordValidator:
     }
 
     # Sequences a eviter
-    SEQUENCES = [
+    SEQUENCES: ClassVar[list] = [
         "0123456789",
         "9876543210",
         "abcdefghijklmnopqrstuvwxyz",
@@ -133,12 +133,12 @@ class PasswordValidator:
 
     def __init__(
         self,
-        min_length: Optional[int] = None,
-        max_length: Optional[int] = None,
-        require_uppercase: Optional[bool] = None,
-        require_lowercase: Optional[bool] = None,
-        require_digit: Optional[bool] = None,
-        require_special: Optional[bool] = None,
+        min_length: int | None = None,
+        max_length: int | None = None,
+        require_uppercase: bool | None = None,
+        require_lowercase: bool | None = None,
+        require_digit: bool | None = None,
+        require_special: bool | None = None,
         min_unique_chars: int = 5,
         check_common: bool = True,
         check_sequences: bool = True,
@@ -161,7 +161,7 @@ class PasswordValidator:
         self.check_sequences = check_sequences
 
     def validate(
-        self, password: str, email: str = None, username: str = None, has_mfa: bool = False
+        self, password: str, email: str | None = None, username: str | None = None, has_mfa: bool = False
     ) -> PasswordValidationResult:
         """
         Valide un mot de passe et retourne un resultat detaille.
@@ -268,10 +268,9 @@ class PasswordValidator:
                 errors.append("Le mot de passe ne doit pas contenir votre adresse email")
                 score = max(0, score - 15)
 
-        if username:
-            if len(username) >= 3 and username.lower() in password.lower():
-                errors.append("Le mot de passe ne doit pas contenir votre nom d'utilisateur")
-                score = max(0, score - 15)
+        if username and len(username) >= 3 and username.lower() in password.lower():
+            errors.append("Le mot de passe ne doit pas contenir votre nom d'utilisateur")
+            score = max(0, score - 15)
 
         # === Repetitions ===
         if re.search(r"(.)\1{3,}", password):
@@ -295,7 +294,7 @@ class PasswordValidator:
 
         return PasswordValidationResult(is_valid=len(errors) == 0, errors=errors, score=score, strength=strength)
 
-    def get_requirements(self) -> List[str]:
+    def get_requirements(self) -> list[str]:
         """Retourne la liste des exigences pour affichage."""
         requirements = [
             f"Au moins {self.min_length} caracteres",
@@ -319,7 +318,7 @@ class PasswordValidator:
 password_validator = PasswordValidator()
 
 
-def validate_password(password: str, email: str = None, username: str = None) -> Tuple[bool, List[str]]:
+def validate_password(password: str, email: str | None = None, username: str | None = None) -> tuple[bool, list[str]]:
     """
     Fonction helper pour valider un mot de passe.
 
@@ -341,7 +340,7 @@ def get_password_strength(password: str) -> dict:
     return {"score": result.score, "strength": result.strength, "is_valid": result.is_valid}
 
 
-def normalize_phone_country_code(country_code: Optional[str]) -> Optional[str]:
+def normalize_phone_country_code(country_code: str | None) -> str | None:
     """
     Normalise l'indicatif téléphonique pour le stockage.
 

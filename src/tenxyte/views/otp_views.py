@@ -1,12 +1,14 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.utils import timezone
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from typing import ClassVar
 
+from django.utils import timezone
+from drf_spectacular.utils import OpenApiExample, extend_schema
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from ..decorators import require_jwt
 from ..serializers import RequestOTPSerializer, VerifyOTPSerializer
 from ..services import OTPService
-from ..decorators import require_jwt
 from ..throttles import OTPRequestThrottle, OTPVerifyThrottle
 
 
@@ -31,7 +33,7 @@ class RequestOTPView(APIView):
     Demander un code OTP
     """
 
-    throttle_classes = [OTPRequestThrottle]
+    throttle_classes: ClassVar[list] = [OTPRequestThrottle]
 
     @extend_schema(
         tags=["OTP"],
@@ -127,7 +129,7 @@ class VerifyEmailOTPView(APIView):
     Vérifier le code OTP email
     """
 
-    throttle_classes = [OTPVerifyThrottle]
+    throttle_classes: ClassVar[list] = [OTPVerifyThrottle]
 
     @extend_schema(
         tags=["OTP"],
@@ -221,7 +223,7 @@ class VerifyPhoneOTPView(APIView):
     Vérifier le code OTP téléphone
     """
 
-    throttle_classes = [OTPVerifyThrottle]
+    throttle_classes: ClassVar[list] = [OTPVerifyThrottle]
 
     @extend_schema(
         tags=["OTP"],

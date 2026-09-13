@@ -5,13 +5,13 @@ Framework-agnostic TOTP (Time-based One-Time Password) implementation
 for 2FA/MFA authentication. Compatible with Google Authenticator, Authy, etc.
 """
 
+import asyncio
 import base64
 import logging
 import secrets
 from dataclasses import dataclass, field
 from io import BytesIO
-from typing import List, Optional, Protocol, Tuple, runtime_checkable
-import asyncio
+from typing import Protocol, runtime_checkable
 
 import pyotp
 import qrcode
@@ -29,7 +29,7 @@ class TOTPSetupResult:
     secret: str
     qr_code: str  # base64 data URI
     provisioning_uri: str
-    backup_codes: List[str]  # Plain codes to show ONCE
+    backup_codes: list[str]  # Plain codes to show ONCE
 
 
 @dataclass
@@ -38,9 +38,9 @@ class TOTPUserData:
 
     id: str
     email: str
-    totp_secret: Optional[str] = None  # Encrypted or plaintext
+    totp_secret: str | None = None  # Encrypted or plaintext
     is_2fa_enabled: bool = False
-    backup_codes: List[str] = field(default_factory=list)  # Hashed codes
+    backup_codes: list[str] = field(default_factory=list)  # Hashed codes
 
     def has_backup_codes(self) -> bool:
         """Check if user has backup codes."""
@@ -55,7 +55,7 @@ class TOTPStorage(Protocol):
         """Save encrypted TOTP secret for user."""
         ...
 
-    def save_backup_codes(self, user_id: str, hashed_codes: List[str]) -> bool:
+    def save_backup_codes(self, user_id: str, hashed_codes: list[str]) -> bool:
         """Save hashed backup codes for user."""
         ...
 
@@ -67,7 +67,7 @@ class TOTPStorage(Protocol):
         """Disable 2FA and clear secrets for user."""
         ...
 
-    def load_user_data(self, user_id: str) -> Optional[TOTPUserData]:
+    def load_user_data(self, user_id: str) -> TOTPUserData | None:
         """Load user TOTP data."""
         ...
 
@@ -78,13 +78,13 @@ class AsyncTOTPStorage(TOTPStorage, Protocol):
 
     async def save_totp_secret_async(self, user_id: str, encrypted_secret: str) -> bool: ...
 
-    async def save_backup_codes_async(self, user_id: str, hashed_codes: List[str]) -> bool: ...
+    async def save_backup_codes_async(self, user_id: str, hashed_codes: list[str]) -> bool: ...
 
     async def enable_2fa_async(self, user_id: str) -> bool: ...
 
     async def disable_2fa_async(self, user_id: str) -> bool: ...
 
-    async def load_user_data_async(self, user_id: str) -> Optional[TOTPUserData]: ...
+    async def load_user_data_async(self, user_id: str) -> TOTPUserData | None: ...
 
 
 @runtime_checkable
@@ -167,8 +167,8 @@ class TOTPService:
     def __init__(
         self,
         settings: Settings,
-        encryption_key: Optional[str] = None,
-        replay_protection: Optional[CodeReplayProtection] = None,
+        encryption_key: str | None = None,
+        replay_protection: CodeReplayProtection | None = None,
     ):
         """
         Initialize TOTP service.
@@ -229,7 +229,7 @@ class TOTPService:
             return self.totp_key.encrypt(secret.encode("utf-8")).decode("utf-8")
         return secret
 
-    def _decrypt_secret(self, encrypted_secret: str) -> Optional[str]:
+    def _decrypt_secret(self, encrypted_secret: str) -> str | None:
         """Decrypt TOTP secret if encryption is enabled."""
         if not encrypted_secret:
             return None
@@ -237,7 +237,7 @@ class TOTPService:
         if self.totp_key:
             try:
                 return self.totp_key.decrypt(encrypted_secret.encode("utf-8")).decode("utf-8")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 logger.error(f"[TOTP] Failed to decrypt TOTP secret: {e}")
                 return None
         return encrypted_secret
@@ -286,7 +286,7 @@ class TOTPService:
         img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
         return f"data:image/png;base64,{img_base64}"
 
-    def generate_backup_codes(self, count: Optional[int] = None) -> Tuple[List[str], List[str]]:
+    def generate_backup_codes(self, count: int | None = None) -> tuple[list[str], list[str]]:
         """
         Generate backup codes for account recovery.
 
@@ -316,7 +316,7 @@ class TOTPService:
 
         return plain_codes, hashed_codes
 
-    def verify_backup_code(self, code: str, hashed_codes: List[str]) -> Tuple[bool, List[str]]:
+    def verify_backup_code(self, code: str, hashed_codes: list[str]) -> tuple[bool, list[str]]:
         """
         Verify and consume a backup code.
 
@@ -356,9 +356,7 @@ class TOTPService:
 
         return False, hashed_codes
 
-    def verify_code(
-        self, secret: str, code: str, user_id: Optional[str] = None, valid_window: Optional[int] = None
-    ) -> bool:
+    def verify_code(self, secret: str, code: str, user_id: str | None = None, valid_window: int | None = None) -> bool:
         """
         Verify a TOTP code with replay protection.
 
@@ -377,10 +375,9 @@ class TOTPService:
             return False
 
         # Anti-replay check
-        if user_id:
-            if self.replay_protection.is_code_used(user_id, code):
-                logger.warning(f"[TOTP] Replay attack prevented for user {user_id}")
-                return False
+        if user_id and self.replay_protection.is_code_used(user_id, code):
+            logger.warning(f"[TOTP] Replay attack prevented for user {user_id}")
+            return False
 
         try:
             totp = self.get_totp(secret)
@@ -394,12 +391,12 @@ class TOTPService:
 
             return is_valid
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"[TOTP] Verification error: {e}")
             return False
 
     async def verify_code_async(
-        self, secret: str, code: str, user_id: Optional[str] = None, valid_window: Optional[int] = None
+        self, secret: str, code: str, user_id: str | None = None, valid_window: int | None = None
     ) -> bool:
         """Asynchronous version of verify_code."""
         window = valid_window if valid_window is not None else self.valid_window
@@ -431,7 +428,7 @@ class TOTPService:
 
             return is_valid
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"[TOTP] Verification error: {e}")
             return False
 
@@ -493,7 +490,7 @@ class TOTPService:
             backup_codes=plain_codes,
         )
 
-    def confirm_2fa_setup(self, user_id: str, code: str, storage: TOTPStorage) -> Tuple[bool, str]:
+    def confirm_2fa_setup(self, user_id: str, code: str, storage: TOTPStorage) -> tuple[bool, str]:
         """
         Confirm 2FA activation by verifying first code.
 
@@ -527,7 +524,7 @@ class TOTPService:
 
         return True, ""
 
-    async def confirm_2fa_setup_async(self, user_id: str, code: str, storage: TOTPStorage) -> Tuple[bool, str]:
+    async def confirm_2fa_setup_async(self, user_id: str, code: str, storage: TOTPStorage) -> tuple[bool, str]:
         """Asynchronous version of confirm_2fa_setup."""
         if hasattr(storage, "load_user_data_async"):
             user_data = await storage.load_user_data_async(user_id)
@@ -557,7 +554,7 @@ class TOTPService:
 
         return True, ""
 
-    def verify_2fa(self, user_id: str, code: str, storage: TOTPStorage) -> Tuple[bool, str]:
+    def verify_2fa(self, user_id: str, code: str, storage: TOTPStorage) -> tuple[bool, str]:
         """
         Verify 2FA code during login.
 
@@ -595,7 +592,7 @@ class TOTPService:
 
         return False, "Invalid 2FA code."
 
-    async def verify_2fa_async(self, user_id: str, code: str, storage: TOTPStorage) -> Tuple[bool, str]:
+    async def verify_2fa_async(self, user_id: str, code: str, storage: TOTPStorage) -> tuple[bool, str]:
         """Asynchronous version of verify_2fa."""
         if hasattr(storage, "load_user_data_async"):
             user_data = await storage.load_user_data_async(user_id)
@@ -629,7 +626,7 @@ class TOTPService:
 
         return False, "Invalid 2FA code."
 
-    def disable_2fa(self, user_id: str, code: str, storage: TOTPStorage) -> Tuple[bool, str]:
+    def disable_2fa(self, user_id: str, code: str, storage: TOTPStorage) -> tuple[bool, str]:
         """
         Disable 2FA after verification.
 
@@ -668,7 +665,7 @@ class TOTPService:
 
         return True, ""
 
-    async def disable_2fa_async(self, user_id: str, code: str, storage: TOTPStorage) -> Tuple[bool, str]:
+    async def disable_2fa_async(self, user_id: str, code: str, storage: TOTPStorage) -> tuple[bool, str]:
         """Asynchronous version of disable_2fa."""
         if hasattr(storage, "load_user_data_async"):
             user_data = await storage.load_user_data_async(user_id)
@@ -702,7 +699,7 @@ class TOTPService:
 
         return True, ""
 
-    def regenerate_backup_codes(self, user_id: str, code: str, storage: TOTPStorage) -> Tuple[bool, List[str], str]:
+    def regenerate_backup_codes(self, user_id: str, code: str, storage: TOTPStorage) -> tuple[bool, list[str], str]:
         """
         Regenerate backup codes after verification.
 
@@ -736,7 +733,7 @@ class TOTPService:
 
     async def regenerate_backup_codes_async(
         self, user_id: str, code: str, storage: TOTPStorage
-    ) -> Tuple[bool, List[str], str]:
+    ) -> tuple[bool, list[str], str]:
         """Asynchronous version of regenerate_backup_codes."""
         if hasattr(storage, "load_user_data_async"):
             user_data = await storage.load_user_data_async(user_id)

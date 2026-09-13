@@ -2,7 +2,10 @@
 Application serializers - Application CRUD.
 """
 
+from typing import ClassVar
+
 from rest_framework import serializers
+
 from ..models import get_application_model
 
 Application = get_application_model()
@@ -15,8 +18,17 @@ class ApplicationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Application
-        fields = ["id", "name", "description", "access_key", "is_active", "allowed_origins", "created_at", "updated_at"]
-        read_only_fields = ["id", "access_key", "created_at", "updated_at"]
+        fields: ClassVar[list] = [
+            "id",
+            "name",
+            "description",
+            "access_key",
+            "is_active",
+            "allowed_origins",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields: ClassVar[list] = ["id", "access_key", "created_at", "updated_at"]
 
 
 class ApplicationCreateSerializer(serializers.Serializer):

@@ -4,13 +4,13 @@ Dashboard views — Admin dashboard statistics endpoints.
 All endpoints require `dashboard.view` permission.
 """
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from ..services.stats_service import StatsService
 from ..decorators import require_permission
+from ..services.stats_service import StatsService
 
 
 class DashboardGlobalView(APIView):

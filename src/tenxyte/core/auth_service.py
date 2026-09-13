@@ -7,7 +7,7 @@ timing-attack mitigation for account enumeration via login response latency.
 
 import logging
 from dataclasses import dataclass
-from typing import Optional, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import bcrypt
 
@@ -27,7 +27,7 @@ class AuthResult:
     """Result of a credential verification attempt."""
 
     success: bool
-    user: Optional[User] = None
+    user: User | None = None
     error: str = ""
     failure_reason: str = ""
 
@@ -43,7 +43,7 @@ class PasswordUserLookup(Protocol):
     four operations below and never inspects `identifier` itself.
     """
 
-    def get_by_identifier(self, identifier: object) -> Optional[User]:
+    def get_by_identifier(self, identifier: object) -> User | None:
         """Resolve a user by whatever identifier the adapter supports."""
         ...  # pragma: no cover
 
@@ -87,7 +87,7 @@ class AuthenticationService:
         self.settings = settings
         self.user_lookup = user_lookup
         self.bcrypt_rounds = getattr(settings, "bcrypt_rounds", 12)
-        self._dummy_hash: Optional[bytes] = None
+        self._dummy_hash: bytes | None = None
 
     def _get_dummy_hash(self) -> bytes:
         """
@@ -106,7 +106,9 @@ class AuthenticationService:
         """Perform a bcrypt comparison of realistic cost; result is discarded."""
         try:
             bcrypt.checkpw(password.encode("utf-8"), self._get_dummy_hash())
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
+            # cost. Logging here would run on every login attempt for a nonexistent account
+            # (an expected, frequent case, not an error) and would itself be a side channel.
             pass
 
     def authenticate(self, identifier: object, password: str) -> AuthResult:

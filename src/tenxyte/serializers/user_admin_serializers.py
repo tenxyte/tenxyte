@@ -2,8 +2,11 @@
 User Admin serializers - Admin user management (list, detail, update, ban, lock).
 """
 
-from rest_framework import serializers
+from typing import ClassVar
+
 from drf_spectacular.utils import extend_schema_field
+from rest_framework import serializers
+
 from ..models import get_user_model
 
 User = get_user_model()
@@ -17,7 +20,7 @@ class AdminUserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = [
+        fields: ClassVar[list] = [
             "id",
             "email",
             "first_name",
@@ -48,7 +51,7 @@ class AdminUserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = [
+        fields: ClassVar[list] = [
             "id",
             "email",
             "phone_country_code",

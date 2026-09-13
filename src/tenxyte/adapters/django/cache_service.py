@@ -4,11 +4,13 @@ Django Cache Service Adapter for Tenxyte Core.
 This module provides a CacheService implementation using Django's cache framework.
 """
 
-from typing import Any, Optional
+import logging
 from datetime import datetime
-
+from typing import Any
 
 from tenxyte.core.cache_service import CacheService
+
+logger = logging.getLogger(__name__)
 
 
 class DjangoCacheService(CacheService):
@@ -57,7 +59,7 @@ class DjangoCacheService(CacheService):
             self._cache = caches[self._cache_name]
         return self._cache
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """
         Get a value from Django cache.
 
@@ -69,7 +71,7 @@ class DjangoCacheService(CacheService):
         """
         return self._get_cache().get(key)
 
-    def set(self, key: str, value: Any, timeout: Optional[int] = None) -> bool:
+    def set(self, key: str, value: Any, timeout: int | None = None) -> bool:
         """
         Set a value in Django cache.
 
@@ -177,7 +179,7 @@ class DjangoCacheService(CacheService):
                     return -1  # No expiration
                 return int(ttl_value)
             except Exception:
-                pass
+                logger.debug("Cache backend .ttl() call failed, falling back to exists() check", exc_info=True)
 
         # Fallback: check if key exists
         if not self.exists(key):
@@ -194,7 +196,6 @@ class DjangoCacheService(CacheService):
     def close(self):
         """Close cache connection if needed."""
         # Django handles connection management automatically
-        pass
 
     # Replay protection methods for TOTP
 
@@ -242,9 +243,7 @@ class DjangoCacheService(CacheService):
         """Check if a token JTI is blacklisted."""
         return self._get_cache().get(f"blacklisted_token_{jti}") is not None
 
-    def blacklist_token(
-        self, jti: str, expires_at: "datetime", user_id: Optional[str] = None, reason: str = ""
-    ) -> bool:
+    def blacklist_token(self, jti: str, expires_at: "datetime", user_id: str | None = None, reason: str = "") -> bool:
         """Add a token JTI to the blacklist."""
         from datetime import datetime, timezone
 
@@ -253,7 +252,7 @@ class DjangoCacheService(CacheService):
         self._get_cache().set(f"blacklisted_token_{jti}", True, timeout=ttl)
         return True
 
-    def is_user_revoked(self, user_id: str, token_iat: "datetime" = None) -> bool:
+    def is_user_revoked(self, user_id: str, token_iat: "datetime | None" = None) -> bool:
         """Check if all tokens for a user issued before a certain time are revoked."""
         if not token_iat:
             return False

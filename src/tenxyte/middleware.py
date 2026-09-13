@@ -1,4 +1,7 @@
-from django.http import JsonResponse, HttpResponse
+from typing import ClassVar
+
+from django.http import HttpResponse, JsonResponse
+
 from .conf import auth_settings
 
 
@@ -67,8 +70,9 @@ class ApplicationAuthMiddleware:
 
             if access_secret:
                 # Mode serveur: key + secret (server-to-server)
-                from django.core.cache import cache
                 import hashlib
+
+                from django.core.cache import cache
 
                 secret_hash = hashlib.sha256(access_secret.encode("utf-8")).hexdigest()
                 cache_key = f"app_auth_ok_{application.id}_{secret_hash}"
@@ -117,9 +121,9 @@ class JWTAuthMiddleware:
     def jwt_service(self):
         """Lazy-initialize JWTService on first access."""
         if self._jwt_service is None:
-            from tenxyte.core.jwt_service import JWTService
             from tenxyte.adapters.django import get_django_settings
             from tenxyte.adapters.django.cache_service import DjangoCacheService
+            from tenxyte.core.jwt_service import JWTService
 
             self._jwt_service = JWTService(settings=get_django_settings(), blacklist_service=DjangoCacheService())
         return self._jwt_service
@@ -289,10 +293,10 @@ class OrganizationContextMiddleware:
                 return JsonResponse(
                     {"error": "Organization not found", "code": "ORG_NOT_FOUND", "slug": org_slug}, status=404
                 )
-            except Exception as e:
+            except Exception:
                 import logging
 
-                logging.getLogger(__name__).error(f"Error loading organization in middleware: {e}", exc_info=True)
+                logging.getLogger(__name__).exception("Error loading organization in middleware")
                 set_current_organization(None)
                 return JsonResponse(
                     {"error": "An unexpected error occurred while loading the organization.", "code": "ORG_ERROR"},
@@ -360,8 +364,8 @@ class AgentTokenMiddleware:
 
         # Log successful mutations by agents
         if request.method in ["POST", "PUT", "PATCH", "DELETE"] and 200 <= response.status_code < 300:
-            from tenxyte.models.security import AuditLog
             from tenxyte.conf import auth_settings
+            from tenxyte.models.security import AuditLog
 
             prompt_trace_id = request.headers.get("X-Prompt-Trace-ID")
             if prompt_trace_id:
@@ -398,7 +402,7 @@ class PIIRedactionMiddleware:
     intercepte la réponse JSON et masque les champs PII configurés.
     """
 
-    PII_FIELDS = {
+    PII_FIELDS: ClassVar[dict] = {
         "email",
         "phone",
         "ssn",

@@ -1,20 +1,20 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, extend_schema_view
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from ..serializers import (
-    PermissionSerializer,
-    RoleSerializer,
-    RoleListSerializer,
-    ManageRolePermissionsSerializer,
-    AssignRoleSerializer,
-)
-from ..models import get_user_model, get_role_model, get_permission_model
 from ..decorators import require_permission
-from ..pagination import TenxytePagination
 from ..filters import apply_permission_filters, apply_role_filters
+from ..models import get_permission_model, get_role_model, get_user_model
+from ..pagination import TenxytePagination
+from ..serializers import (
+    AssignRoleSerializer,
+    ManageRolePermissionsSerializer,
+    PermissionSerializer,
+    RoleListSerializer,
+    RoleSerializer,
+)
 
 User = get_user_model()
 Role = get_role_model()

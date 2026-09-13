@@ -33,7 +33,6 @@ def revoke_all_plaintext_tokens(apps, schema_editor):
 
 def noop(apps, schema_editor):
     """Opération inverse : pas de rollback possible (tokens révoqués ne sont pas récupérables)."""
-    pass
 
 
 class Migration(migrations.Migration):

@@ -2,11 +2,14 @@
 Auth serializers - Registration, Login, Token, Google Auth, User profile.
 """
 
-from rest_framework import serializers
+from typing import ClassVar
+
 from drf_spectacular.utils import extend_schema_field
-from ..models import get_user_model
-from ..validators import validate_password, normalize_phone_country_code
+from rest_framework import serializers
+
 from ..device_info import validate_device_info as _validate_device_info
+from ..models import get_user_model
+from ..validators import normalize_phone_country_code, validate_password
 
 User = get_user_model()
 
@@ -140,7 +143,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = [
+        fields: ClassVar[list] = [
             "id",
             "email",
             "username",
@@ -164,7 +167,7 @@ class UserSerializer(serializers.ModelSerializer):
             "permissions",
         ]
         # VULN-005: Ensure sensitive fields are strictly read-only even if injected
-        read_only_fields = [
+        read_only_fields: ClassVar[list] = [
             "id",
             "is_email_verified",
             "is_phone_verified",

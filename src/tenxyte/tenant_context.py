@@ -5,18 +5,18 @@ without having to pass the request object around.
 """
 
 from contextvars import ContextVar
-from typing import Optional, Any
+from typing import Any
 
 # Context variable to store the current active organization.
 # Default to None to indicate no organization context.
-_current_organization: ContextVar[Optional[Any]] = ContextVar("current_organization", default=None)
+_current_organization: ContextVar[Any | None] = ContextVar("current_organization", default=None)
 
 # Context variable to bypass tenant filtering temporarily if needed
 # (e.g., for admin tasks or system-level queries)
 _INTERNAL_bypass_tenant_filtering: ContextVar[bool] = ContextVar("bypass_tenant_filtering", default=False)
 
 
-def set_current_organization(organization: Optional[Any]) -> None:
+def set_current_organization(organization: Any | None) -> None:
     """
     Set the current organization in the context.
 
@@ -26,7 +26,7 @@ def set_current_organization(organization: Optional[Any]) -> None:
     _current_organization.set(organization)
 
 
-def get_current_organization() -> Optional[Any]:
+def get_current_organization() -> Any | None:
     """
     Get the current organization from the context.
 

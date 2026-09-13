@@ -5,24 +5,26 @@ These views act as adapters between Django/DRF and the framework-agnostic Core.
 They maintain 100% backward compatibility with existing endpoints and responses.
 """
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny
-from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer, OpenApiParameter
-from rest_framework import serializers
+from typing import ClassVar
+
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from tenxyte.adapters.django.cache_service import DjangoCacheService
+from tenxyte.adapters.django.email_service import DjangoEmailService
+
+# Core imports
+from tenxyte.adapters.django.repositories import DjangoMagicLinkRepository, DjangoUserRepository
+from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
+from tenxyte.core import JWTService, MagicLinkService, Settings
 
 from ..decorators import get_client_ip
 from ..device_info import build_device_info_from_user_agent
 from ..throttles import MagicLinkRequestThrottle, MagicLinkVerifyThrottle
-
-# Core imports
-from tenxyte.adapters.django.repositories import DjangoUserRepository, DjangoMagicLinkRepository
-from tenxyte.adapters.django.cache_service import DjangoCacheService
-from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
-from tenxyte.adapters.django.email_service import DjangoEmailService
-from tenxyte.core import MagicLinkService, JWTService, Settings
 
 # Global Core services (lazy initialization)
 _core_user_repo = None
@@ -94,8 +96,8 @@ class MagicLinkRequestView(APIView):
     Demande un magic link par email (authentification sans mot de passe).
     """
 
-    permission_classes = [AllowAny]
-    throttle_classes = [MagicLinkRequestThrottle]
+    permission_classes: ClassVar[list] = [AllowAny]
+    throttle_classes: ClassVar[list] = [MagicLinkRequestThrottle]
 
     @extend_schema(
         tags=["Magic Link"],
@@ -184,7 +186,7 @@ class MagicLinkRequestView(APIView):
         app_name.name if app_name and hasattr(app_name, "name") else "Tenxyte"
 
         service = get_core_magic_link_service()
-        success, error_msg = service.request_magic_link(
+        success, _error_msg = service.request_magic_link(
             email=email, validation_url=validation_url, ip_address=ip_address, device_info=device_info
         )
 
@@ -204,8 +206,8 @@ class MagicLinkVerifyView(APIView):
     Valide un magic link et retourne des tokens JWT.
     """
 
-    permission_classes = [AllowAny]
-    throttle_classes = [MagicLinkVerifyThrottle]
+    permission_classes: ClassVar[list] = [AllowAny]
+    throttle_classes: ClassVar[list] = [MagicLinkVerifyThrottle]
 
     @extend_schema(
         tags=["Magic Link"],

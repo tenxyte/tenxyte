@@ -7,10 +7,11 @@ Contains:
 
 import hashlib
 import secrets
+from datetime import timedelta
+
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
-from django.conf import settings
-from datetime import timedelta
 
 from .base import AutoFieldClass
 
@@ -55,7 +56,14 @@ class MagicLinkToken(models.Model):
         return hashlib.sha256(token.encode()).hexdigest()
 
     @classmethod
-    def generate(cls, user, application=None, ip_address: str = None, user_agent: str = None, expiry_minutes: int = 15):
+    def generate(
+        cls,
+        user,
+        application=None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        expiry_minutes: int = 15,
+    ):
         """
         Génère un nouveau magic link token.
 
@@ -79,7 +87,7 @@ class MagicLinkToken(models.Model):
         return instance, raw_token
 
     @classmethod
-    def get_valid(cls, raw_token: str, ip_address: str = None, user_agent: str = None):
+    def get_valid(cls, raw_token: str, ip_address: str | None = None, user_agent: str | None = None):
         """
         Récupère un token valide (non utilisé, non expiré) depuis le token brut.
         F-12 Security Check: Valide l'IP et le User-Agent si configuré dans TENXYTE_MAGIC_LINK_REQUIRE_SAME_CLIENT.

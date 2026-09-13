@@ -2,7 +2,10 @@
 GDPR admin serializers - AccountDeletionRequest management.
 """
 
+from typing import ClassVar
+
 from rest_framework import serializers
+
 from ..models import AccountDeletionRequest
 
 
@@ -16,7 +19,7 @@ class DeletionRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AccountDeletionRequest
-        fields = [
+        fields: ClassVar[list] = [
             "id",
             "user",
             "user_email",

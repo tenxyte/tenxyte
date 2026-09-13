@@ -3,12 +3,14 @@ Service pour la gestion des suppressions de compte (RGPD).
 """
 
 from datetime import timedelta
-from typing import Tuple, Optional, Dict, Any
-from django.utils import timezone
+from typing import Any
+
 from django.conf import settings
+from django.utils import timezone
 
 from tenxyte.adapters.django.email_service import DjangoEmailService as EmailService
-from ..models import get_user_model, AccountDeletionRequest, AuditLog
+
+from ..models import AccountDeletionRequest, AuditLog, get_user_model
 
 User = get_user_model()
 
@@ -24,12 +26,12 @@ class AccountDeletionService:
         self,
         user: User,
         password: str = "",
-        ip_address: str = None,
+        ip_address: str | None = None,
         user_agent: str = "",
         otp_code: str = "",
         reauth_otp_code: str = "",
         reason: str = "",
-    ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
+    ) -> tuple[bool, dict[str, Any] | None, str]:
         """
         Créer une demande de suppression de compte.
 
@@ -116,16 +118,16 @@ class AccountDeletionService:
                 "",
             )
 
-        except Exception as e:
+        except Exception:
             import logging
 
-            logging.getLogger(__name__).error(f"Error creating deletion request: {e}", exc_info=True)
+            logging.getLogger(__name__).exception("Error creating deletion request")
             self._audit_log(
                 "deletion_request_error", user, ip_address, {"error": "Internal server error", "user_agent": user_agent}
             )
             return False, None, "An unexpected error occurred while creating the deletion request."
 
-    def confirm_deletion(self, token: str, ip_address: str = None) -> Tuple[bool, Optional[Dict[str, Any]], str]:
+    def confirm_deletion(self, token: str, ip_address: str | None = None) -> tuple[bool, dict[str, Any] | None, str]:
         """
         Confirmer une demande de suppression via token.
 
@@ -155,7 +157,7 @@ class AccountDeletionService:
             # Envoyer email de confirmation de la demande
             try:
                 self.email_service.send_account_deletion_confirmed(deletion_request)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 # Log l'erreur mais ne pas échouer la demande
                 self._audit_log(
                     "deletion_confirmation_email_failed",
@@ -176,18 +178,18 @@ class AccountDeletionService:
 
         except AccountDeletionRequest.DoesNotExist:
             return False, None, "Invalid or expired confirmation token"
-        except Exception as e:
+        except Exception:
             import logging
 
-            logging.getLogger(__name__).error(f"Error confirming deletion request: {e}", exc_info=True)
+            logging.getLogger(__name__).exception("Error confirming deletion request")
             self._audit_log(
                 "deletion_confirmation_error", None, ip_address, {"token": token, "error": "Internal server error"}
             )
             return False, None, "An unexpected error occurred while confirming the deletion request."
 
     def cancel_deletion(
-        self, user: User, password: str = "", ip_address: str = None, otp_code: str = ""
-    ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
+        self, user: User, password: str = "", ip_address: str | None = None, otp_code: str = ""
+    ) -> tuple[bool, dict[str, Any] | None, str]:
         """
         Annuler une demande de suppression.
 
@@ -232,7 +234,7 @@ class AccountDeletionService:
             "",
         )
 
-    def get_user_requests(self, user: User) -> Dict[str, Any]:
+    def get_user_requests(self, user: User) -> dict[str, Any]:
         """
         Obtenir l'historique des demandes de suppression d'un utilisateur.
 
@@ -300,7 +302,7 @@ class AccountDeletionService:
 
         return processed_count
 
-    def get_pending_requests(self, limit: int = 50) -> Dict[str, Any]:
+    def get_pending_requests(self, limit: int = 50) -> dict[str, Any]:
         """
         Obtenir les demandes de suppression en attente pour admin.
 
@@ -340,7 +342,7 @@ class AccountDeletionService:
 
     def admin_process_request(
         self, request_id: int, action: str, admin_user: User, admin_notes: str = ""
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """
         Traiter une demande de suppression (admin).
 
@@ -442,7 +444,7 @@ class AccountDeletionService:
         else:
             return False, "Invalid action"
 
-    def get_deletion_statistics(self) -> Dict[str, Any]:
+    def get_deletion_statistics(self) -> dict[str, Any]:
         """
         Obtenir les statistiques de suppression de compte.
 
@@ -474,6 +476,6 @@ class AccountDeletionService:
             "expired_pending": AccountDeletionRequest.get_expired_requests().count(),
         }
 
-    def _audit_log(self, action: str, user: User, ip_address: str = None, details: Dict[str, Any] = None):
+    def _audit_log(self, action: str, user: User, ip_address: str | None = None, details: dict[str, Any] | None = None):
         """Créer un log d'audit."""
         AuditLog.objects.create(action=action, user=user, ip_address=ip_address or "127.0.0.1", details=details or {})

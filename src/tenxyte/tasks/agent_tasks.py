@@ -1,6 +1,7 @@
 import logging
-from django.utils import timezone
 from datetime import timedelta
+
+from django.utils import timezone
 
 # Try to import celery shared_task, if Celery is not installed, provide a mock
 try:

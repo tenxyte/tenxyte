@@ -7,7 +7,7 @@ configure Tenxyte without a framework-specific settings file.
 """
 
 import os
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
     from tenxyte.core.settings import Settings
@@ -44,7 +44,7 @@ class EnvSettingsProvider(SettingsProvider):
     """
 
     # Type hints for known settings to enable automatic conversion
-    BOOLEAN_SETTINGS = {
+    BOOLEAN_SETTINGS: ClassVar[dict] = {
         "TENXYTE_MFA_REQUIRED",
         "TENXYTE_APPLICATION_AUTH_ENABLED",
         "TENXYTE_BREACH_CHECK_ENABLED",
@@ -62,7 +62,7 @@ class EnvSettingsProvider(SettingsProvider):
         "DEBUG",
     }
 
-    INTEGER_SETTINGS = {
+    INTEGER_SETTINGS: ClassVar[dict] = {
         "TENXYTE_JWT_ACCESS_TOKEN_LIFETIME",
         "TENXYTE_JWT_REFRESH_TOKEN_LIFETIME",
         "TENXYTE_PASSWORD_MIN_LENGTH",
@@ -76,7 +76,7 @@ class EnvSettingsProvider(SettingsProvider):
         "TENXYTE_CORS_MAX_AGE",
     }
 
-    LIST_SETTINGS = {
+    LIST_SETTINGS: ClassVar[dict] = {
         "TENXYTE_CORS_ALLOWED_ORIGINS",
         "TENXYTE_CORS_ALLOWED_METHODS",
         "TENXYTE_CORS_ALLOWED_HEADERS",
@@ -85,7 +85,7 @@ class EnvSettingsProvider(SettingsProvider):
         "TENXYTE_EXACT_EXEMPT_PATHS",
     }
 
-    def __init__(self, prefix: str = "TENXYTE_", dotenv_path: Optional[str] = None, dotenv_encoding: str = "utf-8"):
+    def __init__(self, prefix: str = "TENXYTE_", dotenv_path: str | None = None, dotenv_encoding: str = "utf-8"):
         """
         Initialize the environment settings provider.
 
@@ -187,7 +187,7 @@ class EnvSettingsProvider(SettingsProvider):
 
 
 # Convenience function for quick initialization
-def get_env_settings(dotenv_path: Optional[str] = None) -> "Settings":
+def get_env_settings(dotenv_path: str | None = None) -> "Settings":
     """
     Get Tenxyte settings configured from environment variables.
 

@@ -6,23 +6,20 @@ They translate between Django's request/response objects and the Core's
 framework-agnostic RequestContext/ResponseContext.
 """
 
-from typing import Optional
-
 from django.http import HttpResponse, JsonResponse
-
+from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
 from tenxyte.core.middleware import (
-    RequestContext,
-    ResponseContext,
-    CoreMiddleware,
-    RequestIDCoreMiddleware,
     ApplicationAuthCoreMiddleware,
-    SecurityHeadersCoreMiddleware,
-    JWTAuthCoreMiddleware,
+    CoreMiddleware,
     CORSCoreMiddleware,
+    JWTAuthCoreMiddleware,
     OrganizationContextCoreMiddleware,
+    RequestContext,
+    RequestIDCoreMiddleware,
+    ResponseContext,
+    SecurityHeadersCoreMiddleware,
 )
 from tenxyte.core.settings import Settings
-from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
 
 
 def _django_request_to_context(request) -> RequestContext:
@@ -138,7 +135,7 @@ class BaseDjangoMiddleware:
         """
         self.get_response = get_response
         self.core_middleware_class = core_middleware_class
-        self._core_middleware: Optional[CoreMiddleware] = None
+        self._core_middleware: CoreMiddleware | None = None
 
     @property
     def core_middleware(self) -> CoreMiddleware:
@@ -222,8 +219,8 @@ class DjangoApplicationAuthMiddleware(BaseDjangoMiddleware):
     def core_middleware(self) -> CoreMiddleware:
         """Override to inject ApplicationRepository."""
         if self._core_middleware is None:
-            from tenxyte.core.settings import Settings
             from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
+            from tenxyte.core.settings import Settings
 
             settings = Settings(provider=DjangoSettingsProvider())
 

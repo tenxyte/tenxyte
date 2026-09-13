@@ -18,7 +18,7 @@ manual customization made to those built-in role codes. See docs/en/rbac.md for 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from tenxyte.models import get_role_model, get_permission_model
+from tenxyte.models import get_permission_model, get_role_model
 
 # =============================================================================
 # DEFAULT PERMISSIONS
@@ -367,8 +367,8 @@ class Command(BaseCommand):
                         source: role.pk,
                     }
                 )._raw_delete(db)
-            except Exception:
-                pass
+            except Exception as e:  # noqa: BLE001
+                self.stdout.write(self.style.WARNING(f"  ! Could not clear permissions through-table for role: {e}"))
             role.permissions.add(*permissions)
 
     def _create_roles(self, Role, Permission, force):

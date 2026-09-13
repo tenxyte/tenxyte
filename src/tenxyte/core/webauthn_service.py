@@ -12,7 +12,7 @@ Supports:
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from tenxyte.core.settings import Settings
 
@@ -42,9 +42,9 @@ class WebAuthnCredential:
     sign_count: int = 0
     device_name: str = "Passkey"
     aaguid: str = ""
-    transports: List[str] = field(default_factory=list)
-    created_at: Optional[datetime] = None
-    last_used_at: Optional[datetime] = None
+    transports: list[str] = field(default_factory=list)
+    created_at: datetime | None = None
+    last_used_at: datetime | None = None
     is_active: bool = True
 
 
@@ -55,18 +55,16 @@ class WebAuthnChallenge:
     id: str
     challenge: str
     operation: str  # 'register' or 'authenticate'
-    user_id: Optional[str] = None
-    created_at: Optional[datetime] = None
-    expires_at: Optional[datetime] = None
+    user_id: str | None = None
+    created_at: datetime | None = None
+    expires_at: datetime | None = None
     consumed: bool = False
 
     def is_valid(self) -> bool:
         """Check if challenge is valid (not expired, not consumed)."""
         if self.consumed:
             return False
-        if self.expires_at and datetime.now(timezone.utc) > self.expires_at:
-            return False
-        return True
+        return not (self.expires_at and datetime.now(timezone.utc) > self.expires_at)
 
 
 @dataclass
@@ -74,7 +72,7 @@ class RegistrationResult:
     """Result of WebAuthn registration."""
 
     success: bool
-    credential: Optional[WebAuthnCredential] = None
+    credential: WebAuthnCredential | None = None
     error: str = ""
 
 
@@ -83,8 +81,8 @@ class AuthenticationResult:
     """Result of WebAuthn authentication."""
 
     success: bool
-    user_id: Optional[str] = None
-    credential: Optional[WebAuthnCredential] = None
+    user_id: str | None = None
+    credential: WebAuthnCredential | None = None
     error: str = ""
 
 
@@ -92,11 +90,11 @@ class AuthenticationResult:
 class WebAuthnCredentialRepository(Protocol):
     """Protocol for WebAuthn credential storage."""
 
-    def get_by_credential_id(self, credential_id: str) -> Optional[WebAuthnCredential]:
+    def get_by_credential_id(self, credential_id: str) -> WebAuthnCredential | None:
         """Get credential by its ID."""
         ...
 
-    def list_by_user(self, user_id: str) -> List[WebAuthnCredential]:
+    def list_by_user(self, user_id: str) -> list[WebAuthnCredential]:
         """List all credentials for a user."""
         ...
 
@@ -118,12 +116,12 @@ class WebAuthnChallengeRepository(Protocol):
     """Protocol for WebAuthn challenge storage."""
 
     def create(
-        self, challenge: str, operation: str, user_id: Optional[str] = None, expiry_seconds: int = 300
+        self, challenge: str, operation: str, user_id: str | None = None, expiry_seconds: int = 300
     ) -> WebAuthnChallenge:
         """Create a new challenge."""
         ...
 
-    def get_by_id(self, challenge_id: str) -> Optional[WebAuthnChallenge]:
+    def get_by_id(self, challenge_id: str) -> WebAuthnChallenge | None:
         """Get challenge by ID."""
         ...
 
@@ -193,7 +191,7 @@ class WebAuthnService:
 
     def begin_registration(
         self, user_id: str, email: str, display_name: str = ""
-    ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
+    ) -> tuple[bool, dict[str, Any] | None, str]:
         """
         Generate WebAuthn registration options for user.
 
@@ -242,12 +240,12 @@ class WebAuthnService:
                 },
                 "",
             )
-        except Exception as e:
-            logger.error(f"WebAuthn begin_registration error: {e}", exc_info=True)
+        except Exception:
+            logger.exception("WebAuthn begin_registration error")
             return False, None, "An unexpected error occurred during WebAuthn registration."
 
     def complete_registration(
-        self, user_id: str, credential_data: Dict[str, Any], challenge_id: str, device_name: str = ""
+        self, user_id: str, credential_data: dict[str, Any], challenge_id: str, device_name: str = ""
     ) -> RegistrationResult:
         """
         Verify and register a new WebAuthn credential.
@@ -284,7 +282,7 @@ class WebAuthnService:
                 expected_rp_id=self.rp_id,
                 expected_origin=self._get_origin(),
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"WebAuthn registration verification failed: {e}")
             return RegistrationResult(success=False, error=f"Registration verification failed: {e}")
 
@@ -318,7 +316,7 @@ class WebAuthnService:
     # Authentication
     # =========================================================================
 
-    def begin_authentication(self, user_id: Optional[str] = None) -> Tuple[bool, Optional[Dict[str, Any]], str]:
+    def begin_authentication(self, user_id: str | None = None) -> tuple[bool, dict[str, Any] | None, str]:
         """
         Generate WebAuthn authentication options.
 
@@ -366,11 +364,11 @@ class WebAuthnService:
                 },
                 "",
             )
-        except Exception as e:
-            logger.error(f"WebAuthn begin_authentication error: {e}", exc_info=True)
+        except Exception:
+            logger.exception("WebAuthn begin_authentication error")
             return False, None, "An unexpected error occurred during WebAuthn authentication."
 
-    def complete_authentication(self, credential_data: Dict[str, Any], challenge_id: str) -> AuthenticationResult:
+    def complete_authentication(self, credential_data: dict[str, Any], challenge_id: str) -> AuthenticationResult:
         """
         Verify WebAuthn assertion and return user data.
 
@@ -414,7 +412,7 @@ class WebAuthnService:
                 ),
                 credential_current_sign_count=stored_credential.sign_count,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"WebAuthn authentication verification failed: {e}")
             return AuthenticationResult(success=False, error=f"Authentication verification failed: {e}")
 
@@ -428,7 +426,7 @@ class WebAuthnService:
     # Credential Management
     # =========================================================================
 
-    def list_credentials(self, user_id: str) -> List[Dict[str, Any]]:
+    def list_credentials(self, user_id: str) -> list[dict[str, Any]]:
         """List passkeys for a user."""
         credentials = self.credential_repo.list_by_user(user_id)
         return [
@@ -442,7 +440,7 @@ class WebAuthnService:
             for c in credentials
         ]
 
-    def delete_credential(self, user_id: str, credential_id: str) -> Tuple[bool, str]:
+    def delete_credential(self, user_id: str, credential_id: str) -> tuple[bool, str]:
         """Delete a user's passkey."""
         success = self.credential_repo.delete(credential_id, user_id)
         if success:

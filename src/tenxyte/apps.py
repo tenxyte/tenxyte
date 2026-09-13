@@ -1,4 +1,8 @@
+import logging
+
 from django.apps import AppConfig
+
+logger = logging.getLogger(__name__)
 
 
 class TenxyteConfig(AppConfig):
@@ -50,9 +54,11 @@ class TenxyteConfig(AppConfig):
         R-02 & F-17: Prevent insecure configurations in production.
         Checks JWT authentication, wildcard CORS, and SSL redirect.
         """
-        from django.conf import settings
-        from .conf import auth_settings
         import warnings
+
+        from django.conf import settings
+
+        from .conf import auth_settings
 
         if not settings.DEBUG:
             from django.core.exceptions import ImproperlyConfigured
@@ -101,6 +107,7 @@ class TenxyteConfig(AppConfig):
         """
         try:
             from django.conf import settings
+
             from .conf import auth_settings
 
             if settings.DEBUG or not auth_settings.RATE_LIMITING_ENABLED:
@@ -121,4 +128,5 @@ class TenxyteConfig(AppConfig):
                     stacklevel=2,
                 )
         except Exception:
-            pass  # Ne jamais bloquer le démarrage
+            # Ne jamais bloquer le démarrage
+            logger.debug("LocMemCache/rate-limiting startup check failed", exc_info=True)

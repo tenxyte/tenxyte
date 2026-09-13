@@ -1,26 +1,26 @@
 """Tenxyte Django Adapter."""
 
-from .settings_provider import DjangoSettingsProvider, get_django_settings
-from .email_service import DjangoEmailService, get_email_service
 from .cache_service import DjangoCacheService, get_cache_service
-from .task_service import CeleryTaskService, RQTaskService, SyncThreadTaskService
+from .email_service import DjangoEmailService, get_email_service
 from .middleware import (
-    DjangoRequestIDMiddleware,
+    ApplicationAuthMiddleware,
+    CORSMiddleware,
     DjangoApplicationAuthMiddleware,
-    DjangoSecurityHeadersMiddleware,
-    DjangoJWTAuthMiddleware,
     DjangoCORSMiddleware,
+    DjangoJWTAuthMiddleware,
     DjangoOrganizationContextMiddleware,
+    DjangoRequestIDMiddleware,
+    DjangoSecurityHeadersMiddleware,
+    JWTAuthMiddleware,
+    OrganizationContextMiddleware,
     # Backward compatibility aliases
     RequestIDMiddleware,
-    ApplicationAuthMiddleware,
     SecurityHeadersMiddleware,
-    JWTAuthMiddleware,
-    CORSMiddleware,
-    OrganizationContextMiddleware,
 )
+from .settings_provider import DjangoSettingsProvider, get_django_settings
+from .task_service import CeleryTaskService, RQTaskService, SyncThreadTaskService
 
-__all__ = [
+__all__ = [  # noqa: RUF022
     # Settings
     "DjangoSettingsProvider",
     "get_django_settings",

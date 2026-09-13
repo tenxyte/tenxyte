@@ -5,21 +5,20 @@ Framework-agnostic JWT token generation, validation, and blacklisting.
 Works with any underlying cache implementation.
 """
 
-import jwt
+import asyncio
 import uuid
 import warnings
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional, Protocol, Tuple, runtime_checkable
-import asyncio
+from typing import Any, Protocol, runtime_checkable
+
+import jwt
 
 from tenxyte.core.settings import Settings
 
 
 class SecurityWarning(UserWarning):
     """Warning emitted for JWT security issues (e.g. HS256 in production, PII in claims)."""
-
-    pass
 
 
 # Keys that should never appear in JWT payloads — GDPR data minimization
@@ -62,10 +61,10 @@ class DecodedToken:
     exp: datetime
     iat: datetime
     type: str
-    claims: Dict[str, Any]
+    claims: dict[str, Any]
     is_blacklisted: bool = False
     is_valid: bool = True
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @runtime_checkable
@@ -84,7 +83,7 @@ class TokenBlacklistService(Protocol):
         """Mark all tokens for a user as revoked."""
         ...  # pragma: no cover
 
-    def blacklist_token(self, jti: str, expires_at: datetime, user_id: Optional[str] = None, reason: str = "") -> bool:
+    def blacklist_token(self, jti: str, expires_at: datetime, user_id: str | None = None, reason: str = "") -> bool:
         """Add a token JTI to the blacklist."""
         ...  # pragma: no cover
 
@@ -106,7 +105,7 @@ class AsyncTokenBlacklistService(TokenBlacklistService, Protocol):
         ...  # pragma: no cover
 
     async def blacklist_token_async(
-        self, jti: str, expires_at: datetime, user_id: Optional[str] = None, reason: str = ""
+        self, jti: str, expires_at: datetime, user_id: str | None = None, reason: str = ""
     ) -> bool:
         """Add a token JTI to the blacklist."""
         ...  # pragma: no cover
@@ -121,10 +120,10 @@ class InMemoryTokenBlacklistService:
     """
 
     def __init__(self):
-        self._blacklisted: Dict[str, datetime] = {}
-        self._reasons: Dict[str, str] = {}
+        self._blacklisted: dict[str, datetime] = {}
+        self._reasons: dict[str, str] = {}
         # User-level revocation: user_id -> revocation timestamp
-        self._user_revocations: Dict[str, datetime] = {}
+        self._user_revocations: dict[str, datetime] = {}
 
     def is_blacklisted(self, jti: str) -> bool:
         """Check if a token JTI is blacklisted."""
@@ -157,7 +156,7 @@ class InMemoryTokenBlacklistService:
         self._user_revocations[user_id] = now
         return now
 
-    def blacklist_token(self, jti: str, expires_at: datetime, user_id: Optional[str] = None, reason: str = "") -> bool:
+    def blacklist_token(self, jti: str, expires_at: datetime, user_id: str | None = None, reason: str = "") -> bool:
         """Add a token JTI to the blacklist."""
         self._blacklisted[jti] = expires_at
         if reason:
@@ -174,11 +173,11 @@ class InMemoryTokenBlacklistService:
         return await asyncio.to_thread(self.revoke_all_user_tokens, user_id)
 
     async def blacklist_token_async(
-        self, jti: str, expires_at: datetime, user_id: Optional[str] = None, reason: str = ""
+        self, jti: str, expires_at: datetime, user_id: str | None = None, reason: str = ""
     ) -> bool:
         return await asyncio.to_thread(self.blacklist_token, jti, expires_at, user_id, reason)
 
-    def get_reason(self, jti: str) -> Optional[str]:
+    def get_reason(self, jti: str) -> str | None:
         """Get the blacklist reason for a JTI (for debugging)."""
         return self._reasons.get(jti)
 
@@ -215,7 +214,7 @@ class JWTService:
         )
     """
 
-    def __init__(self, settings: Settings, blacklist_service: Optional[TokenBlacklistService] = None):
+    def __init__(self, settings: Settings, blacklist_service: TokenBlacklistService | None = None):
         """
         Initialize JWT service.
 
@@ -274,9 +273,9 @@ class JWTService:
         self,
         user_id: str,
         application_id: str,
-        extra_claims: Optional[Dict[str, Any]] = None,
-        custom_lifetime: Optional[timedelta] = None,
-    ) -> Tuple[str, str, datetime]:
+        extra_claims: dict[str, Any] | None = None,
+        custom_lifetime: timedelta | None = None,
+    ) -> tuple[str, str, datetime]:
         """
         Generate an access token JWT with JTI for blacklisting.
 
@@ -322,7 +321,7 @@ class JWTService:
         lifetime = custom_lifetime if custom_lifetime is not None else self.access_token_lifetime
         expires_at = now + lifetime
 
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "type": "access",
             "jti": jti,
             "user_id": str(user_id),
@@ -364,8 +363,8 @@ class JWTService:
         self,
         user_id: str,
         application_id: str,
-        device_info: Optional[str] = None,
-        extra_claims: Optional[Dict[str, Any]] = None,
+        device_info: str | None = None,
+        extra_claims: dict[str, Any] | None = None,
     ) -> str:
         """
         Generate a refresh token (opaque UUID string).
@@ -383,7 +382,7 @@ class JWTService:
         return str(uuid.uuid4())
 
     def generate_token_pair(
-        self, user_id: str, application_id: str, refresh_token_str: str, extra_claims: Optional[Dict[str, Any]] = None
+        self, user_id: str, application_id: str, refresh_token_str: str, extra_claims: dict[str, Any] | None = None
     ) -> TokenPair:
         """
         Generate an access token + refresh token pair.
@@ -409,7 +408,7 @@ class JWTService:
         )
 
     def generate_new_token_pair(
-        self, user_id: str, application_id: str, extra_claims: Optional[Dict[str, Any]] = None
+        self, user_id: str, application_id: str, extra_claims: dict[str, Any] | None = None
     ) -> TokenPair:
         """
         Generate a NEW access token + refresh token pair for initial login.
@@ -439,7 +438,7 @@ class JWTService:
             expires_in=int(self.access_token_lifetime.total_seconds()),
         )
 
-    def decode_token(self, token: str, check_blacklist: bool = True) -> Optional[DecodedToken]:
+    def decode_token(self, token: str, check_blacklist: bool = True) -> DecodedToken | None:
         """
         Decode and validate a JWT token.
 
@@ -465,12 +464,12 @@ class JWTService:
                 required.append("aud")
             options = {"require": required}
 
-            decode_kwargs = dict(
-                algorithms=[self.algorithm],
-                options=options,
-                issuer=self.issuer if self.issuer else None,
-                audience=self.audience if self.audience else None,
-            )
+            decode_kwargs = {
+                "algorithms": [self.algorithm],
+                "options": options,
+                "issuer": self.issuer if self.issuer else None,
+                "audience": self.audience if self.audience else None,
+            }
 
             try:
                 payload = jwt.decode(token, self.verifying_key, **decode_kwargs)
@@ -538,10 +537,10 @@ class JWTService:
                 type="error",
                 claims={},
                 is_valid=False,
-                error=f"Invalid token: {str(e)}",
+                error=f"Invalid token: {e!s}",
             )
 
-    async def decode_token_async(self, token: str, check_blacklist: bool = True) -> Optional[DecodedToken]:
+    async def decode_token_async(self, token: str, check_blacklist: bool = True) -> DecodedToken | None:
         """Asynchronous version of decode_token."""
         if not self.verifying_key:
             raise ValueError(
@@ -557,12 +556,12 @@ class JWTService:
                 required.append("aud")
             options = {"require": required}
 
-            decode_kwargs = dict(
-                algorithms=[self.algorithm],
-                options=options,
-                issuer=self.issuer if self.issuer else None,
-                audience=self.audience if self.audience else None,
-            )
+            decode_kwargs = {
+                "algorithms": [self.algorithm],
+                "options": options,
+                "issuer": self.issuer if self.issuer else None,
+                "audience": self.audience if self.audience else None,
+            }
 
             # Decoding is CPU bound, run in thread
             try:
@@ -635,7 +634,7 @@ class JWTService:
                 type="error",
                 claims={},
                 is_valid=False,
-                error=f"Invalid token: {str(e)}",
+                error=f"Invalid token: {e!s}",
             )
 
     def is_token_valid(self, token: str) -> bool:
@@ -643,21 +642,21 @@ class JWTService:
         result = self.decode_token(token)
         return result is not None and result.is_valid
 
-    def get_user_id_from_token(self, token: str) -> Optional[str]:
+    def get_user_id_from_token(self, token: str) -> str | None:
         """Extract user ID from token."""
         result = self.decode_token(token)
         if result and result.is_valid:
             return result.user_id
         return None
 
-    def get_application_id_from_token(self, token: str) -> Optional[str]:
+    def get_application_id_from_token(self, token: str) -> str | None:
         """Extract application ID from token."""
         result = self.decode_token(token)
         if result and result.is_valid:
             return result.app_id
         return None
 
-    def blacklist_token(self, token: str, user_id: Optional[str] = None, reason: str = "") -> bool:
+    def blacklist_token(self, token: str, user_id: str | None = None, reason: str = "") -> bool:
         """
         Add a token to the blacklist.
 
@@ -681,12 +680,12 @@ class JWTService:
         )
 
     def blacklist_token_by_jti(
-        self, jti: str, expires_at: datetime, user_id: Optional[str] = None, reason: str = ""
+        self, jti: str, expires_at: datetime, user_id: str | None = None, reason: str = ""
     ) -> bool:
         """Blacklist a token by its JTI directly."""
         return self.blacklist_service.blacklist_token(jti=jti, expires_at=expires_at, user_id=user_id, reason=reason)
 
-    async def blacklist_token_async(self, token: str, user_id: Optional[str] = None, reason: str = "") -> bool:
+    async def blacklist_token_async(self, token: str, user_id: str | None = None, reason: str = "") -> bool:
         """Asynchronous version of blacklist_token."""
         result = await self.decode_token_async(token, check_blacklist=False)
         if not result or not result.jti:
@@ -706,7 +705,7 @@ class JWTService:
             )
 
     async def blacklist_token_by_jti_async(
-        self, jti: str, expires_at: datetime, user_id: Optional[str] = None, reason: str = ""
+        self, jti: str, expires_at: datetime, user_id: str | None = None, reason: str = ""
     ) -> bool:
         """Asynchronous version of blacklist_token_by_jti."""
         if hasattr(self.blacklist_service, "blacklist_token_async"):
@@ -808,7 +807,7 @@ class JWTService:
 
         return True
 
-    def refresh_tokens(self, refresh_token: str, user_repository: Optional[Any] = None) -> Optional[TokenPair]:
+    def refresh_tokens(self, refresh_token: str, user_repository: Any | None = None) -> TokenPair | None:
         """
         Refresh tokens using a refresh token.
 
@@ -906,7 +905,7 @@ class JWTService:
                         expires_in=int(self.access_token_lifetime.total_seconds()),
                     )
 
-                except Exception:
+                except Exception:  # noqa: BLE001
                     return None
 
         except ImportError:
@@ -932,12 +931,10 @@ class JWTService:
                     token_type="Bearer",
                     expires_in=int(self.access_token_lifetime.total_seconds()),
                 )
-            except Exception:
+            except Exception:  # noqa: BLE001
                 return None
 
-    async def refresh_tokens_async(
-        self, refresh_token: str, user_repository: Optional[Any] = None
-    ) -> Optional[TokenPair]:
+    async def refresh_tokens_async(self, refresh_token: str, user_repository: Any | None = None) -> TokenPair | None:
         """Asynchronous version of refresh_tokens."""
 
         # For database operations, we delegate to a thread since models are sync.
@@ -1010,5 +1007,5 @@ class JWTService:
                 token_type="Bearer",
                 expires_in=int(self.access_token_lifetime.total_seconds()),
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None

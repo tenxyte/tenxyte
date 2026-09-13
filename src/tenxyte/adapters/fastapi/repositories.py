@@ -2,14 +2,14 @@
 FastAPI (SQLAlchemy) implementation of Tenxyte repositories.
 """
 
-from typing import Any, Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Any
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
 
-from tenxyte.ports.repositories import UserRepository, User, MFAType
 from tenxyte.adapters.fastapi.models import UserDB
+from tenxyte.ports.repositories import MFAType, User, UserRepository
 
 
 class FastAPIUserRepository(UserRepository):
@@ -18,12 +18,12 @@ class FastAPIUserRepository(UserRepository):
     def __init__(self, session: Session):
         self.session = session
 
-    def get_by_id(self, user_id: str) -> Optional[User]:
+    def get_by_id(self, user_id: str) -> User | None:
         stmt = select(UserDB).where(UserDB.id == user_id)
         db_user = self.session.execute(stmt).scalar_one_or_none()
         return db_user.to_port_model() if db_user else None
 
-    def get_by_email(self, email: str) -> Optional[User]:
+    def get_by_email(self, email: str) -> User | None:
         stmt = select(UserDB).where(UserDB.email == email)
         db_user = self.session.execute(stmt).scalar_one_or_none()
         return db_user.to_port_model() if db_user else None
@@ -69,7 +69,9 @@ class FastAPIUserRepository(UserRepository):
         db_user.mfa_type = user.mfa_type
         db_user.mfa_secret = user.mfa_secret
         db_user.email_verified = user.email_verified
-        db_user.updated_at = datetime.utcnow()
+        # Naive UTC to match this column's declared type (Column(DateTime), not timezone=True) and
+        # its default/onupdate in models.py — datetime.utcnow() is deprecated, this is its equivalent.
+        db_user.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
         db_user.last_login = user.last_login
         db_user.user_metadata = user.metadata
 
@@ -86,7 +88,7 @@ class FastAPIUserRepository(UserRepository):
             return True
         return False
 
-    def list_all(self, skip: int = 0, limit: int = 100, filters: Optional[Dict[str, Any]] = None) -> List[User]:
+    def list_all(self, skip: int = 0, limit: int = 100, filters: dict[str, Any] | None = None) -> list[User]:
         stmt = select(UserDB)
         if filters:
             if "is_active" in filters:
@@ -100,7 +102,7 @@ class FastAPIUserRepository(UserRepository):
         db_users = self.session.execute(stmt).scalars().all()
         return [user.to_port_model() for user in db_users]
 
-    def count(self, filters: Optional[Dict[str, Any]] = None) -> int:
+    def count(self, filters: dict[str, Any] | None = None) -> int:
         stmt = select(func.count(UserDB.id))
         if filters:
             if "is_active" in filters:

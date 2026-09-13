@@ -5,7 +5,6 @@ Implements the TOTPStorage protocol using Django's ORM.
 Stores encrypted TOTP secrets and handles replay protection.
 """
 
-from typing import Optional, List
 from dataclasses import dataclass
 
 
@@ -13,9 +12,9 @@ from dataclasses import dataclass
 class TOTPUserData:
     """Data class for TOTP user data returned by load_user_data."""
 
-    totp_secret: Optional[str]
+    totp_secret: str | None
     is_2fa_enabled: bool
-    backup_codes: List[str]
+    backup_codes: list[str]
 
     def has_backup_codes(self) -> bool:
         return bool(self.backup_codes)
@@ -36,7 +35,7 @@ class DjangoTOTPStorage:
         storage.store_secret(user_id, encrypted_secret)
     """
 
-    def __init__(self, encryption_key: Optional[str] = None):
+    def __init__(self, encryption_key: str | None = None):
         """
         Initialize TOTP storage.
 
@@ -45,7 +44,7 @@ class DjangoTOTPStorage:
         """
         self.encryption_key = encryption_key
 
-    def get_secret(self, user_id: str) -> Optional[str]:
+    def get_secret(self, user_id: str) -> str | None:
         """
         Get the encrypted TOTP secret for a user.
 
@@ -225,7 +224,7 @@ class DjangoTOTPStorage:
         """Alias for store_secret - Core TOTPService compatibility."""
         return self.store_secret(user_id, encrypted_secret)
 
-    def load_user_data(self, user_id: str) -> Optional[TOTPUserData]:
+    def load_user_data(self, user_id: str) -> TOTPUserData | None:
         """
         Load TOTP user data for Core TOTPService.
 
@@ -246,7 +245,7 @@ class DjangoTOTPStorage:
         except UserModel.DoesNotExist:
             return None
 
-    def save_backup_codes(self, user_id: str, hashed_codes: List[str]) -> bool:
+    def save_backup_codes(self, user_id: str, hashed_codes: list[str]) -> bool:
         """Alias for store_backup_codes - Core TOTPService compatibility."""
         return self.store_backup_codes(user_id, hashed_codes)
 

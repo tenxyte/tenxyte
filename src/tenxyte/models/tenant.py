@@ -5,12 +5,12 @@ This module provides the base classes needed to enforce data isolation
 between organizations (tenants) at the ORM level.
 """
 
-from django.db import models
 from django.core.exceptions import ValidationError
+from django.db import models
 
-from .base import AutoFieldClass
 from ..conf import org_settings
 from ..tenant_context import get_current_organization, get_INTERNAL_bypass_tenant_filtering
+from .base import AutoFieldClass
 
 
 class TenantManager(models.Manager):
@@ -90,17 +90,16 @@ class BaseTenantModel(models.Model):
         Interfere before saving to auto-assign the current organization
         if organizations feature is enabled.
         """
-        if getattr(org_settings, "ORGANIZATIONS_ENABLED", False):
-            # If the record doesn't have an organization yet
-            if not getattr(self, "organization_id", None):
-                current_org = get_current_organization()
+        # If organizations are enabled and the record doesn't have one yet
+        if getattr(org_settings, "ORGANIZATIONS_ENABLED", False) and not getattr(self, "organization_id", None):
+            current_org = get_current_organization()
 
-                # Assign the current organization automatically
-                if current_org:
-                    self.organization = current_org
-                # If there's no organization and we're not bypassing, this is an error
-                # User is trying to create data without a tenant context
-                elif not get_INTERNAL_bypass_tenant_filtering():
-                    raise ValidationError("Cannot save tenant model without an active organization context.")
+            # Assign the current organization automatically
+            if current_org:
+                self.organization = current_org
+            # If there's no organization and we're not bypassing, this is an error
+            # User is trying to create data without a tenant context
+            elif not get_INTERNAL_bypass_tenant_filtering():
+                raise ValidationError("Cannot save tenant model without an active organization context.")
 
         super().save(*args, **kwargs)
