@@ -15,24 +15,31 @@ Garantit qu'aucun champ documenté n'a été retiré (backward-compat, Req 8.1, 
 Tous les tests utilisent des données déterministes (pas de Hypothesis).
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from rest_framework.test import APIRequestFactory
 
-from tenxyte.models import User, Application
-from tenxyte.views.auth_views import RegisterView, LoginEmailView, LoginPhoneView
-from tenxyte.views.password_views import ChangePasswordView
-from tenxyte.views.twofa_views import TwoFactorDisableView
+from tenxyte.models import Application, User
 from tenxyte.views.account_deletion_views import (
-    request_account_deletion,
     cancel_account_deletion,
     export_user_data,
+    request_account_deletion,
 )
-
+from tenxyte.views.auth_views import LoginEmailView, LoginPhoneView, RegisterView
+from tenxyte.views.password_views import ChangePasswordView
+from tenxyte.views.twofa_views import TwoFactorDisableView
+from tests.contract.shapes import (
+    LOGIN_EMAIL_REQUIRED_FIELDS,
+    LOGIN_PHONE_REQUIRED_FIELDS,
+    REGISTER_REQUIRED_FIELDS,
+    REGISTER_USER_FIELDS,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _app(name):
     app, _ = Application.create_application(name=name)
@@ -59,6 +66,7 @@ def _phone_user(country_code, phone_number, password="Pass123!"):
 
 def _jwt_token(user, app):
     from tests.integration.django.test_helpers import create_jwt_token
+
     return create_jwt_token(user, app)["access_token"]
 
 
@@ -79,7 +87,9 @@ def _post_authed(view_cls_or_fn, path, user, app, data):
     token = _jwt_token(user, app)
     factory = APIRequestFactory()
     req = factory.post(
-        path, data=data, format="json",
+        path,
+        data=data,
+        format="json",
         HTTP_AUTHORIZATION=f"Bearer {token}",
     )
     req.application = app
@@ -94,17 +104,8 @@ def _post_authed(view_cls_or_fn, path, user, app, data):
 # ===========================================================================
 # 1. RegisterView — POST /register/
 # ===========================================================================
-
-REGISTER_REQUIRED_FIELDS = {"message", "user", "verification_required"}
-
-# Sub-fields of the `user` object (documented in OpenAPI schema)
-REGISTER_USER_FIELDS = {
-    "id",
-    "email",
-    "is_email_verified",
-    "is_phone_verified",
-    "is_2fa_enabled",
-}
+# REGISTER_REQUIRED_FIELDS / REGISTER_USER_FIELDS now live in tests/contract/shapes.py — the
+# single source of truth shared with the Contract_Suite (spec z_aud_3, task 3.2).
 
 
 class TestRegisterViewResponseShapeSnapshot:
@@ -115,55 +116,69 @@ class TestRegisterViewResponseShapeSnapshot:
     @pytest.mark.django_db
     def test_success_response_has_documented_top_level_fields(self):
         app = _app("SnapRegApp1")
-        resp = _post_anon(RegisterView, "/auth/register/", {
-            "email": "snap_reg_1@test.com",
-            "password": "Pass123!",
-        }, app)
+        resp = _post_anon(
+            RegisterView,
+            "/auth/register/",
+            {
+                "email": "snap_reg_1@test.com",
+                "password": "Pass123!",
+            },
+            app,
+        )
 
         assert resp.status_code == 201
         for field in REGISTER_REQUIRED_FIELDS:
-            assert field in resp.data, (
-                f"Required field '{field}' missing from /register/ success response"
-            )
+            assert field in resp.data, f"Required field '{field}' missing from /register/ success response"
 
     @pytest.mark.django_db
     def test_success_response_user_object_has_documented_fields(self):
         app = _app("SnapRegApp2")
-        resp = _post_anon(RegisterView, "/auth/register/", {
-            "email": "snap_reg_2@test.com",
-            "password": "Pass123!",
-        }, app)
+        resp = _post_anon(
+            RegisterView,
+            "/auth/register/",
+            {
+                "email": "snap_reg_2@test.com",
+                "password": "Pass123!",
+            },
+            app,
+        )
 
         assert resp.status_code == 201
         user_data = resp.data["user"]
         for field in REGISTER_USER_FIELDS:
-            assert field in user_data, (
-                f"User field '{field}' missing from /register/ success response"
-            )
+            assert field in user_data, f"User field '{field}' missing from /register/ success response"
 
     @pytest.mark.django_db
     def test_success_with_login_returns_token_fields(self):
         """When login=True, response must also contain token fields (documented)."""
         app = _app("SnapRegApp3")
-        resp = _post_anon(RegisterView, "/auth/register/", {
-            "email": "snap_reg_3@test.com",
-            "password": "Pass123!",
-            "login": True,
-        }, app)
+        resp = _post_anon(
+            RegisterView,
+            "/auth/register/",
+            {
+                "email": "snap_reg_3@test.com",
+                "password": "Pass123!",
+                "login": True,
+            },
+            app,
+        )
 
         assert resp.status_code == 201
         for field in ("access_token", "token_type", "expires_in"):
-            assert field in resp.data, (
-                f"Token field '{field}' missing from /register/?login=true success response"
-            )
+            assert field in resp.data, f"Token field '{field}' missing from /register/?login=true success response"
 
     @pytest.mark.django_db
     def test_verification_required_has_email_and_phone_flags(self):
         app = _app("SnapRegApp4")
-        resp = _post_anon(RegisterView, "/auth/register/", {
-            "email": "snap_reg_4@test.com",
-            "password": "Pass123!",
-        }, app)
+        resp = _post_anon(
+            RegisterView,
+            "/auth/register/",
+            {
+                "email": "snap_reg_4@test.com",
+                "password": "Pass123!",
+            },
+            app,
+        )
 
         assert resp.status_code == 201
         vr = resp.data["verification_required"]
@@ -174,18 +189,7 @@ class TestRegisterViewResponseShapeSnapshot:
 # ===========================================================================
 # 2. LoginEmailView — POST /login/email/
 # ===========================================================================
-
-LOGIN_EMAIL_REQUIRED_FIELDS = {
-    "access_token",
-    "refresh_token",
-    "token_type",
-    "expires_in",
-    "refresh_expires_in",
-    "user",
-    "requires_2fa",
-    "session_id",
-    "device_id",
-}
+# LOGIN_EMAIL_REQUIRED_FIELDS now lives in tests/contract/shapes.py.
 
 
 class TestLoginEmailViewResponseShapeSnapshot:
@@ -198,26 +202,34 @@ class TestLoginEmailViewResponseShapeSnapshot:
         app = _app("SnapLoginEmailApp1")
         _user("snap_login_email_1@test.com", "Pass123!")
 
-        resp = _post_anon(LoginEmailView, "/auth/login/email/", {
-            "email": "snap_login_email_1@test.com",
-            "password": "Pass123!",
-        }, app)
+        resp = _post_anon(
+            LoginEmailView,
+            "/auth/login/email/",
+            {
+                "email": "snap_login_email_1@test.com",
+                "password": "Pass123!",
+            },
+            app,
+        )
 
         assert resp.status_code == 200
         for field in LOGIN_EMAIL_REQUIRED_FIELDS:
-            assert field in resp.data, (
-                f"Required field '{field}' missing from /login/email/ success response"
-            )
+            assert field in resp.data, f"Required field '{field}' missing from /login/email/ success response"
 
     @pytest.mark.django_db
     def test_token_type_is_bearer(self):
         app = _app("SnapLoginEmailApp2")
         _user("snap_login_email_2@test.com", "Pass123!")
 
-        resp = _post_anon(LoginEmailView, "/auth/login/email/", {
-            "email": "snap_login_email_2@test.com",
-            "password": "Pass123!",
-        }, app)
+        resp = _post_anon(
+            LoginEmailView,
+            "/auth/login/email/",
+            {
+                "email": "snap_login_email_2@test.com",
+                "password": "Pass123!",
+            },
+            app,
+        )
 
         assert resp.status_code == 200
         assert resp.data["token_type"] == "Bearer"
@@ -227,10 +239,15 @@ class TestLoginEmailViewResponseShapeSnapshot:
         app = _app("SnapLoginEmailApp3")
         _user("snap_login_email_3@test.com", "Pass123!")
 
-        resp = _post_anon(LoginEmailView, "/auth/login/email/", {
-            "email": "snap_login_email_3@test.com",
-            "password": "Pass123!",
-        }, app)
+        resp = _post_anon(
+            LoginEmailView,
+            "/auth/login/email/",
+            {
+                "email": "snap_login_email_3@test.com",
+                "password": "Pass123!",
+            },
+            app,
+        )
 
         assert resp.status_code == 200
         assert resp.data["user"] is not None
@@ -239,18 +256,7 @@ class TestLoginEmailViewResponseShapeSnapshot:
 # ===========================================================================
 # 3. LoginPhoneView — POST /login/phone/
 # ===========================================================================
-
-LOGIN_PHONE_REQUIRED_FIELDS = {
-    "access_token",
-    "refresh_token",
-    "token_type",
-    "expires_in",
-    "refresh_expires_in",
-    "user",
-    "requires_2fa",
-    "session_id",
-    "device_id",
-}
+# LOGIN_PHONE_REQUIRED_FIELDS now lives in tests/contract/shapes.py.
 
 
 class TestLoginPhoneViewResponseShapeSnapshot:
@@ -263,28 +269,36 @@ class TestLoginPhoneViewResponseShapeSnapshot:
         app = _app("SnapLoginPhoneApp1")
         _phone_user("33", "620000001", "Pass123!")
 
-        resp = _post_anon(LoginPhoneView, "/auth/login/phone/", {
-            "phone_country_code": "33",
-            "phone_number": "620000001",
-            "password": "Pass123!",
-        }, app)
+        resp = _post_anon(
+            LoginPhoneView,
+            "/auth/login/phone/",
+            {
+                "phone_country_code": "33",
+                "phone_number": "620000001",
+                "password": "Pass123!",
+            },
+            app,
+        )
 
         assert resp.status_code == 200
         for field in LOGIN_PHONE_REQUIRED_FIELDS:
-            assert field in resp.data, (
-                f"Required field '{field}' missing from /login/phone/ success response"
-            )
+            assert field in resp.data, f"Required field '{field}' missing from /login/phone/ success response"
 
     @pytest.mark.django_db
     def test_token_type_is_bearer(self):
         app = _app("SnapLoginPhoneApp2")
         _phone_user("33", "620000002", "Pass123!")
 
-        resp = _post_anon(LoginPhoneView, "/auth/login/phone/", {
-            "phone_country_code": "33",
-            "phone_number": "620000002",
-            "password": "Pass123!",
-        }, app)
+        resp = _post_anon(
+            LoginPhoneView,
+            "/auth/login/phone/",
+            {
+                "phone_country_code": "33",
+                "phone_number": "620000002",
+                "password": "Pass123!",
+            },
+            app,
+        )
 
         assert resp.status_code == 200
         assert resp.data["token_type"] == "Bearer"
@@ -299,15 +313,25 @@ class TestLoginPhoneViewResponseShapeSnapshot:
         _user("snap_login_cross_email@test.com", "Pass123!")
         _phone_user("33", "620000010", "Pass123!")
 
-        resp_email = _post_anon(LoginEmailView, "/auth/login/email/", {
-            "email": "snap_login_cross_email@test.com",
-            "password": "Pass123!",
-        }, app)
-        resp_phone = _post_anon(LoginPhoneView, "/auth/login/phone/", {
-            "phone_country_code": "33",
-            "phone_number": "620000010",
-            "password": "Pass123!",
-        }, app)
+        resp_email = _post_anon(
+            LoginEmailView,
+            "/auth/login/email/",
+            {
+                "email": "snap_login_cross_email@test.com",
+                "password": "Pass123!",
+            },
+            app,
+        )
+        resp_phone = _post_anon(
+            LoginPhoneView,
+            "/auth/login/phone/",
+            {
+                "phone_country_code": "33",
+                "phone_number": "620000010",
+                "password": "Pass123!",
+            },
+            app,
+        )
 
         assert resp_email.status_code == 200
         assert resp_phone.status_code == 200
@@ -336,28 +360,38 @@ class TestChangePasswordViewResponseShapeSnapshot:
         app = _app("SnapChangePwApp1")
         user = _user("snap_changepw_1@test.com", "OldPass123!")
 
-        resp = _post_authed(ChangePasswordView, "/auth/password/change/", user, app, {
-            "current_password": "OldPass123!",
-            "new_password": "NewPass456!",
-            "confirm_password": "NewPass456!",
-        })
+        resp = _post_authed(
+            ChangePasswordView,
+            "/auth/password/change/",
+            user,
+            app,
+            {
+                "current_password": "OldPass123!",
+                "new_password": "NewPass456!",
+                "confirm_password": "NewPass456!",
+            },
+        )
 
         assert resp.status_code == 200
         for field in CHANGE_PASSWORD_REQUIRED_FIELDS:
-            assert field in resp.data, (
-                f"Required field '{field}' missing from /password/change/ success response"
-            )
+            assert field in resp.data, f"Required field '{field}' missing from /password/change/ success response"
 
     @pytest.mark.django_db
     def test_success_response_sessions_revoked_is_integer(self):
         app = _app("SnapChangePwApp2")
         user = _user("snap_changepw_2@test.com", "OldPass123!")
 
-        resp = _post_authed(ChangePasswordView, "/auth/password/change/", user, app, {
-            "current_password": "OldPass123!",
-            "new_password": "NewPass456!",
-            "confirm_password": "NewPass456!",
-        })
+        resp = _post_authed(
+            ChangePasswordView,
+            "/auth/password/change/",
+            user,
+            app,
+            {
+                "current_password": "OldPass123!",
+                "new_password": "NewPass456!",
+                "confirm_password": "NewPass456!",
+            },
+        )
 
         assert resp.status_code == 200
         assert isinstance(resp.data["sessions_revoked"], int)
@@ -367,11 +401,17 @@ class TestChangePasswordViewResponseShapeSnapshot:
         app = _app("SnapChangePwApp3")
         user = _user("snap_changepw_3@test.com", "OldPass123!")
 
-        resp = _post_authed(ChangePasswordView, "/auth/password/change/", user, app, {
-            "current_password": "OldPass123!",
-            "new_password": "NewPass456!",
-            "confirm_password": "NewPass456!",
-        })
+        resp = _post_authed(
+            ChangePasswordView,
+            "/auth/password/change/",
+            user,
+            app,
+            {
+                "current_password": "OldPass123!",
+                "new_password": "NewPass456!",
+                "confirm_password": "NewPass456!",
+            },
+        )
 
         assert resp.status_code == 200
         assert isinstance(resp.data["message"], str)
@@ -399,16 +439,20 @@ class TestTwoFactorDisableViewResponseShapeSnapshot:
 
         with patch("tenxyte.views.twofa_views.get_core_totp_service") as mock_svc:
             mock_svc.return_value.disable_2fa.return_value = (True, "")
-            resp = _post_authed(TwoFactorDisableView, "/auth/2fa/disable/", user, app, {
-                "code": "123456",
-                "password": "Pass123!",
-            })
+            resp = _post_authed(
+                TwoFactorDisableView,
+                "/auth/2fa/disable/",
+                user,
+                app,
+                {
+                    "code": "123456",
+                    "password": "Pass123!",
+                },
+            )
 
         assert resp.status_code == 200
         for field in TWOFA_DISABLE_REQUIRED_FIELDS:
-            assert field in resp.data, (
-                f"Required field '{field}' missing from /2fa/disable/ success response"
-            )
+            assert field in resp.data, f"Required field '{field}' missing from /2fa/disable/ success response"
 
     @pytest.mark.django_db
     def test_is_enabled_is_false_after_disable(self):
@@ -419,10 +463,16 @@ class TestTwoFactorDisableViewResponseShapeSnapshot:
 
         with patch("tenxyte.views.twofa_views.get_core_totp_service") as mock_svc:
             mock_svc.return_value.disable_2fa.return_value = (True, "")
-            resp = _post_authed(TwoFactorDisableView, "/auth/2fa/disable/", user, app, {
-                "code": "123456",
-                "password": "Pass123!",
-            })
+            resp = _post_authed(
+                TwoFactorDisableView,
+                "/auth/2fa/disable/",
+                user,
+                app,
+                {
+                    "code": "123456",
+                    "password": "Pass123!",
+                },
+            )
 
         assert resp.status_code == 200
         assert resp.data["is_enabled"] is False
@@ -436,10 +486,16 @@ class TestTwoFactorDisableViewResponseShapeSnapshot:
 
         with patch("tenxyte.views.twofa_views.get_core_totp_service") as mock_svc:
             mock_svc.return_value.disable_2fa.return_value = (True, "")
-            resp = _post_authed(TwoFactorDisableView, "/auth/2fa/disable/", user, app, {
-                "code": "123456",
-                "password": "Pass123!",
-            })
+            resp = _post_authed(
+                TwoFactorDisableView,
+                "/auth/2fa/disable/",
+                user,
+                app,
+                {
+                    "code": "123456",
+                    "password": "Pass123!",
+                },
+            )
 
         assert resp.status_code == 200
         assert isinstance(resp.data["message"], str)
@@ -463,9 +519,7 @@ class TestRequestAccountDeletionResponseShapeSnapshot:
         app = _app("SnapReqDelApp1")
         user = _user("snap_req_del_1@test.com", "Pass123!")
 
-        with patch(
-            "tenxyte.views.account_deletion_views.AccountDeletionService"
-        ) as MockSvc:
+        with patch("tenxyte.views.account_deletion_views.AccountDeletionService") as MockSvc:
             MockSvc.return_value.request_deletion.return_value = (
                 True,
                 {
@@ -476,24 +530,23 @@ class TestRequestAccountDeletionResponseShapeSnapshot:
                 "",
             )
             resp = _post_authed(
-                request_account_deletion, "/auth/request-deletion/", user, app,
+                request_account_deletion,
+                "/auth/request-deletion/",
+                user,
+                app,
                 {"password": "Pass123!"},
             )
 
         assert resp.status_code == 201
         for field in REQUEST_DELETION_REQUIRED_FIELDS:
-            assert field in resp.data, (
-                f"Required field '{field}' missing from /request-deletion/ success response"
-            )
+            assert field in resp.data, f"Required field '{field}' missing from /request-deletion/ success response"
 
     @pytest.mark.django_db
     def test_grace_period_days_is_integer(self):
         app = _app("SnapReqDelApp2")
         user = _user("snap_req_del_2@test.com", "Pass123!")
 
-        with patch(
-            "tenxyte.views.account_deletion_views.AccountDeletionService"
-        ) as MockSvc:
+        with patch("tenxyte.views.account_deletion_views.AccountDeletionService") as MockSvc:
             MockSvc.return_value.request_deletion.return_value = (
                 True,
                 {
@@ -504,7 +557,10 @@ class TestRequestAccountDeletionResponseShapeSnapshot:
                 "",
             )
             resp = _post_authed(
-                request_account_deletion, "/auth/request-deletion/", user, app,
+                request_account_deletion,
+                "/auth/request-deletion/",
+                user,
+                app,
                 {"password": "Pass123!"},
             )
 
@@ -529,40 +585,40 @@ class TestCancelAccountDeletionResponseShapeSnapshot:
         app = _app("SnapCancelDelApp1")
         user = _user("snap_cancel_del_1@test.com", "Pass123!")
 
-        with patch(
-            "tenxyte.views.account_deletion_views.AccountDeletionService"
-        ) as MockSvc:
+        with patch("tenxyte.views.account_deletion_views.AccountDeletionService") as MockSvc:
             MockSvc.return_value.cancel_deletion.return_value = (
                 True,
                 {"message": "Cancelled 1 deletion request(s).", "cancelled_count": 1},
                 "",
             )
             resp = _post_authed(
-                cancel_account_deletion, "/auth/cancel-deletion/", user, app,
+                cancel_account_deletion,
+                "/auth/cancel-deletion/",
+                user,
+                app,
                 {"password": "Pass123!"},
             )
 
         assert resp.status_code == 200
         for field in CANCEL_DELETION_REQUIRED_FIELDS:
-            assert field in resp.data, (
-                f"Required field '{field}' missing from /cancel-deletion/ success response"
-            )
+            assert field in resp.data, f"Required field '{field}' missing from /cancel-deletion/ success response"
 
     @pytest.mark.django_db
     def test_cancelled_count_is_non_negative_integer(self):
         app = _app("SnapCancelDelApp2")
         user = _user("snap_cancel_del_2@test.com", "Pass123!")
 
-        with patch(
-            "tenxyte.views.account_deletion_views.AccountDeletionService"
-        ) as MockSvc:
+        with patch("tenxyte.views.account_deletion_views.AccountDeletionService") as MockSvc:
             MockSvc.return_value.cancel_deletion.return_value = (
                 True,
                 {"message": "Cancelled 1 deletion request(s).", "cancelled_count": 1},
                 "",
             )
             resp = _post_authed(
-                cancel_account_deletion, "/auth/cancel-deletion/", user, app,
+                cancel_account_deletion,
+                "/auth/cancel-deletion/",
+                user,
+                app,
                 {"password": "Pass123!"},
             )
 
@@ -578,8 +634,13 @@ class TestCancelAccountDeletionResponseShapeSnapshot:
 EXPORT_REQUIRED_FIELDS = {"user_info", "export_metadata"}
 
 EXPORT_USER_INFO_FIELDS = {
-    "id", "email", "first_name", "last_name",
-    "is_email_verified", "is_phone_verified", "is_2fa_enabled",
+    "id",
+    "email",
+    "first_name",
+    "last_name",
+    "is_email_verified",
+    "is_phone_verified",
+    "is_2fa_enabled",
     "created_at",
 }
 
@@ -598,15 +659,16 @@ class TestExportUserDataResponseShapeSnapshot:
 
         with patch.object(user.__class__, "get_all_permissions", return_value=[]):
             resp = _post_authed(
-                export_user_data, "/auth/export-user-data/", user, app,
+                export_user_data,
+                "/auth/export-user-data/",
+                user,
+                app,
                 {"password": "Pass123!"},
             )
 
         assert resp.status_code == 200
         for field in EXPORT_REQUIRED_FIELDS:
-            assert field in resp.data, (
-                f"Required field '{field}' missing from /export-user-data/ success response"
-            )
+            assert field in resp.data, f"Required field '{field}' missing from /export-user-data/ success response"
 
     @pytest.mark.django_db
     def test_user_info_has_documented_subfields(self):
@@ -615,16 +677,17 @@ class TestExportUserDataResponseShapeSnapshot:
 
         with patch.object(user.__class__, "get_all_permissions", return_value=[]):
             resp = _post_authed(
-                export_user_data, "/auth/export-user-data/", user, app,
+                export_user_data,
+                "/auth/export-user-data/",
+                user,
+                app,
                 {"password": "Pass123!"},
             )
 
         assert resp.status_code == 200
         user_info = resp.data["user_info"]
         for field in EXPORT_USER_INFO_FIELDS:
-            assert field in user_info, (
-                f"user_info field '{field}' missing from /export-user-data/ success response"
-            )
+            assert field in user_info, f"user_info field '{field}' missing from /export-user-data/ success response"
 
     @pytest.mark.django_db
     def test_export_metadata_has_documented_subfields(self):
@@ -633,16 +696,19 @@ class TestExportUserDataResponseShapeSnapshot:
 
         with patch.object(user.__class__, "get_all_permissions", return_value=[]):
             resp = _post_authed(
-                export_user_data, "/auth/export-user-data/", user, app,
+                export_user_data,
+                "/auth/export-user-data/",
+                user,
+                app,
                 {"password": "Pass123!"},
             )
 
         assert resp.status_code == 200
         metadata = resp.data["export_metadata"]
         for field in EXPORT_METADATA_FIELDS:
-            assert field in metadata, (
-                f"export_metadata field '{field}' missing from /export-user-data/ success response"
-            )
+            assert (
+                field in metadata
+            ), f"export_metadata field '{field}' missing from /export-user-data/ success response"
 
     @pytest.mark.django_db
     def test_compliance_list_is_non_empty(self):
@@ -651,7 +717,10 @@ class TestExportUserDataResponseShapeSnapshot:
 
         with patch.object(user.__class__, "get_all_permissions", return_value=[]):
             resp = _post_authed(
-                export_user_data, "/auth/export-user-data/", user, app,
+                export_user_data,
+                "/auth/export-user-data/",
+                user,
+                app,
                 {"password": "Pass123!"},
             )
 

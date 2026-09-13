@@ -283,6 +283,38 @@ jobs:
         run: pytest tests/
 
   # ===========================================================================
+  # Contract_Suite + Parity_Matrix (spec z_aud_3, task 3.2/5.3, Property 2) — the same contract
+  # tests run against both adapters via the `api` fixture (tests/contract/conftest.py), plus a
+  # parity_matrix gate scoped to the groups shipped so far (Group A only, for now).
+  # ===========================================================================
+  contract-parity:
+    name: Contract_Suite + Parity_Matrix
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[django,fastapi,dev]"
+
+      - name: Run the Contract_Suite against both adapters
+        run: |
+          pytest tests/contract/ -q
+
+      - name: Run the Parity_Matrix (gated on shipped groups only)
+        run: |
+          # Intentionally red until login/phone ships (tasks.md 5.1/5.3) — a --groups=A gate
+          # failing is the correct signal that Group A isn't fully delivered yet, not a CI bug.
+          python scripts/parity_matrix.py --groups=A
+
+  # ===========================================================================
   # AIRS Conformance Suite (spec z_aud_2, task 4.4) — the spec/airs/AIRS-1.0.md ↔ implementation
   # lock: runs the black-box HTTP suite (spec/airs/conformance/) against a real ephemeral Tenxyte
   # instance, all Conformance Levels enabled, then proves it discriminates by running it against

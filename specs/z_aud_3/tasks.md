@@ -164,10 +164,43 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - **Property 1 (socle)**
     - _Requirements: 5.1, 4.5_
 
-  - [ ] 3.2 Créer la Contract_Suite paramétrée
-    - `tests/contract/` : fixture `api` paramétrée {django, fastapi} ; refactor des snapshots de
-      forme existants en assertions partagées (tests Django actuels inchangés dans leurs
-      attentes) ; câblage CI double exécution
+  - [x] 3.2 Créer la Contract_Suite paramétrée
+    - `tests/contract/conftest.py` : fixture `api` paramétrée `{django, fastapi}` — côté Django,
+      invoque la classe de vue DRF directement via `APIRequestFactory` (même technique que
+      `test_endpoint_response_shape_snapshots.py`), pontée par `asgiref.sync_to_async` (l'ORM
+      Django refuse l'accès DB synchrone depuis une boucle événementielle sans ce pont) ; côté
+      FastAPI, `create_tenxyte_app()` réel sur `httpx.AsyncClient(ASGITransport(...))`, zéro
+      mock des deux côtés. `tests/contract/shapes.py` : constantes de forme (`REGISTER_*`,
+      `LOGIN_EMAIL_*`, `LOGIN_PHONE_*`) extraites de
+      `test_endpoint_response_shape_snapshots.py` — désormais la source unique importée par les
+      deux suites (tests Django existants **inchangés dans leurs attentes**, juste réécrits pour
+      importer au lieu de redéfinir). `tests/contract/test_group_a_shapes.py` : 3 tests
+      (register — champs top-level + sous-objet `user`, login/email — champs + `token_type`),
+      6 exécutions au total (× 2 adaptateurs), toutes vertes. Job CI `contract-parity` ajouté
+      (suite + `parity_matrix --groups=A` — **intentionnellement rouge** tant que `login/phone`
+      n'est pas porté, signal correct plutôt que masqué par un `|| true`). **Bug de contrat réel
+      trouvé en cours de route** : le test initial utilisait un mot de passe sans majuscule ni
+      chiffre — accepté par le `RegisterRequest` FastAPI (aucune validation de force du mot de
+      passe), rejeté par le validateur Django (`validators.validate_password`, couplé à
+      `conf.auth_settings` donc non réutilisable tel quel côté FastAPI). **Écart documenté,
+      pas corrigé dans cette tâche** : la validation de force de mot de passe + le check HIBP ne
+      sont pas encore portés côté FastAPI (le test de contrat utilise un mot de passe qui
+      satisfait déjà les deux côtés, en attendant ce portage — probablement Groupe B, où
+      `password/strength`/`password/requirements` vivent côté Django).
+      **Deuxième bug réel trouvé, plus sérieux, corrigé** : les tests de contrat
+      `@pytest.mark.django_db` (rollback par savepoint) faisaient fuiter en écriture réelle et
+      permanente les utilisateurs créés côté Django vers la base de test partagée (SQLite
+      `:memory:`), visibles par des tests sans rapport (`test_filters.py`,
+      `test_management_commands.py`, `test_tenxyte_cleanup.py`) exécutés plus tard dans la même
+      session — reproductible à 100 % dès que la Contract_Suite tournait avant eux. Cause : le
+      pont `asgiref.sync_to_async` exécute l'ORM Django sur un thread ouvrier séparé (nécessaire
+      — le garde-fou async de Django lève `SynchronousOnlyOperation` sinon), thread qui n'est pas
+      celui sur lequel pytest-django a ouvert le savepoint de rollback du test ; les écritures
+      passaient donc par une connexion différente, jamais annulée. Corrigé en passant les tests
+      de contrat à `@pytest.mark.django_db(transaction=True)` (nettoyage par `flush`, valide
+      quel que soit le thread/la connexion qui a écrit) — vérifié : plus aucune fuite,
+      `test_filters.py`/`test_management_commands.py`/`test_tenxyte_cleanup.py` verts après la
+      Contract_Suite.
     - **Property 2 (socle)**
     - _Requirements: 5.2_
 
@@ -262,10 +295,11 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - **Validates: Requirements 4.3**
 
   - [ ] 5.3 Contract_Suite + matrice sur A
-    - **Bloqué** : `parity_matrix --groups=A` est à 8/9 endpoints du groupe (seul `login/phone`
-      manque, déficit documenté à la tâche 5.1) — pas encore vert. La Contract_Suite elle-même
-      (tâche 3.2) n'a pas encore été construite. Les deux se complètent avec `login/phone` et
-      la tâche 3.2.
+    - **Bloqué, mais réduit à un seul déficit** : la Contract_Suite (tâche 3.2) existe désormais
+      et tourne verte sur `register`/`login/email` (6/6). `parity_matrix --groups=A` est à
+      8/9 endpoints du groupe — seul `login/phone` manque (déficit documenté à la tâche 5.1).
+      Ne manque donc plus que : porter `login/phone`, étendre la Contract_Suite à `refresh`/
+      `logout`/`logout/all`/`me`/`me/roles`, et confirmer `--groups=A` vert.
     - _Requirements: 5.1, 5.2_
 
 - [ ] 6. Vague de parité B — Password
