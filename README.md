@@ -189,13 +189,26 @@ Content-Type: application/json
 
 #### 6) Forensic audit: trace “which prompt caused which action”
 
-Attach `X-Prompt-Trace-ID` to agent requests and Tenxyte links it to pending actions and the audit trail.
+Attach `X-Prompt-Trace-ID` to agent requests and Tenxyte links it to the audit trail for that action.
 
 ```http
 X-Prompt-Trace-ID: trace_7f3a2b9c-...
 ```
 
 > Want the full reference (PII redaction, settings, suspension reasons, etc.)? See the **[AIRS Guide](airs.md)**.
+
+### AIRS is an open specification
+
+This protocol is formalized as **[AIRS/1.0](spec/airs/AIRS-1.0.md)** — a normative, CC BY 4.0
+specification independent of Tenxyte or Django, with its own black-box
+**[Conformance Suite](spec/airs/conformance/)**. Tenxyte is the reference implementation; any
+server can implement it, and any agent framework can target it:
+
+- **[`tenxyte-langchain`](integrations/langchain/)** — a pure HTTP LangChain/LangGraph connector.
+- **[`tenxyte-mcp-server`](integrations/mcp-server/)** — an MCP server for Claude Desktop and
+  other MCP clients.
+- **[CrewAI example](examples/crewai/)** — issuance, HITL, and budget suspension end to end, no
+  LLM API key required.
 
 ---
 

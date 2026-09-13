@@ -81,13 +81,13 @@ def _seed():
     return user
 
 
-def _serve(port: int):
+def _serve(host: str, port: int):
     from django.core.wsgi import get_wsgi_application
 
     from spec.airs.conformance.tenxyte_ci.urls import urlpatterns  # noqa: F401 — sanity import
 
     app = get_wsgi_application()
-    server = make_server("127.0.0.1", port, app, handler_class=_QuietHandler)
+    server = make_server(host, port, app, handler_class=_QuietHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server
@@ -104,13 +104,18 @@ def _login(base_url: str) -> str:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8811)
+    parser.add_argument(
+        "--host", default="127.0.0.1", help="Bind address. Use 0.0.0.0 to accept connections from other containers."
+    )
     parser.add_argument("--db-path", default=None)
     args = parser.parse_args()
 
     _django_setup(args.db_path)
     _seed()
-    server = _serve(args.port)
+    server = _serve(args.host, args.port)
 
+    # The URL this process uses to call itself (for the login below) is always loopback,
+    # regardless of which host interface it bound to for external connections.
     base_url = f"http://127.0.0.1:{args.port}/api/v1/auth"
     user_jwt = _login(base_url)
 

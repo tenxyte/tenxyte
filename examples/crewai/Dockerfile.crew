@@ -1,0 +1,15 @@
+# CrewAI runner for the AIRS/1.0 example. Installs tenxyte-langchain from the local monorepo
+# path (not yet published to PyPI at the time this example was written — switch to
+# `pip install tenxyte-langchain` once it is).
+FROM python:3.12-slim
+
+WORKDIR /app
+COPY examples/crewai/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY integrations/langchain /tenxyte-langchain
+RUN pip install --no-cache-dir -e /tenxyte-langchain
+
+COPY examples/crewai /app
+
+CMD ["python", "crew.py"]

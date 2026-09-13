@@ -98,3 +98,6 @@ logs
 spec/airs/conformance/tenxyte_ci/_ephemeral.sqlite3
 spec/airs/conformance/tenxyte_ci/_ci_info.json
 
+# AIRS benchmark raw output (RESULTS.md is the canonical human-readable record)
+benchmarks/airs/results_*.json
+

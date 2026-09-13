@@ -216,7 +216,7 @@ seulement par notre CI).
 | MT-3 | LangChain E2E vrai LLM (3.1–3.6) | — | — | — | ⬜ À exécuter | |
 | MT-4 | Walkthrough CrewAI | — | — | — | ⬜ À exécuter | |
 | MT-5 | Conformité en implémenteur tiers | — | — | — | ⬜ À exécuter | |
-| MT-6 | Benchmarks de référence | — | — | — | ⬜ À exécuter | machine dédiée |
+| MT-6 | Benchmarks de référence | 2026-09-13 | Claude (session) | dev machine, non dédiée, n=50/20 | ⚠️ Préliminaire | `RESULTS.md` : run de validation du harness effectué pour de vrai ; campagne officielle (10k req/3 runs/machine dédiée) restant à faire avant publication de l'article |
 | MT-7 | Spec + soumissions communautaires | — | — | — | ⬜ À exécuter | URLs des PRs |
 
 **Légende résultat :** ✅ PASS · ❌ FAIL (ouvrir une issue, référencer ici) · ⚠️ PASS avec réserve

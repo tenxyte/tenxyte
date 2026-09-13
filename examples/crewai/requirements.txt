@@ -1,0 +1,3 @@
+crewai>=0.80
+langchain-core>=0.3
+httpx>=0.27
