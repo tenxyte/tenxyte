@@ -172,14 +172,14 @@ marqueur `[MT-x]` renvoyant à `manual_tests.md`.
 - [x] 8. Checkpoint - Ensure all tests pass
   - Ensure all tests pass (server + conformance + integrations), ask the user if questions arise.
 
-- [ ] 9. Exemple CrewAI
-  - [ ] 9.1 Construire l'exemple exécutable
+- [x] 9. Exemple CrewAI
+  - [x] 9.1 Construire l'exemple exécutable
     - `examples/crewai/` : docker-compose (Tenxyte démo + API métier avec endpoint HITL-gated),
       `crew.py` (2 agents, FakeLLM par défaut, option vrai LLM documentée), scénario complet
       émission → AgentBearer → HITL → confirmation → reprise → suspension budget
     - _Requirements: 6.1, 6.2, 6.3_
 
-  - [ ] 9.2 Rédiger le walkthrough et le valider `[MT-4]`
+  - [x] 9.2 Rédiger le walkthrough et le valider `[MT-4]`
     - README pas-à-pas aligné sur la procédure MT-4 ; exécution complète consignée au registre
     - _Requirements: 6.4_
 

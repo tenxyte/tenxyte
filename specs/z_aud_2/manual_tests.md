@@ -214,7 +214,7 @@ seulement par notre CI).
 | MT-1 | Publication + installation packages | — | — | — | ⬜ À exécuter | TestPyPI d'abord |
 | MT-2 | MCP E2E Claude Desktop (2.1–2.7) | — | — | — | ⬜ À exécuter | |
 | MT-3 | LangChain E2E vrai LLM (3.1–3.6) | — | — | — | ⬜ À exécuter | |
-| MT-4 | Walkthrough CrewAI | — | — | — | ⬜ À exécuter | |
+| MT-4 | Walkthrough CrewAI | 2026-09-13 | Claude (session) | Docker Desktop / Windows, `docker compose up --build` | ✅ PASS | Run complet : émission (id=155) → `log_research_note` via AgentBearer → `file_expense_report` → 202 → auto-confirm → resume → exécuté → 2 rapports d'usage acceptés → 3e rejeté `TenxyteBudgetExceededError` ("Budget exceeded") ; `crew` exit code 0. A révélé et corrigé 2 bugs réels en cours de route (voir commits) : mauvais typage de l'erreur budget (classifieur ne reconnaissait pas la forme sans `code`/`reason` de Tenxyte) et doublement du préfixe `/api/v1/auth` dans `crew.py`. `--demo-budget`/vrai LLM non testés (option, hors chemin critique) |
 | MT-5 | Conformité en implémenteur tiers | — | — | — | ⬜ À exécuter | |
 | MT-6 | Benchmarks de référence | 2026-09-13 | Claude (session) | dev machine, non dédiée, n=50/20 | ⚠️ Préliminaire | `RESULTS.md` : run de validation du harness effectué pour de vrai ; campagne officielle (10k req/3 runs/machine dédiée) restant à faire avant publication de l'article |
 | MT-7 | Spec + soumissions communautaires | — | — | — | ⬜ À exécuter | URLs des PRs |
