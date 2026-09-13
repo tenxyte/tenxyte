@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
 from tenxyte.adapters.fastapi import db as db_module
+from tenxyte.adapters.fastapi.errors import register_exception_handlers
 from tenxyte.adapters.fastapi.settings import get_default_settings
 from tenxyte.core.jwt_service import InMemoryTokenBlacklistService, JWTService
 from tenxyte.core.settings import Settings
@@ -73,5 +74,6 @@ def create_tenxyte_app(
             await engine.dispose()
 
     app = FastAPI(title="Tenxyte", lifespan=lifespan)
+    register_exception_handlers(app)
     app.include_router(create_tenxyte_router(resolved_settings))
     return app

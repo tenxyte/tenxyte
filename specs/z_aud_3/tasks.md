@@ -74,22 +74,24 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - _Requirements: 3.2, 3.3_
 
   - [ ] 2.3 Implémenter middleware, erreurs et throttling
-    - `middleware.py` : `ApplicationAuthMiddleware` (parité `APP_AUTH_REQUIRED` + toggle),
-      error handler global `{error, code, details}` (422 → 400 canonique) ; `throttling.py` sur
-      le port cache (mêmes familles que Django, temps simulable) ; `security.py` (`require_jwt`
-      en dépendance, scopes restreints, AgentBearer)
+    - **Partiel.** Fait : `errors.py` — `register_exception_handlers(app)`, format canonique
+      `{error, code, details}` universel, y compris pour les erreurs natives FastAPI/Starlette
+      (422 validation → 400 `VALIDATION_ERROR`, 404/405 natifs, 500 masqué `INTERNAL_ERROR` sans
+      fuite d'exception), `TenxyteAPIError` pour lever une erreur canonique directement depuis un
+      handler/dépendance. **Restant :** `ApplicationAuthMiddleware` (parité `APP_AUTH_REQUIRED` +
+      toggle — nécessite un modèle `Application` côté Reference_Stack, pas encore construit) ;
+      `throttling.py` ; `security.py` (`require_jwt`, scopes restreints, AgentBearer).
     - _Requirements: 3.4, 3.6_
 
   - [ ] 2.4 Write property tests for the production base
-    - **Property 9: Format d'erreur canonique universel** (corpus de requêtes invalides générées)
-      — pas encore testable (attend le error handler global de 2.3)
+    - **Property 9 (faite) :** `tests/integration/fastapi/unit/test_errors.py` — corpus Hypothesis
+      de requêtes invalides + JSON malformé + 404/405/500 natifs + erreur applicative custom,
+      tous canoniques.
     - **Property 10 (moitié socle, faite) :** `tests/integration/fastapi/unit/test_app_factory.py`
       prouve pour de vrai le boot sans surcharge (aucun `NotImplementedError`) et un round-trip
       complet `AsyncUserRepository` sur aiosqlite réel. **Moitié `register→login→me` HTTP :**
       attend le router Auth de la vague A (tâche 5.1).
-    - **Property 10: Le stack de référence démarre sans surcharge** (register→login→me sur
-      aiosqlite vierge)
-    - **Validates: Requirements 3.1, 3.2, 3.3, 3.6_
+    - **Validates: Requirements 3.1, 3.2, 3.3, 3.6**
 
   - [ ] 2.5 Compléter l'extra `[fastapi]`
     - `pyproject.toml` : + aiosqlite, alembic, pydantic-settings (asyncpg documenté optionnel) ;
