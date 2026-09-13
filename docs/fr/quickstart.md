@@ -17,7 +17,7 @@
 ## 1. Installation
 
 ```bash
-pip install tenxyte
+pip install tenxyte[django]
 ```
 
 ## 2. Configuration du fichier `settings.py`

@@ -5,6 +5,7 @@ This guide helps you migrate from common Django authentication libraries to Tenx
 
 ## Table of Contents
 
+- [Migrating from Tenxyte v0.9.x to v1.0.0 (Packaging Inversion)](#migrating-from-tenxyte-v09x-to-v100-packaging-inversion)
 - [Migrating from Tenxyte v0.9.x to v0.9.3 (Core Re-architecture)](#migrating-from-tenxyte-v09x-to-v093-core-re-architecture)
 - [Migrating from `djangorestframework-simplejwt`](#migrating-from-djangorestframework-simplejwt)
   - [Settings Mapping](#settings-mapping)
@@ -21,6 +22,86 @@ This guide helps you migrate from common Django authentication libraries to Tenx
   - [Step 3 — Update frontend headers](#step-3--update-frontend-headers)
 - [Breaking Changes Checklist](#breaking-changes-checklist)
 - [Need Help?](#need-help)
+
+---
+
+## Migrating from Tenxyte v0.9.x to v1.0.0 (Packaging Inversion)
+
+**This is the only behavior change 1.0.0 introduces for existing users — everything else is
+additive.** See the [Stability Contract](stability.md) for the full policy this release
+establishes going forward.
+
+### What changed
+
+Before 1.0.0, `pip install tenxyte` installed the full Django stack (Django, DRF,
+django-cors-headers, drf-spectacular, google-auth) by default. Since 1.0.0, `pip install tenxyte`
+installs **only the framework-agnostic Core** (JWT, TOTP, WebAuthn services, schemas — no Django).
+
+| | Before (≤ 0.9.x) | Since 1.0.0 |
+|---|---|---|
+| `pip install tenxyte` | Full Django stack | Core only |
+| `pip install tenxyte[django]` | Full Django stack (redundant with default) | Full Django stack |
+| `pip install tenxyte[core]` | Core only | Core only (deprecated no-op alias of the new default — see below) |
+
+### What you need to do
+
+**If you use Tenxyte with Django** (the vast majority of existing users), change your install
+command and nothing else:
+
+```diff
+- pip install tenxyte
++ pip install tenxyte[django]
+```
+
+```diff
+# requirements.txt / pyproject.toml
+- tenxyte>=0.9
++ tenxyte[django]>=1.0
+```
+
+That is the entire migration. Runtime behavior with `tenxyte[django]` installed is **byte-identical**
+to the previous default install: same endpoints, same settings, same migrations, same response
+shapes. No code change is required in your views, settings, or models beyond the install command.
+
+**If you use Tenxyte with FastAPI** (or a custom framework), no change is needed — you were
+already using `pip install tenxyte[core]` or `tenxyte[fastapi]`, and the plain `tenxyte` default
+now matches what `[core]` used to install.
+
+**If you use `pip install tenxyte[core]` today**, it keeps working — `[core]` is retained in
+1.0.0 as a deprecated no-op alias (it installs no additional dependencies of its own, since Core is
+already the default). We recommend dropping the `[core]` extra entirely in favor of the bare
+`tenxyte` dependency; `[core]` will be removed in a future MAJOR release after a full deprecation
+cycle per the [Stability Contract](stability.md).
+
+### The Import_Guard: what happens if Django is missing
+
+If your code (or a dependency) does `import tenxyte` without Django installed, the import itself
+**always succeeds** — `tenxyte.__version__` and every `tenxyte.core.*` symbol are usable
+immediately. Only accessing a Django-only symbol without Django installed raises an explicit
+error:
+
+```python
+import tenxyte
+tenxyte.setup({})
+# tenxyte.TenxyteMissingDependencyError:
+#   'tenxyte.setup' requires the Django stack. Install it with: pip install tenxyte[django]
+```
+
+This replaces what used to be a confusing `ModuleNotFoundError` surfacing from deep inside
+`tenxyte.models` with an explicit instruction. `TenxyteMissingDependencyError` is a subclass of
+`ImportError`, so existing `except ImportError:` handling keeps working unchanged.
+
+### Verifying your upgrade
+
+```bash
+pip install "tenxyte[django]>=1.0"
+python manage.py check          # should pass with no changes
+python manage.py migrate        # no new migrations expected
+pytest                          # your existing test suite should be green
+```
+
+If anything behaves differently after upgrading to `tenxyte[django]>=1.0` beyond the install
+command itself, that is a bug — please [open an issue](https://github.com/tenxyte/tenxyte/issues).
 
 ---
 

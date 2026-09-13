@@ -37,15 +37,20 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 ### 3. Install Dependencies
 
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[django,dev]"
 ```
 
-This installs the package in editable mode along with all development tools:
+This installs the package in editable mode, the Django stack (needed to run
+`tests/integration/django/`), and all development tools:
 - **pytest** + pytest-django + pytest-asyncio — test framework
 - **pytest-cov** — coverage reporting
 - **black** — code formatter
 - **ruff** — linter
 - **mypy** — type checking
+
+> Working only on `tenxyte.core` (framework-agnostic)? `pip install -e ".[dev]"` alone is enough —
+> it no longer pulls in Django by default (since 1.0.0; see `stability.md`). Run
+> `pytest tests/core/ -p no:django` in that case.
 
 ### 4. Run Tests
 

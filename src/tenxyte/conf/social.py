@@ -7,10 +7,10 @@ class SocialSettingsMixin:
     def SOCIAL_PROVIDERS(self):
         """
         Liste des providers OAuth2 activés.
-        Options: 'google', 'github', 'microsoft', 'facebook'
+        Options: 'google', 'github', 'microsoft', 'facebook', 'apple'
         Par défaut: tous activés.
         """
-        return self._get("SOCIAL_PROVIDERS", ["google", "github", "microsoft", "facebook"])
+        return self._get("SOCIAL_PROVIDERS", ["google", "github", "microsoft", "facebook", "apple"])
 
     @property
     def SOCIAL_AUTO_MERGE_ACCOUNTS(self):
@@ -49,6 +49,30 @@ class SocialSettingsMixin:
     def FACEBOOK_APP_SECRET(self):
         """Facebook App Secret."""
         return getattr(settings, "FACEBOOK_APP_SECRET", "")
+
+    # =============================================
+    # Apple Sign-In
+    # =============================================
+
+    @property
+    def APPLE_CLIENT_ID(self):
+        """Apple Services ID (client_id OAuth, ex: com.example.app.signin)."""
+        return getattr(settings, "APPLE_CLIENT_ID", "")
+
+    @property
+    def APPLE_TEAM_ID(self):
+        """Apple Developer Team ID (10 caractères)."""
+        return getattr(settings, "APPLE_TEAM_ID", "")
+
+    @property
+    def APPLE_KEY_ID(self):
+        """Key ID de la clé privée Sign in with Apple (.p8)."""
+        return getattr(settings, "APPLE_KEY_ID", "")
+
+    @property
+    def APPLE_PRIVATE_KEY(self):
+        """Contenu PEM de la clé privée .p8 (jamais le chemin — le contenu)."""
+        return getattr(settings, "APPLE_PRIVATE_KEY", "")
 
     # =============================================
     # WebAuthn / Passkeys (FIDO2)

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tenxyte"
-version = "0.9.6.4.2"
+version = "1.0.0"
 
 description = "Framework-agnostic Python authentication — JWT, RBAC, 2FA, Magic Links, Passkeys, Social Login, B2B Organizations, multi-tenant support. Works with Django, FastAPI, and more."
 readme = "README.md"
@@ -36,7 +36,7 @@ keywords = [
     "framework-agnostic",
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -57,19 +57,14 @@ classifiers = [
     "Framework :: FastAPI",
 ]
 
-# Default dependencies include Django stack for backward compatibility
-# Install with [core] for minimal dependencies
+# Core dependencies only — framework-agnostic, no Django/DRF.
+# `pip install tenxyte` installs exactly this (since 1.0.0; see MIGRATION_GUIDE.md "0.9 -> 1.0").
+# Django users: `pip install tenxyte[django]`. FastAPI users: `pip install tenxyte[fastapi]`.
 dependencies = [
-    "django>=4.2",
-    "djangorestframework>=3.16",
-    "django-cors-headers>=4.4",
-    "drf-spectacular>=0.27",
     "PyJWT>=2.12.1",
     "bcrypt>=4.2",
     "pyotp>=2.9",
     "qrcode[pil]>=8.0",
-    "google-auth>=2.49.1",
-    "google-auth-oauthlib>=1.2",
     "cryptography>=42.0",
     "Pillow>=11.0",
     "requests>=2.32",
@@ -79,28 +74,19 @@ dependencies = [
 
 [project.optional-dependencies]
 # ===== ADAPTER EXTRAS =====
-# Core-only (minimal dependencies, no framework)
-# Use for custom integrations or when you bring your own framework
-core = [
-    "PyJWT>=2.12.1",
-    "bcrypt>=4.2",
-    "pyotp>=2.9",
-    "qrcode[pil]>=8.0",
-    "cryptography>=42.0",
-    "Pillow>=11.0",
-    "requests>=2.32",
-    "pydantic>=2.12",
-    "email-validator>=2.0",
-]
+# Deprecated no-op compatibility alias: Core is already the default install since 1.0.0.
+# Kept only so that `pip install tenxyte[core]` (a valid 0.9.x command) keeps working; carries no
+# extra dependencies of its own. Will be removed in a future MAJOR release — stop using it, drop
+# the `[core]` extra entirely, in favor of the bare `tenxyte` dependency.
+core = []
 
-# Django stack (adds Django-specific dependencies)
-# Included by default for backward compatibility
+# Django stack (adds Django-specific dependencies on top of Core).
+# Was the default install before 1.0.0 — see docs/en/MIGRATION_GUIDE.md "0.9 -> 1.0".
 django = [
     "django>=4.2",
     "djangorestframework>=3.16",
     "django-cors-headers>=4.4",
     "drf-spectacular>=0.27",
-    "cryptography>=42.0",
     "google-auth>=2.49.1",
     "google-auth-oauthlib>=1.2",
 ]
@@ -144,8 +130,18 @@ webauthn = [
 ]
 
 # ===== META EXTRAS =====
-# All features (backward compatible - includes Django stack)
+# Everything: Django stack + FastAPI stack + every feature/database extra.
 all = [
+    "django>=4.2",
+    "djangorestframework>=3.16",
+    "django-cors-headers>=4.4",
+    "drf-spectacular>=0.27",
+    "google-auth>=2.49.1",
+    "google-auth-oauthlib>=1.2",
+    "fastapi>=0.135",
+    "uvicorn>=0.40",
+    "sqlalchemy>=2.0",
+    "python-multipart>=0.0.9",
     "twilio>=9.0",
     "sendgrid>=6.10",
     "django-mongodb-backend>=5.0",
@@ -165,6 +161,7 @@ dev = [
     "ruff==0.16.7",
     "mypy>=1.15",
     "hypothesis>=6.0",
+    "tomli>=2.0; python_version < '3.11'",
 ]
 
 [project.urls]

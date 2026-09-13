@@ -1,22 +1,34 @@
 """
 Tenxyte - Exception handling.
 
-Provides a custom DRF exception handler to ensure that all API errors
-strictly follow the canonical `ErrorResponse` schema:
-{
-  "error": "Human-readable message",
-  "code": "MACHINE_READABLE_CODE",
-  "details": {
-    "field_name": ["List of errors for this field"]
+Provides:
+- `TenxyteMissingDependencyError`: raised by the Import_Guard (see `tenxyte/__init__.py`) when a
+  Django-only symbol is accessed without the Django stack installed. This class has zero
+  third-party imports so that `tenxyte.exceptions` — and therefore `import tenxyte` — remains
+  importable in a Core-only install (`pip install tenxyte`, without `[django]`).
+- `custom_exception_handler`: a DRF exception handler ensuring that all API errors strictly follow
+  the canonical `ErrorResponse` schema:
+  {
+    "error": "Human-readable message",
+    "code": "MACHINE_READABLE_CODE",
+    "details": {
+      "field_name": ["List of errors for this field"]
+    }
   }
-}
+  Its Django/DRF imports are deferred inside the function body: DRF only resolves
+  `tenxyte.exceptions.custom_exception_handler` (referenced by dotted path in
+  `REST_FRAMEWORK["EXCEPTION_HANDLER"]`) once Django is actually running a request, so this stays
+  Core-safe without any behavior change when Django is installed.
 """
 
-from django.core.exceptions import PermissionDenied
-from django.http import Http404
-from rest_framework import status
-from rest_framework.exceptions import APIException
-from rest_framework.views import exception_handler
+
+class TenxyteMissingDependencyError(ImportError):
+    """Raised when a Django-only symbol is accessed without the Django stack installed.
+
+    Subclasses `ImportError` so existing `except ImportError` handlers keep working, while giving
+    integrators an explicit, actionable message instead of a bare `ModuleNotFoundError` surfacing
+    from deep inside Django's own import machinery.
+    """
 
 
 def custom_exception_handler(exc, context):
@@ -24,6 +36,16 @@ def custom_exception_handler(exc, context):
     Custom exception handler for DRF that formats errors according to
     the tenxyte generic ErrorResponse schema.
     """
+    # Imports deferred: this function is only ever invoked by DRF while handling a real Django
+    # request, at which point Django/DRF are necessarily already installed and configured. Keeping
+    # them out of the module's top level is what lets `tenxyte.exceptions` import cleanly in a
+    # Core-only environment.
+    from django.core.exceptions import PermissionDenied
+    from django.http import Http404
+    from rest_framework import status
+    from rest_framework.exceptions import APIException
+    from rest_framework.views import exception_handler
+
     # Call REST framework's default exception handler first,
     # to get the standard error response.
     response = exception_handler(exc, context)

@@ -322,7 +322,7 @@ Default headers:
 
 | Setting | Default | Description |
 |---|---|---|
-| `TENXYTE_SOCIAL_PROVIDERS` | `['google', 'github', 'microsoft', 'facebook']` | Enabled OAuth2 providers. |
+| `TENXYTE_SOCIAL_PROVIDERS` | `['google', 'github', 'microsoft', 'facebook', 'apple']` | Enabled OAuth2 providers. |
 | `TENXYTE_SOCIAL_AUTO_MERGE_ACCOUNTS` | `False` | Automatically merge social login with existing email account. |
 | `TENXYTE_SOCIAL_REQUIRE_VERIFIED_EMAIL` | `True` | Reject social login if the email is not verified by the provider. |
 | `GOOGLE_CLIENT_ID` | `''` | Google OAuth Client ID. |
@@ -333,6 +333,16 @@ Default headers:
 | `MICROSOFT_CLIENT_SECRET` | `''` | Microsoft Azure AD Client Secret. |
 | `FACEBOOK_APP_ID` | `''` | Facebook App ID. |
 | `FACEBOOK_APP_SECRET` | `''` | Facebook App Secret. |
+| `APPLE_CLIENT_ID` | `''` | Apple Services ID (OAuth `client_id`, e.g. `com.example.app.signin`). |
+| `APPLE_TEAM_ID` | `''` | Apple Developer Team ID (10 characters). |
+| `APPLE_KEY_ID` | `''` | Key ID of the "Sign in with Apple" private key (`.p8`). |
+| `APPLE_PRIVATE_KEY` | `''` | PEM content of the `.p8` private key (the key's content, never a file path). Used to sign an ephemeral ES256 `client_secret` JWT on every token exchange — never persisted. |
+
+> **Apple Sign-In:** unlike the other providers, Apple's `client_secret` is not a static value you
+> configure — Tenxyte generates a short-lived ES256-signed JWT from `APPLE_TEAM_ID` /
+> `APPLE_CLIENT_ID` / `APPLE_KEY_ID` / `APPLE_PRIVATE_KEY` on every authorization code exchange.
+> See [`endpoints.md`](endpoints.md#social-login-multi-provider) for the request/response shape,
+> the `form_post` requirement, and the private relay email behavior.
 
 ### Per-Provider OAuth Scopes
 

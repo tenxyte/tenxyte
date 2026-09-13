@@ -11,10 +11,13 @@ Architecture:
 """
 
 import logging
+import time
 from abc import ABC, abstractmethod
 from typing import Any
 
+import jwt as pyjwt
 import requests
+from cryptography.hazmat.primitives import serialization
 from django.conf import settings
 from django.utils import timezone
 
@@ -334,6 +337,145 @@ class FacebookOAuthProvider(AbstractOAuthProvider):
 
 
 # ===========================================================================
+# Apple Provider (Sign in with Apple)
+# ===========================================================================
+
+
+class AppleOAuthProvider(AbstractOAuthProvider):
+    """Sign in with Apple provider.
+
+    Particularités Apple par rapport aux autres providers OAuth2 :
+    - `client_secret` = JWT signé ES256 avec la clé privée `.p8` du compte développeur, généré
+      à la volée à chaque échange de code. Jamais persisté ni mis en cache au-delà de l'appel.
+    - Pas d'endpoint userinfo : l'identité vient de l'`id_token` (JWT RS256 signé par Apple),
+      validé contre le JWKS d'Apple. `get_user_info()` existe pour satisfaire l'ABC mais n'est
+      pas le chemin nominal — voir `verify_id_token()`.
+    - Le nom (first/last) n'est fourni par Apple QUE lors de la toute première autorisation, dans
+      le corps de la requête (champ `user`), jamais dans l'`id_token` — voir la vue sociale.
+    """
+
+    APPLE_TOKEN_URL = "https://appleid.apple.com/auth/token"
+    APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys"
+    APPLE_ISSUER = "https://appleid.apple.com"
+
+    # Apple caps the client secret JWT lifetime at 6 months (15,777,000 seconds).
+    _CLIENT_SECRET_MAX_LIFETIME_SECONDS = 15777000
+
+    @property
+    def provider_name(self) -> str:
+        return "apple"
+
+    def _generate_client_secret(self) -> str | None:
+        """Génère un JWT ES256 client_secret à la volée. Jamais persisté.
+
+        Claims: iss=APPLE_TEAM_ID, sub=APPLE_CLIENT_ID, aud=APPLE_ISSUER, iat=now,
+        exp<=now+6 mois. Header: kid=APPLE_KEY_ID, alg=ES256. Signé avec APPLE_PRIVATE_KEY
+        (contenu PEM de la clé .p8) via cryptography + PyJWT.
+
+        Retourne None (avec un log explicite) si la configuration Apple est incomplète ou si la
+        signature échoue — jamais d'exception qui remonterait au-delà de ce provider.
+        """
+        team_id = getattr(settings, "APPLE_TEAM_ID", "")
+        client_id = getattr(settings, "APPLE_CLIENT_ID", "")
+        key_id = getattr(settings, "APPLE_KEY_ID", "")
+        private_key_pem = getattr(settings, "APPLE_PRIVATE_KEY", "")
+
+        if not (team_id and client_id and key_id and private_key_pem):
+            logger.warning("Apple OAuth provider is not fully configured (missing APPLE_* settings).")
+            return None
+
+        now = int(time.time())
+        payload = {
+            "iss": team_id,
+            "iat": now,
+            "exp": now + self._CLIENT_SECRET_MAX_LIFETIME_SECONDS,
+            "aud": self.APPLE_ISSUER,
+            "sub": client_id,
+        }
+
+        try:
+            key_bytes = private_key_pem.encode("utf-8") if isinstance(private_key_pem, str) else private_key_pem
+            private_key = serialization.load_pem_private_key(key_bytes, password=None)
+            return pyjwt.encode(payload, private_key, algorithm="ES256", headers={"kid": key_id})
+        except Exception as e:  # noqa: BLE001
+            logger.error(f"Apple client secret generation failed: {e}")
+            return None
+
+    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str | None = None) -> dict[str, Any] | None:
+        client_id = getattr(settings, "APPLE_CLIENT_ID", "")
+        client_secret = self._generate_client_secret()
+        if not client_secret:
+            return None
+
+        data = {
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": redirect_uri,
+        }
+        return self._post(self.APPLE_TOKEN_URL, data=data)
+
+    def verify_id_token(self, id_token: str) -> dict[str, Any] | None:
+        """Validation fail-closed de l'Apple_ID_Token contre le JWKS d'Apple.
+
+        Vérifie signature (RS256), `iss`, `aud`, et expiration. Toute défaillance — signature
+        invalide, iss/aud incorrects, token expiré, kid inconnu, ou JWKS injoignable — retourne
+        None. Aucune dégradation silencieuse : jamais de décodage sans vérification de signature.
+        """
+        client_id = getattr(settings, "APPLE_CLIENT_ID", "")
+        try:
+            jwks_client = pyjwt.PyJWKClient(self.APPLE_JWKS_URL, cache_keys=True)
+            signing_key = jwks_client.get_signing_key_from_jwt(id_token)
+            claims = pyjwt.decode(
+                id_token,
+                signing_key.key,
+                algorithms=["RS256"],
+                audience=client_id,
+                issuer=self.APPLE_ISSUER,
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"Apple id_token verification failed: {e}")
+            return None
+
+        return self._normalize(claims)
+
+    def get_user_info(self, access_token: str) -> dict[str, Any] | None:
+        """Apple ne fournit aucun endpoint userinfo.
+
+        Cette méthode existe uniquement pour satisfaire `AbstractOAuthProvider`. Le chemin nominal
+        pour Apple passe par `verify_id_token(id_token)`, orchestré par la vue sociale.
+        """
+        logger.info(
+            "AppleOAuthProvider.get_user_info() called directly — Apple has no userinfo endpoint; "
+            "use verify_id_token(id_token) instead."
+        )
+        return None
+
+    def _normalize(self, claims: dict) -> dict[str, Any]:
+        """Normalise les claims de l'id_token Apple vers le dict utilisateur standard.
+
+        `email_verified` arrive parfois comme chaîne `"true"`/`"false"` (comportement Apple
+        documenté) plutôt qu'un booléen JSON — normalisé explicitement pour ne jamais laisser
+        passer une valeur non booléenne au refus de fusion F-03.
+        """
+        email_verified = claims.get("email_verified", False)
+        if isinstance(email_verified, str):
+            email_verified = email_verified.strip().lower() == "true"
+        else:
+            email_verified = bool(email_verified)
+
+        return {
+            "provider_user_id": claims.get("sub", ""),
+            "email": claims.get("email"),
+            "email_verified": email_verified,
+            "first_name": "",
+            "last_name": "",
+            "avatar_url": "",
+        }
+
+
+# ===========================================================================
 # Provider Registry
 # ===========================================================================
 
@@ -342,6 +484,7 @@ PROVIDER_REGISTRY: dict[str, AbstractOAuthProvider] = {
     "github": GitHubOAuthProvider(),
     "microsoft": MicrosoftOAuthProvider(),
     "facebook": FacebookOAuthProvider(),
+    "apple": AppleOAuthProvider(),
 }
 
 

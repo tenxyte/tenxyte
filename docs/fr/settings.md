@@ -322,7 +322,7 @@ En-têtes par défaut :
 
 | Paramètre | Défaut | Description |
 |---|---|---|
-| `TENXYTE_SOCIAL_PROVIDERS` | `['google', 'github', 'microsoft', 'facebook']` | Fournisseurs OAuth2 activés. |
+| `TENXYTE_SOCIAL_PROVIDERS` | `['google', 'github', 'microsoft', 'facebook', 'apple']` | Fournisseurs OAuth2 activés. |
 | `TENXYTE_SOCIAL_AUTO_MERGE_ACCOUNTS` | `False` | Fusionne automatiquement la connexion sociale avec un compte e-mail existant. |
 | `TENXYTE_SOCIAL_REQUIRE_VERIFIED_EMAIL` | `True` | Rejette la connexion sociale si l'e-mail n'est pas vérifié par le fournisseur. |
 | `GOOGLE_CLIENT_ID` | `''` | Identifiant client Google OAuth. |
@@ -333,6 +333,17 @@ En-têtes par défaut :
 | `MICROSOFT_CLIENT_SECRET` | `''` | Secret client Microsoft Azure AD. |
 | `FACEBOOK_APP_ID` | `''` | Identifiant d'application Facebook. |
 | `FACEBOOK_APP_SECRET` | `''` | Secret d'application Facebook. |
+| `APPLE_CLIENT_ID` | `''` | Services ID Apple (`client_id` OAuth, ex: `com.example.app.signin`). |
+| `APPLE_TEAM_ID` | `''` | Team ID du compte développeur Apple (10 caractères). |
+| `APPLE_KEY_ID` | `''` | Key ID de la clé privée « Sign in with Apple » (`.p8`). |
+| `APPLE_PRIVATE_KEY` | `''` | Contenu PEM de la clé privée `.p8` (le contenu, jamais un chemin de fichier). Utilisé pour signer un JWT `client_secret` ES256 éphémère à chaque échange de token — jamais persisté. |
+
+> **Sign in with Apple :** contrairement aux autres fournisseurs, le `client_secret` d'Apple n'est
+> pas une valeur statique à configurer — Tenxyte génère un JWT signé ES256 de courte durée à partir
+> de `APPLE_TEAM_ID` / `APPLE_CLIENT_ID` / `APPLE_KEY_ID` / `APPLE_PRIVATE_KEY` à chaque échange de
+> code d'autorisation. Voir [`endpoints.md`](endpoints.md#connexion-sociale-multi-fournisseurs)
+> pour la forme de la requête/réponse, l'exigence `form_post`, et le comportement du relais privé
+> d'email.
 
 ### Scopes OAuth par Fournisseur
 

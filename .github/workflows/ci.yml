@@ -100,8 +100,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install -e ".[django,dev]"
           pip install "django==${{ matrix.django-version }}.*"
-          pip install -e ".[dev]"
 
       - name: Run Django integration tests
         run: |
@@ -118,6 +118,84 @@ jobs:
         with:
           name: coverage-django
           path: coverage-django.xml
+
+  # ===========================================================================
+  # Install matrix — verifies the 1.0 packaging inversion (Requirement 2) in clean venvs:
+  # Core-only default install, opt-in [django] extra, deprecated [core] no-op alias, and extra
+  # combination. See specs/z_aud_1 design.md "Correctness Properties" / manual_tests.md MT-1.
+  # ===========================================================================
+  install-matrix:
+    name: Install Matrix (tenxyte${{ matrix.target }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ["", "[django]", "[core]", "[django,webauthn]"]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build and install in a clean venv (tenxyte${{ matrix.target }})
+        run: |
+          python -m venv /tmp/install-matrix-venv
+          source /tmp/install-matrix-venv/bin/activate
+          python -m pip install --upgrade pip build
+          python -m build --wheel --outdir /tmp/dist .
+          pip install "$(ls /tmp/dist/*.whl)${{ matrix.target }}"
+
+      - name: Smoke test — import and version
+        run: |
+          source /tmp/install-matrix-venv/bin/activate
+          python -c "import tenxyte; print('tenxyte version:', tenxyte.__version__)"
+
+      - name: Smoke test — Core-only targets have no Django and Core is usable
+        if: matrix.target == '' || matrix.target == '[core]'
+        run: |
+          source /tmp/install-matrix-venv/bin/activate
+          python -c "
+          import sys
+          try:
+              import django
+              sys.exit('FAIL: django should NOT be installed for target \"${{ matrix.target }}\"')
+          except ImportError:
+              pass
+          from tenxyte.core.jwt_service import JWTService
+          from tenxyte.core.totp_service import TOTPService
+          print('Core-only smoke OK: no Django, Core services importable')
+          "
+          python -c "
+          import tenxyte
+          try:
+              tenxyte.setup({})
+              exit('FAIL: setup() should have raised TenxyteMissingDependencyError')
+          except tenxyte.TenxyteMissingDependencyError as e:
+              assert 'pip install tenxyte[django]' in str(e), e
+              print('Import_Guard smoke OK:', e)
+          "
+
+      - name: Smoke test — Django-stack targets have Django and the full stack
+        if: matrix.target == '[django]' || matrix.target == '[django,webauthn]'
+        run: |
+          source /tmp/install-matrix-venv/bin/activate
+          python -c "
+          import django, rest_framework, corsheaders, drf_spectacular, google.auth
+          import tenxyte
+          assert callable(tenxyte.setup)
+          assert tenxyte.AbstractUser is not None
+          print('Django-stack smoke OK: full stack + Import_Guard transparency')
+          "
+
+      - name: Smoke test — webauthn extra present
+        if: matrix.target == '[django,webauthn]'
+        run: |
+          source /tmp/install-matrix-venv/bin/activate
+          python -c "import webauthn; print('webauthn extra OK')"
 
   # ===========================================================================
   # Upload combined coverage to Codecov

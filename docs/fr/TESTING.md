@@ -3,15 +3,19 @@
 ## Installation des Dépendances de Test
 
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[django,dev]"
 ```
 
 Ceci installera :
+- La stack Django (`[django]`) — requise pour `tests/integration/django/`
 - **pytest** : Le framework de test principal
 - **pytest-django** : Intégration Django
 - **pytest-cov** : Génération de rapports de couverture
 - **pytest-asyncio** : Support pour les tests asynchrones
 - **black, ruff, mypy** : Outils de linting et de vérification de types
+
+> Vous n'exécutez que `tests/core/` (framework-agnostique, sans Django) ? `pip install -e ".[dev]"`
+> seul suffit depuis la 1.0.0 — le Cœur est l'installation par défaut. Voir `docs/fr/stability.md`.
 
 ## Exécution des Tests
 
@@ -137,3 +141,7 @@ Les tests utilisent par défaut une base de données SQLite en mémoire (`--crea
 
 ### `Django settings not configured`
 Vérifiez que `DJANGO_SETTINGS_MODULE` pointe vers `tests.settings` ou un fichier de paramètres valide.
+
+### `ModuleNotFoundError: No module named 'django'`
+Depuis la 1.0.0, `pip install -e .` seul n'installe que le Cœur (sans Django). Réinstallez avec
+`pip install -e ".[django,dev]"` avant d'exécuter `tests/integration/django/`.
