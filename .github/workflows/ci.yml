@@ -198,6 +198,96 @@ jobs:
           python -c "import webauthn; print('webauthn extra OK')"
 
   # ===========================================================================
+  # AIRS integration packages (spec z_aud_2, task 7.2) — tenxyte-langchain and tenxyte-mcp-server
+  # each have their own test suite, run against a mocked AIRS backend (respx), across the same
+  # Python matrix as the rest of CI. Includes each package's import-graph check (Property 11:
+  # neither package may ever import `tenxyte`).
+  # ===========================================================================
+  integrations-tests:
+    name: "${{ matrix.package }} (Python ${{ matrix.python-version }})"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [langchain, mcp-server]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install ${{ matrix.package }}
+        working-directory: integrations/${{ matrix.package }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run tests
+        working-directory: integrations/${{ matrix.package }}
+        run: pytest tests/
+
+  # ===========================================================================
+  # AIRS Conformance Suite (spec z_aud_2, task 4.4) — the spec/airs/AIRS-1.0.md ↔ implementation
+  # lock: runs the black-box HTTP suite (spec/airs/conformance/) against a real ephemeral Tenxyte
+  # instance, all Conformance Levels enabled, then proves it discriminates by running it against
+  # the deliberately non-conformant negative_mock server and asserting THAT run fails.
+  # ===========================================================================
+  airs-conformance:
+    name: AIRS Conformance Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[django,dev]"
+          pip install httpx
+
+      - name: Start the ephemeral Tenxyte instance
+        run: |
+          python -m spec.airs.conformance.tenxyte_ci.seed_and_serve --port 8811 > server.log 2>&1 &
+          for _ in $(seq 1 30); do
+            grep -q '"base_url"' server.log && break
+            sleep 1
+          done
+          grep -m1 '"base_url"' server.log > spec/airs/conformance/tenxyte_ci/_ci_info.json
+          cat spec/airs/conformance/tenxyte_ci/_ci_info.json
+
+      - name: Run the Conformance Suite against Tenxyte (positive path — Property 4)
+        run: |
+          JWT=$(python -c "import json; print(json.load(open('spec/airs/conformance/tenxyte_ci/_ci_info.json'))['user_jwt'])")
+          pytest spec/airs/conformance -q -m "not negative_control" --no-cov \
+            -p spec.airs.conformance.tenxyte_ci.revoke_permission_hook \
+            --airs-base-url "http://127.0.0.1:8811" \
+            --airs-discovery-path "/api/v1/auth/ai/.well-known/airs/" \
+            --airs-user-jwt "$JWT" \
+            --airs-conformance-probe-path "/api/v1/auth/ai/_conformance_probe/" \
+            --airs-hitl-probe-path "/api/v1/auth/ai/_hitl_probe/"
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: airs-conformance-server-log
+          path: server.log
+
+      - name: Run the negative control (Property 4, negative half)
+        run: |
+          pytest spec/airs/conformance/negative_mock -q --no-cov
+
+  # ===========================================================================
   # Upload combined coverage to Codecov
   # ===========================================================================
   coverage:

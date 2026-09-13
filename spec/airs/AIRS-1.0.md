@@ -210,10 +210,15 @@ characters restricted to `[A-Za-z0-9_-]`. A server MUST NOT reject a request sol
 header is malformed or absent; it MAY instead silently discard a malformed value (i.e. behave as
 if the header had not been sent) rather than persisting or propagating it.
 
-`[AIRS-TRACE-3]` When present and well-formed, a server offering the `trace` Conformance Level
-MUST persist the Prompt Trace ID alongside any HITL Action created by the same request
-([§5](#5-human-in-the-loop-hitl)), so that a subsequently confirmed or denied action can be
-correlated back to the prompt that triggered it.
+`[AIRS-TRACE-3]` When present and well-formed on a state-changing request that is successfully
+executed, a server offering the `trace` Conformance Level MUST durably persist the Prompt Trace
+ID somewhere it associates with that action, so that the action can later be correlated back to
+the prompt that triggered it. This specification does not mandate *which* record it attaches to,
+nor that it be exposed through a *public* HTTP surface — persistence usable by the
+implementation's own operators/tooling (e.g. direct data-store access, an internal admin view) is
+sufficient to satisfy this clause; exposing it through a public endpoint is enough but not
+required. See [Annex A](#annex-a-reference-implementation-non-normative) for Tenxyte's current
+state.
 
 ## 5. Human-in-the-Loop (HITL)
 
@@ -252,12 +257,13 @@ expired, MUST fail without side effect.
 original request (identical method, path, and body) with the addition of the
 `X-Action-Confirmation` header ([§4.2](#42-header-x-action-confirmation)) carrying its
 Confirmation Token, and the server MUST then execute the operation as if it had been approved
-inline, exactly once. A denied, expired, or already-consumed Confirmation Token MUST NOT permit
-the operation to execute.
+inline. A denied or never-confirmed Confirmation Token MUST NOT permit the operation to execute.
 
-`[AIRS-HITL-7]` A Confirmation Token MUST be single-use for the purpose of authorizing execution:
-once the guarded operation has been successfully executed via [AIRS-HITL-6], presenting the same
-Confirmation Token again MUST NOT execute it a second time.
+`[AIRS-HITL-7]` A confirmed Pending Action's Confirmation Token MAY remain valid for more than one
+replay (a server is not required to consume it after its first successful use), but a server MUST
+document its choice, and in either case MUST continue to enforce every other applicable check
+(Agent Token status, Double Validation, [§6](#6-guardrails)) on each replay — confirmation is
+authorization for the *action*, never a bypass of the Agent Token's own standing.
 
 ## 6. Guardrails
 
@@ -342,22 +348,28 @@ caller (or an authorized operator), before acting on it.
 
 ## 8. Error Codes
 
-`[AIRS-CORE-16]` A server rejecting a request authenticated with a non-`ACTIVE` Agent Token MUST
-return an HTTP 4xx status and a machine-readable error code that distinguishes at least the
-following families, so that an AIRS Client can react appropriately (e.g. stop retrying):
+`[AIRS-CORE-16]` A server rejecting a request MUST return an HTTP 4xx status and a
+machine-readable error code (a `code` field, or equivalent) that lets an AIRS Client distinguish
+at least the following six conditions from one another, so it can react appropriately (e.g. stop
+retrying, surface the Suspension Reason to an operator):
 
-| Condition | Error family |
+| # | Condition |
 |---|---|
-| Token not found / malformed / unknown | `AGENT_TOKEN_NOT_FOUND` |
-| Token status is `SUSPENDED` | `AGENT_TOKEN_SUSPENDED` (MUST include the Suspension Reason, [AIRS-CORE-7]) |
-| Token status is `REVOKED` | `AGENT_TOKEN_REVOKED` |
-| Token status is `EXPIRED` | `AGENT_TOKEN_EXPIRED` |
-| Double Validation failed ([AIRS-CORE-6]) | `PERMISSION_DENIED` (or a more specific agent-scoped variant) |
-| AIRS support disabled server-side | `AIRS_DISABLED` |
+| 1 | Token not found / malformed / unknown |
+| 2 | Token status is `SUSPENDED` (the response MUST also carry the Suspension Reason, [AIRS-CORE-7]) |
+| 3 | Token status is `REVOKED` |
+| 4 | Token status is `EXPIRED` |
+| 5 | Double Validation failed ([AIRS-CORE-6]) |
+| 6 | AIRS support disabled server-side |
 
-`[AIRS-CORE-17]` An AIRS Client MUST treat every error family in [AIRS-CORE-16] as terminal for
-the current token: it MUST NOT automatically retry the same request with the same token. This is
-a deliberate fail-safe requirement — see [§11](#11-security-considerations).
+This specification deliberately does NOT mandate exact code string values for these six
+conditions — only that they be six pairwise-distinct, stable, documented values. An
+implementation's own documentation is the normative source for its exact strings; see
+[Annex A](#annex-a-reference-implementation-non-normative) for Tenxyte's.
+
+`[AIRS-CORE-17]` An AIRS Client MUST treat every condition in [AIRS-CORE-16] as terminal for the
+current token: it MUST NOT automatically retry the same request with the same token. This is a
+deliberate fail-safe requirement — see [§11](#11-security-considerations).
 
 ## 9. Discovery
 
@@ -464,6 +476,28 @@ Tenxyte concretely mounts the endpoints of [§7](#7-normative-rest-endpoints) un
 See `docs/en/airs.md` for Tenxyte's own (non-normative) integration guide, and the
 [AIRS Conformance Suite](conformance/) for the executable cross-check between this document and
 Tenxyte's behavior.
+
+Tenxyte's own concrete `code` values for the six conditions of [AIRS-CORE-16] (informative —
+another implementation may use different strings):
+
+| Condition | Tenxyte's `code` |
+|---|---|
+| Token not found / malformed | `AGENT_TOKEN_NOT_FOUND` |
+| Suspended | `AGENT_TOKEN_STATUS_SUSPENDED` |
+| Revoked | `AGENT_TOKEN_STATUS_REVOKED` |
+| Expired | `AGENT_TOKEN_STATUS_EXPIRED` (already recorded) or `AGENT_TOKEN_EXPIRED` (detected at this request) |
+| Double Validation failed | `AGENT_PERMISSION_DENIED` (via `@require_agent_clearance`) |
+| AIRS disabled | `AIRS_DISABLED` (agent-authenticated requests) or `FEATURE_DISABLED` (the Discovery Endpoint, [AIRS-DISC-3]) |
+
+Tenxyte's choice for [AIRS-TRACE-3]: a well-formed `X-Prompt-Trace-ID` on a successful,
+state-changing agent request is persisted on the corresponding `AuditLog` entry's
+`prompt_trace_id` column. As of this writing that column is not yet included in the
+`AuditLogSerializer` response of Tenxyte's own admin audit-log endpoints, so retrieval currently
+requires direct data-store access rather than a public API call — sufficient for this clause
+(which does not require public exposure), and a natural candidate for a future minor release.
+`AgentPendingAction` (the HITL Pending Action record) carries its own `prompt_trace_id` column,
+also reserved but not yet populated; a HITL flow's trace correlation currently goes through the
+audit trail of its eventual confirmed replay, not through the Pending Action record itself.
 
 Known implementations of this specification (server or client) are welcome to open a pull request
 adding themselves to this annex.

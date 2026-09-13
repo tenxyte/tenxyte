@@ -94,3 +94,7 @@ old_dists/*/*
 /plan
 logs
 
+# AIRS Conformance Suite ephemeral CI instance (spec z_aud_2)
+spec/airs/conformance/tenxyte_ci/_ephemeral.sqlite3
+spec/airs/conformance/tenxyte_ci/_ci_info.json
+
