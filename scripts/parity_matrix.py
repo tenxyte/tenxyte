@@ -128,6 +128,22 @@ def get_django_routes() -> dict[Endpoint, str]:
     return routes
 
 
+def _iter_routes(router, path_prefix: str = ""):
+    """Recursively flattens `router.routes`, descending into nested/included sub-routers —
+    newer FastAPI versions represent an `include_router()`'d router lazily as an
+    `_IncludedRouter` wrapper (its own `.routes` is empty; the real routes live on
+    `.original_router.routes`, applied under `.include_context.prefix`) rather than eagerly
+    flattening at include-time. Ducktyped (`original_router`) rather than importing that private
+    class, since its name/shape isn't public API."""
+    for route in router.routes:
+        original_router = getattr(route, "original_router", None)
+        if original_router is not None:
+            nested_prefix = getattr(getattr(route, "include_context", None), "prefix", "") or ""
+            yield from _iter_routes(original_router, path_prefix + nested_prefix)
+        else:
+            yield route, path_prefix + getattr(route, "path", "")
+
+
 def get_fastapi_routes(settings=None) -> dict[Endpoint, str]:
     """(method, normalized path) -> route/endpoint name, for every route the FastAPI_Adapter's
     router exposes — normalized by stripping its configured api_prefix, the same way Django's
@@ -140,8 +156,8 @@ def get_fastapi_routes(settings=None) -> dict[Endpoint, str]:
     prefix = resolved_settings.api_prefix
 
     routes: dict[Endpoint, str] = {}
-    for route in router.routes:
-        path = route.path.removeprefix(prefix) or "/"
+    for route, full_path in _iter_routes(router):
+        path = full_path.removeprefix(prefix) or "/"
         methods = getattr(route, "methods", None) or set()
         name = getattr(route, "name", None) or getattr(getattr(route, "endpoint", None), "__name__", str(route))
         for method in methods - {"HEAD", "OPTIONS"}:

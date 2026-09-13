@@ -12,6 +12,7 @@ from fastapi import APIRouter, FastAPI
 from tenxyte.adapters.fastapi import db as db_module
 from tenxyte.adapters.fastapi.application_auth import ApplicationAuthMiddleware
 from tenxyte.adapters.fastapi.errors import register_exception_handlers
+from tenxyte.adapters.fastapi.routers.auth import router as auth_router
 from tenxyte.adapters.fastapi.settings import get_default_settings
 from tenxyte.core.cache_service import InMemoryCacheService
 from tenxyte.core.jwt_service import InMemoryTokenBlacklistService, JWTService
@@ -20,18 +21,19 @@ from tenxyte.core.settings import Settings
 
 def _build_router(settings: Settings) -> APIRouter:
     """
-    The Parity_Group routers land here as each wave (A→G) ships (spec z_aud_3, Requirement 4) —
-    empty for now; task 2 only builds the production base the routers will be mounted onto.
+    The Parity_Group routers are mounted here as each wave (A→G) ships (spec z_aud_3,
+    Requirement 4) — Wave A (`routers/auth.py`) is the first.
     """
-    router = APIRouter()
+    router = APIRouter(prefix=settings.api_prefix)
 
     # Same path convention as the Django_Adapter's default EXEMPT_PATHS
     # ("{api_prefix}/health/") so the health check is exempt from application auth out of the
     # box, with no settings override needed.
-    @router.get(f"{settings.api_prefix}/health/")
+    @router.get("/health/")
     async def health() -> dict:
         return {"status": "ok"}
 
+    router.include_router(auth_router)
     return router
 
 

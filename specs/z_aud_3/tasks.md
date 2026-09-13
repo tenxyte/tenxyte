@@ -45,6 +45,14 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       cryptographique sans accès storage — qui doivent rester sync par la Requirement 2.2
       elle-même). L'état des lieux de `design.md` ("0 % async") ne correspondait plus au code
       actuel. `jwt_service` inchangé (gabarit).
+    - **Ajouté à la tâche 5.1** (découvert manquant en construisant le routeur Auth) :
+      `AuthenticationService.authenticate_async` — même JWT_Async_Pattern (méthode `*_async` du
+      `PasswordUserLookup` utilisée si présente par `hasattr`, sinon pont `to_thread`), seule
+      pièce du Core auth pas encore async avant cette découverte. 4 tests dans
+      `tests/core/test_auth_service_async.py`, dont un test de propriété Hypothesis (sync/bridge
+      s'accordent sur tous les scénarios : inconnu, mauvais mot de passe, bon mot de passe,
+      inactif, banni, verrouillé) et un test espion prouvant qu'un lookup natif async n'appelle
+      jamais ses méthodes sync.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
   - [x] 1.5 Write sync-API snapshot test
@@ -123,10 +131,11 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - **Property 9 (faite) :** `tests/integration/fastapi/unit/test_errors.py` — corpus Hypothesis
       de requêtes invalides + JSON malformé + 404/405/500 natifs + erreur applicative custom,
       tous canoniques.
-    - **Property 10 (moitié socle, faite) :** `tests/integration/fastapi/unit/test_app_factory.py`
-      prouve pour de vrai le boot sans surcharge (aucun `NotImplementedError`) et un round-trip
-      complet `AsyncUserRepository` sur aiosqlite réel. **Moitié `register→login→me` HTTP :**
-      attend le router Auth de la vague A (tâche 5.1).
+    - **Property 10 (complète) :** `tests/integration/fastapi/unit/test_app_factory.py` prouve
+      pour de vrai le boot sans surcharge (aucun `NotImplementedError`), un round-trip complet
+      `AsyncUserRepository` sur aiosqlite réel, et — maintenant que le routeur Auth de la vague A
+      existe (tâche 5.1) — le parcours HTTP complet `register → login → me` contre une vraie app
+      + vraie DB éphémère.
     - **Validates: Requirements 3.1, 3.2, 3.3, 3.6**
 
   - [x] 2.5 Compléter l'extra `[fastapi]`
@@ -204,19 +213,59 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
   - Fondations + socle + outillage verts ; suite Django intacte ; ask the user if questions arise.
 
 - [ ] 5. Vague de parité A — Auth de base
-  - [ ] 5.1 Porter le groupe A
-    - `routers/auth.py` : register, login/email, login/phone, refresh, logout, logout/all,
-      me (GET/PATCH), me/roles — contrat Django strict (anti-énumération register, lockout,
-      bootstrap 2FA `2fa_setup_only`, `must_change_password`, cookie refresh opt-in) ;
-      suppression du `routers.py` PoC (divergences documentées au CHANGELOG adapter)
+  - [x] 5.1 Porter le groupe A
+    - **Partiel — contrat extrait par recherche exhaustive de `views/auth_views.py` +
+      `views/user_views.py`** (serializers, codes d'erreur exacts, asymétrie
+      `IsAuthenticated`-vs-`require_jwt` entre `MeView` et `MyRolesView`, `TokenPair` opaque —
+      `session_id`/`device_id` toujours `null` en réalité, `refresh_token` toujours un UUID
+      opaque jamais un JWT). `routers/auth.py` porté et testé pour de vrai (23 tests dans
+      `test_auth_router.py`) : `register` (anti-énumération, `login=True`, validation),
+      `login/email` (succès, anti-énumération mot de passe, lockout via `CacheService` à
+      `max_login_attempts`/`lockout_duration`, bootstrap 2FA `2fa_setup_only` 15 min pour
+      admin sans MFA, 2FA normal requis + vérifié via `SQLAlchemyTOTPStorage` — lecture seule,
+      TOTP réel avec `pyotp`), `refresh` (rotation via un nouveau module
+      `refresh_tokens.py` — `jwt_service.refresh_tokens_async` s'est révélé inutilisable hors
+      Django : il importe `tenxyte.models.RefreshToken` en dur), `logout`/`logout/all`
+      (révocation réelle, blacklist JWT), `me` GET/PATCH (`allow_any_scope=True`, nouveau
+      paramètre de `require_jwt` — parité avec l'absence d'enforcement de scope de
+      `IsAuthenticated`), `me/roles` (scope enforcé, listes vides — pas de RBAC dans le
+      Reference_Stack). Cookie refresh opt-in implémenté pour de vrai
+      (`refresh_token_cookie_enabled` existait déjà sur `core/settings.py`). Suppression du
+      `routers.py` PoC + son test, divergences documentées dans `CHANGELOG.md` sous
+      `[Unreleased]`. **Ajout Core nécessaire** : `AuthenticationService.authenticate_async`
+      (voir tâche 1.4). **Explicitement hors scope de cette passe (documenté, pas silencieux)** :
+      `login/phone` (pas de colonnes téléphone indexées sur le `Reference_Stack` — suivi
+      dédié) ; `must_change_password`/`password_change_only` (champ Django-only, feature
+      désactivée par défaut, spec séparée `specs/force_password_change_on_first_login/` non
+      exécutée) ; RBAC réel sur `me/roles` (Groupe D, tâche 10.1) ; listing admin
+      `RefreshTokenDB` (Groupe D). `errors.py`'s `TenxyteAPIError` étendu avec un champ `extra`
+      (champs top-level additionnels — `retry_after`, `requires_2fa` — au-delà de
+      `error`/`code`/`details`, nécessaires pour quelques réponses Django qui en portent plus).
+      **Bug réel trouvé par exécution (pas juste par lecture)** : un mot de passe de plus de 72
+      octets UTF-8 (indépendant du nombre de caractères — des caractères multi-octets suffisent
+      largement en dessous de toute limite en caractères) fait planter `bcrypt.hashpw`/
+      `bcrypt.checkpw` avec un 500 non géré, découvert par le test de propriété Hypothesis
+      d'anti-énumération (5.2) générant des mots de passe arbitraires. Corrigé : `register`
+      rejette proprement (400 `VALIDATION_ERROR`) avant d'appeler bcrypt ; `check_password_async`
+      (dans `auth_lookup.py`) traite un mot de passe trop long comme un mot de passe incorrect
+      (retourne `False`) plutôt que de planter. `_run_dummy_check`/`_run_dummy_check_async`
+      (`core/auth_service.py`) n'avaient PAS ce bug — leur `except Exception: pass` avalait déjà
+      la `ValueError`. Deux tests de régression ajoutés (`test_register_password_over_72_bytes_*`,
+      `test_login_password_over_72_bytes_*`).
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-  - [ ] 5.2 Write property test for anti-enumeration parity (groupe A)
-    - **Property 3: Parité de l'anti-énumération** (register)
+  - [x] 5.2 Write property test for anti-enumeration parity (groupe A)
+    - **Property 3: Parité de l'anti-énumération (register)** —
+      `test_register_anti_enumeration_property.py`, Hypothesis génère email/mot de passe,
+      compare la *forme* (clés + types) de la réponse pour un compte existant vs inexistant :
+      identique dans les deux cas (201, mêmes clés).
     - **Validates: Requirements 4.3**
 
   - [ ] 5.3 Contract_Suite + matrice sur A
-    - Suite du groupe verte sur les deux adapters ; `parity_matrix --groups=A` verte
+    - **Bloqué** : `parity_matrix --groups=A` est à 8/9 endpoints du groupe (seul `login/phone`
+      manque, déficit documenté à la tâche 5.1) — pas encore vert. La Contract_Suite elle-même
+      (tâche 3.2) n'a pas encore été construite. Les deux se complètent avec `login/phone` et
+      la tâche 3.2.
     - _Requirements: 5.1, 5.2_
 
 - [ ] 6. Vague de parité B — Password

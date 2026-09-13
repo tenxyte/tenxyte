@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import Depends, Request
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
+from tenxyte.core.cache_service import CacheService
 from tenxyte.core.jwt_service import JWTService
 from tenxyte.core.settings import Settings
 from tenxyte.ports.async_repositories import AsyncUserRepository
@@ -37,3 +38,7 @@ def get_user_repository(session: AsyncSession = Depends(get_db_session)) -> Asyn
 
 def get_jwt_service(request: Request) -> JWTService:
     return request.app.state.tenxyte_jwt_service
+
+
+def get_cache_service(request: Request) -> CacheService:
+    return request.app.state.tenxyte_cache_service

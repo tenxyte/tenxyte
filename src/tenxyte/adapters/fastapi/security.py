@@ -15,6 +15,12 @@ Used as a FastAPI dependency rather than a decorator, per the framework's own id
     @router.post("/2fa/confirm")
     async def confirm(auth: AuthContext = Depends(require_jwt(allowed_scopes=["2fa_setup_only"]))):
         ...
+
+`allow_any_scope=True` opts out of scope enforcement entirely — for parity with the one Django
+endpoint (`MeView`) that authenticates via plain DRF `IsAuthenticated` instead of the
+`@require_jwt` decorator, and so never inspects the `scope` claim at all. Every other Django
+endpoint goes through `@require_jwt`, which does enforce it (bare `@require_jwt` — no
+`allowed_scopes` — behaves like `allowed_scopes=[]`, matching this dependency's own default).
 """
 
 from __future__ import annotations
@@ -45,6 +51,8 @@ class AuthContext:
 
 def require_jwt(
     allowed_scopes: list[str] | None = None,
+    *,
+    allow_any_scope: bool = False,
 ) -> Callable[..., Coroutine[Any, Any, AuthContext]]:
     allowed = set(allowed_scopes) if allowed_scopes else set()
 
@@ -75,7 +83,7 @@ def require_jwt(
         if not user.is_active:
             raise TenxyteAPIError("User account is inactive", code="USER_INACTIVE", status_code=401)
 
-        if scope is not None and scope not in allowed:
+        if not allow_any_scope and scope is not None and scope not in allowed:
             raise TenxyteAPIError("Insufficient token scope", code="INSUFFICIENT_SCOPE", status_code=403)
 
         return AuthContext(user=user, payload=payload, scope=scope)

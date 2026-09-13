@@ -4,12 +4,11 @@ Requirement 3.1, 3.2, 3.3).
 
 Feature: z_aud_3, Property 10: Le stack de référence démarre sans surcharge
 
-The full HTTP register -> login -> me journey needs the Wave A auth router (task 5.1, not yet
-built) — this test proves the *base* half of Property 10 for real: the app boots on a fresh
-aiosqlite database with zero DI overrides and no DI function raises NotImplementedError, and a
-full User CRUD round-trip works end-to-end through the Reference_Stack (create, read, update
-last_login, set MFA secret, verify email, delete) via httpx against a real running app — not a
-mock. The HTTP auth journey itself is added to this same test module once task 5.1 lands.
+Two halves, both now proven for real: the app boots on a fresh aiosqlite database with zero DI
+overrides and no DI function raises NotImplementedError, with a full User CRUD round-trip through
+the Reference_Stack (create, read, update last_login, set MFA secret, verify email, delete); and
+the full HTTP `register -> login -> me` journey works end-to-end against the Wave A auth router
+(task 5.1) via httpx against a real running app — not a mock.
 """
 
 import uuid
@@ -21,11 +20,22 @@ from httpx import ASGITransport, AsyncClient
 from tenxyte.adapters.fastapi.app import create_tenxyte_app
 from tenxyte.adapters.fastapi.db import create_engine, create_session_factory
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
+from tenxyte.core.env_provider import EnvSettingsProvider
+from tenxyte.core.settings import Settings
 from tenxyte.ports.repositories import MFAType, User
 
 
 def _fresh_sqlite_url() -> str:
     return f"sqlite+aiosqlite:///file:{uuid.uuid4().hex}?mode=memory&cache=shared&uri=true"
+
+
+class _TestProvider(EnvSettingsProvider):
+    def get(self, name, default=None):
+        if name == "TENXYTE_APPLICATION_AUTH_ENABLED":
+            return False
+        if name == "TENXYTE_JWT_SECRET_KEY":
+            return "test-secret-key-for-property-10"
+        return super().get(name, default)
 
 
 @pytest.mark.anyio
@@ -85,3 +95,32 @@ async def test_reference_stack_user_repository_full_roundtrip():
             assert await repo.get_by_id(created.id) is None
     finally:
         await engine.dispose()
+
+
+@pytest.mark.anyio
+async def test_property_10_http_register_login_me_journey():
+    """Feature: z_aud_3, Property 10 (HTTP half) — register -> login -> me over real HTTP,
+    against a fresh aiosqlite database, zero DI overrides."""
+    settings = Settings(provider=_TestProvider())
+    app = create_tenxyte_app(settings=settings, database_url=_fresh_sqlite_url())
+
+    async with app.router.lifespan_context(app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            register_response = await client.post(
+                "/api/v1/register/",
+                json={"email": "journey@example.com", "password": "correct-horse-battery-staple"},
+            )
+            assert register_response.status_code == 201
+
+            login_response = await client.post(
+                "/api/v1/login/email/",
+                json={"email": "journey@example.com", "password": "correct-horse-battery-staple"},
+            )
+            assert login_response.status_code == 200
+            access_token = login_response.json()["access_token"]
+
+            me_response = await client.get("/api/v1/me/", headers={"Authorization": f"Bearer {access_token}"})
+
+    assert me_response.status_code == 200
+    assert me_response.json()["email"] == "journey@example.com"

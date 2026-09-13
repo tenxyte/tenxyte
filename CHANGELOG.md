@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+**Phase 3 "Multi-framework réel" (`specs/z_aud_3`)** — in progress.
+
+### Removed
+- **`tenxyte.adapters.fastapi.routers`** (the single-file proof-of-concept router: `POST
+  /auth/login`, `POST /auth/magic-link`) — replaced by the production `routers/` package,
+  starting with `routers/auth.py` (Parity_Group A: register, login/email, refresh, logout,
+  logout/all, me, me/roles), mounted by the App_Factory under the configured `api_prefix` instead
+  of the PoC's hardcoded `/auth` prefix. Known divergences from the Django_Adapter's exact
+  contract in this first pass: `login/phone/` is not yet ported (needs Reference_Stack phone
+  columns); `must_change_password`/`password_change_only` is not modeled (Django-only field,
+  feature disabled by default, tracked by its own separate spec); `me/roles/` returns empty
+  `roles`/`permissions` (no RBAC tables yet, arriving with Group D).
+
+### Added
+- `AuthenticationService.authenticate_async` (Core) — JWT_Async_Pattern twin of `authenticate`,
+  needed by the FastAPI_Adapter's login endpoints.
+
 ## [1.0.0]
 
 **Phase 1 "Crédibilité" (`specs/z_aud_1`)** — the release that marks Tenxyte's transition from

@@ -37,8 +37,8 @@
 | GET | `/dashboard/security/` | DashboardSecurityView | D | 🔜 D |
 | GET | `/dashboard/stats/` | DashboardGlobalView | D | 🔜 D |
 | GET | `/magic-link/verify/` | MagicLinkVerifyView | C | 🔜 C |
-| GET | `/me/` | MeView | A | 🔜 A |
-| GET | `/me/roles/` | MyRolesView | A | 🔜 A |
+| GET | `/me/` | MeView | A | ✅ A |
+| GET | `/me/roles/` | MyRolesView | A | ✅ A |
 | GET | `/org-roles/` | list_org_roles | E | 🔜 E |
 | GET | `/organizations/detail/` | get_organization | E | 🔜 E |
 | GET | `/organizations/list/` | list_organizations | E | 🔜 E |
@@ -56,7 +56,7 @@
 | GET | `/webauthn/credentials/` | WebAuthnCredentialListView | G | 🔜 G |
 | PATCH | `/admin/users/{user_id}/` | UserDetailView | D | 🔜 D |
 | PATCH | `/applications/{app_id}/` | ApplicationDetailView | D | 🔜 D |
-| PATCH | `/me/` | MeView | A | 🔜 A |
+| PATCH | `/me/` | MeView | A | ✅ A |
 | PATCH | `/organizations/members/{user_id}/` | update_member_role | E | 🔜 E |
 | PATCH | `/organizations/update/` | update_organization | E | 🔜 E |
 | POST | `/2fa/backup-codes/` | TwoFactorBackupCodesView | C | 🔜 C |
@@ -84,12 +84,12 @@
 | POST | `/cancel-account-deletion/` | cancel_account_deletion | G | 🔜 G |
 | POST | `/confirm-account-deletion/` | confirm_account_deletion | G | 🔜 G |
 | POST | `/export-user-data/` | export_user_data | G | 🔜 G |
-| POST | `/login/email/` | LoginEmailView | A | 🔜 A |
+| POST | `/login/email/` | LoginEmailView | A | ✅ A |
 | POST | `/login/otp/request/` | LoginOTPRequestView | C | 🔜 C |
 | POST | `/login/otp/verify/` | LoginOTPVerifyView | C | 🔜 C |
 | POST | `/login/phone/` | LoginPhoneView | A | 🔜 A |
-| POST | `/logout/` | LogoutView | A | 🔜 A |
-| POST | `/logout/all/` | LogoutAllView | A | 🔜 A |
+| POST | `/logout/` | LogoutView | A | ✅ A |
+| POST | `/logout/all/` | LogoutAllView | A | ✅ A |
 | POST | `/magic-link/request/` | MagicLinkRequestView | C | 🔜 C |
 | POST | `/organizations/` | create_organization | E | 🔜 E |
 | POST | `/organizations/invitations/` | invite_member | E | 🔜 E |
@@ -103,8 +103,8 @@
 | POST | `/password/set-initial/` | SetInitialPasswordView | B | 🔜 B |
 | POST | `/password/strength/` | PasswordStrengthView | B | 🔜 B |
 | POST | `/permissions/` | PermissionListView | D | 🔜 D |
-| POST | `/refresh/` | RefreshTokenView | A | 🔜 A |
-| POST | `/register/` | RegisterView | A | 🔜 A |
+| POST | `/refresh/` | RefreshTokenView | A | ✅ A |
+| POST | `/register/` | RegisterView | A | ✅ A |
 | POST | `/request-account-deletion/` | request_account_deletion | G | 🔜 G |
 | POST | `/roles/` | RoleListView | D | 🔜 D |
 | POST | `/roles/{role_id}/permissions/` | RolePermissionsView | D | 🔜 D |

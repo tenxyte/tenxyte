@@ -23,25 +23,45 @@ logger = logging.getLogger(__name__)
 
 class TenxyteAPIError(Exception):
     """Raise this from a handler/dependency to produce a canonical error response directly,
-    without going through an `HTTPException`'s single free-form `detail` string."""
+    without going through an `HTTPException`'s single free-form `detail` string.
 
-    def __init__(self, message: str, *, code: str, status_code: int = status.HTTP_400_BAD_REQUEST, details: Any = None):
+    `extra` merges additional top-level fields into the response body, alongside `error`/`code`/
+    `details` — needed for parity with a few Django_Adapter error responses that carry more than
+    just those three (e.g. `login/email/`'s 423 also reports `retry_after`, and its 401
+    `2FA_REQUIRED` also reports `requires_2fa: true`). Left as `None` (the default) for every
+    error that only needs the base three fields.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str,
+        status_code: int = status.HTTP_400_BAD_REQUEST,
+        details: Any = None,
+        extra: dict[str, Any] | None = None,
+    ):
         super().__init__(message)
         self.message = message
         self.code = code
         self.status_code = status_code
         self.details = details
+        self.extra = extra
 
 
-def _canonical_body(error: str, code: str, details: Any = None) -> dict[str, Any]:
+def _canonical_body(error: str, code: str, details: Any = None, extra: dict[str, Any] | None = None) -> dict[str, Any]:
     body: dict[str, Any] = {"error": error, "code": code}
     if details is not None:
         body["details"] = details
+    if extra:
+        body.update(extra)
     return body
 
 
 async def _handle_tenxyte_error(request: Request, exc: TenxyteAPIError) -> JSONResponse:
-    return JSONResponse(status_code=exc.status_code, content=_canonical_body(exc.message, exc.code, exc.details))
+    return JSONResponse(
+        status_code=exc.status_code, content=_canonical_body(exc.message, exc.code, exc.details, exc.extra)
+    )
 
 
 async def _handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
