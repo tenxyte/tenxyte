@@ -10,20 +10,24 @@ from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
 from tenxyte.adapters.fastapi import db as db_module
+from tenxyte.adapters.fastapi.application_auth import ApplicationAuthMiddleware
 from tenxyte.adapters.fastapi.errors import register_exception_handlers
 from tenxyte.adapters.fastapi.settings import get_default_settings
 from tenxyte.core.jwt_service import InMemoryTokenBlacklistService, JWTService
 from tenxyte.core.settings import Settings
 
 
-def _build_router() -> APIRouter:
+def _build_router(settings: Settings) -> APIRouter:
     """
     The Parity_Group routers land here as each wave (A→G) ships (spec z_aud_3, Requirement 4) —
     empty for now; task 2 only builds the production base the routers will be mounted onto.
     """
     router = APIRouter()
 
-    @router.get("/health")
+    # Same path convention as the Django_Adapter's default EXEMPT_PATHS
+    # ("{api_prefix}/health/") so the health check is exempt from application auth out of the
+    # box, with no settings override needed.
+    @router.get(f"{settings.api_prefix}/health/")
     async def health() -> dict:
         return {"status": "ok"}
 
@@ -32,7 +36,7 @@ def _build_router() -> APIRouter:
 
 def create_tenxyte_router(settings: Settings | None = None) -> APIRouter:
     """A mountable router — use this to add Tenxyte's endpoints to an existing FastAPI app."""
-    return _build_router()
+    return _build_router(settings or get_default_settings())
 
 
 def create_tenxyte_app(
@@ -75,5 +79,6 @@ def create_tenxyte_app(
 
     app = FastAPI(title="Tenxyte", lifespan=lifespan)
     register_exception_handlers(app)
+    app.add_middleware(ApplicationAuthMiddleware)
     app.include_router(create_tenxyte_router(resolved_settings))
     return app

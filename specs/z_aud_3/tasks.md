@@ -78,9 +78,15 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       `{error, code, details}` universel, y compris pour les erreurs natives FastAPI/Starlette
       (422 validation → 400 `VALIDATION_ERROR`, 404/405 natifs, 500 masqué `INTERNAL_ERROR` sans
       fuite d'exception), `TenxyteAPIError` pour lever une erreur canonique directement depuis un
-      handler/dépendance. **Restant :** `ApplicationAuthMiddleware` (parité `APP_AUTH_REQUIRED` +
-      toggle — nécessite un modèle `Application` côté Reference_Stack, pas encore construit) ;
-      `throttling.py` ; `security.py` (`require_jwt`, scopes restreints, AgentBearer).
+      handler/dépendance. `application_auth.py` — `ApplicationAuthMiddleware` (parité exacte :
+      `APP_AUTH_REQUIRED`/`APP_AUTH_INVALID`/`APP_AUTH_ORIGIN_REQUIRED`/`APP_AUTH_ORIGIN_DENIED`,
+      modes clé+secret et clé seule/Origin, toggle `TENXYTE_APPLICATION_AUTH_ENABLED`, mêmes
+      `exempt_paths`/`exact_exempt_paths` que Django — réutilise les properties déjà
+      framework-agnostiques de `core/settings.py`), `ApplicationDB` (bcrypt+base64, même schéma de
+      hash que `AbstractApplication`), câblé dans l'App_Factory ; endpoint `/health` déplacé sous
+      `{api_prefix}/health/` pour matcher l'exemption par défaut. 10 tests, tous verts contre une
+      vraie app + vraie DB éphémère. **Restant :** `throttling.py` ; `security.py` (`require_jwt`,
+      scopes restreints, AgentBearer).
     - _Requirements: 3.4, 3.6_
 
   - [ ] 2.4 Write property tests for the production base

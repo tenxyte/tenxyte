@@ -100,3 +100,22 @@ class RefreshTokenDB(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     user: Mapped[UserDB] = relationship(back_populates="refresh_tokens")
+
+
+class ApplicationDB(Base):
+    """
+    Application-level credentials (spec z_aud_3, Requirement 3.4) — mirrors
+    `tenxyte.models.application.AbstractApplication`'s essential fields. `access_secret` stores
+    the same bcrypt-hashed, base64-encoded format (see `application_auth.hash_secret`), never
+    the raw secret.
+    """
+
+    __tablename__ = "tenxyte_applications"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    name: Mapped[str] = mapped_column(String(100))
+    access_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    access_secret: Mapped[str] = mapped_column(String(255))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    allowed_origins: Mapped[list] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
