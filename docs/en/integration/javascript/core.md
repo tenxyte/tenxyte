@@ -198,7 +198,7 @@ await tx.security.deleteWebAuthnCredential(credentialId);
 // Synchronous checks from JWT (no network call)
 tx.rbac.setToken(accessToken);
 const isAdmin = tx.rbac.hasRole('admin');
-const canEdit = tx.rbac.hasPermission('users.edit');
+const canEdit = tx.rbac.hasPermission('users.update');
 const hasAny = tx.rbac.hasAnyRole(['admin', 'manager']);
 const hasAll = tx.rbac.hasAllRoles(['admin', 'superadmin']);
 

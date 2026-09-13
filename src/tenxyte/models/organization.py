@@ -11,11 +11,13 @@ Organizations are global (like Users). In Cloud deployments, isolation by projec
 is handled by the Project model in the Tenant Management Layer, not here.
 """
 
-from django.db import models
-from django.conf import settings
-from django.utils import timezone
-from datetime import timedelta
 import secrets
+from datetime import timedelta
+from typing import ClassVar
+
+from django.conf import settings
+from django.db import models
+from django.utils import timezone
 
 from .base import AutoFieldClass
 
@@ -66,8 +68,8 @@ class AbstractOrganization(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ["name"]
-        indexes = [
+        ordering: ClassVar[list] = ["name"]
+        indexes: ClassVar[list] = [
             models.Index(fields=["slug"]),
             models.Index(fields=["parent", "is_active"]),
         ]
@@ -209,7 +211,7 @@ class AbstractOrganizationRole(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ["name"]
+        ordering: ClassVar[list] = ["name"]
 
     def __str__(self):
         return f"{self.name} ({self.code})"
@@ -248,7 +250,7 @@ class AbstractOrganizationMembership(models.Model):
     )
 
     # Membership status
-    STATUS_CHOICES = [
+    STATUS_CHOICES: ClassVar[list] = [
         ("pending", "Invitation Pending"),
         ("active", "Active"),
         ("suspended", "Suspended"),
@@ -267,9 +269,9 @@ class AbstractOrganizationMembership(models.Model):
 
     class Meta:
         abstract = True
-        unique_together = [("user", "organization")]
-        ordering = ["-created_at"]
-        indexes = [
+        unique_together: ClassVar[list] = [("user", "organization")]
+        ordering: ClassVar[list] = ["-created_at"]
+        indexes: ClassVar[list] = [
             models.Index(fields=["user", "organization", "status"]),
             models.Index(fields=["organization", "status"]),
         ]
@@ -316,7 +318,7 @@ class AbstractOrganizationInvitation(models.Model):
     )
 
     # Status tracking
-    STATUS_CHOICES = [
+    STATUS_CHOICES: ClassVar[list] = [
         ("pending", "Pending"),
         ("accepted", "Accepted"),
         ("declined", "Declined"),
@@ -331,8 +333,8 @@ class AbstractOrganizationInvitation(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ["-created_at"]
-        indexes = [
+        ordering: ClassVar[list] = ["-created_at"]
+        indexes: ClassVar[list] = [
             models.Index(fields=["token"]),
             models.Index(fields=["organization", "status"]),
             models.Index(fields=["email", "status"]),
@@ -392,7 +394,7 @@ class AbstractOrganizationInvitation(models.Model):
 
         # Create membership
         OrganizationMembership = get_organization_membership_model()
-        membership, created = OrganizationMembership.objects.get_or_create(
+        membership, _created = OrganizationMembership.objects.get_or_create(
             user=user,
             organization=self.organization,
             defaults={
@@ -474,6 +476,7 @@ class OrganizationInvitation(AbstractOrganizationInvitation):
 def get_organization_model():
     """Get the configured Organization model."""
     from django.apps import apps
+
     from ..conf import org_settings
 
     return apps.get_model(org_settings.ORGANIZATION_MODEL)
@@ -482,6 +485,7 @@ def get_organization_model():
 def get_organization_role_model():
     """Get the configured OrganizationRole model."""
     from django.apps import apps
+
     from ..conf import org_settings
 
     return apps.get_model(org_settings.ORGANIZATION_ROLE_MODEL)
@@ -490,6 +494,7 @@ def get_organization_role_model():
 def get_organization_membership_model():
     """Get the configured OrganizationMembership model."""
     from django.apps import apps
+
     from ..conf import org_settings
 
     return apps.get_model(org_settings.ORGANIZATION_MEMBERSHIP_MODEL)

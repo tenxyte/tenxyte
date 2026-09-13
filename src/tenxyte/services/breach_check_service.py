@@ -13,7 +13,6 @@ References:
 
 import hashlib
 import logging
-from typing import Tuple
 
 import requests
 
@@ -37,7 +36,7 @@ class BreachCheckService:
     5. Le mot de passe en clair ne quitte jamais le serveur
     """
 
-    def is_pwned(self, password: str) -> Tuple[bool, int]:
+    def is_pwned(self, password: str) -> tuple[bool, int]:
         """
         Vérifie si le mot de passe a été compromis.
 
@@ -82,7 +81,7 @@ class BreachCheckService:
 
         return False, 0
 
-    def check_password(self, password: str) -> Tuple[bool, str]:
+    def check_password(self, password: str) -> tuple[bool, str]:
         """
         Vérifie le mot de passe et retourne (ok, error_message).
 

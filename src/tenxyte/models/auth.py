@@ -9,14 +9,19 @@ Contains:
 - Permission, Role, User: Default concrete implementations (swappable)
 """
 
-import bcrypt
+import logging
 import secrets
+from datetime import timedelta
+from typing import ClassVar
+
+import bcrypt
 from django.contrib.auth.models import BaseUserManager
 from django.db import models
 from django.utils import timezone
-from datetime import timedelta
 
 from .base import AutoFieldClass
+
+logger = logging.getLogger(__name__)
 
 # =============================================================================
 # MANAGERS
@@ -91,7 +96,7 @@ class AbstractPermission(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ["code"]
+        ordering: ClassVar[list] = ["code"]
 
     def __str__(self):
         return self.code
@@ -136,7 +141,7 @@ class AbstractRole(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ["name"]
+        ordering: ClassVar[list] = ["name"]
 
     def __str__(self):
         return self.name
@@ -267,10 +272,10 @@ class AbstractUser(models.Model):
 
     class Meta:
         abstract = True
-        indexes = [
+        indexes: ClassVar[list] = [
             models.Index(fields=["phone_country_code", "phone_number"]),
         ]
-        constraints = [
+        constraints: ClassVar[list] = [
             models.UniqueConstraint(
                 fields=["phone_country_code", "phone_number"],
                 condition=models.Q(phone_number__isnull=False) & models.Q(is_deleted=False),
@@ -280,7 +285,7 @@ class AbstractUser(models.Model):
 
     # Configuration Django Auth
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS: ClassVar[list] = []
 
     def save(self, *args, **kwargs):
         if self.email:
@@ -350,8 +355,9 @@ class AbstractUser(models.Model):
         return self.is_superuser
 
     def set_password(self, raw_password: str):
-        from ..conf import auth_settings
         import hashlib
+
+        from ..conf import auth_settings
 
         pre_hash = hashlib.sha256(
             raw_password.encode("utf-8")
@@ -452,7 +458,7 @@ class AbstractUser(models.Model):
 
             RefreshToken.objects.filter(user=self, is_revoked=False).update(is_revoked=True)
         except Exception:
-            pass
+            logger.debug("Failed to revoke refresh tokens for user %s", self.pk, exc_info=True)
 
         return True
 
@@ -674,6 +680,15 @@ class AbstractUser(models.Model):
 
     def has_permission(self, permission_code: str) -> bool:
         """Vérifie si l'utilisateur a une permission (via rôles, directe, ou hiérarchie)."""
+        # Un superutilisateur, ou un porteur du rôle super_admin, passe toutes les
+        # vérifications RBAC — aligné sur has_perm() et sur ce que documente rbac.md.
+        # Insensible au timing du seed : contrairement à `__all__` (résolu une fois par
+        # tenxyte_seed), une permission créée après coup reste couverte par super_admin.
+        if getattr(self, "is_superuser", False):
+            return True
+        if self.roles.filter(code="super_admin").exists():
+            return True
+
         from .base import get_permission_model
 
         Permission = get_permission_model()

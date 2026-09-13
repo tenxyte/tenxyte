@@ -7,9 +7,10 @@ Provides consistent pagination across all list endpoints with:
 - Total count and total pages in response
 """
 
+from collections import OrderedDict
+
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-from collections import OrderedDict
 
 
 class TenxytePagination(PageNumberPagination):

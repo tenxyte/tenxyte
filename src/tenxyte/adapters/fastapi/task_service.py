@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from typing import Any, Callable, Coroutine, Union
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from tenxyte.core.task_service import TaskService
 
@@ -18,15 +19,15 @@ class AsyncIOTaskService(TaskService):
         """Helper to run synchronous tasks, catching exceptions."""
         try:
             func(*args, **kwargs)
-        except Exception as e:
-            logger.exception("Error executing background sync task in AsyncIOTaskService: %s", str(e))
+        except Exception:
+            logger.exception("Error executing background sync task in AsyncIOTaskService")
 
     async def _execute_async_task(self, coro: Coroutine[Any, Any, Any]) -> None:
         """Helper to await a coroutine safely, catching exceptions."""
         try:
             await coro
-        except Exception as e:
-            logger.exception("Error executing background async task in AsyncIOTaskService: %s", str(e))
+        except Exception:
+            logger.exception("Error executing background async task in AsyncIOTaskService")
 
     def enqueue(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> str:
         """
@@ -48,7 +49,7 @@ class AsyncIOTaskService(TaskService):
         return f"asyncio-thread-{id(task)}"
 
     async def enqueue_async(
-        self, func: Union[Callable[..., Coroutine[Any, Any, Any]], Callable[..., Any]], *args: Any, **kwargs: Any
+        self, func: Callable[..., Coroutine[Any, Any, Any]] | Callable[..., Any], *args: Any, **kwargs: Any
     ) -> str:
         """
         Enqueues an asynchronous coroutine OR a synchronous function.

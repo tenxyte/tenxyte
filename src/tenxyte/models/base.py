@@ -6,8 +6,8 @@ Contains:
 - get_user_model, get_role_model, get_permission_model, get_application_model: Swappable model helpers
 """
 
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 # Détection du backend pour MongoDB
@@ -17,7 +17,7 @@ from django.conf import settings
 def _get_auto_field_class():
     try:
         db_engine = settings.DATABASES.get("default", {}).get("ENGINE", "")
-    except Exception:
+    except Exception:  # noqa: BLE001
         db_engine = ""
     if "mongodb" in db_engine:
         try:
@@ -101,6 +101,7 @@ def get_application_model():
 def get_organization_model():
     """Get the configured Organization model."""
     from django.apps import apps
+
     from ..conf import org_settings
 
     return apps.get_model(org_settings.ORGANIZATION_MODEL)
@@ -109,6 +110,7 @@ def get_organization_model():
 def get_organization_role_model():
     """Get the configured OrganizationRole model."""
     from django.apps import apps
+
     from ..conf import org_settings
 
     return apps.get_model(org_settings.ORGANIZATION_ROLE_MODEL)
@@ -117,6 +119,7 @@ def get_organization_role_model():
 def get_organization_membership_model():
     """Get the configured OrganizationMembership model."""
     from django.apps import apps
+
     from ..conf import org_settings
 
     return apps.get_model(org_settings.ORGANIZATION_MEMBERSHIP_MODEL)

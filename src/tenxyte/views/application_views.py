@@ -1,15 +1,14 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiExample, inline_serializer
 from drf_spectacular.types import OpenApiTypes
-from rest_framework import serializers
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, extend_schema_view, inline_serializer
+from rest_framework import serializers, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from ..serializers import ApplicationSerializer, ApplicationCreateSerializer, ApplicationUpdateSerializer
-from ..models import get_application_model
 from ..decorators import require_permission
-from ..pagination import TenxytePagination
 from ..filters import apply_application_filters
+from ..models import get_application_model
+from ..pagination import TenxytePagination
+from ..serializers import ApplicationCreateSerializer, ApplicationSerializer, ApplicationUpdateSerializer
 
 Application = get_application_model()
 

@@ -2,13 +2,14 @@
 FastAPI Routes for Tenxyte Adapter.
 """
 
-import bcrypt
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
 
-from tenxyte.core.schemas import LoginRequest, TokenResponse, MagicLinkRequest
+import bcrypt
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from tenxyte.core.jwt_service import JWTService
 from tenxyte.core.magic_link_service import MagicLinkService
+from tenxyte.core.schemas import LoginRequest, MagicLinkRequest, TokenResponse
 from tenxyte.core.settings import get_settings
 from tenxyte.ports.repositories import UserRepository
 
@@ -34,8 +35,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/login", response_model=TokenResponse)
 async def login(
     request: LoginRequest,
-    user_repo: UserRepository = Depends(get_user_repository),
-    jwt_service: JWTService = Depends(get_jwt_service),
+    user_repo: UserRepository = Depends(get_user_repository),  # noqa: B008
+    jwt_service: JWTService = Depends(get_jwt_service),  # noqa: B008
 ):
     """
     Authenticate a user and return JWT tokens.
@@ -65,7 +66,7 @@ async def login(
                 detail="Invalid credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-    except Exception:
+    except Exception:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
@@ -94,7 +95,8 @@ async def login(
 
 @router.post("/magic-link", status_code=status.HTTP_202_ACCEPTED)
 async def request_magic_link(
-    request: MagicLinkRequest, magic_link_service: MagicLinkService = Depends(get_magic_link_service)
+    request: MagicLinkRequest,
+    magic_link_service: MagicLinkService = Depends(get_magic_link_service),  # noqa: B008
 ):
     """
     Request a magic link for passwordless login.

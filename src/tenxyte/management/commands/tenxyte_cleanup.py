@@ -1,7 +1,8 @@
 import logging
+
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 from django.db import models
+from django.utils import timezone
 
 logger = logging.getLogger("tenxyte.security")
 
@@ -39,8 +40,8 @@ class Command(BaseCommand):
             if not dry_run:
                 BlacklistedToken.cleanup_expired()
             self.stdout.write(self.style.SUCCESS(f"Blacklisted tokens (expired): {bl_count} deleted."))
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Error cleaning blacklisted tokens: {str(e)}"))
+        except Exception as e:  # noqa: BLE001
+            self.stdout.write(self.style.ERROR(f"Error cleaning blacklisted tokens: {e!s}"))
 
         # 2. Clean Expired Magic Links (F-13)
         try:
@@ -51,8 +52,8 @@ class Command(BaseCommand):
             if not dry_run:
                 qs.delete()
             self.stdout.write(self.style.SUCCESS(f"Successfully deleted {ml_count} expired Magic Link tokens."))
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Error cleaning Magic Link tokens: {str(e)}"))
+        except Exception as e:  # noqa: BLE001
+            self.stdout.write(self.style.ERROR(f"Error cleaning Magic Link tokens: {e!s}"))
 
         # 3. Clean Expired OTP Codes
         try:
@@ -63,8 +64,8 @@ class Command(BaseCommand):
             if not dry_run:
                 qs.delete()
             self.stdout.write(self.style.SUCCESS(f"OTP codes (expired or used): {otp_count} deleted."))
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Error cleaning OTP codes: {str(e)}"))
+        except Exception as e:  # noqa: BLE001
+            self.stdout.write(self.style.ERROR(f"Error cleaning OTP codes: {e!s}"))
 
         # 4. Clean Expired/Revoked Refresh Tokens
         try:
@@ -75,8 +76,8 @@ class Command(BaseCommand):
             if not dry_run:
                 qs.delete()
             self.stdout.write(self.style.SUCCESS(f"Refresh tokens (revoked or expired): {rt_count} deleted."))
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f"Error cleaning Refresh tokens: {str(e)}"))
+        except Exception as e:  # noqa: BLE001
+            self.stdout.write(self.style.ERROR(f"Error cleaning Refresh tokens: {e!s}"))
 
         # 5. Clean Old Login Attempts
         if login_days > 0:
@@ -91,8 +92,8 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.SUCCESS(f"Login attempts (older than {login_days} days): {la_count} deleted.")
                 )
-            except Exception as e:
-                self.stdout.write(self.style.ERROR(f"Error cleaning Login attempts: {str(e)}"))
+            except Exception as e:  # noqa: BLE001
+                self.stdout.write(self.style.ERROR(f"Error cleaning Login attempts: {e!s}"))
         else:
             self.stdout.write("Login attempts: skipped")
 
@@ -107,8 +108,8 @@ class Command(BaseCommand):
                 if not dry_run:
                     qs.delete()
                 self.stdout.write(self.style.SUCCESS(f"Audit logs (older than {audit_days} days): {al_count} deleted."))
-            except Exception as e:
-                self.stdout.write(self.style.ERROR(f"Error cleaning Audit logs: {str(e)}"))
+            except Exception as e:  # noqa: BLE001
+                self.stdout.write(self.style.ERROR(f"Error cleaning Audit logs: {e!s}"))
         else:
             self.stdout.write("Audit logs: skipped (--audit-log-days=0)")
 

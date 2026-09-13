@@ -97,10 +97,10 @@ Les administrateurs disposant des permissions appropriées peuvent accéder aux 
 | Catégorie | Endpoints | Permission requise |
 |---|---|---|
 | **Gestion des utilisateurs** | `GET/PUT /admin/users/`, ban, unban, lock, unlock | `users.view`, `users.ban`, `users.lock` |
-| **Journaux d'audit** | `GET /admin/audit-logs/` | `audit.view` |
-| **Tentatives de connexion** | `GET /admin/login-attempts/` | `audit.view` |
-| **Gestion des jetons** | `GET /admin/refresh-tokens/`, révoquer, nettoyage blacklist | `tokens.view`, `tokens.revoke` |
-| **RGPD** | `GET /admin/deletion-requests/`, traiter | `gdpr.view`, `gdpr.process` |
+| **Journaux d'audit** | `GET /admin/audit-logs/` | `security.view` |
+| **Tentatives de connexion** | `GET /admin/login-attempts/` | `security.view` |
+| **Gestion des jetons** | `GET /admin/refresh-tokens/`, révoquer, nettoyage blacklist | `security.view` |
+| **RGPD** | `GET /admin/deletion-requests/`, traiter | `gdpr.admin`, `gdpr.process` |
 | **Tableau de bord** | `GET /dashboard/stats/`, auth, sécurité, rgpd, orgs | `dashboard.view` |
 
 ---

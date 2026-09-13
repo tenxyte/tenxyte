@@ -47,7 +47,7 @@ Extending Models:
 Documentation: https://tenxyte.readthedocs.io
 """
 
-__version__ = "0.9.6.4"
+__version__ = "0.9.6.4.2"
 __author__ = "Tenxyte Team"
 __license__ = "MIT"
 
@@ -56,14 +56,14 @@ __license__ = "MIT"
 #   from tenxyte.models import AbstractUser, AbstractRole, AbstractPermission
 
 __all__ = [
-    "AbstractUser",
-    "AbstractRole",
-    "AbstractPermission",
     "AbstractApplication",
-    "get_user_model",
-    "get_role_model",
-    "get_permission_model",
+    "AbstractPermission",
+    "AbstractRole",
+    "AbstractUser",
     "get_application_model",
+    "get_permission_model",
+    "get_role_model",
+    "get_user_model",
     "setup",
 ]
 

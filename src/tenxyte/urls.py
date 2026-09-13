@@ -1,99 +1,99 @@
 from django.urls import path
+
+from .conf import org_settings
 from .views import (
-    RegisterView,
+    ApplicationDetailView,
+    ApplicationListView,
+    ApplicationRegenerateView,
+    AuditLogDetailView,
+    AuditLogListView,
+    BlacklistedTokenCleanupView,
+    BlacklistedTokenListView,
+    ChangePasswordView,
+    LoginAttemptListView,
     LoginEmailView,
-    LoginPhoneView,
     LoginOTPRequestView,
     LoginOTPVerifyView,
-    RefreshTokenView,
-    LogoutView,
+    LoginPhoneView,
     LogoutAllView,
-    RequestOTPView,
-    VerifyEmailOTPView,
-    VerifyPhoneOTPView,
-    PasswordResetRequestView,
-    PasswordResetConfirmView,
-    ChangePasswordView,
-    PasswordStrengthView,
-    PasswordRequirementsView,
-    SetInitialPasswordView,
+    LogoutView,
     MeView,
     MyRolesView,
-    TwoFactorStatusView,
-    TwoFactorSetupView,
-    TwoFactorConfirmView,
-    TwoFactorDisableView,
-    TwoFactorBackupCodesView,
-    PermissionListView,
+    PasswordRequirementsView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
+    PasswordStrengthView,
     PermissionDetailView,
-    RoleListView,
-    RoleDetailView,
-    RolePermissionsView,
-    UserRolesView,
-    UserDirectPermissionsView,
-    ApplicationListView,
-    ApplicationDetailView,
-    ApplicationRegenerateView,
-    UserListView,
-    UserDetailView,
-    UserBanView,
-    UserUnbanView,
-    UserLockView,
-    UserUnlockView,
-    AuditLogListView,
-    AuditLogDetailView,
-    LoginAttemptListView,
-    BlacklistedTokenListView,
-    BlacklistedTokenCleanupView,
+    PermissionListView,
     RefreshTokenListView,
     RefreshTokenRevokeView,
+    RefreshTokenView,
+    RegisterView,
+    RequestOTPView,
+    RoleDetailView,
+    RoleListView,
+    RolePermissionsView,
+    SetInitialPasswordView,
+    TwoFactorBackupCodesView,
+    TwoFactorConfirmView,
+    TwoFactorDisableView,
+    TwoFactorSetupView,
+    TwoFactorStatusView,
+    UserBanView,
+    UserDetailView,
+    UserDirectPermissionsView,
+    UserListView,
+    UserLockView,
+    UserRolesView,
+    UserUnbanView,
+    UserUnlockView,
+    VerifyEmailOTPView,
+    VerifyPhoneOTPView,
 )
 from .views.account_deletion_views import (
-    request_account_deletion,
-    confirm_account_deletion,
-    cancel_account_deletion,
     account_deletion_status,
+    cancel_account_deletion,
+    confirm_account_deletion,
     export_user_data,
-)
-from .views.gdpr_admin_views import (
-    DeletionRequestListView,
-    DeletionRequestDetailView,
-    ProcessDeletionView,
-    ProcessExpiredDeletionsView,
-)
-from .views.dashboard_views import (
-    DashboardGlobalView,
-    DashboardAuthView,
-    DashboardSecurityView,
-    DashboardGDPRView,
-    DashboardOrganizationsView,
-)
-from .views.magic_link_views import MagicLinkRequestView, MagicLinkVerifyView
-from .views.social_auth_views import SocialAuthView, SocialAuthCallbackView
-from .views.webauthn_views import (
-    WebAuthnRegisterBeginView,
-    WebAuthnRegisterCompleteView,
-    WebAuthnAuthenticateBeginView,
-    WebAuthnAuthenticateCompleteView,
-    WebAuthnCredentialListView,
-    WebAuthnCredentialDeleteView,
+    request_account_deletion,
 )
 
 # Agent / AIRS Views
 from .views.agent_views import (
-    AgentTokenListCreateView,
-    AgentTokenDetailView,
-    AgentTokenRevokeView,
-    AgentTokenSuspendView,
-    AgentTokenHeartbeatView,
-    AgentTokenRevokeAllView,
-    AgentPendingActionListView,
     AgentPendingActionConfirmView,
     AgentPendingActionDenyView,
+    AgentPendingActionListView,
+    AgentTokenDetailView,
+    AgentTokenHeartbeatView,
+    AgentTokenListCreateView,
     AgentTokenReportUsageView,
+    AgentTokenRevokeAllView,
+    AgentTokenRevokeView,
+    AgentTokenSuspendView,
 )
-
-from .conf import org_settings
+from .views.dashboard_views import (
+    DashboardAuthView,
+    DashboardGDPRView,
+    DashboardGlobalView,
+    DashboardOrganizationsView,
+    DashboardSecurityView,
+)
+from .views.gdpr_admin_views import (
+    DeletionRequestDetailView,
+    DeletionRequestListView,
+    ProcessDeletionView,
+    ProcessExpiredDeletionsView,
+)
+from .views.magic_link_views import MagicLinkRequestView, MagicLinkVerifyView
+from .views.social_auth_views import SocialAuthCallbackView, SocialAuthView
+from .views.webauthn_views import (
+    WebAuthnAuthenticateBeginView,
+    WebAuthnAuthenticateCompleteView,
+    WebAuthnCredentialDeleteView,
+    WebAuthnCredentialListView,
+    WebAuthnRegisterBeginView,
+    WebAuthnRegisterCompleteView,
+)
 
 app_name = "authentication"
 
@@ -241,18 +241,18 @@ urlpatterns = [
 
 if org_settings.ORGANIZATIONS_ENABLED:
     from .views.organization_views import (
-        create_organization,
-        list_organizations,
-        get_organization,
-        update_organization,
-        delete_organization,
-        get_organization_tree,
-        list_members,
         add_member,
-        update_member_role,
-        remove_member,
+        create_organization,
+        delete_organization,
+        get_organization,
+        get_organization_tree,
         invite_member,
+        list_members,
         list_org_roles,
+        list_organizations,
+        remove_member,
+        update_member_role,
+        update_organization,
     )
 
     # Add organization URLs to urlpatterns

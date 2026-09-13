@@ -4,17 +4,18 @@ Stats aggregation service for dashboard endpoints.
 Provides cross-model aggregate queries for admin dashboards.
 """
 
-from django.db.models import Count, Q
-from django.utils import timezone
 from datetime import timedelta
 
+from django.db.models import Count, Q
+from django.utils import timezone
+
 from ..models import (
-    get_user_model,
+    AccountDeletionRequest,
     AuditLog,
     BlacklistedToken,
-    RefreshToken,
     LoginAttempt,
-    AccountDeletionRequest,
+    RefreshToken,
+    get_user_model,
 )
 
 User = get_user_model()

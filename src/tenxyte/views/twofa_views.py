@@ -5,25 +5,29 @@ These views act as adapters between Django/DRF and the framework-agnostic Core.
 They maintain 100% backward compatibility with existing endpoints and responses.
 """
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer
-from rest_framework import serializers
-from drf_spectacular.types import OpenApiTypes
+import logging
 
-from ..decorators import require_jwt
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, extend_schema, inline_serializer
+from rest_framework import serializers, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from tenxyte.adapters.django.cache_service import DjangoCacheService
+from tenxyte.adapters.django.crypto_service import DjangoCryptoService
+from tenxyte.adapters.django.email_service import DjangoEmailService
 
 # Core imports
 from tenxyte.adapters.django.repositories import DjangoUserRepository
-from tenxyte.adapters.django.cache_service import DjangoCacheService
 from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
-from tenxyte.adapters.django.crypto_service import DjangoCryptoService
 from tenxyte.adapters.django.totp_storage import DjangoTOTPStorage
-from tenxyte.adapters.django.email_service import DjangoEmailService
-from tenxyte.core import TOTPService, Settings
+from tenxyte.core import Settings, TOTPService
 from tenxyte.core.jwt_service import JWTService
 from tenxyte.services.reauth_service import ReauthService
+
+from ..decorators import require_jwt
+
+logger = logging.getLogger(__name__)
 
 # Global Core services (lazy initialization)
 _core_user_repo = None
@@ -316,7 +320,7 @@ class TwoFactorConfirmView(APIView):
                         reason="2fa_bootstrap_completed",
                     )
             except Exception:  # pragma: no cover - defensive, blacklist optional
-                pass
+                logger.debug("Failed to blacklist bootstrap token after 2FA completion", exc_info=True)
 
         return Response(response_data)
 

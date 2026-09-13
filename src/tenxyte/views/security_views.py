@@ -5,24 +5,23 @@ User endpoints: /me/sessions/, /me/devices/, /me/audit-log/
 Admin endpoints: /admin/audit-logs/, /admin/login-attempts/, etc.
 """
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.decorators import api_view
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
-from rest_framework import serializers
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from ..decorators import require_permission
+from ..filters import apply_audit_log_filters, apply_login_attempt_filters
+from ..models import AuditLog, BlacklistedToken, LoginAttempt, RefreshToken
+from ..pagination import TenxytePagination
 from ..serializers.security_serializers import (
     AuditLogSerializer,
-    LoginAttemptSerializer,
     BlacklistedTokenSerializer,
+    LoginAttemptSerializer,
     RefreshTokenAdminSerializer,
 )
-from ..models import AuditLog, BlacklistedToken, RefreshToken, LoginAttempt
-from ..decorators import require_permission
-from ..pagination import TenxytePagination
-from ..filters import apply_audit_log_filters, apply_login_attempt_filters
 
 # =============================================================================
 # Audit Logs
@@ -56,7 +55,7 @@ class AuditLogListView(APIView):
         ],
         responses={200: AuditLogSerializer(many=True)},
     )
-    @require_permission("audit.view")
+    @require_permission("security.view")
     def get(self, request):
         queryset = AuditLog.objects.select_related("user", "application").all()
         queryset = apply_audit_log_filters(queryset, request)
@@ -81,7 +80,7 @@ class AuditLogDetailView(APIView):
         summary="Détails d'un audit log",
         responses={200: AuditLogSerializer, 404: OpenApiTypes.OBJECT},
     )
-    @require_permission("audit.view")
+    @require_permission("security.view")
     def get(self, request, log_id):
         try:
             log = AuditLog.objects.select_related("user", "application").get(id=log_id)

@@ -2,11 +2,14 @@
 Serializers for Organizations feature.
 """
 
+from typing import ClassVar
+
 from rest_framework import serializers
+
 from ..models import (
+    get_organization_membership_model,
     get_organization_model,
     get_organization_role_model,
-    get_organization_membership_model,
     get_user_model,
 )
 
@@ -21,8 +24,17 @@ class OrganizationRoleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrganizationRole
-        fields = ["id", "code", "name", "description", "is_system", "is_default", "permissions", "created_at"]
-        read_only_fields = ["id", "is_system", "created_at"]
+        fields: ClassVar[list] = [
+            "id",
+            "code",
+            "name",
+            "description",
+            "is_system",
+            "is_default",
+            "permissions",
+            "created_at",
+        ]
+        read_only_fields: ClassVar[list] = ["id", "is_system", "created_at"]
 
 
 class UserBasicSerializer(serializers.ModelSerializer):
@@ -30,7 +42,7 @@ class UserBasicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name"]
+        fields: ClassVar[list] = ["id", "email", "first_name", "last_name"]
 
 
 class OrganizationMembershipSerializer(serializers.ModelSerializer):
@@ -42,7 +54,7 @@ class OrganizationMembershipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrganizationMembership
-        fields = [
+        fields: ClassVar[list] = [
             "id",
             "user",
             "organization_name",
@@ -53,7 +65,7 @@ class OrganizationMembershipSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "invited_by", "invited_at", "created_at", "updated_at"]
+        read_only_fields: ClassVar[list] = ["id", "invited_by", "invited_at", "created_at", "updated_at"]
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
@@ -66,7 +78,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Organization
-        fields = [
+        fields: ClassVar[list] = [
             "id",
             "name",
             "slug",
@@ -82,7 +94,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
             "created_by_email",
             "user_role",
         ]
-        read_only_fields = ["id", "slug", "created_at", "updated_at", "created_by_email"]
+        read_only_fields: ClassVar[list] = ["id", "slug", "created_at", "updated_at", "created_by_email"]
 
     def get_member_count(self, obj):
         """Get the number of active members."""
@@ -105,7 +117,7 @@ class OrganizationTreeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Organization
-        fields = ["id", "name", "slug", "depth", "is_root", "member_count", "children"]
+        fields: ClassVar[list] = ["id", "name", "slug", "depth", "is_root", "member_count", "children"]
 
     def get_children(self, obj):
         """Recursively serialize children."""

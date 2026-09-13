@@ -5,33 +5,35 @@ These views act as adapters between Django/DRF and the framework-agnostic Core.
 They maintain 100% backward compatibility with existing endpoints and responses.
 """
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny
-from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer
-from rest_framework import serializers
-from drf_spectacular.types import OpenApiTypes
+from typing import ClassVar
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, extend_schema, inline_serializer
+from rest_framework import serializers, status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from tenxyte.adapters.django.cache_service import DjangoCacheService
+
+# Core imports
+from tenxyte.adapters.django.repositories import DjangoUserRepository
+from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
+from tenxyte.core import JWTService, Settings
+
+from ..decorators import require_jwt
+from ..models import get_user_model
 from ..serializers import (
-    PasswordResetRequestSerializer,
-    PasswordResetConfirmSerializer,
     ChangePasswordSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     SetInitialPasswordSerializer,
 )
 from ..services import OTPService
 from ..services.breach_check_service import breach_check_service
 from ..services.reauth_service import ReauthService
-from ..models import get_user_model
-from ..decorators import require_jwt
+from ..throttles import OTPVerifyThrottle, PasswordResetDailyThrottle, PasswordResetThrottle
 from ..validators import normalize_phone_country_code
-from ..throttles import PasswordResetThrottle, PasswordResetDailyThrottle, OTPVerifyThrottle
-
-# Core imports
-from tenxyte.adapters.django.repositories import DjangoUserRepository
-from tenxyte.adapters.django.cache_service import DjangoCacheService
-from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
-from tenxyte.core import JWTService, Settings
 
 User = get_user_model()
 
@@ -76,8 +78,8 @@ class PasswordResetRequestView(APIView):
     Demander une réinitialisation de mot de passe
     """
 
-    permission_classes = [AllowAny]
-    throttle_classes = [PasswordResetThrottle, PasswordResetDailyThrottle]
+    permission_classes: ClassVar[list] = [AllowAny]
+    throttle_classes: ClassVar[list] = [PasswordResetThrottle, PasswordResetDailyThrottle]
 
     @extend_schema(
         tags=["Password"],
@@ -165,8 +167,8 @@ class PasswordResetConfirmView(APIView):
     Confirmer la réinitialisation de mot de passe
     """
 
-    permission_classes = [AllowAny]
-    throttle_classes = [OTPVerifyThrottle]
+    permission_classes: ClassVar[list] = [AllowAny]
+    throttle_classes: ClassVar[list] = [OTPVerifyThrottle]
 
     @extend_schema(
         tags=["Password"],
@@ -273,7 +275,7 @@ class PasswordResetConfirmView(APIView):
 
         # Breach password check (HIBP)
         is_password_safe = True
-        breach_ok, breach_error = breach_check_service.check_password(serializer.validated_data["new_password"])
+        breach_ok, _breach_error = breach_check_service.check_password(serializer.validated_data["new_password"])
         if not breach_ok:
             is_password_safe = False
 
@@ -573,7 +575,7 @@ class PasswordStrengthView(APIView):
     Verifier la force d'un mot de passe (pour validation frontend)
     """
 
-    permission_classes = [AllowAny]
+    permission_classes: ClassVar[list] = [AllowAny]
 
     @extend_schema(
         tags=["Password"],
@@ -666,7 +668,7 @@ class PasswordRequirementsView(APIView):
     Recuperer les exigences de mot de passe
     """
 
-    permission_classes = [AllowAny]
+    permission_classes: ClassVar[list] = [AllowAny]
 
     @extend_schema(
         tags=["Password"],

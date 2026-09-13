@@ -8,12 +8,17 @@ Options:
     --no-permissions    Skip creating permissions
     --no-roles          Skip creating roles
     --force             Recreate all (delete existing and recreate)
+
+Note: idempotent means no duplicate rows, not "read-only after the first run". Every run
+(with or without --force) re-syncs the permission set of each DEFAULT_ROLES role (viewer,
+editor, admin, super_admin) to match this module's current definitions, overwriting any
+manual customization made to those built-in role codes. See docs/en/rbac.md for details.
 """
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from tenxyte.models import get_role_model, get_permission_model
+from tenxyte.models import get_permission_model, get_role_model
 
 # =============================================================================
 # DEFAULT PERMISSIONS
@@ -37,7 +42,7 @@ DEFAULT_PERMISSIONS = [
     # User permissions
     {"code": "users.view", "name": "View Users", "description": "Can view user list and details", "parent": "users"},
     {"code": "users.create", "name": "Create Users", "description": "Can create new users", "parent": "users"},
-    {"code": "users.edit", "name": "Edit Users", "description": "Can edit user information", "parent": "users"},
+    {"code": "users.update", "name": "Update Users", "description": "Can update user information", "parent": "users"},
     {"code": "users.delete", "name": "Delete Users", "description": "Can delete users", "parent": "users"},
     {"code": "users.ban", "name": "Ban Users", "description": "Can ban/unban users", "parent": "users"},
     {"code": "users.lock", "name": "Lock Users", "description": "Can lock/unlock user accounts", "parent": "users"},
@@ -213,7 +218,7 @@ DEFAULT_ROLES = [
             # Users
             "users.view",
             "users.create",
-            "users.edit",
+            "users.update",
             "users.roles.view",
             "users.roles.assign",
             "users.roles.remove",
@@ -362,8 +367,8 @@ class Command(BaseCommand):
                         source: role.pk,
                     }
                 )._raw_delete(db)
-            except Exception:
-                pass
+            except Exception as e:  # noqa: BLE001
+                self.stdout.write(self.style.WARNING(f"  ! Could not clear permissions through-table for role: {e}"))
             role.permissions.add(*permissions)
 
     def _create_roles(self, Role, Permission, force):

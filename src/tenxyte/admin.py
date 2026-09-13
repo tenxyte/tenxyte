@@ -1,30 +1,32 @@
+from typing import ClassVar
+
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
+from .conf import org_settings
 from .models import (
-    get_user_model,
-    get_role_model,
-    get_permission_model,
-    get_application_model,
-    RefreshToken,
+    AccountDeletionRequest,
+    AuditLog,
+    BlacklistedToken,
     LoginAttempt,
     OTPCode,
-    AuditLog,
     PasswordHistory,
-    BlacklistedToken,
-    AccountDeletionRequest,
+    RefreshToken,
+    get_application_model,
+    get_permission_model,
+    get_role_model,
+    get_user_model,
 )
-from .conf import org_settings
 
 # Conditional Organizations import
 if org_settings.ORGANIZATIONS_ENABLED:
     from .models import (
+        OrganizationInvitation,
+        get_organization_membership_model,
         get_organization_model,
         get_organization_role_model,
-        get_organization_membership_model,
-        OrganizationInvitation,
     )
 
     Organization = get_organization_model()
@@ -82,7 +84,7 @@ class UserAdmin(BaseUserAdmin):
         (_("Dates"), {"fields": ("last_login", "created_at", "updated_at")}),
     )
 
-    actions = ["ban_users", "unban_users", "hard_delete_users"]
+    actions: ClassVar[list] = ["ban_users", "unban_users", "hard_delete_users"]
 
     def get_queryset(self, request):
         """Show all users including soft-deleted ones in the admin panel."""
@@ -351,7 +353,7 @@ class AccountDeletionRequestAdmin(admin.ModelAdmin):
     raw_id_fields = ("user", "processed_by")
     ordering = ("-requested_at",)
 
-    actions = ["approve_requests", "reject_requests", "cancel_requests", "execute_requests"]
+    actions: ClassVar[list] = ["approve_requests", "reject_requests", "cancel_requests", "execute_requests"]
 
     fieldsets = (
         (None, {"fields": ("user", "status", "reason")}),
@@ -388,7 +390,7 @@ class AccountDeletionRequestAdmin(admin.ModelAdmin):
         approved_count = 0
 
         for deletion_request in queryset.filter(status="confirmation_sent"):
-            success, message = service.admin_process_request(
+            success, _message = service.admin_process_request(
                 request_id=deletion_request.id, action="approve", admin_user=request.user
             )
             if success:
@@ -409,7 +411,7 @@ class AccountDeletionRequestAdmin(admin.ModelAdmin):
         rejected_count = 0
 
         for deletion_request in queryset.filter(status__in=["pending", "confirmation_sent"]):
-            success, message = service.admin_process_request(
+            success, _message = service.admin_process_request(
                 request_id=deletion_request.id, action="reject", admin_user=request.user
             )
             if success:
@@ -430,7 +432,7 @@ class AccountDeletionRequestAdmin(admin.ModelAdmin):
         cancelled_count = 0
 
         for deletion_request in queryset.filter(status__in=["pending", "confirmation_sent", "confirmed"]):
-            success, message = service.admin_process_request(
+            success, _message = service.admin_process_request(
                 request_id=deletion_request.id, action="cancel", admin_user=request.user
             )
             if success:
@@ -451,7 +453,7 @@ class AccountDeletionRequestAdmin(admin.ModelAdmin):
         executed_count = 0
 
         for deletion_request in queryset.filter(status="confirmed"):
-            success, message = service.admin_process_request(
+            success, _message = service.admin_process_request(
                 request_id=deletion_request.id, action="execute", admin_user=request.user
             )
             if success:

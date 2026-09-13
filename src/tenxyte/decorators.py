@@ -1,13 +1,19 @@
+import logging
 from functools import wraps
+
 from django.http import JsonResponse
-from tenxyte.core.jwt_service import JWTService
+
 from tenxyte.adapters.django import get_django_settings
 from tenxyte.adapters.django.cache_service import DjangoCacheService
-from .models import get_user_model, get_application_model
+from tenxyte.core.jwt_service import JWTService
+
 from .conf import auth_settings
+from .models import get_application_model, get_user_model
 
 User = get_user_model()
 Application = get_application_model()
+
+logger = logging.getLogger(__name__)
 
 
 def _is_request(obj):
@@ -120,11 +126,10 @@ def require_jwt(view_func=None, *, allowed_scopes=None):
 
             # Vérifier que l'application du token correspond
             application = getattr(request, "application", None)
-            if application:
-                if str(application.id) != payload.app_id:
-                    return JsonResponse(
-                        {"error": "Token does not match application", "code": "TOKEN_APP_MISMATCH"}, status=401
-                    )
+            if application and str(application.id) != payload.app_id:
+                return JsonResponse(
+                    {"error": "Token does not match application", "code": "TOKEN_APP_MISMATCH"}, status=401
+                )
 
             # Récupérer l'utilisateur
             try:
@@ -715,7 +720,7 @@ def require_org_admin(view_func):
 
 
 def require_agent_clearance(
-    permission_code: str = None, human_in_the_loop_required: bool = False, max_risk_score: int = 100
+    permission_code: str | None = None, human_in_the_loop_required: bool = False, max_risk_score: int = 100
 ):
     """
     Décorateur pour les endpoints sensibles accessibles par les agents IA.
@@ -740,11 +745,10 @@ def require_agent_clearance(
                 service = AgentTokenService()
 
                 # Vérification de permission (double passe)
-                if permission_code:
-                    if not service.validate_permission(request.agent_token, permission_code):
-                        return _get_permission_denied_response(
-                            f"Agent insufficient permissions: {permission_code}", "AGENT_PERMISSION_DENIED"
-                        )
+                if permission_code and not service.validate_permission(request.agent_token, permission_code):
+                    return _get_permission_denied_response(
+                        f"Agent insufficient permissions: {permission_code}", "AGENT_PERMISSION_DENIED"
+                    )
 
                 from tenxyte.conf import auth_settings
 
@@ -776,7 +780,7 @@ def require_agent_clearance(
                             if request.body:
                                 payload = json.loads(request.body)
                         except Exception:
-                            pass
+                            logger.debug("Failed to parse request body for HITL pending action payload", exc_info=True)
 
                     pending = service.create_pending_action(
                         agent_token=request.agent_token,
