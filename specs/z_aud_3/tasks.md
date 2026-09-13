@@ -53,16 +53,24 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - **Validates: Requirements 1.2, 2.4, 8.2**
 
 - [ ] 2. Socle FastAPI de production
-  - [ ] 2.1 Implémenter settings, App_Factory et lifespan
-    - `settings.py` (pydantic-settings, env `TENXYTE_*`, mêmes défauts que Django), `app.py`
-      (`create_tenxyte_app` / `create_tenxyte_router`, lifespan engine async + healthcheck)
+  - [x] 2.1 Implémenter settings, App_Factory et lifespan
+    - `settings.py` — **pas de pydantic-settings** : `core/env_provider.py`'s `EnvSettingsProvider`
+      résout déjà `TENXYTE_*` framework-agnostiquement (constat vérifié, testé) ; ce module est un
+      simple `get_default_settings()` dessus. `app.py` (`create_tenxyte_app` / `create_tenxyte_router`,
+      lifespan engine async + `/health`) — testé pour de vrai (boot sur aiosqlite éphémère, aucun
+      `NotImplementedError`).
     - _Requirements: 3.1, 3.5_
 
   - [ ] 2.2 Implémenter le Reference_Stack
-    - `models_sa.py` (SQLAlchemy 2.0 async, invariants sécurité : hash tokens, TOTP chiffré,
-      bcrypt+pre-hash identiques au Core), `repositories_async.py` (implémentations des
-      Async_Ports), `migrations/` Alembic, `deps.py` (DI par défaut surchargeable — fin des
-      `NotImplementedError`)
+    - **Partiel.** Fait : `models_sa.py` (SQLAlchemy 2.0 async — `UserDB` + `RefreshTokenDB`,
+      construit incrémentalement au fil des vagues plutôt que le schéma complet en une fois),
+      `repositories_async.py` (`SQLAlchemyAsyncUserRepository`, testé end-to-end sur aiosqlite
+      réel — create/get/update_last_login/set_mfa_secret/verify_email/list_all/count/delete),
+      `deps.py` (DI par défaut surchargeable, plus de `NotImplementedError` pour ce qui existe).
+      **Restant :** `migrations/` Alembic (le lifespan crée le schéma via
+      `Base.metadata.create_all` pour le dev/tests — pas un substitut aux migrations pour la prod) ;
+      tables des vagues B–G (roles, permissions, organizations, agent_tokens, ...) à ajouter au fil
+      de l'eau, pas en avance de phase.
     - _Requirements: 3.2, 3.3_
 
   - [ ] 2.3 Implémenter middleware, erreurs et throttling
@@ -74,6 +82,11 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
 
   - [ ] 2.4 Write property tests for the production base
     - **Property 9: Format d'erreur canonique universel** (corpus de requêtes invalides générées)
+      — pas encore testable (attend le error handler global de 2.3)
+    - **Property 10 (moitié socle, faite) :** `tests/integration/fastapi/unit/test_app_factory.py`
+      prouve pour de vrai le boot sans surcharge (aucun `NotImplementedError`) et un round-trip
+      complet `AsyncUserRepository` sur aiosqlite réel. **Moitié `register→login→me` HTTP :**
+      attend le router Auth de la vague A (tâche 5.1).
     - **Property 10: Le stack de référence démarre sans surcharge** (register→login→me sur
       aiosqlite vierge)
     - **Validates: Requirements 3.1, 3.2, 3.3, 3.6_

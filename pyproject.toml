@@ -98,6 +98,11 @@ fastapi = [
     "sqlalchemy>=2.0",
     "python-multipart>=0.0.9",
     "pydantic>=2.12",
+    # Reference_Stack (spec z_aud_3, Requirement 3.2): SQLAlchemy 2.0 async + Alembic.
+    # aiosqlite is the default (dev) driver; production Postgres users add asyncpg themselves
+    # (documented in fastapi_quickstart.md) rather than pulling it in as a hard dependency here.
+    "aiosqlite>=0.20",
+    "alembic>=1.13",
 ]
 
 # ===== DATABASE ADAPTERS =====
