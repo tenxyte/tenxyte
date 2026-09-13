@@ -85,8 +85,22 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       framework-agnostiques de `core/settings.py`), `ApplicationDB` (bcrypt+base64, même schéma de
       hash que `AbstractApplication`), câblé dans l'App_Factory ; endpoint `/health` déplacé sous
       `{api_prefix}/health/` pour matcher l'exemption par défaut. 10 tests, tous verts contre une
-      vraie app + vraie DB éphémère. **Restant :** `throttling.py` ; `security.py` (`require_jwt`,
-      scopes restreints, AgentBearer).
+      vraie app + vraie DB éphémère. Fait aussi : `security.py` — dépendance FastAPI
+      `require_jwt(allowed_scopes=None)` (idiome DI, pas décorateur), parité avec
+      `tenxyte.decorators.require_jwt` : extraction Bearer, mêmes 6 codes d'erreur
+      (`AUTH_REQUIRED`, `TOKEN_INVALID`, `TOKEN_APP_MISMATCH`, `USER_NOT_FOUND`, `USER_INACTIVE`,
+      `INSUFFICIENT_SCOPE`), même sémantique de scope restreint (token pleine portée accepté
+      partout, token à `scope` n'est accepté que sur les endpoints qui le listent explicitement),
+      check de mismatch app_id via `request.state.application`. Exclu délibérément (hors scope
+      actuel) : l'échappatoire `JWT_AUTH_ENABLED` du décorateur Django (documentée
+      "DANGEROUS - testing only" côté Django elle-même, pas un requirement FastAPI, et n'existe
+      pas sur `core/settings.py`) et l'enforcement du lockout de compte (dépend du service Core
+      `AccountLockout`, pas encore porté). 6 tests dans `test_security.py`, tous verts contre une
+      vraie app + vraie DB éphémère + vrais tokens signés. AgentBearer confirmé hors scope de
+      cette tâche : c'est un mécanisme propre au groupe AIRS, porté avec le routeur `airs.py` à la
+      tâche 9.1 (vague F), pas une pièce générique du socle. **Restant :** `throttling.py`
+      (rate limiting sur le cache port, familles de throttle-classes Django, testable à temps
+      simulé).
     - _Requirements: 3.4, 3.6_
 
   - [ ] 2.4 Write property tests for the production base
@@ -99,9 +113,12 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       attend le router Auth de la vague A (tâche 5.1).
     - **Validates: Requirements 3.1, 3.2, 3.3, 3.6**
 
-  - [ ] 2.5 Compléter l'extra `[fastapi]`
-    - `pyproject.toml` : + aiosqlite, alembic, pydantic-settings (asyncpg documenté optionnel) ;
-      core et `[django]` inchangés
+  - [x] 2.5 Compléter l'extra `[fastapi]`
+    - `pyproject.toml` : + `aiosqlite>=0.20`, `alembic>=1.13` (asyncpg documenté en commentaire,
+      pas une dépendance dure — la stack dev/CI tourne sur aiosqlite). **Pas de
+      pydantic-settings** — même décision qu'en 2.1 : `EnvSettingsProvider` couvre déjà la
+      résolution de settings depuis l'environnement, ajouter une deuxième machinerie de config
+      aurait été redondant. `core` et `[django]` inchangés.
     - _Requirements: 8.4_
 
 - [ ] 3. Outillage de preuve (avant toute vague de parité)
