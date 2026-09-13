@@ -13,6 +13,7 @@ from tenxyte.adapters.fastapi import db as db_module
 from tenxyte.adapters.fastapi.application_auth import ApplicationAuthMiddleware
 from tenxyte.adapters.fastapi.errors import register_exception_handlers
 from tenxyte.adapters.fastapi.settings import get_default_settings
+from tenxyte.core.cache_service import InMemoryCacheService
 from tenxyte.core.jwt_service import InMemoryTokenBlacklistService, JWTService
 from tenxyte.core.settings import Settings
 
@@ -71,6 +72,7 @@ def create_tenxyte_app(
         app.state.tenxyte_jwt_service = JWTService(
             settings=resolved_settings, blacklist_service=app.state.tenxyte_blacklist_service
         )
+        app.state.tenxyte_cache_service = InMemoryCacheService()
 
         try:
             yield

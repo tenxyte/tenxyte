@@ -73,8 +73,8 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       de l'eau, pas en avance de phase.
     - _Requirements: 3.2, 3.3_
 
-  - [ ] 2.3 Implémenter middleware, erreurs et throttling
-    - **Partiel.** Fait : `errors.py` — `register_exception_handlers(app)`, format canonique
+  - [x] 2.3 Implémenter middleware, erreurs et throttling
+    - Fait : `errors.py` — `register_exception_handlers(app)`, format canonique
       `{error, code, details}` universel, y compris pour les erreurs natives FastAPI/Starlette
       (422 validation → 400 `VALIDATION_ERROR`, 404/405 natifs, 500 masqué `INTERNAL_ERROR` sans
       fuite d'exception), `TenxyteAPIError` pour lever une erreur canonique directement depuis un
@@ -98,9 +98,25 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       `AccountLockout`, pas encore porté). 6 tests dans `test_security.py`, tous verts contre une
       vraie app + vraie DB éphémère + vrais tokens signés. AgentBearer confirmé hors scope de
       cette tâche : c'est un mécanisme propre au groupe AIRS, porté avec le routeur `airs.py` à la
-      tâche 9.1 (vague F), pas une pièce générique du socle. **Restant :** `throttling.py`
-      (rate limiting sur le cache port, familles de throttle-classes Django, testable à temps
-      simulé).
+      tâche 9.1 (vague F), pas une pièce générique du socle. Fait enfin : `throttling.py` —
+      `rate_limit(*scopes)`, dépendance FastAPI empilable (comme les `throttle_classes` DRF),
+      même table scope→rate que les 13 sous-classes `IPBasedThrottle` de `tenxyte.throttles`
+      (login, login_hourly, register, register_daily, password_reset, password_reset_daily,
+      otp_request, otp_verify, login_otp_request, login_otp_request_daily, refresh,
+      magic_link_request, magic_link_verify). Le comptage réutilise tel quel
+      `CacheService.check_rate_limit_async` (déjà l'algorithme fixed-window "lire, rejeter si au
+      plafond, sinon incrémenter + expirer au premier coup" de `SimpleRateThrottle` de DRF) —
+      rien à réimplémenter côté algorithme. `app.state.tenxyte_cache_service` ajouté à
+      l'App_Factory. Testé à temps simulé pour de vrai (monkeypatch de `time.time` dans
+      `core/cache_service.py`, seul point où ce module lit l'horloge) plutôt qu'avec de vrais
+      `sleep()` : fenêtre qui expire, IPs indépendantes, scopes empilés qui bloquent sur le plus
+      restrictif. 7 tests dans `test_throttling.py`, tous verts. Exclu délibérément :
+      `ProgressiveLoginThrottle` (backoff exponentiel, une bookkeeping au-dessus d'un throttle de
+      base, pas une famille de scope distincte) et `SimpleThrottleRule` (throttling de path
+      arbitraire piloté par settings — mécanisme générique séparé) ; résolution d'IP minimale
+      (`request.client.host`, sans la chaîne de confiance `X-Forwarded-For`/`TRUSTED_PROXIES`
+      des throttles Django — durcissement sécurité hors scope de cette tâche, pas d'équivalent
+      sur `core/settings.py`).
     - _Requirements: 3.4, 3.6_
 
   - [ ] 2.4 Write property tests for the production base
