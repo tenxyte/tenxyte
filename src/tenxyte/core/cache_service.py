@@ -5,10 +5,10 @@ This module provides base cache service implementations that can be used
 with any adapter (Django, FastAPI, Redis, etc.).
 """
 
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
-import time
 import asyncio
+import time
+from abc import ABC, abstractmethod
+from typing import Any
 
 
 class CacheService(ABC):
@@ -26,7 +26,7 @@ class CacheService(ABC):
     """
 
     @abstractmethod
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """
         Get a value from cache.
 
@@ -36,10 +36,9 @@ class CacheService(ABC):
         Returns:
             Cached value or None if not found or expired
         """
-        pass
 
     @abstractmethod
-    def set(self, key: str, value: Any, timeout: Optional[int] = None) -> bool:
+    def set(self, key: str, value: Any, timeout: int | None = None) -> bool:
         """
         Set a value in cache.
 
@@ -51,7 +50,6 @@ class CacheService(ABC):
         Returns:
             True if value was cached successfully
         """
-        pass
 
     @abstractmethod
     def delete(self, key: str) -> bool:
@@ -64,7 +62,6 @@ class CacheService(ABC):
         Returns:
             True if key was deleted or didn't exist
         """
-        pass
 
     @abstractmethod
     def exists(self, key: str) -> bool:
@@ -77,7 +74,6 @@ class CacheService(ABC):
         Returns:
             True if key exists and hasn't expired
         """
-        pass
 
     @abstractmethod
     def increment(self, key: str, delta: int = 1) -> int:
@@ -91,7 +87,6 @@ class CacheService(ABC):
         Returns:
             New counter value
         """
-        pass
 
     @abstractmethod
     def expire(self, key: str, timeout: int) -> bool:
@@ -105,7 +100,6 @@ class CacheService(ABC):
         Returns:
             True if timeout was set
         """
-        pass
 
     @abstractmethod
     def ttl(self, key: str) -> int:
@@ -118,13 +112,12 @@ class CacheService(ABC):
         Returns:
             Seconds until expiration, -1 if no expiration, -2 if not found
         """
-        pass
 
-    async def get_async(self, key: str) -> Optional[Any]:
+    async def get_async(self, key: str) -> Any | None:
         """Asynchronous version of get."""
         return await asyncio.to_thread(self.get, key)
 
-    async def set_async(self, key: str, value: Any, timeout: Optional[int] = None) -> bool:
+    async def set_async(self, key: str, value: Any, timeout: int | None = None) -> bool:
         """Asynchronous version of set."""
         return await asyncio.to_thread(self.set, key, value, timeout)
 
@@ -290,14 +283,14 @@ class InMemoryCacheService(CacheService):
     """
 
     def __init__(self):
-        self._cache: Dict[str, tuple[Any, Optional[float]]] = {}
+        self._cache: dict[str, tuple[Any, float | None]] = {}
 
     def _is_expired(self, key: str) -> bool:
         """Check if a key has expired."""
         if key not in self._cache:
             return True
 
-        value, expiry = self._cache[key]
+        _value, expiry = self._cache[key]
         if expiry is None:
             return False
 
@@ -305,11 +298,11 @@ class InMemoryCacheService(CacheService):
 
     def _cleanup_expired(self):
         """Remove expired entries (simple cleanup)."""
-        expired_keys = [key for key in self._cache.keys() if self._is_expired(key)]
+        expired_keys = [key for key in self._cache if self._is_expired(key)]
         for key in expired_keys:
             del self._cache[key]
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get value from in-memory cache."""
         self._cleanup_expired()
 
@@ -319,7 +312,7 @@ class InMemoryCacheService(CacheService):
         value, _ = self._cache[key]
         return value
 
-    def set(self, key: str, value: Any, timeout: Optional[int] = None) -> bool:
+    def set(self, key: str, value: Any, timeout: int | None = None) -> bool:
         """Set value in in-memory cache."""
         expiry = time.time() + timeout if timeout else None
         self._cache[key] = (value, expiry)
@@ -378,9 +371,9 @@ class InMemoryCacheService(CacheService):
         self._cache.clear()
         return True
 
-    def keys(self, pattern: str = "*") -> List[str]:
+    def keys(self, pattern: str = "*") -> list[str]:
         """Get keys matching pattern (simple wildcard support)."""
         import fnmatch
 
         self._cleanup_expired()
-        return [k for k in self._cache.keys() if fnmatch.fnmatch(k, pattern)]
+        return [k for k in self._cache if fnmatch.fnmatch(k, pattern)]

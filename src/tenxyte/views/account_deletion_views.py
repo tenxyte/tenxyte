@@ -3,14 +3,13 @@ Vues pour la gestion des suppressions de compte (RGPD).
 """
 
 from django.utils import timezone
-from rest_framework import status
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer
-from rest_framework import serializers
-from drf_spectacular.types import OpenApiTypes
 
 from ..services.account_deletion_service import AccountDeletionService
 from ..services.reauth_service import ReauthService
@@ -503,10 +502,10 @@ def export_user_data(request: Request) -> Response:
 
         return Response(user_data, status=status.HTTP_200_OK)
 
-    except Exception as e:
+    except Exception:
         import logging
 
-        logging.getLogger(__name__).error(f"Error exporting user data: {e}", exc_info=True)
+        logging.getLogger(__name__).exception("Error exporting user data")
         return Response(
             {
                 "error": "An unexpected error occurred while exporting user data.",

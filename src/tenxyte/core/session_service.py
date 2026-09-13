@@ -5,25 +5,25 @@ This module abstracts session management and refresh token validation
 independently of any specific framework.
 """
 
-from typing import Any, Dict, Optional, Protocol, runtime_checkable
-from datetime import datetime
-import uuid
 import asyncio
+import uuid
+from datetime import datetime
+from typing import Any, Protocol, runtime_checkable
 
-from tenxyte.core.settings import Settings
 from tenxyte.core.cache_service import CacheService
 from tenxyte.core.schemas import UserResponse
+from tenxyte.core.settings import Settings
 
 
 @runtime_checkable
 class SessionRepository(Protocol):
     """Protocol for persisting session metadata."""
 
-    def create(self, user_id: str, device_id: str, metadata: Dict[str, Any], expires_at: datetime) -> str:
+    def create(self, user_id: str, device_id: str, metadata: dict[str, Any], expires_at: datetime) -> str:
         """Create a new session."""
         ...
 
-    def get(self, session_id: str) -> Optional[Dict[str, Any]]:
+    def get(self, session_id: str) -> dict[str, Any] | None:
         """Get session by ID."""
         ...
 
@@ -31,11 +31,11 @@ class SessionRepository(Protocol):
         """Revoke a session."""
         ...
 
-    def revoke_all_for_user(self, user_id: str, except_session_id: Optional[str] = None) -> int:
+    def revoke_all_for_user(self, user_id: str, except_session_id: str | None = None) -> int:
         """Revoke all sessions for a user."""
         ...
 
-    def get_user_sessions(self, user_id: str) -> list[Dict[str, Any]]:
+    def get_user_sessions(self, user_id: str) -> list[dict[str, Any]]:
         """Get all active sessions for a user."""
         ...
 
@@ -44,11 +44,11 @@ class SessionRepository(Protocol):
 class AsyncSessionRepository(SessionRepository, Protocol):
     """Protocol for async session metadata persistence."""
 
-    async def create_async(self, user_id: str, device_id: str, metadata: Dict[str, Any], expires_at: datetime) -> str:
+    async def create_async(self, user_id: str, device_id: str, metadata: dict[str, Any], expires_at: datetime) -> str:
         """Create a new session."""
         ...
 
-    async def get_async(self, session_id: str) -> Optional[Dict[str, Any]]:
+    async def get_async(self, session_id: str) -> dict[str, Any] | None:
         """Get session by ID."""
         ...
 
@@ -56,11 +56,11 @@ class AsyncSessionRepository(SessionRepository, Protocol):
         """Revoke a session."""
         ...
 
-    async def revoke_all_for_user_async(self, user_id: str, except_session_id: Optional[str] = None) -> int:
+    async def revoke_all_for_user_async(self, user_id: str, except_session_id: str | None = None) -> int:
         """Revoke all sessions for a user."""
         ...
 
-    async def get_user_sessions_async(self, user_id: str) -> list[Dict[str, Any]]:
+    async def get_user_sessions_async(self, user_id: str) -> list[dict[str, Any]]:
         """Get all active sessions for a user."""
         ...
 
@@ -71,7 +71,7 @@ class SessionService:
     """
 
     def __init__(
-        self, settings: Settings, cache_service: CacheService, session_repository: Optional[SessionRepository] = None
+        self, settings: Settings, cache_service: CacheService, session_repository: SessionRepository | None = None
     ):
         """
         Initialize the session service.
@@ -88,10 +88,10 @@ class SessionService:
     def create_session(
         self,
         user: UserResponse,
-        device_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        device_id: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> dict[str, Any]:
         """
         Create a new session for a user.
 
@@ -131,7 +131,6 @@ class SessionService:
                 self.repository.get_user_sessions(user.id)
                 # If over limit, we might want to revoke oldest or deny
                 # For now, just a placeholder for the logic
-                pass
 
             self.repository.create(user.id, device_id, session_data, expires_at)
 
@@ -144,10 +143,10 @@ class SessionService:
     async def create_session_async(
         self,
         user: UserResponse,
-        device_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        device_id: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+    ) -> dict[str, Any]:
         """Asynchronous version of create_session."""
         from datetime import datetime, timedelta, timezone
 
@@ -179,7 +178,6 @@ class SessionService:
                     await asyncio.to_thread(self.repository.get_user_sessions, user.id)
                 # If over limit, we might want to revoke oldest or deny
                 # For now, just a placeholder for the logic
-                pass
 
             if hasattr(self.repository, "create_async"):
                 await self.repository.create_async(user.id, device_id, session_data, expires_at)
@@ -199,7 +197,7 @@ class SessionService:
 
         return session_data
 
-    def validate_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+    def validate_session(self, session_id: str) -> dict[str, Any] | None:
         """
         Validate a session exists and is active.
 
@@ -232,7 +230,7 @@ class SessionService:
 
         return None
 
-    async def validate_session_async(self, session_id: str) -> Optional[Dict[str, Any]]:
+    async def validate_session_async(self, session_id: str) -> dict[str, Any] | None:
         """Asynchronous version of validate_session."""
         # Fast path: check cache
         cache_key = f"session:{session_id}"
@@ -305,7 +303,7 @@ class SessionService:
 
         return True
 
-    def revoke_all_sessions(self, user_id: str, except_session_id: Optional[str] = None) -> int:
+    def revoke_all_sessions(self, user_id: str, except_session_id: str | None = None) -> int:
         """
         Revoke all active sessions for a user.
 
@@ -329,7 +327,7 @@ class SessionService:
 
         return revoked_count
 
-    async def revoke_all_sessions_async(self, user_id: str, except_session_id: Optional[str] = None) -> int:
+    async def revoke_all_sessions_async(self, user_id: str, except_session_id: str | None = None) -> int:
         """Asynchronous version of revoke_all_sessions."""
         revoked_count = 0
         if self.repository:

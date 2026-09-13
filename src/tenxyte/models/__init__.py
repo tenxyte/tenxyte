@@ -6,27 +6,10 @@ Usage: from tenxyte.models import User, Role, Permission, Application, ...
 """
 
 # Base utilities
-from .base import (
-    _get_auto_field_class,
-    AutoFieldClass,
-    get_user_model,
-    get_role_model,
-    get_permission_model,
-    get_application_model,
-    get_organization_model,
-    get_organization_role_model,
-    get_organization_membership_model,
-)
-
-# Auth models (Abstract + Concrete)
-from .auth import (
-    UserManager,
-    AbstractPermission,
-    AbstractRole,
-    AbstractUser,
-    Permission,
-    Role,
-    User,
+# Agent models
+from .agent import (
+    AgentPendingAction,
+    AgentToken,
 )
 
 # Application models (Abstract + Concrete)
@@ -35,18 +18,26 @@ from .application import (
     Application,
 )
 
-# Operational models
-from .operational import (
-    OTPCode,
-    RefreshToken,
-    LoginAttempt,
+# Auth models (Abstract + Concrete)
+from .auth import (
+    AbstractPermission,
+    AbstractRole,
+    AbstractUser,
+    Permission,
+    Role,
+    User,
+    UserManager,
 )
-
-# Security models
-from .security import (
-    BlacklistedToken,
-    AuditLog,
-    PasswordHistory,
+from .base import (
+    AutoFieldClass,
+    _get_auto_field_class,
+    get_application_model,
+    get_organization_membership_model,
+    get_organization_model,
+    get_organization_role_model,
+    get_permission_model,
+    get_role_model,
+    get_user_model,
 )
 
 # GDPR models
@@ -59,39 +50,47 @@ from .magic_link import (
     MagicLinkToken,
 )
 
-# Social Login models
-from .social import (
-    SocialConnection,
-)
-
-# WebAuthn / Passkeys models
-from .webauthn import (
-    WebAuthnCredential,
-    WebAuthnChallenge,
+# Operational models
+from .operational import (
+    LoginAttempt,
+    OTPCode,
+    RefreshToken,
 )
 
 # Organization models (Abstract + Concrete)
 from .organization import (
     AbstractOrganization,
-    AbstractOrganizationRole,
-    AbstractOrganizationMembership,
     AbstractOrganizationInvitation,
+    AbstractOrganizationMembership,
+    AbstractOrganizationRole,
     Organization,
-    OrganizationRole,
-    OrganizationMembership,
     OrganizationInvitation,
+    OrganizationMembership,
+    OrganizationRole,
 )
 
-# Agent models
-from .agent import (
-    AgentToken,
-    AgentPendingAction,
+# Security models
+from .security import (
+    AuditLog,
+    BlacklistedToken,
+    PasswordHistory,
+)
+
+# Social Login models
+from .social import (
+    SocialConnection,
 )
 
 # Multi-Tenancy Base Model
 from .tenant import BaseTenantModel
 
-__all__ = [
+# WebAuthn / Passkeys models
+from .webauthn import (
+    WebAuthnChallenge,
+    WebAuthnCredential,
+)
+
+__all__ = [  # noqa: RUF022
     # Base
     "_get_auto_field_class",
     "AutoFieldClass",

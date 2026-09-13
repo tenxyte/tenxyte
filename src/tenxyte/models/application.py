@@ -6,9 +6,11 @@ Contains:
 - Application: Default concrete implementation (swappable)
 """
 
-import secrets
-import bcrypt
 import base64
+import secrets
+from typing import ClassVar
+
+import bcrypt
 from django.db import models
 
 from .base import AutoFieldClass
@@ -55,7 +57,7 @@ class AbstractApplication(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ["name"]
+        ordering: ClassVar[list] = ["name"]
 
     def __str__(self):
         return self.name
@@ -72,7 +74,7 @@ class AbstractApplication(models.Model):
         try:
             hashed = base64.b64decode(stored_secret.encode("utf-8"))
             return bcrypt.checkpw(raw_secret.encode("utf-8"), hashed)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     def verify_secret(self, raw_secret: str) -> bool:
@@ -115,7 +117,7 @@ class AbstractApplication(models.Model):
         return {"access_key": self.access_key, "access_secret": raw_secret}
 
     @classmethod
-    def create_application(cls, name: str, description: str = "", allowed_origins: list = None):
+    def create_application(cls, name: str, description: str = "", allowed_origins: list | None = None):
         """
         Crée une nouvelle application et retourne l'instance + le secret brut
         """

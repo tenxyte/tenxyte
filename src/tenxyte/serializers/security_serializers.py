@@ -4,8 +4,11 @@ Security serializers - AuditLog, LoginAttempt, BlacklistedToken, RefreshToken.
 All read-only serializers for admin security monitoring.
 """
 
+from typing import ClassVar
+
 from rest_framework import serializers
-from ..models import AuditLog, BlacklistedToken, RefreshToken, LoginAttempt
+
+from ..models import AuditLog, BlacklistedToken, LoginAttempt, RefreshToken
 
 
 class AuditLogSerializer(serializers.ModelSerializer):
@@ -17,7 +20,7 @@ class AuditLogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AuditLog
-        fields = [
+        fields: ClassVar[list] = [
             "id",
             "user",
             "user_email",
@@ -38,7 +41,7 @@ class LoginAttemptSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LoginAttempt
-        fields = [
+        fields: ClassVar[list] = [
             "id",
             "identifier",
             "ip_address",
@@ -58,7 +61,7 @@ class BlacklistedTokenSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BlacklistedToken
-        fields = [
+        fields: ClassVar[list] = [
             "id",
             "token_jti",
             "user",
@@ -85,7 +88,7 @@ class RefreshTokenAdminSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RefreshToken
-        fields = [
+        fields: ClassVar[list] = [
             "id",
             "user",
             "user_email",

@@ -10,8 +10,8 @@ respective middleware patterns.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, ClassVar
 
 
 @dataclass
@@ -25,24 +25,24 @@ class RequestContext:
 
     method: str
     path: str
-    headers: Dict[str, str]
-    query_params: Dict[str, Any]
-    body: Optional[bytes] = None
-    client_ip: Optional[str] = None
-    user_agent: Optional[str] = None
+    headers: dict[str, str]
+    query_params: dict[str, Any]
+    body: bytes | None = None
+    client_ip: str | None = None
+    user_agent: str | None = None
 
     # These will be populated by middleware
-    request_id: Optional[str] = None
-    user_id: Optional[str] = None
-    organization_id: Optional[str] = None
-    application_id: Optional[str] = None
-    metadata: Dict[str, Any] = None
+    request_id: str | None = None
+    user_id: str | None = None
+    organization_id: str | None = None
+    application_id: str | None = None
+    metadata: dict[str, Any] = None
 
     def __post_init__(self):
         if self.metadata is None:
             self.metadata = {}
 
-    def get_header(self, name: str, default: Optional[str] = None) -> Optional[str]:
+    def get_header(self, name: str, default: str | None = None) -> str | None:
         """Get a header value case-insensitively."""
         name_lower = name.lower()
         for key, value in self.headers.items():
@@ -61,9 +61,9 @@ class ResponseContext:
     """
 
     status_code: int = 200
-    headers: Dict[str, str] = None
-    body: Optional[bytes] = None
-    json_data: Optional[Dict[str, Any]] = None
+    headers: dict[str, str] = None
+    body: bytes | None = None
+    json_data: dict[str, Any] | None = None
 
     def __post_init__(self):
         if self.headers is None:
@@ -80,15 +80,15 @@ class MiddlewareResult:
     def __init__(
         self,
         continue_processing: bool = True,
-        response: Optional[ResponseContext] = None,
-        modified_request: Optional[RequestContext] = None,
+        response: ResponseContext | None = None,
+        modified_request: RequestContext | None = None,
     ):
         self.continue_processing = continue_processing
         self.response = response
         self.modified_request = modified_request
 
     @classmethod
-    def continue_(cls, modified_request: Optional[RequestContext] = None) -> "MiddlewareResult":
+    def continue_(cls, modified_request: RequestContext | None = None) -> "MiddlewareResult":
         """Continue to next middleware."""
         return cls(continue_processing=True, modified_request=modified_request)
 
@@ -98,7 +98,7 @@ class MiddlewareResult:
         return cls(continue_processing=False, response=response)
 
     @classmethod
-    def error(cls, status: int, code: str, message: str, details: Optional[Dict] = None) -> "MiddlewareResult":
+    def error(cls, status: int, code: str, message: str, details: dict | None = None) -> "MiddlewareResult":
         """Return an error response."""
         response = ResponseContext(status_code=status, json_data={"error": message, "code": code, **(details or {})})
         return cls.respond(response)
@@ -137,7 +137,6 @@ class CoreMiddleware(ABC):
         Returns:
             MiddlewareResult indicating whether to continue or respond
         """
-        pass
 
     def process_response(self, request: RequestContext, response: ResponseContext) -> ResponseContext:
         """
@@ -169,7 +168,7 @@ class MiddlewareChain:
     returns a response.
     """
 
-    def __init__(self, middlewares: List[CoreMiddleware]):
+    def __init__(self, middlewares: list[CoreMiddleware]):
         """
         Initialize chain with middleware list.
 
@@ -178,7 +177,7 @@ class MiddlewareChain:
         """
         self.middlewares = middlewares
 
-    def process(self, request: RequestContext) -> tuple[Optional[ResponseContext], RequestContext]:
+    def process(self, request: RequestContext) -> tuple[ResponseContext | None, RequestContext]:
         """
         Process request through middleware chain.
 
@@ -278,7 +277,7 @@ class ApplicationAuthCoreMiddleware(CoreMiddleware):
         """
         super().__init__(settings)
         self.repository = repository
-        self._cache_service: Optional["CacheService"] = None
+        self._cache_service: CacheService | None = None
 
     @property
     def cache_service(self) -> "CacheService":
@@ -362,7 +361,7 @@ class SecurityHeadersCoreMiddleware(CoreMiddleware):
     Core middleware for adding security headers.
     """
 
-    DEFAULT_HEADERS = {
+    DEFAULT_HEADERS: ClassVar[dict] = {
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",
         "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -432,6 +431,6 @@ class OrganizationContextCoreMiddleware(CoreMiddleware):
 
 # Type hint imports (to avoid circular imports)
 if TYPE_CHECKING:  # pragma: no cover
+    from tenxyte.core.cache_service import CacheService
     from tenxyte.core.settings import Settings
     from tenxyte.ports.repositories import ApplicationRepository
-    from tenxyte.core.cache_service import CacheService

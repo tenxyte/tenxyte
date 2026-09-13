@@ -4,8 +4,9 @@ création de mot de passe initial, et réauthentification par OTP.
 """
 
 from rest_framework import serializers
-from ..validators import validate_password, normalize_phone_country_code
+
 from ..device_info import validate_device_info as _validate_device_info
+from ..validators import normalize_phone_country_code, validate_password
 
 
 class LoginOTPRequestSerializer(serializers.Serializer):

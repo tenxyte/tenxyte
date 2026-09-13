@@ -4,15 +4,15 @@ Magic Link Service for Tenxyte Core.
 Framework-agnostic passwordless authentication via email magic links.
 """
 
+import asyncio
 import logging
 import secrets
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, Protocol, Tuple, runtime_checkable
-import asyncio
+from typing import Any, Protocol, runtime_checkable
 
-from tenxyte.core.settings import Settings
 from tenxyte.core.email_service import EmailService
+from tenxyte.core.settings import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -25,21 +25,19 @@ class MagicLinkToken:
     token: str  # Raw token (only available at creation time)
     user_id: str
     email: str
-    application_id: Optional[str] = None
-    ip_address: Optional[str] = None
-    user_agent: Optional[str] = None
-    created_at: Optional[datetime] = None
-    expires_at: Optional[datetime] = None
-    used_at: Optional[datetime] = None
+    application_id: str | None = None
+    ip_address: str | None = None
+    user_agent: str | None = None
+    created_at: datetime | None = None
+    expires_at: datetime | None = None
+    used_at: datetime | None = None
     is_used: bool = False
 
     def is_valid(self) -> bool:
         """Check if token is valid (not used, not expired)."""
         if self.is_used:
             return False
-        if self.expires_at and datetime.now(timezone.utc) > self.expires_at:
-            return False
-        return True
+        return not (self.expires_at and datetime.now(timezone.utc) > self.expires_at)
 
 
 @dataclass
@@ -47,8 +45,8 @@ class MagicLinkResult:
     """Result of magic link verification."""
 
     success: bool
-    user_id: Optional[str] = None
-    email: Optional[str] = None
+    user_id: str | None = None
+    email: str | None = None
     error: str = ""
 
 
@@ -61,19 +59,19 @@ class MagicLinkRepository(Protocol):
         token_hash: str,
         user_id: str,
         email: str,
-        application_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        application_id: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
         expiry_minutes: int = 15,
     ) -> MagicLinkToken:
         """Create a new magic link token. Returns token with raw token set."""
         ...  # pragma: no cover
 
-    def get_by_token(self, token: str) -> Optional[MagicLinkToken]:
+    def get_by_token(self, token: str) -> MagicLinkToken | None:
         """Get token by raw token value (validates hash internally)."""
         ...  # pragma: no cover
 
-    def invalidate_user_tokens(self, user_id: str, application_id: Optional[str] = None) -> int:
+    def invalidate_user_tokens(self, user_id: str, application_id: str | None = None) -> int:
         """Mark all unused tokens for user as used. Returns count."""
         ...  # pragma: no cover
 
@@ -91,16 +89,16 @@ class AsyncMagicLinkRepository(MagicLinkRepository, Protocol):
         token_hash: str,
         user_id: str,
         email: str,
-        application_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        application_id: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
         expiry_minutes: int = 15,
     ) -> MagicLinkToken: ...  # pragma: no cover
 
-    async def get_by_token_async(self, token: str) -> Optional[MagicLinkToken]: ...  # pragma: no cover
+    async def get_by_token_async(self, token: str) -> MagicLinkToken | None: ...  # pragma: no cover
 
     async def invalidate_user_tokens_async(
-        self, user_id: str, application_id: Optional[str] = None
+        self, user_id: str, application_id: str | None = None
     ) -> int: ...  # pragma: no cover
 
     async def consume_async(self, token_id: str) -> bool: ...  # pragma: no cover
@@ -110,7 +108,7 @@ class AsyncMagicLinkRepository(MagicLinkRepository, Protocol):
 class UserLookup(Protocol):
     """Protocol for user lookup operations."""
 
-    def get_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+    def get_by_email(self, email: str) -> dict[str, Any] | None:
         """Get user by email (case-insensitive). Returns None if not found."""
         ...  # pragma: no cover
 
@@ -127,7 +125,7 @@ class UserLookup(Protocol):
 class AsyncUserLookup(UserLookup, Protocol):
     """Protocol for async user lookup operations."""
 
-    async def get_by_email_async(self, email: str) -> Optional[Dict[str, Any]]: ...  # pragma: no cover
+    async def get_by_email_async(self, email: str) -> dict[str, Any] | None: ...  # pragma: no cover
 
     async def is_active_async(self, user_id: str) -> bool: ...  # pragma: no cover
 
@@ -196,12 +194,12 @@ class MagicLinkService:
     def request_magic_link(
         self,
         email: str,
-        application_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
+        application_id: str | None = None,
+        ip_address: str | None = None,
         device_info: str = "",
-        validation_url: Optional[str] = None,
+        validation_url: str | None = None,
         first_name: str = "",
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """
         Generate a magic link and send via email.
 
@@ -232,12 +230,12 @@ class MagicLinkService:
         if isinstance(user, dict):
             user_id = user.get("id")
             user_email = user.get("email", email)
-            _user_first_name = first_name or user.get("first_name", "")  # noqa: F841
+            _user_first_name = first_name or user.get("first_name", "")
         else:
             # User is an object (e.g., Django User model)
             user_id = getattr(user, "id", None)
             user_email = getattr(user, "email", email)
-            _user_first_name = first_name or getattr(user, "first_name", "")  # noqa: F841
+            _user_first_name = first_name or getattr(user, "first_name", "")
 
         # Check if user is active
         if not self.user_lookup.is_active(user_id):
@@ -271,7 +269,7 @@ class MagicLinkService:
                 magic_link_url=magic_url or f"https://example.com/verify?token={raw_token}",
                 expires_in_minutes=self.expiry_minutes,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to send magic link email to {user_email}: {e}")
             return False, "Failed to send magic link email"
 
@@ -281,12 +279,12 @@ class MagicLinkService:
     async def request_magic_link_async(
         self,
         email: str,
-        application_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
+        application_id: str | None = None,
+        ip_address: str | None = None,
         device_info: str = "",
-        validation_url: Optional[str] = None,
+        validation_url: str | None = None,
         first_name: str = "",
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """Asynchronous version of request_magic_link."""
         if not self.enabled:
             return False, "Magic link authentication is not enabled"
@@ -303,11 +301,11 @@ class MagicLinkService:
         if isinstance(user, dict):
             user_id = user.get("id")
             user_email = user.get("email", email)
-            _user_first_name = first_name or user.get("first_name", "")  # noqa: F841
+            _user_first_name = first_name or user.get("first_name", "")
         else:
             user_id = getattr(user, "id", None)
             user_email = getattr(user, "email", email)
-            _user_first_name = first_name or getattr(user, "first_name", "")  # noqa: F841
+            _user_first_name = first_name or getattr(user, "first_name", "")
 
         is_active = False
         if hasattr(self.user_lookup, "is_active_async"):
@@ -365,7 +363,7 @@ class MagicLinkService:
                     magic_link_url=magic_url or f"https://example.com/verify?token={raw_token}",
                     expires_in_minutes=self.expiry_minutes,
                 )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to send magic link email to {user_email}: {e}")
             return False, "Failed to send magic link email"
 
@@ -375,8 +373,8 @@ class MagicLinkService:
     def verify_magic_link(
         self,
         token: str,
-        application_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
+        application_id: str | None = None,
+        ip_address: str | None = None,
         device_info: str = "",
         require_same_device: bool = True,
     ) -> MagicLinkResult:
@@ -409,9 +407,8 @@ class MagicLinkService:
             return MagicLinkResult(success=False, error="Magic link has expired or already been used.")
 
         # Check application match (if specified)
-        if application_id and token_instance.application_id:
-            if token_instance.application_id != application_id:
-                return MagicLinkResult(success=False, error="Magic link is not valid for this application.")
+        if application_id and token_instance.application_id and token_instance.application_id != application_id:
+            return MagicLinkResult(success=False, error="Magic link is not valid for this application.")
 
         # Same-device check (security)
         if require_same_device:
@@ -444,8 +441,8 @@ class MagicLinkService:
     async def verify_magic_link_async(
         self,
         token: str,
-        application_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
+        application_id: str | None = None,
+        ip_address: str | None = None,
         device_info: str = "",
         require_same_device: bool = True,
     ) -> MagicLinkResult:
@@ -464,9 +461,8 @@ class MagicLinkService:
         if not token_instance.is_valid():
             return MagicLinkResult(success=False, error="Magic link has expired or already been used.")
 
-        if application_id and token_instance.application_id:
-            if token_instance.application_id != application_id:
-                return MagicLinkResult(success=False, error="Magic link is not valid for this application.")
+        if application_id and token_instance.application_id and token_instance.application_id != application_id:
+            return MagicLinkResult(success=False, error="Magic link is not valid for this application.")
 
         if require_same_device:
             ip_match = self._ip_matches(token_instance.ip_address, ip_address)
@@ -505,7 +501,7 @@ class MagicLinkService:
 
         return MagicLinkResult(success=True, user_id=token_instance.user_id, email=token_instance.email)
 
-    def _ip_matches(self, stored_ip: Optional[str], current_ip: Optional[str]) -> bool:
+    def _ip_matches(self, stored_ip: str | None, current_ip: str | None) -> bool:
         """
         Check if IPs match (with subnet tolerance for mobile networks).
 
@@ -525,7 +521,7 @@ class MagicLinkService:
             if len(stored_parts) == 4 and len(current_parts) == 4:
                 # IPv4 /24 subnet match (first 3 octets)
                 return stored_parts[:3] == current_parts[:3]
-        except Exception:  # pragma: no cover
+        except Exception:  # pragma: no cover  # noqa: BLE001, S110
             pass
 
         return False

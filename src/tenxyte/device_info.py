@@ -18,8 +18,8 @@ Catégories supportées (v1):
     - tz      : timezone
 """
 
-import re
 import logging
+import re
 
 logger = logging.getLogger("tenxyte")
 
@@ -55,15 +55,15 @@ VALUE_PATTERN = re.compile(r"^[a-zA-Z0-9._\-/: ]+$")
 
 
 def build_device_info(
-    os: str = None,
-    os_version: str = None,
-    device: str = None,
-    arch: str = None,
-    app: str = None,
-    app_version: str = None,
-    runtime: str = None,
-    runtime_version: str = None,
-    timezone: str = None,
+    os: str | None = None,
+    os_version: str | None = None,
+    device: str | None = None,
+    arch: str | None = None,
+    app: str | None = None,
+    app_version: str | None = None,
+    runtime: str | None = None,
+    runtime_version: str | None = None,
+    timezone: str | None = None,
     version: str = CURRENT_VERSION,
 ) -> str:
     """
@@ -349,11 +349,11 @@ def build_device_info_from_user_agent(user_agent: str) -> str:
 
     # Device type detection
     device = "desktop"
-    if re.search(r"iPad|Android(?!.*Mobile)|Tablet", ua, re.I):
+    if re.search(r"iPad|Android(?!.*Mobile)|Tablet", ua, re.IGNORECASE):
         device = "tablet"
-    elif re.search(r"Mobile|iPhone|iPod|Android.*Mobile|webOS|BlackBerry|IEMobile|Opera Mini", ua, re.I):
+    elif re.search(r"Mobile|iPhone|iPod|Android.*Mobile|webOS|BlackBerry|IEMobile|Opera Mini", ua, re.IGNORECASE):
         device = "mobile"
-    elif re.search(r"bot|crawl|spider|slurp", ua, re.I):
+    elif re.search(r"bot|crawl|spider|slurp", ua, re.IGNORECASE):
         device = "bot"
 
     # Architecture detection
@@ -385,13 +385,13 @@ def build_device_info_from_user_agent(user_agent: str) -> str:
         device = "api-client"
     elif "insomnia" in ua.lower():
         runtime = "insomnia"
-        m = re.search(r"insomnia/([\d.]+)", ua, re.I)
+        m = re.search(r"insomnia/([\d.]+)", ua, re.IGNORECASE)
         if m:
             runtime_version = m.group(1)
         device = "api-client"
     elif "httpie" in ua.lower():
         runtime = "httpie"
-        m = re.search(r"HTTPie/([\d.]+)", ua, re.I)
+        m = re.search(r"HTTPie/([\d.]+)", ua, re.IGNORECASE)
         if m:
             runtime_version = m.group(1)
         device = "api-client"

@@ -9,10 +9,12 @@ Contains:
 
 import hashlib
 import secrets
+from datetime import timedelta
+from typing import ClassVar
+
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
-from django.conf import settings
-from datetime import timedelta
 
 from .base import AutoFieldClass
 
@@ -24,7 +26,7 @@ class OTPCode(models.Model):
 
     id = AutoFieldClass(primary_key=True)
 
-    TYPE_CHOICES = [
+    TYPE_CHOICES: ClassVar[list] = [
         ("email_verification", "Email Verification"),
         ("phone_verification", "Phone Verification"),
         ("password_reset", "Password Reset"),
@@ -143,7 +145,7 @@ class RefreshToken(models.Model):
         return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
 
     @classmethod
-    def generate(cls, user, application, device_info: str = "", ip_address: str = None, validity_days: int = 30):
+    def generate(cls, user, application, device_info: str = "", ip_address: str | None = None, validity_days: int = 30):
         """
         Génère un nouveau refresh token.
 

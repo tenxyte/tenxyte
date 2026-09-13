@@ -25,7 +25,6 @@ class BaseSMSBackend(ABC):
         Returns:
             True si l'envoi a réussi
         """
-        pass
 
 
 class ConsoleBackend(BaseSMSBackend):
@@ -86,7 +85,7 @@ class TwilioBackend(BaseSMSBackend):
         except ImportError:
             logger.error("[Twilio] Library not installed. Run: pip install tenxyte[twilio]")
             return False
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"[Twilio] Unexpected error: {e}")
             return False
 
@@ -118,8 +117,8 @@ class NGHBackend(BaseSMSBackend):
             return False
 
         try:
-            import json
             import http.client
+            import json
 
             # nosemgrep: python.lang.security.audit.httpsconnection-detected.httpsconnection-detected
             conn = http.client.HTTPSConnection("extranet.nghcorp.net")
@@ -150,7 +149,7 @@ class NGHBackend(BaseSMSBackend):
                 logger.error(f"[NGH] Failed to send SMS: " f"{data.get('status')} - {data.get('status_desc')}")
                 return False
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"[NGH] Unexpected error: {e}")
             return False
 
@@ -163,6 +162,7 @@ def get_sms_backend() -> BaseSMSBackend:
         Instance du backend SMS
     """
     from django.utils.module_loading import import_string
+
     from ..conf import auth_settings
 
     backend_path = auth_settings.SMS_BACKEND

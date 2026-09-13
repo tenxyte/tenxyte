@@ -322,7 +322,7 @@ class TestAgentViews:
                 
                 # Verify error was logged
                 mock_get_logger.assert_called_once_with('tenxyte.views.agent_views')
-                mock_logger.error.assert_called_once()
+                mock_logger.exception.assert_called_once()
 
     def test_report_usage_success(self, api_client, user, application, permission):
         """Test AgentTokenReportUsageView with valid authorization (lines 263-284)."""

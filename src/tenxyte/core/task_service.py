@@ -6,9 +6,10 @@ allowing the core to enqueue jobs without coupling to specific implementations
 like Celery, RQ, or FastAPI BackgroundTasks.
 """
 
-from abc import ABC, abstractmethod
-from typing import Any, Callable, Coroutine, TypeVar, Union
 import asyncio
+from abc import ABC, abstractmethod
+from collections.abc import Callable, Coroutine
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
@@ -34,10 +35,9 @@ class TaskService(ABC):
         Returns:
             A string representing the task ID.
         """
-        pass
 
     async def enqueue_async(
-        self, func: Union[Callable[..., Coroutine[Any, Any, Any]], Callable[..., Any]], *args: Any, **kwargs: Any
+        self, func: Callable[..., Coroutine[Any, Any, Any]] | Callable[..., Any], *args: Any, **kwargs: Any
     ) -> str:
         """
         Enqueue a function (sync or async) to run in the background non-blockingly.

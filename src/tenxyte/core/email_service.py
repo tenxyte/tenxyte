@@ -5,11 +5,11 @@ This module provides base email service implementations that can be used
 with any adapter (Django, FastAPI, etc.).
 """
 
+import asyncio
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
 from enum import Enum
-import asyncio
+from typing import Any
 
 
 class EmailTemplate(str, Enum):
@@ -45,11 +45,11 @@ class EmailService(ABC):
         to_email: str,
         subject: str,
         body: str,
-        html_body: Optional[str] = None,
-        from_email: Optional[str] = None,
-        cc: Optional[List[str]] = None,
-        bcc: Optional[List[str]] = None,
-        attachments: Optional[List[EmailAttachment]] = None,
+        html_body: str | None = None,
+        from_email: str | None = None,
+        cc: list[str] | None = None,
+        bcc: list[str] | None = None,
+        attachments: list[EmailAttachment] | None = None,
     ) -> bool:
         """
         Send a basic email.
@@ -67,18 +67,17 @@ class EmailService(ABC):
         Returns:
             True if email was sent successfully
         """
-        pass
 
     async def send_async(
         self,
         to_email: str,
         subject: str,
         body: str,
-        html_body: Optional[str] = None,
-        from_email: Optional[str] = None,
-        cc: Optional[List[str]] = None,
-        bcc: Optional[List[str]] = None,
-        attachments: Optional[List[EmailAttachment]] = None,
+        html_body: str | None = None,
+        from_email: str | None = None,
+        cc: list[str] | None = None,
+        bcc: list[str] | None = None,
+        attachments: list[EmailAttachment] | None = None,
     ) -> bool:
         """Asynchronous version of send."""
         return await asyncio.to_thread(
@@ -98,7 +97,7 @@ class EmailService(ABC):
         to_email: str,
         magic_link_url: str,
         expires_in_minutes: int = 15,
-        from_email: Optional[str] = None,
+        from_email: str | None = None,
     ) -> bool:
         """
         Send a magic link email for passwordless authentication.
@@ -141,7 +140,7 @@ If you didn't request this link, you can safely ignore this email.
         to_email: str,
         magic_link_url: str,
         expires_in_minutes: int = 15,
-        from_email: Optional[str] = None,
+        from_email: str | None = None,
     ) -> bool:
         """Asynchronous version of send_magic_link."""
         subject = "Your magic sign-in link"
@@ -173,7 +172,7 @@ If you didn't request this link, you can safely ignore this email.
         to_email: str,
         code: str,
         method: str = "email",
-        from_email: Optional[str] = None,
+        from_email: str | None = None,
     ) -> bool:
         """
         Send a 2FA verification code.
@@ -216,7 +215,7 @@ If you didn't request this code, please secure your account immediately.
         to_email: str,
         code: str,
         method: str = "email",
-        from_email: Optional[str] = None,
+        from_email: str | None = None,
     ) -> bool:
         """Asynchronous version of send_two_factor_code."""
         subject = "Your verification code"
@@ -248,7 +247,7 @@ If you didn't request this code, please secure your account immediately.
         to_email: str,
         reset_url: str,
         expires_in_hours: int = 24,
-        from_email: Optional[str] = None,
+        from_email: str | None = None,
     ) -> bool:
         """
         Send a password reset email.
@@ -293,7 +292,7 @@ If you didn't request a password reset, you can safely ignore this email.
         to_email: str,
         reset_url: str,
         expires_in_hours: int = 24,
-        from_email: Optional[str] = None,
+        from_email: str | None = None,
     ) -> bool:
         """Asynchronous version of send_password_reset."""
         subject = "Password reset request"
@@ -325,9 +324,9 @@ If you didn't request a password reset, you can safely ignore this email.
     def send_welcome(
         self,
         to_email: str,
-        first_name: Optional[str] = None,
-        login_url: Optional[str] = None,
-        from_email: Optional[str] = None,
+        first_name: str | None = None,
+        login_url: str | None = None,
+        from_email: str | None = None,
     ) -> bool:
         """
         Send a welcome email to new users.
@@ -377,9 +376,9 @@ If you have any questions, please don't hesitate to contact us.
     async def send_welcome_async(
         self,
         to_email: str,
-        first_name: Optional[str] = None,
-        login_url: Optional[str] = None,
-        from_email: Optional[str] = None,
+        first_name: str | None = None,
+        login_url: str | None = None,
+        from_email: str | None = None,
     ) -> bool:
         """Asynchronous version of send_welcome."""
         greeting = f"Hello {first_name}," if first_name else "Hello,"
@@ -419,8 +418,8 @@ If you have any questions, please don't hesitate to contact us.
         self,
         to_email: str,
         alert_type: str,
-        details: Dict[str, Any],
-        from_email: Optional[str] = None,
+        details: dict[str, Any],
+        from_email: str | None = None,
     ) -> bool:
         """
         Send a security alert email.
@@ -471,8 +470,8 @@ If this was you, you can ignore this email. If you don't recognize this activity
         self,
         to_email: str,
         alert_type: str,
-        details: Dict[str, Any],
-        from_email: Optional[str] = None,
+        details: dict[str, Any],
+        from_email: str | None = None,
     ) -> bool:
         """Asynchronous version of send_security_alert."""
         subject = f"Security alert: {alert_type}"
@@ -524,11 +523,11 @@ class ConsoleEmailService(EmailService):
         to_email: str,
         subject: str,
         body: str,
-        html_body: Optional[str] = None,
-        from_email: Optional[str] = None,
-        cc: Optional[List[str]] = None,
-        bcc: Optional[List[str]] = None,
-        attachments: Optional[List[EmailAttachment]] = None,
+        html_body: str | None = None,
+        from_email: str | None = None,
+        cc: list[str] | None = None,
+        bcc: list[str] | None = None,
+        attachments: list[EmailAttachment] | None = None,
     ) -> bool:
         """Print email to console instead of sending."""
         print(f"\n{'='*60}")

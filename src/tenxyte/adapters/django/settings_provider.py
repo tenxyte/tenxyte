@@ -4,7 +4,7 @@ Django Settings Provider for Tenxyte Core.
 This module provides a SettingsProvider that reads from Django's settings.
 """
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from tenxyte.core.settings import Settings
