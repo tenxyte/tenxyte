@@ -31,7 +31,13 @@ from tenxyte_langchain import (
     TenxyteHITLPending,
 )
 
-BASE_URL = os.environ.get("TENXYTE_BASE_URL", "http://localhost:8000/api/v1/auth")
+# ROOT_URL is the bare scheme+host — TenxyteAIRSClient's endpoint map (from discovery) already
+# contains the full "/api/v1/auth/..." path, so combining a *prefixed* base_url with those paths
+# would double the prefix (the same lesson learned building spec/airs/conformance/'s test
+# harness — see its README "Why a probe endpoint?"). API_PREFIX is only for the two calls below
+# that don't go through discovery (login, initial token issuance).
+ROOT_URL = os.environ.get("TENXYTE_BASE_URL", "http://localhost:8000")
+API_PREFIX = "/api/v1/auth"
 DEMO_USER_EMAIL = "conformance-suite@example.com"
 DEMO_USER_PASSWORD = "Conformance-Suite-P4ssw0rd!"
 BUDGET_LIMIT_USD = float(os.environ.get("CREWAI_DEMO_BUDGET_USD", "0.05"))
@@ -39,7 +45,9 @@ BUDGET_LIMIT_USD = float(os.environ.get("CREWAI_DEMO_BUDGET_USD", "0.05"))
 
 def _login() -> str:
     response = httpx.post(
-        f"{BASE_URL}/login/email/", json={"email": DEMO_USER_EMAIL, "password": DEMO_USER_PASSWORD}, timeout=10
+        f"{ROOT_URL}{API_PREFIX}/login/email/",
+        json={"email": DEMO_USER_EMAIL, "password": DEMO_USER_PASSWORD},
+        timeout=10,
     )
     response.raise_for_status()
     return response.json()["access_token"]
@@ -47,7 +55,7 @@ def _login() -> str:
 
 def _issue_agent_token(user_jwt: str) -> dict:
     response = httpx.post(
-        f"{BASE_URL}/ai/tokens/",
+        f"{ROOT_URL}{API_PREFIX}/ai/tokens/",
         headers={"Authorization": f"Bearer {user_jwt}"},
         json={
             "agent_id": "crewai-demo-crew",
@@ -68,7 +76,9 @@ def _wait_for_human_confirmation(client: TenxyteAIRSClient, user_jwt: str, confi
     (email, Slack, ...) and waits for real approval.
     """
     print(f"\n>>> HITL: action pending human approval. confirmation_token={confirmation_token}")
-    print(">>> A human approves via: POST {BASE_URL}/ai/pending-actions/<token>/confirm/  (Bearer <human JWT>)")
+    print(
+        f">>> A human approves via: POST {ROOT_URL}{API_PREFIX}/ai/pending-actions/<token>/confirm/  (Bearer <human JWT>)"
+    )
     auto_confirm = os.environ.get("CREWAI_DEMO_AUTO_CONFIRM", "1") == "1"
     if not auto_confirm:
         input(">>> Press Enter once a human has confirmed the action...")
@@ -120,7 +130,7 @@ _TOKEN_ID: int | None = None
 def main() -> None:
     global _TOKEN_ID
 
-    print(f"Logging in as the demo user at {BASE_URL} ...")
+    print(f"Logging in as the demo user at {ROOT_URL}{API_PREFIX} ...")
     user_jwt = _login()
 
     print(f"Issuing a delegated Agent Token (budget_limit_usd={BUDGET_LIMIT_USD:.2f}) ...")
@@ -128,7 +138,9 @@ def main() -> None:
     _TOKEN_ID = issued["id"]
     print(f"Agent Token id={_TOKEN_ID}, status={issued['status']}")
 
-    client = TenxyteAIRSClient(BASE_URL, agent_token=issued["token"])
+    client = TenxyteAIRSClient(
+        ROOT_URL, agent_token=issued["token"], discovery_path=f"{API_PREFIX}/ai/.well-known/airs/"
+    )
     tools = build_tools(client, user_jwt)
 
     use_real_llm = os.environ.get("USE_REAL_LLM") == "1"
@@ -173,8 +185,23 @@ def main() -> None:
 
     crew = Crew(agents=[researcher, finance_writer], tasks=[research_task, filing_task], process=Process.sequential)
     result = crew.kickoff()
-    print("\n=== Crew result ===")
+    print("\n=== Crew result (narrative) ===")
     print(result)
+
+    # The crew above narrates the scenario, but a FakeScriptedLLM returns plain text rather than
+    # a real tool-call — it doesn't drive CrewAI's own function-calling protocol the way a real
+    # model does. So the actual AIRS behaviors (per-request AgentBearer, the HITL pause, budget
+    # suspension) are demonstrated explicitly below by invoking the same tools directly — this is
+    # what reliably proves the protocol, deterministically, every run. With USE_REAL_LLM=1, the
+    # agents above would invoke these same tools themselves as part of task execution instead.
+    tools_by_name = {t.name: t for t in tools}
+    print("\n=== Demonstrating the AIRS-backed tools directly ===")
+    print(tools_by_name["log_research_note"].run(note="Acme Cloud Services invoice looks legitimate."))
+    print(
+        tools_by_name["file_expense_report"].run(
+            amount_usd=42.50, description="Acme Cloud Services — September invoice"
+        )
+    )
 
     print("\n=== Demonstrating budget suspension ===")
     try:

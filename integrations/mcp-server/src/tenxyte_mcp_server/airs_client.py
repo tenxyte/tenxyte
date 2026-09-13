@@ -80,12 +80,17 @@ class AIRSClient:
                 body = response.json()
             except ValueError:
                 body = {"error": response.text}
-            raise AIRSError(
-                body.get("error") or body.get("message") or f"AIRS request failed ({response.status_code})",
-                code=body.get("code"),
-                reason=body.get("reason") or body.get("suspended_reason"),
-                status_code=response.status_code,
-            )
+            message = body.get("error") or body.get("message") or f"AIRS request failed ({response.status_code})"
+            code = body.get("code")
+            reason = body.get("reason") or body.get("suspended_reason")
+            # Tenxyte's report-usage endpoint responds to a budget-exceeded report with
+            # {"error": "Budget exceeded", "status": "suspended"} — no "code"/"reason" at all,
+            # unlike its other suspension paths. The spec doesn't mandate a code string
+            # ([AIRS-CORE-16]), so infer one from the message rather than surfacing a
+            # less-useful, entirely blank code/reason for a condition we can actually name.
+            if not code and not reason and "budget" in message.lower():
+                code = "BUDGET_EXCEEDED"
+            raise AIRSError(message, code=code, reason=reason, status_code=response.status_code)
         return response
 
     def heartbeat(self, token_id: Any) -> dict[str, Any]:

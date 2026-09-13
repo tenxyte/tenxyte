@@ -47,10 +47,15 @@ def _classify_error(response: httpx.Response) -> TenxyteAIRSError:
     code = str(body.get("code", "")).upper()
     reason = body.get("reason") or body.get("suspended_reason")
     message = body.get("error") or body.get("message") or f"AIRS request failed with {response.status_code}"
+    # Tenxyte's own report-usage endpoint responds to a budget-exceeded report with
+    # {"error": "Budget exceeded", "status": "suspended"} — no "code"/"reason" field at all,
+    # unlike its other suspension paths (which go through AGENT_TOKEN_STATUS_SUSPENDED). Since
+    # the spec deliberately doesn't mandate a code string ([AIRS-CORE-16]), match the message
+    # text too rather than assuming every implementation always populates "code"/"reason".
 
     if "NOT_FOUND" in code:
         return TenxyteTokenNotFoundError(message, status_code=response.status_code, body=body)
-    if "BUDGET" in code or (reason and "BUDGET" in str(reason).upper()):
+    if "BUDGET" in code or (reason and "BUDGET" in str(reason).upper()) or "BUDGET" in message.upper():
         return TenxyteBudgetExceededError(message, status_code=response.status_code, body=body)
     if "SUSPEND" in code:
         return TenxyteTokenSuspendedError(message, suspended_reason=reason, status_code=response.status_code, body=body)

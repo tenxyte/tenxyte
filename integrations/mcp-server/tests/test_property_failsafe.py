@@ -59,6 +59,22 @@ async def test_property_9_every_terminal_reason_yields_structured_error_process_
 
 
 @pytest.mark.asyncio
+async def test_budget_exceeded_inferred_even_without_code_or_reason():
+    """Regression: Tenxyte's real report-usage endpoint returns {"error": "Budget exceeded",
+    "status": "suspended"} with NO "code"/"reason" field — caught while running the CrewAI
+    example end-to-end, where this used to surface as a blank code/reason."""
+    with respx.mock(assert_all_called=False) as router:
+        router.get("https://airs.test/ai/.well-known/airs/").respond(200, json=DISCOVERY_BODY)
+        router.post("https://airs.test/ai/tokens/1/report-usage/").respond(
+            403, json={"error": "Budget exceeded", "status": "suspended"}
+        )
+        with pytest.raises(UnexpectedToolError) as exc_info:
+            await server.mcp.call_tool("airs_report_usage", {"cost_usd": 1.0})
+        payload = _structured_cause(exc_info.value)
+        assert payload["code"] == "BUDGET_EXCEEDED"
+
+
+@pytest.mark.asyncio
 async def test_property_9_revoked_yields_structured_error():
     with _mocked(lambda request: httpx.Response(403, json={"error": "revoked", "code": "AGENT_TOKEN_STATUS_REVOKED"})):
         with pytest.raises(UnexpectedToolError) as exc_info:

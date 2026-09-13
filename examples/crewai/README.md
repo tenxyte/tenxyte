@@ -65,7 +65,7 @@ provider's API key the way CrewAI/LangChain expects (e.g. `OPENAI_API_KEY`) — 
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `TENXYTE_BASE_URL` | `http://tenxyte:8000/api/v1/auth` | Where the crew logs in and issues its Agent Token. |
+| `TENXYTE_BASE_URL` | `http://tenxyte:8000` | Scheme + host only (no `/api/v1/auth` — the script adds that itself where needed, and derives the rest from discovery). |
 | `CREWAI_DEMO_BUDGET_USD` | `0.05` | The Agent Token's budget limit, kept small to trigger suspension quickly. |
 | `CREWAI_DEMO_AUTO_CONFIRM` | `1` | Auto-confirm the HITL action after a short delay (non-interactive demo). Set to `0` to pause for a real human `Enter` keypress instead. |
 | `USE_REAL_LLM` | `0` | `1` to use a real LLM instead of the deterministic fake. |
@@ -76,5 +76,5 @@ provider's API key the way CrewAI/LangChain expects (e.g. `OPENAI_API_KEY`) — 
 pip install -r requirements.txt
 pip install -e ../../integrations/langchain
 # In another terminal: python -m spec.airs.conformance.tenxyte_ci.seed_and_serve --port 8811
-TENXYTE_BASE_URL=http://localhost:8811/api/v1/auth python crew.py
+TENXYTE_BASE_URL=http://localhost:8811 python crew.py
 ```

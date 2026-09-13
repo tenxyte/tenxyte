@@ -91,6 +91,20 @@ def test_budget_exceeded_raises_specific_type(mock_airs):
         client.report_usage(7, cost_usd=1.0)
 
 
+def test_budget_exceeded_raises_specific_type_even_without_code_or_reason(mock_airs):
+    """Regression: Tenxyte's real report-usage endpoint returns {"error": "Budget exceeded",
+    "status": "suspended"} with NO "code"/"reason" field at all — caught while running the
+    CrewAI example end-to-end, where this used to misclassify as TenxytePermissionDeniedError."""
+    mock_airs.post(f"{BASE_URL}/ai/tokens/7/report-usage/").respond(
+        403, json={"error": "Budget exceeded", "status": "suspended"}
+    )
+    from tenxyte_langchain import TenxyteBudgetExceededError
+
+    client = TenxyteAIRSClient(BASE_URL, agent_token="raw")
+    with pytest.raises(TenxyteBudgetExceededError):
+        client.report_usage(7, cost_usd=1.0)
+
+
 def test_202_raises_hitl_pending_with_resumable_snapshot(mock_airs):
     # More specific route (header match) registered first: respx tries routes in registration
     # order and the confirmed-replay request would otherwise also match the unconditional one.
