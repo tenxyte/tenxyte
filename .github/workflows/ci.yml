@@ -120,6 +120,57 @@ jobs:
           path: coverage-django.xml
 
   # ===========================================================================
+  # FastAPI_Adapter tests (spec z_aud_3, Requirement 5.3) — no Django dependency; its own
+  # Reference_Stack (SQLAlchemy 2.0 async + aiosqlite) is exercised directly, matching the
+  # core-tests job's shape (full matrix plain, coverage gate on one representative version).
+  # ===========================================================================
+  fastapi-tests:
+    name: FastAPI Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-fastapi-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-fastapi-${{ matrix.python-version }}-
+
+      - name: Install FastAPI adapter dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[fastapi,dev]"
+
+      - name: Run FastAPI adapter tests
+        run: |
+          pytest tests/integration/fastapi/ -p no:django --no-cov -q
+
+      - name: Run tests with coverage (Python 3.12 only)
+        if: matrix.python-version == '3.12'
+        run: |
+          pytest tests/integration/fastapi/ -p no:django -o "addopts=" --cov=tenxyte.adapters.fastapi --cov-report=xml:coverage-fastapi.xml --cov-report=term --cov-fail-under=90 -q
+
+      - name: Upload FastAPI adapter coverage
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-fastapi
+          path: coverage-fastapi.xml
+
+  # ===========================================================================
   # Install matrix — verifies the 1.0 packaging inversion (Requirement 2) in clean venvs:
   # Core-only default install, opt-in [django] extra, deprecated [core] no-op alias, and extra
   # combination. See specs/z_aud_1 design.md "Correctness Properties" / manual_tests.md MT-1.
@@ -313,7 +364,7 @@ jobs:
   coverage:
     name: Upload Coverage
     runs-on: ubuntu-latest
-    needs: [core-tests, django-tests]
+    needs: [core-tests, django-tests, fastapi-tests]
     if: always()
 
     steps:
@@ -330,6 +381,13 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: coverage-django
+          path: coverage/
+        continue-on-error: true
+
+      - name: Download FastAPI coverage
+        uses: actions/download-artifact@v8
+        with:
+          name: coverage-fastapi
           path: coverage/
         continue-on-error: true
 

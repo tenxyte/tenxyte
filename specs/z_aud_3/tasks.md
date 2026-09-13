@@ -190,9 +190,14 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - **Property 7: Pureté async des handlers**
     - **Validates: Requirements 5.4**
 
-  - [ ] 3.4 Câbler la Coverage_Gate FastAPI
-    - Job CI `fastapi-tests` : matrice Python 3.10–3.13, `--cov=tenxyte.adapters.fastapi
-      --cov-fail-under=90`
+  - [x] 3.4 Câbler la Coverage_Gate FastAPI
+    - Job CI `fastapi-tests` ajouté à `.github/workflows/ci.yml` : matrice Python 3.10–3.13
+      (`pip install -e ".[fastapi,dev]"`, `-p no:django` — pas de dépendance Django), suite
+      complète sur chaque version ; gate de couverture `--cov=tenxyte.adapters.fastapi
+      --cov-fail-under=90` sur Python 3.12 (même schéma que `core-tests`), artefact remonté au
+      job `coverage` agrégateur. `httpx>=0.27` ajouté à l'extra `dev` (test-only — l'ASGITransport
+      des tests, jamais importé par le code runtime de l'adaptateur). Vérifié localement :
+      91.24 % sur `tenxyte.adapters.fastapi`, gate 90 % franchie.
     - _Requirements: 5.3_
 
 - [ ] 4. Checkpoint - Ensure all tests pass
