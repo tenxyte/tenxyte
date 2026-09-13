@@ -130,6 +130,39 @@ class WebAuthnChallengeRepository(Protocol):
         ...
 
 
+@runtime_checkable
+class AsyncWebAuthnCredentialRepository(WebAuthnCredentialRepository, Protocol):
+    """
+    Async mirror of `WebAuthnCredentialRepository` (spec z_aud_3, Requirement 1.1) — one of the
+    request-path Async_Ports. Not yet consumed by `WebAuthnService`, which stays sync-only in
+    this phase (Requirement 2 does not ask for async WebAuthn service methods); this protocol
+    exists so an async adapter implementation has an official interface to satisfy.
+    """
+
+    async def get_by_credential_id_async(self, credential_id: str) -> WebAuthnCredential | None: ...
+
+    async def list_by_user_async(self, user_id: str) -> list[WebAuthnCredential]: ...
+
+    async def create_async(self, credential: WebAuthnCredential) -> WebAuthnCredential: ...
+
+    async def update_sign_count_async(self, credential_id: str, new_count: int) -> bool: ...
+
+    async def delete_async(self, credential_id: str, user_id: str) -> bool: ...
+
+
+@runtime_checkable
+class AsyncWebAuthnChallengeRepository(WebAuthnChallengeRepository, Protocol):
+    """Async mirror of `WebAuthnChallengeRepository` (spec z_aud_3, Requirement 1.1)."""
+
+    async def create_async(
+        self, challenge: str, operation: str, user_id: str | None = None, expiry_seconds: int = 300
+    ) -> WebAuthnChallenge: ...
+
+    async def get_by_id_async(self, challenge_id: str) -> WebAuthnChallenge | None: ...
+
+    async def consume_async(self, challenge_id: str) -> bool: ...
+
+
 class WebAuthnService:
     """
     Framework-agnostic WebAuthn/Passkeys service.
