@@ -2,72 +2,77 @@
 
 __version__ = "0.9.2.5"
 
-from .settings import (
-    Settings,
-    SettingsProvider,
-    SecureModePreset,
-    SECURE_MODE_PRESETS,
-    init,
-    get_settings,
-)
-from .env_provider import (
-    EnvSettingsProvider,
-    get_env_settings,
-)
-from .email_service import (
-    EmailService,
-    EmailAttachment,
-    ConsoleEmailService,
+from .auth_service import (
+    AuthenticationService,
+    AuthResult,
+    PasswordUserLookup,
 )
 from .cache_service import (
     CacheService,
     InMemoryCacheService,
 )
+from .email_service import (
+    ConsoleEmailService,
+    EmailAttachment,
+    EmailService,
+)
+from .env_provider import (
+    EnvSettingsProvider,
+    get_env_settings,
+)
 from .jwt_service import (
-    JWTService,
-    TokenPair,
     DecodedToken,
-    TokenBlacklistService,
     InMemoryTokenBlacklistService,
-)
-from .totp_service import (
-    TOTPService,
-    TOTPSetupResult,
-    TOTPUserData,
-    TOTPStorage,
-    CodeReplayProtection,
-)
-from .webauthn_service import (
-    WebAuthnService,
-    WebAuthnCredential,
-    WebAuthnChallenge,
-    RegistrationResult,
-    AuthenticationResult,
-    WebAuthnCredentialRepository,
-    WebAuthnChallengeRepository,
+    JWTService,
+    TokenBlacklistService,
+    TokenPair,
 )
 from .magic_link_service import (
+    MagicLinkRepository,
+    MagicLinkResult,
     MagicLinkService,
     MagicLinkToken,
-    MagicLinkResult,
-    MagicLinkRepository,
     UserLookup,
 )
-from .task_service import TaskService
 from .schemas import (
-    UserBase,
-    UserCreate,
-    UserUpdate,
-    UserResponse,
-    UserInDB,
     LoginRequest,
-    TokenResponse,
     OrganizationBase,
     OrganizationCreate,
     OrganizationResponse,
+    TokenResponse,
+    UserBase,
+    UserCreate,
+    UserInDB,
+    UserResponse,
+    UserUpdate,
+)
+from .settings import (
+    SECURE_MODE_PRESETS,
+    SecureModePreset,
+    Settings,
+    SettingsProvider,
+    get_settings,
+    init,
+)
+from .task_service import TaskService
+from .totp_service import (
+    CodeReplayProtection,
+    TOTPService,
+    TOTPSetupResult,
+    TOTPStorage,
+    TOTPUserData,
+)
+from .webauthn_service import (
+    AuthenticationResult,
+    RegistrationResult,
+    WebAuthnChallenge,
+    WebAuthnChallengeRepository,
+    WebAuthnCredential,
+    WebAuthnCredentialRepository,
+    WebAuthnService,
 )
 
-__all__ = [
+__all__ = [  # noqa: RUF022
     # Settings
     "Settings",
     "SettingsProvider",
@@ -123,4 +128,8 @@ __all__ = [
     "MagicLinkRepository",
     "UserLookup",
     "TaskService",
+    # Services - Authentication
+    "AuthenticationService",
+    "AuthResult",
+    "PasswordUserLookup",
 ]

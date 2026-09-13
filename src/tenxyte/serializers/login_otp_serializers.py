@@ -4,13 +4,19 @@ création de mot de passe initial, et réauthentification par OTP.
 """
 
 from rest_framework import serializers
-from ..validators import validate_password, normalize_phone_country_code
+
 from ..device_info import validate_device_info as _validate_device_info
+from ..validators import normalize_phone_country_code, validate_password
 
 
 class LoginOTPRequestSerializer(serializers.Serializer):
-    phone_country_code = serializers.CharField(max_length=5)
-    phone_number = serializers.CharField(max_length=20)
+    # trim_whitespace=False : sans ça, DRF rogne les espaces en tête/queue
+    # AVANT de contrôler `max_length`. Une entrée trop longue mais bordée
+    # d'espaces (ex: 20 chiffres + un espace = 21 caractères) passerait alors
+    # sous la limite après rognage et serait acceptée à tort. On garde donc
+    # la valeur brute pour que `max_length` reflète l'entrée réelle.
+    phone_country_code = serializers.CharField(max_length=5, trim_whitespace=False)
+    phone_number = serializers.CharField(max_length=20, trim_whitespace=False)
 
     def validate_phone_country_code(self, value):
         """Normalise l'indicatif (sans '+') pour matcher le stockage en base."""
@@ -18,8 +24,10 @@ class LoginOTPRequestSerializer(serializers.Serializer):
 
 
 class LoginOTPVerifySerializer(serializers.Serializer):
-    phone_country_code = serializers.CharField(max_length=5)
-    phone_number = serializers.CharField(max_length=20)
+    # trim_whitespace=False : voir LoginOTPRequestSerializer. Empêche qu'une
+    # entrée trop longue bordée d'espaces passe sous `max_length` après rognage.
+    phone_country_code = serializers.CharField(max_length=5, trim_whitespace=False)
+    phone_number = serializers.CharField(max_length=20, trim_whitespace=False)
     otp_code = serializers.CharField(max_length=6, min_length=6)
     totp_code = serializers.CharField(
         max_length=10, required=False, allow_blank=True, help_text="Code 2FA (requis si 2FA activé)"

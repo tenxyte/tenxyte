@@ -1,33 +1,36 @@
-from django.http import JsonResponse
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import serializers
-from drf_spectacular.utils import extend_schema, OpenApiParameter, inline_serializer, OpenApiExample
-from drf_spectacular.types import OpenApiTypes
-from tenxyte.models.agent import AgentToken, AgentPendingAction
-from tenxyte.services.agent_service import AgentTokenService
-from tenxyte.models.base import get_application_model
-from django.utils import timezone
-from tenxyte.conf import auth_settings
+from typing import ClassVar
+
 from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse
+from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+
+from tenxyte.conf import auth_settings
+from tenxyte.models.agent import AgentPendingAction, AgentToken
+from tenxyte.models.base import get_application_model
+from tenxyte.services.agent_service import AgentTokenService
 
 # ---------------------------------------------------------------------------
 # Shared inline serializers for schema documentation
 # ---------------------------------------------------------------------------
-_AgentTokenOut = dict(
-    id=serializers.IntegerField(),
-    agent_id=serializers.CharField(),
-    status=serializers.CharField(),
-    expires_at=serializers.DateTimeField(),
-    created_at=serializers.DateTimeField(),
-    organization=serializers.CharField(allow_null=True),
-    current_request_count=serializers.IntegerField(),
-)
+_AgentTokenOut = {
+    "id": serializers.IntegerField(),
+    "agent_id": serializers.CharField(),
+    "status": serializers.CharField(),
+    "expires_at": serializers.DateTimeField(),
+    "created_at": serializers.DateTimeField(),
+    "organization": serializers.CharField(allow_null=True),
+    "current_request_count": serializers.IntegerField(),
+}
 
-_ErrorOut = dict(
-    error=serializers.CharField(),
-    code=serializers.CharField(required=False),
-)
+_ErrorOut = {
+    "error": serializers.CharField(),
+    "code": serializers.CharField(required=False),
+}
 
 
 class AgentTokenListCreateView(APIView):
@@ -37,7 +40,7 @@ class AgentTokenListCreateView(APIView):
     Liste les AgentTokens actifs ou en crée un nouveau.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes: ClassVar[list] = [IsAuthenticated]
 
     @extend_schema(
         tags=["AI Agents"],
@@ -209,7 +212,7 @@ class AgentTokenListCreateView(APIView):
 
                 Organization = get_organization_model()
                 organization = Organization.objects.get(slug=organization_slug, is_active=True)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 return JsonResponse({"error": "Organization not found"}, status=404)
 
         service = AgentTokenService()
@@ -228,10 +231,10 @@ class AgentTokenListCreateView(APIView):
             )
         except PermissionDenied as e:
             return JsonResponse({"error": str(e), "code": "PERMISSION_DENIED"}, status=403)
-        except Exception as e:
+        except Exception:
             import logging
 
-            logging.getLogger(__name__).error(f"Error creating agent token: {e}", exc_info=True)
+            logging.getLogger(__name__).exception("Error creating agent token")
             return JsonResponse({"error": "An unexpected error occurred."}, status=400)
 
         return JsonResponse(
@@ -251,7 +254,7 @@ class AgentTokenDetailView(APIView):
     GET /ai/tokens/{id}/
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes: ClassVar[list] = [IsAuthenticated]
 
     @extend_schema(
         tags=["AI Agents"],
@@ -287,7 +290,7 @@ class AgentTokenRevokeView(APIView):
     POST /ai/tokens/{id}/revoke/
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes: ClassVar[list] = [IsAuthenticated]
 
     @extend_schema(
         tags=["AI Agents"],
@@ -314,7 +317,7 @@ class AgentTokenSuspendView(APIView):
     POST /ai/tokens/{id}/suspend/
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes: ClassVar[list] = [IsAuthenticated]
 
     @extend_schema(
         tags=["AI Agents"],
@@ -388,7 +391,7 @@ class AgentTokenRevokeAllView(APIView):
     Coupe-circuit nucléaire.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes: ClassVar[list] = [IsAuthenticated]
 
     @extend_schema(
         tags=["AI Agents"],
@@ -416,7 +419,7 @@ class AgentPendingActionListView(APIView):
     GET /ai/pending-actions/
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes: ClassVar[list] = [IsAuthenticated]
 
     @extend_schema(
         tags=["AI Agents"],
@@ -483,7 +486,7 @@ class AgentPendingActionConfirmView(APIView):
     Body: {"token": "..."}
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes: ClassVar[list] = [IsAuthenticated]
 
     @extend_schema(
         tags=["AI Agents"],
@@ -550,7 +553,7 @@ class AgentPendingActionDenyView(APIView):
     Body: {"token": "..."}
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes: ClassVar[list] = [IsAuthenticated]
 
     @extend_schema(
         tags=["AI Agents"],

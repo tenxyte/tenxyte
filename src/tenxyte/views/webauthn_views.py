@@ -13,24 +13,26 @@ Endpoints:
 - DELETE {API_PREFIX}/auth/webauthn/credentials/<id>/  — delete a passkey
 """
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import AllowAny
-from rest_framework import serializers
-from drf_spectacular.utils import extend_schema, OpenApiExample, inline_serializer, OpenApiParameter
-from drf_spectacular.types import OpenApiTypes
+from typing import ClassVar
 
-from ..decorators import require_jwt, get_client_ip
-from ..device_info import build_device_info_from_user_agent
-from ..models import get_user_model
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from tenxyte.adapters.django.cache_service import DjangoCacheService
 
 # Core imports
 from tenxyte.adapters.django.repositories import DjangoUserRepository
-from tenxyte.adapters.django.cache_service import DjangoCacheService
 from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
 from tenxyte.adapters.django.webauthn_storage import DjangoWebAuthnStorage
-from tenxyte.core import WebAuthnService, JWTService, Settings
+from tenxyte.core import JWTService, Settings, WebAuthnService
+
+from ..decorators import get_client_ip, require_jwt
+from ..device_info import build_device_info_from_user_agent
+from ..models import get_user_model
 
 User = get_user_model()
 
@@ -276,7 +278,7 @@ class WebAuthnAuthenticateBeginView(APIView):
     Génère les options d'authentification WebAuthn.
     """
 
-    permission_classes = [AllowAny]
+    permission_classes: ClassVar[list] = [AllowAny]
 
     @extend_schema(
         tags=["WebAuthn"],
@@ -349,7 +351,7 @@ class WebAuthnAuthenticateCompleteView(APIView):
     Vérifie l'assertion WebAuthn et retourne des tokens JWT.
     """
 
-    permission_classes = [AllowAny]
+    permission_classes: ClassVar[list] = [AllowAny]
 
     @extend_schema(
         tags=["WebAuthn"],

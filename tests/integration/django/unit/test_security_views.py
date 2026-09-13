@@ -79,7 +79,7 @@ class TestAuditLogListView:
     def test_list_returns_200_with_permission(self):
         from tenxyte.views.security_views import AuditLogListView
         app = _app("AuditListApp")
-        admin = _user("audit_list@test.com", "audit.view")
+        admin = _user("audit_list@test.com", "security.view")
 
         req = _authed_request("get", "/admin/audit-logs/", admin, app)
         view = AuditLogListView.as_view()
@@ -113,7 +113,7 @@ class TestAuditLogListView:
     def test_list_filter_by_action(self):
         from tenxyte.views.security_views import AuditLogListView
         app = _app("AuditFilterApp")
-        admin = _user("audit_filter@test.com", "audit.view")
+        admin = _user("audit_filter@test.com", "security.view")
         target = _user("audit_filter_target@test.com")
         _make_audit_log(target, "login")
 
@@ -130,7 +130,7 @@ class TestAuditLogListView:
     def test_list_filter_by_user_id(self):
         from tenxyte.views.security_views import AuditLogListView
         app = _app("AuditUserFilterApp")
-        admin = _user("audit_uid@test.com", "audit.view")
+        admin = _user("audit_uid@test.com", "security.view")
         target = _user("audit_uid_target@test.com")
         _make_audit_log(target)
 
@@ -147,7 +147,7 @@ class TestAuditLogListView:
     def test_list_filter_by_date_range(self):
         from tenxyte.views.security_views import AuditLogListView
         app = _app("AuditDateApp")
-        admin = _user("audit_date@test.com", "audit.view")
+        admin = _user("audit_date@test.com", "security.view")
 
         req = _authed_request(
             "get", "/admin/audit-logs/", admin, app,
@@ -162,7 +162,7 @@ class TestAuditLogListView:
     def test_list_filter_by_ip(self):
         from tenxyte.views.security_views import AuditLogListView
         app = _app("AuditIPApp")
-        admin = _user("audit_ip@test.com", "audit.view")
+        admin = _user("audit_ip@test.com", "security.view")
 
         req = _authed_request(
             "get", "/admin/audit-logs/", admin, app,
@@ -184,7 +184,7 @@ class TestAuditLogDetailView:
     def test_detail_returns_200(self):
         from tenxyte.views.security_views import AuditLogDetailView
         app = _app("AuditDetailApp")
-        admin = _user("audit_detail@test.com", "audit.view")
+        admin = _user("audit_detail@test.com", "security.view")
         target = _user("audit_detail_target@test.com")
         log = _make_audit_log(target)
 
@@ -199,7 +199,7 @@ class TestAuditLogDetailView:
     def test_detail_returns_404_for_nonexistent(self):
         from tenxyte.views.security_views import AuditLogDetailView
         app = _app("AuditDetailNFApp")
-        admin = _user("audit_detail_nf@test.com", "audit.view")
+        admin = _user("audit_detail_nf@test.com", "security.view")
 
         req = _authed_request("get", "/admin/audit-logs/99999/", admin, app)
         view = AuditLogDetailView.as_view()

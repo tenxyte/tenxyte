@@ -2,9 +2,12 @@
 RBAC serializers - Permission, Role, User roles & permissions management.
 """
 
-from rest_framework import serializers
+from typing import ClassVar
+
 from drf_spectacular.utils import extend_schema_field
-from ..models import get_role_model, get_permission_model
+from rest_framework import serializers
+
+from ..models import get_permission_model, get_role_model
 
 Role = get_role_model()
 Permission = get_permission_model()
@@ -20,8 +23,18 @@ class PermissionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Permission
-        fields = ["id", "code", "name", "description", "parent", "parent_code", "children", "created_at", "updated_at"]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        fields: ClassVar[list] = [
+            "id",
+            "code",
+            "name",
+            "description",
+            "parent",
+            "parent_code",
+            "children",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields: ClassVar[list] = ["id", "created_at", "updated_at"]
 
     @extend_schema_field(serializers.DictField(allow_null=True))
     def get_parent(self, obj):
@@ -65,7 +78,7 @@ class RoleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Role
-        fields = [
+        fields: ClassVar[list] = [
             "id",
             "code",
             "name",
@@ -76,7 +89,7 @@ class RoleSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields: ClassVar[list] = ["id", "created_at", "updated_at"]
 
     def create(self, validated_data):
         permission_codes = validated_data.pop("permission_codes", [])
@@ -104,7 +117,7 @@ class RoleListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Role
-        fields = ["id", "code", "name", "is_default"]
+        fields: ClassVar[list] = ["id", "code", "name", "is_default"]
 
 
 class ManageRolePermissionsSerializer(serializers.Serializer):

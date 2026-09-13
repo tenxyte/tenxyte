@@ -4,22 +4,22 @@ Django Repository Adapters for Tenxyte Core.
 Implements the Repository ports using Django ORM.
 """
 
-from typing import Any, Dict, List, Optional
 from datetime import datetime
+from typing import Any
 
+from tenxyte.models import get_organization_model, get_user_model
 from tenxyte.ports.repositories import (
-    UserRepository,
-    OrganizationRepository,
-    RoleRepository,
-    AuditLogRepository,
-    User,
-    Organization,
-    Role,
     AuditLog,
-    UserStatus,
+    AuditLogRepository,
     MFAType,
+    Organization,
+    OrganizationRepository,
+    Role,
+    RoleRepository,
+    User,
+    UserRepository,
+    UserStatus,
 )
-from tenxyte.models import get_user_model, get_organization_model
 
 UserModel = get_user_model()
 OrganizationModel = get_organization_model()
@@ -40,23 +40,20 @@ class DjangoUserRepository(UserRepository):
             print(user.id, user.email)
     """
 
-    def _to_core_user(self, django_user) -> Optional[User]:
+    def _to_core_user(self, django_user) -> User | None:
         """Convert Django User model to Core User dataclass."""
         if django_user is None:
             return None
 
         # Determine MFA type
         mfa_type = MFAType.NONE
-        if getattr(django_user, "is_2fa_enabled", False):
-            if getattr(django_user, "totp_secret", None):
-                mfa_type = MFAType.TOTP
+        if getattr(django_user, "is_2fa_enabled", False) and getattr(django_user, "totp_secret", None):
+            mfa_type = MFAType.TOTP
 
         # Determine status
         status = UserStatus.ACTIVE
         if not django_user.is_active:
-            if getattr(django_user, "is_banned", False):
-                status = UserStatus.SUSPENDED
-            elif getattr(django_user, "is_locked", False):
+            if getattr(django_user, "is_banned", False) or getattr(django_user, "is_locked", False):
                 status = UserStatus.SUSPENDED
             else:
                 status = UserStatus.INACTIVE
@@ -80,7 +77,7 @@ class DjangoUserRepository(UserRepository):
             metadata=self._extract_metadata(django_user),
         )
 
-    def _extract_metadata(self, django_user) -> Dict[str, Any]:
+    def _extract_metadata(self, django_user) -> dict[str, Any]:
         """Extract additional metadata from Django user."""
         metadata = {}
 
@@ -110,7 +107,7 @@ class DjangoUserRepository(UserRepository):
 
         return metadata
 
-    def get_by_id(self, user_id: str) -> Optional[User]:
+    def get_by_id(self, user_id: str) -> User | None:
         """Get user by ID."""
         try:
             django_user = UserModel.objects.get(id=user_id)
@@ -118,7 +115,7 @@ class DjangoUserRepository(UserRepository):
         except UserModel.DoesNotExist:
             return None
 
-    def get_by_email(self, email: str) -> Optional[User]:
+    def get_by_email(self, email: str) -> User | None:
         """Get user by email (case-insensitive)."""
         try:
             django_user = UserModel.objects.get(email__iexact=email, is_deleted=False)
@@ -192,7 +189,7 @@ class DjangoUserRepository(UserRepository):
         django_user.save()
         return self._to_core_user(django_user)
 
-    def update_user(self, user_id: str, user_data: Dict[str, Any]) -> Optional[User]:
+    def update_user(self, user_id: str, user_data: dict[str, Any]) -> User | None:
         """Update user by ID with data dict (for view compatibility)."""
         try:
             django_user = UserModel.objects.get(id=user_id)
@@ -298,7 +295,7 @@ class DjangoUserRepository(UserRepository):
         except UserModel.DoesNotExist:
             return False
 
-    def list_all(self, skip: int = 0, limit: int = 100, filters: Optional[Dict[str, Any]] = None) -> List[User]:
+    def list_all(self, skip: int = 0, limit: int = 100, filters: dict[str, Any] | None = None) -> list[User]:
         """List users with optional filtering."""
         queryset = UserModel.objects.filter(is_deleted=False)
 
@@ -315,7 +312,7 @@ class DjangoUserRepository(UserRepository):
         users = queryset[skip : skip + limit]
         return [self._to_core_user(u) for u in users]
 
-    def count(self, filters: Optional[Dict[str, Any]] = None) -> int:
+    def count(self, filters: dict[str, Any] | None = None) -> int:
         """Count users matching filters."""
         queryset = UserModel.objects.filter(is_deleted=False)
 
@@ -390,7 +387,7 @@ class DjangoUserRepository(UserRepository):
 
     # Django-specific extensions
 
-    def get_by_google_id(self, google_id: str) -> Optional[User]:
+    def get_by_google_id(self, google_id: str) -> User | None:
         """Get user by Google ID (Django-specific extension)."""
         try:
             django_user = UserModel.objects.get(google_id=google_id, is_deleted=False)
@@ -494,7 +491,7 @@ class DjangoUserRepository(UserRepository):
                 self.lock_account(user_id, duration_minutes=30)
 
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     def hard_delete(self, user_id: str) -> bool:
@@ -522,7 +519,7 @@ class DjangoOrganizationRepository(OrganizationRepository):
             print(org.id, org.name)
     """
 
-    def _to_core_org(self, django_org) -> Optional[Organization]:
+    def _to_core_org(self, django_org) -> Organization | None:
         """Convert Django Organization model to Core Organization dataclass."""
         if django_org is None:
             return None
@@ -541,7 +538,7 @@ class DjangoOrganizationRepository(OrganizationRepository):
             updated_at=getattr(django_org, "updated_at", None),
         )
 
-    def get_by_id(self, org_id: str) -> Optional[Organization]:
+    def get_by_id(self, org_id: str) -> Organization | None:
         """Get organization by ID."""
         try:
             django_org = OrganizationModel.objects.get(id=org_id)
@@ -549,7 +546,7 @@ class DjangoOrganizationRepository(OrganizationRepository):
         except OrganizationModel.DoesNotExist:
             return None
 
-    def get_by_slug(self, slug: str) -> Optional[Organization]:
+    def get_by_slug(self, slug: str) -> Organization | None:
         """Get organization by slug."""
         try:
             django_org = OrganizationModel.objects.get(slug=slug, is_active=True)
@@ -603,7 +600,7 @@ class DjangoOrganizationRepository(OrganizationRepository):
         except OrganizationModel.DoesNotExist:
             return False
 
-    def list_by_user(self, user_id: str, skip: int = 0, limit: int = 100) -> List[Organization]:
+    def list_by_user(self, user_id: str, skip: int = 0, limit: int = 100) -> list[Organization]:
         """List organizations where user is an active member."""
         from tenxyte.models import get_organization_membership_model
 
@@ -619,7 +616,7 @@ class DjangoOrganizationRepository(OrganizationRepository):
 
         return [self._to_core_org(o) for o in orgs]
 
-    def get_children(self, org_id: str) -> List[Organization]:
+    def get_children(self, org_id: str) -> list[Organization]:
         """Get child organizations."""
         children = OrganizationModel.objects.filter(parent_id=org_id, is_active=True)
         return [self._to_core_org(o) for o in children]
@@ -640,7 +637,7 @@ class DjangoOrganizationRepository(OrganizationRepository):
                 membership.status = "active"
                 membership.save()
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     def remove_member(self, org_id: str, user_id: str) -> bool:
@@ -658,7 +655,7 @@ class DjangoOrganizationRepository(OrganizationRepository):
 
     # Django-specific extensions
 
-    def get_ancestors(self, org_id: str) -> List[Organization]:
+    def get_ancestors(self, org_id: str) -> list[Organization]:
         """Get all ancestor organizations up to the root."""
         try:
             django_org = OrganizationModel.objects.get(id=org_id)
@@ -667,7 +664,7 @@ class DjangoOrganizationRepository(OrganizationRepository):
         except OrganizationModel.DoesNotExist:
             return []
 
-    def get_descendants(self, org_id: str) -> List[Organization]:
+    def get_descendants(self, org_id: str) -> list[Organization]:
         """Get all descendant organizations (recursive)."""
         try:
             django_org = OrganizationModel.objects.get(id=org_id)
@@ -698,7 +695,7 @@ class DjangoRoleRepository(RoleRepository):
     Django ORM implementation of RoleRepository.
     """
 
-    def _to_core_role(self, django_role) -> Optional[Role]:
+    def _to_core_role(self, django_role) -> Role | None:
         if django_role is None:
             return None
 
@@ -714,7 +711,7 @@ class DjangoRoleRepository(RoleRepository):
             created_at=getattr(django_role, "created_at", None),
         )
 
-    def get_by_id(self, role_id: str) -> Optional[Role]:
+    def get_by_id(self, role_id: str) -> Role | None:
         from tenxyte.models import get_role_model
 
         RoleModel = get_role_model()
@@ -723,7 +720,7 @@ class DjangoRoleRepository(RoleRepository):
         except RoleModel.DoesNotExist:
             return None
 
-    def get_by_slug(self, slug: str, org_id: Optional[str] = None) -> Optional[Role]:
+    def get_by_slug(self, slug: str, org_id: str | None = None) -> Role | None:
         from tenxyte.models import get_role_model
 
         RoleModel = get_role_model()
@@ -764,14 +761,14 @@ class DjangoRoleRepository(RoleRepository):
         except RoleModel.DoesNotExist:
             return False
 
-    def list_by_organization(self, org_id: Optional[str] = None, skip: int = 0, limit: int = 100) -> List[Role]:
+    def list_by_organization(self, org_id: str | None = None, skip: int = 0, limit: int = 100) -> list[Role]:
         from tenxyte.models import get_role_model
 
         RoleModel = get_role_model()
         roles = RoleModel.objects.all()[skip : skip + limit]
         return [self._to_core_role(r) for r in roles]
 
-    def get_user_roles(self, user_id: str, org_id: Optional[str] = None) -> List[Role]:
+    def get_user_roles(self, user_id: str, org_id: str | None = None) -> list[Role]:
         from tenxyte.models import get_user_model
 
         UserModel = get_user_model()
@@ -787,7 +784,7 @@ class DjangoAuditLogRepository(AuditLogRepository):
     Django ORM implementation of AuditLogRepository.
     """
 
-    def _to_core_audit(self, django_audit) -> Optional[AuditLog]:
+    def _to_core_audit(self, django_audit) -> AuditLog | None:
         if django_audit is None:
             return None
 
@@ -813,7 +810,7 @@ class DjangoAuditLogRepository(AuditLogRepository):
         )
         return self._to_core_audit(django_audit)
 
-    def get_by_id(self, entry_id: str) -> Optional[AuditLog]:
+    def get_by_id(self, entry_id: str) -> AuditLog | None:
         from tenxyte.models import AuditLog as AuditLogModel
 
         try:
@@ -821,17 +818,17 @@ class DjangoAuditLogRepository(AuditLogRepository):
         except AuditLogModel.DoesNotExist:
             return None
 
-    def list_by_user(self, user_id: str, skip: int = 0, limit: int = 100) -> List[AuditLog]:
+    def list_by_user(self, user_id: str, skip: int = 0, limit: int = 100) -> list[AuditLog]:
         from tenxyte.models import AuditLog as AuditLogModel
 
         logs = AuditLogModel.objects.filter(user_id=user_id).order_by("-created_at")[skip : skip + limit]
         return [self._to_core_audit(log) for log in logs]
 
-    def list_by_organization(self, org_id: str, skip: int = 0, limit: int = 100) -> List[AuditLog]:
+    def list_by_organization(self, org_id: str, skip: int = 0, limit: int = 100) -> list[AuditLog]:
         # Implementation depends on how orgs are linked to audit logs
         return []
 
-    def list_by_resource(self, resource_type: str, resource_id: str, skip: int = 0, limit: int = 100) -> List[AuditLog]:
+    def list_by_resource(self, resource_type: str, resource_id: str, skip: int = 0, limit: int = 100) -> list[AuditLog]:
         return []
 
     def delete_old_entries(self, before_date: datetime) -> int:
@@ -840,7 +837,7 @@ class DjangoAuditLogRepository(AuditLogRepository):
         count, _ = AuditLogModel.objects.filter(created_at__lt=before_date).delete()
         return count
 
-    def count_by_action(self, action: str, since: Optional[datetime] = None) -> int:
+    def count_by_action(self, action: str, since: datetime | None = None) -> int:
         from tenxyte.models import AuditLog as AuditLogModel
 
         qs = AuditLogModel.objects.filter(action=action)
@@ -854,9 +851,10 @@ class DjangoMagicLinkRepository:
 
     def get_by_token(self, token: str):
         """Get a valid magic link token by its token string."""
+        import hashlib
+
         from django.utils import timezone
         from tenxyte.models import MagicLinkToken
-        import hashlib
 
         # Hash the token (Django stores SHA-256 hashes)
         hashed_token = hashlib.sha256(token.encode()).hexdigest()
@@ -885,16 +883,17 @@ class DjangoMagicLinkRepository:
         token_hash: str,
         user_id: str,
         email: str,
-        application_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        application_id: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
         expiry_minutes: int = 15,
     ):
         """Save a magic link token and return a CoreMagicLinkToken."""
-        from tenxyte.models import MagicLinkToken
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
         from tenxyte.core.magic_link_service import MagicLinkToken as CoreMagicLinkToken
+        from tenxyte.models import MagicLinkToken
 
         token_obj = MagicLinkToken.objects.create(
             user_id=user_id,
@@ -920,8 +919,8 @@ class DjangoMagicLinkRepository:
 
     def consume(self, token_id: str) -> bool:
         """Mark a token as consumed."""
-        from tenxyte.models import MagicLinkToken
         from django.utils import timezone
+        from tenxyte.models import MagicLinkToken
 
         try:
             token = MagicLinkToken.objects.get(id=token_id)
@@ -932,10 +931,10 @@ class DjangoMagicLinkRepository:
         except MagicLinkToken.DoesNotExist:
             return False
 
-    def invalidate_user_tokens(self, user_id: str, application_id: Optional[str] = None) -> int:
+    def invalidate_user_tokens(self, user_id: str, application_id: str | None = None) -> int:
         """Invalidate all non-consumed tokens for a user."""
-        from tenxyte.models import MagicLinkToken
         from django.utils import timezone
+        from tenxyte.models import MagicLinkToken
 
         query = MagicLinkToken.objects.filter(user_id=user_id, is_used=False)
         if application_id:
@@ -946,9 +945,9 @@ class DjangoMagicLinkRepository:
 
 
 __all__ = [
-    "DjangoUserRepository",
-    "DjangoOrganizationRepository",
-    "DjangoRoleRepository",
     "DjangoAuditLogRepository",
     "DjangoMagicLinkRepository",
+    "DjangoOrganizationRepository",
+    "DjangoRoleRepository",
+    "DjangoUserRepository",
 ]

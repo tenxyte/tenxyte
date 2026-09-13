@@ -5,8 +5,8 @@ This module provides a framework-agnostic settings class that can be used
 with any framework (Django, FastAPI, etc.) through appropriate adapters.
 """
 
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 from dataclasses import dataclass
+from typing import Any, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -89,7 +89,7 @@ class Settings:
         settings = Settings(provider=EnvSettingsProvider())
     """
 
-    def __init__(self, provider: Optional[SettingsProvider] = None):
+    def __init__(self, provider: SettingsProvider | None = None):
         """
         Initialize settings with an optional provider.
 
@@ -98,7 +98,7 @@ class Settings:
                      from the underlying framework or environment.
         """
         self._provider = provider
-        self._cache: Dict[str, Any] = {}
+        self._cache: dict[str, Any] = {}
 
     def _get(self, name: str, default: Any = None) -> Any:
         """
@@ -133,7 +133,7 @@ class Settings:
         # 3. Return default
         return default
 
-    def _get_secure_mode(self) -> Optional[str]:
+    def _get_secure_mode(self) -> str | None:
         """Get the active secure mode from provider or default."""
         if self._provider is not None:
             try:
@@ -184,7 +184,7 @@ class Settings:
         return self._get("JWT_SECRET_KEY", "")
 
     @property
-    def jwt_public_key(self) -> Optional[str]:
+    def jwt_public_key(self) -> str | None:
         """Public key for JWT verification (RS256 only)."""
         return self._get("JWT_PUBLIC_KEY", None)
 
@@ -209,17 +209,17 @@ class Settings:
         return self._get("JWT_ISSUER", "tenxyte")
 
     @property
-    def jwt_audience(self) -> Optional[str]:
+    def jwt_audience(self) -> str | None:
         """JWT audience claim."""
         return self._get("JWT_AUDIENCE", None)
 
     @property
-    def jwt_previous_secret_key(self) -> Optional[str]:
+    def jwt_previous_secret_key(self) -> str | None:
         """Previous JWT secret key for key rotation."""
         return self._get("JWT_PREVIOUS_SECRET_KEY", None)
 
     @property
-    def jwt_previous_public_key(self) -> Optional[str]:
+    def jwt_previous_public_key(self) -> str | None:
         """Previous JWT public key for key rotation (RS256)."""
         return self._get("JWT_PREVIOUS_PUBLIC_KEY", None)
 
@@ -302,6 +302,13 @@ class Settings:
         """Enable HaveIBeenPwned breach check."""
         return self._get("BREACH_CHECK_ENABLED", True)
 
+    @property
+    def bcrypt_rounds(self) -> int:
+        """Bcrypt cost factor for password hashing (also used for the dummy
+        hash computed by AuthenticationService's timing-attack mitigation —
+        must stay in sync with real password hashing cost)."""
+        return self._get("BCRYPT_ROUNDS", 12)
+
     # ============================================================
     # 2FA Settings
     # ============================================================
@@ -317,7 +324,7 @@ class Settings:
         return self._get("TOTP_ISSUER_NAME", "Tenxyte")
 
     @property
-    def totp_encryption_key(self) -> Optional[str]:
+    def totp_encryption_key(self) -> str | None:
         """Encryption key for TOTP secrets (Fernet key format)."""
         return self._get("TOTP_ENCRYPTION_KEY", None)
 
@@ -331,12 +338,12 @@ class Settings:
         return self._get("APPLICATION_AUTH_ENABLED", True)
 
     @property
-    def exempt_paths(self) -> List[str]:
+    def exempt_paths(self) -> list[str]:
         """Paths exempt from application authentication (prefix match)."""
         return self._get("EXEMPT_PATHS", ["/admin/", f"{self.api_prefix}/health/", f"{self.api_prefix}/docs/"])
 
     @property
-    def exact_exempt_paths(self) -> List[str]:
+    def exact_exempt_paths(self) -> list[str]:
         """Paths exempt from application authentication (exact match)."""
         return self._get("EXACT_EXEMPT_PATHS", [f"{self.api_prefix}/"])
 
@@ -392,7 +399,7 @@ class Settings:
     # ============================================================
 
     @property
-    def simple_throttle_rules(self) -> Dict[str, str]:
+    def simple_throttle_rules(self) -> dict[str, str]:
         """Simple throttle rules by URL prefix."""
         return self._get("SIMPLE_THROTTLE_RULES", {})
 
@@ -427,7 +434,7 @@ class Settings:
 
 
 # Global settings instance (will be initialized by framework adapters)
-_settings: Optional[Settings] = None
+_settings: Settings | None = None
 
 
 def get_settings() -> Settings:
@@ -439,7 +446,7 @@ def get_settings() -> Settings:
     return _settings
 
 
-def init(provider: Optional[SettingsProvider] = None) -> Settings:
+def init(provider: SettingsProvider | None = None) -> Settings:
     """Initialize global settings with a provider."""
     global _settings
     _settings = Settings(provider=provider)

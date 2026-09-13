@@ -7,15 +7,20 @@ Contains:
 - PasswordHistory: Password reuse prevention
 """
 
-import bcrypt
-from django.db import models
-from django.utils import timezone
-from django.conf import settings
+import logging
 from datetime import timedelta
+from typing import ClassVar
+
+import bcrypt
+from django.conf import settings
+from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 from .base import AutoFieldClass
+
+logger = logging.getLogger(__name__)
 
 
 class BlacklistedToken(models.Model):
@@ -87,7 +92,7 @@ class AuditLog(models.Model):
 
     id = AutoFieldClass(primary_key=True)
 
-    ACTION_CHOICES = [
+    ACTION_CHOICES: ClassVar[list] = [
         # Authentication
         ("login", "Login"),
         ("login_failed", "Login Failed"),
@@ -160,7 +165,7 @@ class AuditLog(models.Model):
 
     class Meta:
         db_table = "audit_logs"
-        ordering = ["-created_at"]
+        ordering: ClassVar[list] = ["-created_at"]
 
     def __str__(self):
         return f"{self.action} - {self.user} - {self.created_at}"
@@ -170,17 +175,17 @@ class AuditLog(models.Model):
         cls,
         action: str,
         user=None,
-        ip_address: str = None,
+        ip_address: str | None = None,
         user_agent: str = "",
         application=None,
-        details: dict = None,
+        details: dict | None = None,
         agent_token=None,
         on_behalf_of=None,
-        prompt_trace_id: str = None,
+        prompt_trace_id: str | None = None,
     ):
         """Create an audit log entry."""
-        import logging
         import json
+        import logging
 
         logger = logging.getLogger("tenxyte.security.audit")
 
@@ -260,7 +265,7 @@ class PasswordHistory(models.Model):
 
     class Meta:
         db_table = "password_history"
-        ordering = ["-created_at"]
+        ordering: ClassVar[list] = ["-created_at"]
 
     @classmethod
     def add_password(cls, user, password_hash: str, max_history: int = 5):
@@ -306,6 +311,7 @@ class PasswordHistory(models.Model):
 
                     return True
             except Exception:
+                logger.debug("Password history hash comparison failed for entry %s", history.pk, exc_info=True)
                 continue
 
         return False
@@ -341,7 +347,7 @@ def trigger_audit_log_webhook(sender, instance, created, **kwargs):
                         "details": instance.details,
                     }
                     requests.post(webhook_url, json=payload, timeout=5)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     import logging
 
                     logging.getLogger("tenxyte.security.audit").error(f"Failed to send audit webhook: {e}")

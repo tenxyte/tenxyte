@@ -4,8 +4,8 @@ DRF Spectacular Documentation Schemas and Patterns
 Reusable components for OpenAPI documentation across all Tenxyte views.
 """
 
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 
 # =============================================================================
 # STANDARD RESPONSES

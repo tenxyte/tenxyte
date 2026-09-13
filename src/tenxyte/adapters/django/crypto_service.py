@@ -4,7 +4,6 @@ Django Crypto Service for Tenxyte Core.
 Implements the CryptoService protocol using Django's cryptography utilities.
 """
 
-from typing import Optional
 import hashlib
 import hmac
 import secrets
@@ -32,7 +31,6 @@ class DjangoCryptoService:
             settings: Optional settings object (for compatibility with Core interface)
         """
         self.settings = settings
-        pass
 
     def hash_password(self, password: str) -> str:
         """
@@ -150,7 +148,7 @@ class DjangoCryptoService:
         f = Fernet(key.encode() if isinstance(key, str) else key)
         return f.encrypt(data.encode()).decode()
 
-    def decrypt_aes(self, data: str, key: str) -> Optional[str]:
+    def decrypt_aes(self, data: str, key: str) -> str | None:
         """
         Decrypt Fernet-encrypted data.
 
@@ -166,7 +164,7 @@ class DjangoCryptoService:
 
             f = Fernet(key.encode() if isinstance(key, str) else key)
             return f.decrypt(data.encode()).decode()
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
     def generate_key(self) -> str:

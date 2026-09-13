@@ -1,6 +1,9 @@
 import hashlib
-from django.db import models
+from typing import ClassVar
+
 from django.conf import settings
+from django.db import models
+
 from tenxyte.models.base import AutoFieldClass
 
 
@@ -71,7 +74,7 @@ class AgentToken(models.Model):
 
     class Meta:
         db_table = "agent_tokens"
-        indexes = [
+        indexes: ClassVar[list] = [
             models.Index(fields=["status", "expires_at"]),
             models.Index(fields=["triggered_by", "status"]),
         ]

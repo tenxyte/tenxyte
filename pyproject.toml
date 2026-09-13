@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tenxyte"
-version = "0.9.6.4"
+version = "0.9.6.4.2"
 
 description = "Framework-agnostic Python authentication — JWT, RBAC, 2FA, Magic Links, Passkeys, Social Login, B2B Organizations, multi-tenant support. Works with Django, FastAPI, and more."
 readme = "README.md"
@@ -161,8 +161,8 @@ dev = [
     "pytest-cov>=6.0",
     "pytest-asyncio>=0.24",
     "anyio>=4.0",
-    "black>=25.0",
-    "ruff>=0.9",
+    "black==26.5.1",
+    "ruff==0.16.7",
     "mypy>=1.15",
     "hypothesis>=6.0",
 ]
@@ -200,6 +200,35 @@ target-version = ["py310", "py311", "py312", "py313"]
 [tool.ruff]
 line-length = 120
 target-version = "py310"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+# Explicitly guarantee these specific rules stay enforced regardless of what ruff's own
+# unconfigured defaults do release to release (they drift — see CHANGELOG "Fixed": a
+# `ruff>=0.9` with no `select` went from ~0 findings to 375 between 0.15 and 0.16 on this
+# exact codebase, entirely from ruff's default rule set changing, not from any code change).
+# `extend-select` adds to ruff's own defaults rather than replacing them. Deliberately listed
+# by exact code, not by family prefix (e.g. "RUF", "C4") — a bare prefix pulls in every rule
+# ever added to that plugin, including many ruff does NOT enable by default, which is a much
+# bigger net than "keep enforcing what we already fixed".
+extend-select = [
+    "RUF012",  # Mutable default value for class attribute
+    "RUF013",  # PEP 484 prohibits implicit `Optional`
+    "RUF022",  # `__all__` is not sorted
+    "RUF059",  # Unpacked variable is never used
+    "RUF100",  # Unused `noqa` directive
+    "BLE001",  # Do not catch blind exception: `Exception`
+    "S110",    # `try`-`except`-`pass` detected, consider logging the exception
+    "S112",    # `try`-`except`-`continue` detected, consider logging the exception
+    "SIM102",  # Use a single `if` statement instead of nested `if` statements
+    "SIM103",  # Return the negated condition directly
+    "SIM118",  # Use `key in dict` instead of `key in dict.keys()`
+    "DTZ003",  # `datetime.datetime.utcnow()` used
+    "G201",    # Logging `.exception(...)` should be used instead of `.error(..., exc_info=True)`
+    "TRY401",  # Redundant exception object included in `logging.exception` call
+    "B008",    # Do not perform function call in argument defaults
+    "C408",    # Unnecessary `dict()`/`list()`/`tuple()` call (rewrite as a literal)
+]
 
 [tool.pyright]
 include = ["src"]

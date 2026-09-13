@@ -23,7 +23,7 @@ Backends tiers supportés via django-anymail:
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +39,8 @@ class BaseEmailBackend(ABC):
         to_email: str,
         subject: str,
         message: str,
-        html_message: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
+        html_message: str | None = None,
+        context: dict[str, Any] | None = None,
     ) -> bool:
         """
         Envoie un email.
@@ -55,7 +55,6 @@ class BaseEmailBackend(ABC):
         Returns:
             True si l'envoi a réussi
         """
-        pass
 
 
 class ConsoleBackend(BaseEmailBackend):
@@ -68,8 +67,8 @@ class ConsoleBackend(BaseEmailBackend):
         to_email: str,
         subject: str,
         message: str,
-        html_message: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
+        html_message: str | None = None,
+        context: dict[str, Any] | None = None,
     ) -> bool:
         """Affiche l'email dans la console."""
         logger.info(f"[Email Console] To: {to_email}")
@@ -99,14 +98,14 @@ class DjangoBackend(BaseEmailBackend):
         to_email: str,
         subject: str,
         message: str,
-        html_message: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
+        html_message: str | None = None,
+        context: dict[str, Any] | None = None,
     ) -> bool:
         """Envoie l'email via Django mail."""
         try:
-            from django.core.mail import EmailMultiAlternatives
             from django.conf import settings
-            from django.template import Template, Context
+            from django.core.mail import EmailMultiAlternatives
+            from django.template import Context, Template
 
             from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@example.com")
 
@@ -117,14 +116,14 @@ class DjangoBackend(BaseEmailBackend):
                     template = Template(message)
                     message = template.render(Context(context))
                 except Exception:
-                    pass  # Keep original message if template fails
+                    logger.debug("Message template rendering failed, keeping original message", exc_info=True)
 
                 if html_message:
                     try:
                         template = Template(html_message)
                         html_message = template.render(Context(context))
                     except Exception:
-                        pass
+                        logger.debug("HTML template rendering failed, keeping original html_message", exc_info=True)
 
             # Create email
             email = EmailMultiAlternatives(subject=subject, body=message, from_email=from_email, to=[to_email])
@@ -138,7 +137,7 @@ class DjangoBackend(BaseEmailBackend):
             logger.info(f"[Django Email] Email sent to {to_email}")
             return True
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"[Django Email] Error: {e}")
             return False
 
@@ -150,7 +149,7 @@ class TemplateEmailBackend(DjangoBackend):
     """
 
     def send_template_email(
-        self, to_email: str, subject: str, template_name: str, context: Optional[Dict[str, Any]] = None
+        self, to_email: str, subject: str, template_name: str, context: dict[str, Any] | None = None
     ) -> bool:
         """
         Envoie un email en utilisant un template Django.
@@ -174,7 +173,7 @@ class TemplateEmailBackend(DjangoBackend):
 
             return self.send_email(to_email=to_email, subject=subject, message=text_message, html_message=html_message)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"[Template Email] Error: {e}")
             return False
 
@@ -202,8 +201,8 @@ class SendGridBackend(BaseEmailBackend):
         to_email: str,
         subject: str,
         message: str,
-        html_message: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
+        html_message: str | None = None,
+        context: dict[str, Any] | None = None,
     ) -> bool:
         """Envoie l'email via SendGrid."""
         if not self.api_key:
@@ -231,7 +230,7 @@ class SendGridBackend(BaseEmailBackend):
         except ImportError:
             logger.error("[SendGrid] Library not installed. Run: pip install tenxyte[sendgrid]")
             return False
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"[SendGrid] Error: {e}")
             return False
 
@@ -244,6 +243,7 @@ def get_email_backend() -> BaseEmailBackend:
         Instance du backend email
     """
     from django.utils.module_loading import import_string
+
     from ..conf import auth_settings
 
     backend_path = auth_settings.EMAIL_BACKEND

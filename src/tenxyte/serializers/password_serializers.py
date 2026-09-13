@@ -3,7 +3,8 @@ Password serializers - Password validation, reset, change.
 """
 
 from rest_framework import serializers
-from ..validators import validate_password, normalize_phone_country_code
+
+from ..validators import normalize_phone_country_code, validate_password
 
 
 class PasswordSerializer(serializers.Serializer):

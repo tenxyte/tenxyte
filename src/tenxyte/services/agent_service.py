@@ -1,10 +1,12 @@
 import secrets
 import string
-from django.utils import timezone
 from datetime import timedelta
-from tenxyte.models.agent import AgentToken, AgentPendingAction
-from tenxyte.conf import auth_settings
+
 from django.core.exceptions import PermissionDenied
+from django.utils import timezone
+
+from tenxyte.conf import auth_settings
+from tenxyte.models.agent import AgentPendingAction, AgentToken
 
 
 class AgentTokenService:
@@ -40,8 +42,7 @@ class AgentTokenService:
             expires_in = auth_settings.AIRS_DEFAULT_EXPIRY
 
         # Cap expiry to maximum lifetime
-        if expires_in > auth_settings.AIRS_TOKEN_MAX_LIFETIME:
-            expires_in = auth_settings.AIRS_TOKEN_MAX_LIFETIME
+        expires_in = min(expires_in, auth_settings.AIRS_TOKEN_MAX_LIFETIME)
 
         # Verify permissions: Check if the user has all the requested permissions.
         # Check explicit permissions setting:
@@ -77,10 +78,9 @@ class AgentTokenService:
 
         # DMS mapping
         dms_kwargs = {}
-        if dead_mans_switch:
-            if "heartbeat_required_every" in dead_mans_switch:
-                dms_kwargs["heartbeat_required_every"] = dead_mans_switch["heartbeat_required_every"]
-                dms_kwargs["last_heartbeat_at"] = timezone.now()
+        if dead_mans_switch and "heartbeat_required_every" in dead_mans_switch:
+            dms_kwargs["heartbeat_required_every"] = dead_mans_switch["heartbeat_required_every"]
+            dms_kwargs["last_heartbeat_at"] = timezone.now()
 
         # Create token object — token brut généré ici, hashé avant persistance (R9)
         raw_token = self._generate_token()

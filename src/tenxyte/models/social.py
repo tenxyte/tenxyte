@@ -5,8 +5,10 @@ Contains:
 - SocialConnection: Links a user to a social OAuth provider account
 """
 
-from django.db import models
+from typing import ClassVar
+
 from django.conf import settings
+from django.db import models
 
 from .base import AutoFieldClass
 
@@ -19,7 +21,7 @@ class SocialConnection(models.Model):
     mais une seule par provider.
     """
 
-    PROVIDER_CHOICES = [
+    PROVIDER_CHOICES: ClassVar[list] = [
         ("google", "Google"),
         ("github", "GitHub"),
         ("microsoft", "Microsoft"),
@@ -55,7 +57,7 @@ class SocialConnection(models.Model):
 
     class Meta:
         db_table = "social_connections"
-        unique_together = [("provider", "provider_user_id")]
+        unique_together: ClassVar[list] = [("provider", "provider_user_id")]
 
     def __str__(self):
         return f"{self.user} — {self.provider}:{self.provider_user_id}"

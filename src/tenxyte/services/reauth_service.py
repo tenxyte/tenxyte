@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from .otp_service import OTPService
 
 
@@ -13,7 +11,7 @@ class ReauthService:
     def __init__(self, otp_service: OTPService = None):
         self.otp_service = otp_service or OTPService()
 
-    def verify(self, user, password: str = "", otp_code: str = "") -> Tuple[bool, str, str]:
+    def verify(self, user, password: str = "", otp_code: str = "") -> tuple[bool, str, str]:
         """
         Retourne (success, error_code, error_message).
         - password non vide et correct -> succès (comportement actuel inchangé).

@@ -8,8 +8,8 @@ Protege contre:
 - Abus d'OTP
 """
 
-from rest_framework.throttling import SimpleRateThrottle
 from django.core.cache import cache
+from rest_framework.throttling import SimpleRateThrottle
 
 
 class IPBasedThrottle(SimpleRateThrottle):
@@ -180,7 +180,6 @@ class ProgressiveLoginThrottle(SimpleRateThrottle):
 
     def throttle_failure(self):
         """Appele quand la requete est throttlee."""
-        pass
 
     @classmethod
     def record_failure(cls, request):

@@ -7,8 +7,8 @@ Usage:
 Runs makemigrations, migrate, seed, and creates a default Application — all in one command.
 """
 
-from django.core.management.base import BaseCommand
 from django.core.management import call_command
+from django.core.management.base import BaseCommand
 from django.db import connection
 
 
@@ -42,7 +42,7 @@ class Command(BaseCommand):
         try:
             call_command("makemigrations", verbosity=0)
             self.stdout.write(self.style.SUCCESS("  ✓ Migrations created"))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.stdout.write(self.style.WARNING(f"  ⚠ makemigrations: {e}"))
 
         # Step 2: migrate
@@ -56,7 +56,7 @@ class Command(BaseCommand):
             else:
                 call_command("migrate", verbosity=0)
             self.stdout.write(self.style.SUCCESS("  ✓ Database migrated"))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.stderr.write(self.style.ERROR(f"  ✗ migrate failed: {e}"))
             return
 
@@ -66,7 +66,7 @@ class Command(BaseCommand):
             try:
                 call_command("tenxyte_seed", verbosity=0)
                 self.stdout.write(self.style.SUCCESS("  ✓ Roles & permissions seeded"))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.stdout.write(self.style.WARNING(f"  ⚠ seed: {e}"))
         else:
             self.stdout.write(self.style.NOTICE("Step 3/4: Skipped (--no-seed)"))
@@ -111,5 +111,5 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("  ║  POST /api/v1/auth/applications/{id}/regenerate/    ║"))
             self.stdout.write(self.style.WARNING("  ║  to generate new credentials if needed.             ║"))
             self.stdout.write(self.style.WARNING("  ╚══════════════════════════════════════════════════════╝"))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.stderr.write(self.style.ERROR(f"  ✗ Failed to create application: {e}"))

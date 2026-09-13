@@ -2,13 +2,14 @@
 Classes d'authentification DRF pour JWT.
 """
 
+from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from drf_spectacular.extensions import OpenApiAuthenticationExtension
 
-from tenxyte.core.jwt_service import JWTService
 from tenxyte.adapters.django import get_django_settings
 from tenxyte.adapters.django.cache_service import DjangoCacheService
+from tenxyte.core.jwt_service import JWTService
+
 from .models import get_user_model
 
 User = get_user_model()
@@ -36,9 +37,8 @@ class JWTAuthentication(BaseAuthentication):
 
         # Vérifier l'application si présente
         application = getattr(request, "application", None)
-        if application:
-            if str(application.id) != payload.app_id:
-                raise AuthenticationFailed("Token ne correspond pas à l'application")
+        if application and str(application.id) != payload.app_id:
+            raise AuthenticationFailed("Token ne correspond pas à l'application")
 
         # Récupérer l'utilisateur
         try:

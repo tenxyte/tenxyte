@@ -5,40 +5,45 @@ These views act as adapters between Django/DRF and the framework-agnostic Core.
 They maintain 100% backward compatibility with existing endpoints and responses.
 """
 
+import logging
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import ClassVar
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiParameter
-from drf_spectacular.types import OpenApiTypes
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from tenxyte.adapters.django.cache_service import DjangoCacheService
+from tenxyte.adapters.django.repositories import DjangoUserRepository
+from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
+from tenxyte.adapters.django.totp_storage import DjangoTOTPStorage
+
+# Core imports
+from tenxyte.core import AuthenticationService, JWTService, Settings
+
+from ..conf import auth_settings
+from ..decorators import get_client_ip, require_jwt
+from ..device_info import build_device_info_from_user_agent, get_device_summary
 from ..serializers import (
-    RegisterSerializer,
     LoginEmailSerializer,
     LoginPhoneSerializer,
     RefreshTokenSerializer,
+    RegisterSerializer,
     UserSerializer,
 )
-from ..decorators import require_jwt, get_client_ip
-from ..device_info import build_device_info_from_user_agent, get_device_summary
 from ..throttles import (
-    LoginThrottle,
     LoginHourlyThrottle,
-    RegisterThrottle,
-    RegisterDailyThrottle,
+    LoginThrottle,
     RefreshTokenThrottle,
+    RegisterDailyThrottle,
+    RegisterThrottle,
 )
-from ..conf import auth_settings
 
-# Core imports
-from tenxyte.core import JWTService, Settings
-from tenxyte.adapters.django.repositories import DjangoUserRepository
-from tenxyte.adapters.django.cache_service import DjangoCacheService
-from tenxyte.adapters.django.settings_provider import DjangoSettingsProvider
-from tenxyte.adapters.django.totp_storage import DjangoTOTPStorage
+logger = logging.getLogger(__name__)
 
 
 # Lazy imports for legacy services still in use
@@ -241,8 +246,8 @@ class RegisterView(APIView):
     Inscription d'un nouvel utilisateur
     """
 
-    permission_classes = [AllowAny]
-    throttle_classes = [RegisterThrottle, RegisterDailyThrottle]
+    permission_classes: ClassVar[list] = [AllowAny]
+    throttle_classes: ClassVar[list] = [RegisterThrottle, RegisterDailyThrottle]
 
     @extend_schema(
         tags=["Auth"],
@@ -367,7 +372,7 @@ class RegisterView(APIView):
                                 first_name=existing_user.first_name,
                             )
                     except Exception:
-                        pass
+                        logger.debug("Failed to send duplicate-registration security alert email", exc_info=True)
 
                 # Ignore login_after, we don't want to generate tokens for an account they don't own
                 return Response(response_data, status=status.HTTP_201_CREATED)
@@ -391,7 +396,8 @@ class RegisterView(APIView):
                 otp, raw_code = otp_service.generate_phone_verification_otp(django_user)
                 otp_service.send_phone_otp(django_user, raw_code)
         except Exception:
-            pass  # OTP sending failure shouldn't block registration
+            # OTP sending failure shouldn't block registration
+            logger.debug("Failed to send verification OTP after registration", exc_info=True)
 
         response_data = {
             "message": "Registration successful",
@@ -429,6 +435,45 @@ class RegisterView(APIView):
         return Response(response_data, status=status.HTTP_201_CREATED)
 
 
+class _EmailPasswordLookup:
+    """Adapts DjangoUserRepository to AuthenticationService's PasswordUserLookup protocol."""
+
+    def __init__(self, user_repo):
+        self._repo = user_repo
+
+    def get_by_identifier(self, identifier):
+        return self._repo.get_by_email(identifier)
+
+    def is_account_locked(self, user_id):
+        return self._repo.is_account_locked(user_id)
+
+    def check_password(self, user_id, password):
+        return self._repo.check_password(user_id, password)
+
+    def record_failed_login(self, user_id):
+        return self._repo.record_failed_login(user_id)
+
+
+# Maps AuthResult.failure_reason (Core, generic) to the exact LoginAttempt.failure_reason
+# strings and user-facing error messages this endpoint has always returned — Core stays
+# agnostic of adapter-specific wording (e.g. "email" vs "phone number").
+_EMAIL_LOGIN_ATTEMPT_REASONS = {
+    "user_not_found": "User not found",
+    "account_inactive": "Account inactive",
+    "account_banned": "Account banned",
+    "account_locked": "Account locked",
+    "invalid_password": "Invalid password",
+}
+
+_EMAIL_LOGIN_ERROR_MESSAGES = {
+    "user_not_found": "Invalid email or password",
+    "account_inactive": "Account is inactive",
+    "account_banned": "Account has been banned",
+    "account_locked": "Account has been locked due to too many failed login attempts",
+    "invalid_password": "Invalid email or password",
+}
+
+
 def authenticate_by_email_with_core(email, password, ip_address=None, device_info="", application=None):
     """
     Authenticate user by email using Core repository.
@@ -439,9 +484,10 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
     user_repo = get_core_user_repo()
     jwt_service = get_core_jwt_service()
 
-    user = user_repo.get_by_email(email)
-    if not user:
-        # Record failed attempt for non-existent user
+    auth_service = AuthenticationService(settings=get_core_settings(), user_lookup=_EmailPasswordLookup(user_repo))
+    result = auth_service.authenticate(email, password)
+
+    if not result.success:
         try:
             from tenxyte.models import LoginAttempt
 
@@ -450,81 +496,13 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
                 ip_address=ip_address or "127.0.0.1",
                 application=application,
                 success=False,
-                failure_reason="User not found",
+                failure_reason=_EMAIL_LOGIN_ATTEMPT_REASONS.get(result.failure_reason, result.failure_reason),
             )
         except Exception:
-            pass
-        return False, None, "Invalid email or password"
+            logger.debug("Failed to record LoginAttempt for failed email login", exc_info=True)
+        return False, None, _EMAIL_LOGIN_ERROR_MESSAGES.get(result.failure_reason, result.error)
 
-    # Check if user is active
-    if not user.is_active:
-        # Record failed attempt for inactive user
-        try:
-            from tenxyte.models import LoginAttempt
-
-            LoginAttempt.record(
-                identifier=email,
-                ip_address=ip_address or "127.0.0.1",
-                application=application,
-                success=False,
-                failure_reason="Account inactive",
-            )
-        except Exception:
-            pass
-        return False, None, "Account is inactive"
-
-    # Check if user is banned (stored in metadata)
-    if user.metadata and user.metadata.get("is_banned"):
-        # Record failed attempt for banned user
-        try:
-            from tenxyte.models import LoginAttempt
-
-            LoginAttempt.record(
-                identifier=email,
-                ip_address=ip_address or "127.0.0.1",
-                application=application,
-                success=False,
-                failure_reason="Account banned",
-            )
-        except Exception:
-            pass
-        return False, None, "Account has been banned"
-
-    # Check if account is locked
-    if user_repo.is_account_locked(user.id):
-        # Record failed attempt for locked account
-        try:
-            from tenxyte.models import LoginAttempt
-
-            LoginAttempt.record(
-                identifier=email,
-                ip_address=ip_address or "127.0.0.1",
-                application=application,
-                success=False,
-                failure_reason="Account locked",
-            )
-        except Exception:
-            pass
-        return False, None, "Account has been locked due to too many failed login attempts"
-
-    # Verify password
-    if not user_repo.check_password(user.id, password):
-        # Record failed attempt
-        try:
-            from tenxyte.models import LoginAttempt
-
-            LoginAttempt.record(
-                identifier=email,
-                ip_address=ip_address or "127.0.0.1",
-                application=application,
-                success=False,
-                failure_reason="Invalid password",
-            )
-        except Exception:
-            pass
-        # Record failed attempt via repository for account locking
-        user_repo.record_failed_login(user.id)
-        return False, None, "Invalid email or password"
+    user = result.user
 
     # Update last login
     user_repo.update_last_login(user.id, datetime.now(timezone.utc))
@@ -541,10 +519,12 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
 
     # Store refresh token in database for validation during refresh
     try:
-        from tenxyte.models import RefreshToken
-        from django.utils import timezone as django_timezone
-        from django.db import transaction as db_transaction
         from datetime import timedelta
+
+        from django.db import transaction as db_transaction
+        from django.utils import timezone as django_timezone
+
+        from tenxyte.models import RefreshToken
 
         # Resolve application_id — FK is NOT NULL so we need a valid application
         app_for_token = application
@@ -564,7 +544,8 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
                     device_info=device_info,
                 )
     except Exception:
-        pass  # Don't fail login if refresh token storage fails
+        # Don't fail login if refresh token storage fails
+        logger.debug("Failed to store refresh token in database after email login", exc_info=True)
 
     # Build response data - Convert Core User to Django User for serialization
     try:
@@ -575,6 +556,7 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
         user_data = UserSerializer(django_user).data
     except Exception:
         # Fallback to basic user info if serialization fails
+        logger.debug("Failed to serialize Django user after email login, using basic fallback", exc_info=True)
         user_data = {
             "id": user.id,
             "email": user.email,
@@ -599,6 +581,54 @@ def authenticate_by_email_with_core(email, password, ip_address=None, device_inf
     return True, data, None
 
 
+class _PhonePasswordLookup:
+    """
+    Adapts phone-based Django ORM lookup to AuthenticationService's PasswordUserLookup protocol.
+
+    `identifier` is a `(country_code, phone_number)` tuple — phone lookup is a
+    Django-specific extension (Core has no concept of a phone number), but
+    once the Django user is resolved, credential-decision logic is identical
+    to the email flow and goes through the same Core service. The resolved
+    `django_user` is cached on the instance so the caller can reuse it for
+    serialization after a successful check, without a second query.
+    """
+
+    def __init__(self, user_repo):
+        self._repo = user_repo
+        self.django_user = None
+
+    def get_by_identifier(self, identifier):
+        country_code, phone_number = identifier
+        from ..models import get_user_model
+
+        UserModel = get_user_model()
+        try:
+            self.django_user = UserModel.objects.get(
+                phone_country_code=country_code, phone_number=phone_number, is_deleted=False
+            )
+        except UserModel.DoesNotExist:
+            return None
+        return self._repo.get_by_id(str(self.django_user.id))
+
+    def is_account_locked(self, user_id):
+        return self._repo.is_account_locked(user_id)
+
+    def check_password(self, user_id, password):
+        return self._repo.check_password(user_id, password)
+
+    def record_failed_login(self, user_id):
+        return self._repo.record_failed_login(user_id)
+
+
+_PHONE_LOGIN_ERROR_MESSAGES = {
+    "user_not_found": "Invalid phone number or password",
+    "account_inactive": "Account is inactive",
+    "account_banned": "Account has been banned",
+    "account_locked": "Account has been locked due to too many failed login attempts",
+    "invalid_password": "Invalid phone number or password",
+}
+
+
 def authenticate_by_phone_with_core(
     country_code, phone_number, password, ip_address=None, device_info="", application=None
 ):
@@ -608,34 +638,18 @@ def authenticate_by_phone_with_core(
     """
     from tenxyte.ports.repositories import MFAType
 
-    # Phone lookup requires Django ORM for now
-    from ..models import get_user_model
-
-    UserModel = get_user_model()
-
-    try:
-        django_user = UserModel.objects.get(
-            phone_country_code=country_code, phone_number=phone_number, is_deleted=False
-        )
-    except UserModel.DoesNotExist:
-        return False, None, "Invalid phone number or password"
-
-    # Use Core repository for user operations
     user_repo = get_core_user_repo()
     jwt_service = get_core_jwt_service()
 
-    user = user_repo.get_by_id(str(django_user.id))
-    if not user:
-        return False, None, "Invalid phone number or password"
+    phone_lookup = _PhonePasswordLookup(user_repo)
+    auth_service = AuthenticationService(settings=get_core_settings(), user_lookup=phone_lookup)
+    result = auth_service.authenticate((country_code, phone_number), password)
 
-    # Check if account is locked
-    if user_repo.is_account_locked(user.id):
-        return False, None, "Account has been locked due to too many failed login attempts"
+    if not result.success:
+        return False, None, _PHONE_LOGIN_ERROR_MESSAGES.get(result.failure_reason, result.error)
 
-    # Verify password
-    if not user_repo.check_password(user.id, password):
-        user_repo.record_failed_login(user.id)
-        return False, None, "Invalid phone number or password"
+    user = result.user
+    django_user = phone_lookup.django_user
 
     # Update last login
     user_repo.update_last_login(user.id, datetime.now(timezone.utc))
@@ -652,9 +666,11 @@ def authenticate_by_phone_with_core(
 
     # Store refresh token in database for validation during refresh
     try:
-        from tenxyte.models import RefreshToken
-        from django.utils import timezone as django_timezone
         from datetime import timedelta
+
+        from django.utils import timezone as django_timezone
+
+        from tenxyte.models import RefreshToken
 
         RefreshToken.objects.create(
             user_id=user.id,
@@ -665,12 +681,13 @@ def authenticate_by_phone_with_core(
             device_info=device_info,
         )
     except Exception:
-        pass
+        logger.debug("Failed to store refresh token in database after phone login", exc_info=True)
 
     # Convert Core User to Django User for serialization
     try:
         user_data = UserSerializer(django_user).data
     except Exception:
+        logger.debug("Failed to serialize Django user after phone login, using basic fallback", exc_info=True)
         user_data = {
             "id": user.id,
             "email": user.email,
@@ -701,8 +718,8 @@ class LoginEmailView(APIView):
     Connexion par email + password (+ 2FA si activé)
     """
 
-    permission_classes = [AllowAny]
-    throttle_classes = [LoginThrottle, LoginHourlyThrottle]
+    permission_classes: ClassVar[list] = [AllowAny]
+    throttle_classes: ClassVar[list] = [LoginThrottle, LoginHourlyThrottle]
 
     @extend_schema(
         tags=["Auth"],
@@ -881,7 +898,7 @@ class LoginEmailView(APIView):
             del data["_user"]
 
         # Convert user to serialized format
-        if "user" in data and data["user"]:
+        if data.get("user"):
             from ..models import get_user_model
 
             UserModel = get_user_model()
@@ -889,7 +906,7 @@ class LoginEmailView(APIView):
                 django_user = UserModel.objects.get(id=data["user"].id)
                 data["user"] = UserSerializer(django_user).data
             except Exception:
-                pass
+                logger.debug("Failed to re-serialize Django user for response", exc_info=True)
 
         # Force password change gating (feature: force_password_change_on_first_login).
         # Précédence : le bootstrap 2FA (2fa_setup_only) est déjà retourné plus haut.
@@ -903,7 +920,7 @@ class LoginEmailView(APIView):
                 _django_user_for_scope = _gum().objects.get(id=user.id)
                 _forced_scope = resolve_forced_password_change_scope(_django_user_for_scope)
             except Exception:
-                pass
+                logger.debug("Failed to resolve forced-password-change scope", exc_info=True)
         if _forced_scope == "password_change_only":
             jwt_service = get_core_jwt_service()
             app_id = str(request.application.id) if getattr(request, "application", None) else "default"
@@ -947,8 +964,8 @@ class LoginPhoneView(APIView):
     Connexion par téléphone + password (+ 2FA si activé)
     """
 
-    permission_classes = [AllowAny]
-    throttle_classes = [LoginThrottle, LoginHourlyThrottle]
+    permission_classes: ClassVar[list] = [AllowAny]
+    throttle_classes: ClassVar[list] = [LoginThrottle, LoginHourlyThrottle]
 
     @extend_schema(
         tags=["Auth"],
@@ -1107,7 +1124,7 @@ class LoginPhoneView(APIView):
             del data["_user"]
 
         # Convert user to serialized format
-        if "user" in data and data["user"]:
+        if data.get("user"):
             from ..models import get_user_model
 
             UserModel = get_user_model()
@@ -1115,7 +1132,7 @@ class LoginPhoneView(APIView):
                 django_user = UserModel.objects.get(id=data["user"].id)
                 data["user"] = UserSerializer(django_user).data
             except Exception:
-                pass
+                logger.debug("Failed to re-serialize Django user for response", exc_info=True)
 
         # Force password change gating (feature: force_password_change_on_first_login).
         # user est un Core User — il faut le Django User pour lire must_change_password.
@@ -1127,7 +1144,7 @@ class LoginPhoneView(APIView):
                 _django_user_for_scope2 = _gum2().objects.get(id=user.id)
                 _forced_scope = resolve_forced_password_change_scope(_django_user_for_scope2)
             except Exception:
-                pass
+                logger.debug("Failed to resolve forced-password-change scope", exc_info=True)
         if _forced_scope == "password_change_only":
             jwt_service = get_core_jwt_service()
             app_id = str(request.application.id) if getattr(request, "application", None) else "default"
@@ -1171,8 +1188,8 @@ class RefreshTokenView(APIView):
     Rafraîchir le access token
     """
 
-    permission_classes = [AllowAny]
-    throttle_classes = [RefreshTokenThrottle]
+    permission_classes: ClassVar[list] = [AllowAny]
+    throttle_classes: ClassVar[list] = [RefreshTokenThrottle]
 
     @extend_schema(
         tags=["Auth"],
@@ -1280,7 +1297,7 @@ class RefreshTokenView(APIView):
                 _refresh_django_user = UserModel.objects.get(id=decoded.user_id)
                 data["user"] = UserSerializer(_refresh_django_user).data
         except Exception:
-            pass
+            logger.debug("Failed to attach serialized user to refresh response", exc_info=True)
 
         # Force password change gating on refresh
         # (feature: force_password_change_on_first_login).
@@ -1324,7 +1341,7 @@ class LogoutView(APIView):
     Déconnexion (révoque le refresh token)
     """
 
-    permission_classes = [AllowAny]
+    permission_classes: ClassVar[list] = [AllowAny]
 
     @extend_schema(
         tags=["Auth"],
@@ -1401,7 +1418,7 @@ class LogoutView(APIView):
             else:
                 token_obj.is_revoked = True
                 token_obj.save(update_fields=["is_revoked"])
-        except Exception:
+        except Exception:  # noqa: BLE001
             # If not in DB, try to blacklist as a JWT refresh token
             try:
                 decoded = jwt_service.decode_token(serializer.validated_data["refresh_token"])
@@ -1410,7 +1427,7 @@ class LogoutView(APIView):
                         jti=decoded.jti, expires_at=decoded.exp, user_id=decoded.user_id, reason="logout"
                     )
             except Exception:
-                pass
+                logger.debug("Failed to blacklist refresh token during logout", exc_info=True)
 
         # Blacklist access token if provided
         if access_token:
@@ -1420,9 +1437,8 @@ class LogoutView(APIView):
                     jwt_service.blacklist_token(
                         jti=decoded.jti, expires_at=decoded.exp, user_id=decoded.user_id, reason="logout"
                     )
-            except Exception as e:
-                print(f"Exception blacklisting access token: {repr(e)}")
-                pass
+            except Exception:
+                logger.debug("Failed to blacklist access token during logout", exc_info=True)
 
         response = Response({"message": "Logged out successfully"})
         return _clear_refresh_cookie(response)
@@ -1484,7 +1500,7 @@ class LogoutAllView(APIView):
                         jti=decoded.jti, expires_at=decoded.exp, user_id=decoded.user_id, reason="logout_all"
                     )
             except Exception:
-                pass
+                logger.debug("Failed to blacklist access token during logout_all", exc_info=True)
 
         # Revoke all active sessions in database
         count = 1
@@ -1499,6 +1515,6 @@ class LogoutAllView(APIView):
                 # If no user.id available, we only invalidated current session via blacklist
                 pass
         except Exception:
-            pass
+            logger.debug("Failed to revoke refresh tokens during logout_all", exc_info=True)
 
         return Response({"message": f"Logged out from {count} devices"})

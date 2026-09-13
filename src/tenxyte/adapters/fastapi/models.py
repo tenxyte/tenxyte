@@ -2,9 +2,10 @@
 SQLAlchemy models for Tenxyte FastAPI adapter.
 """
 
-from datetime import datetime
 import uuid
-from sqlalchemy import Column, String, Boolean, DateTime, Enum, JSON
+from datetime import datetime
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, String
 from sqlalchemy.orm import declarative_base
 
 from tenxyte.ports.repositories import MFAType, UserStatus

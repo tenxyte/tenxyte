@@ -7,12 +7,14 @@ existantes (`RegisterView`, `LoginPhoneView`, `RequestOTPView`), sans jamais
 exiger de mot de passe.
 """
 
+import logging
 import secrets
 import uuid
 from datetime import timedelta
+from typing import ClassVar
 
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema, OpenApiExample
+from drf_spectacular.utils import OpenApiExample, extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -23,7 +25,7 @@ from ..decorators import get_client_ip
 from ..device_info import build_device_info_from_user_agent, get_device_summary
 from ..serializers import LoginOTPRequestSerializer, LoginOTPVerifySerializer, UserSerializer
 from ..services import OTPService
-from ..throttles import LoginOTPRequestThrottle, LoginOTPRequestDailyThrottle, OTPVerifyThrottle
+from ..throttles import LoginOTPRequestDailyThrottle, LoginOTPRequestThrottle, OTPVerifyThrottle
 from .auth_views import (
     get_core_jwt_service,
     get_core_settings,
@@ -32,6 +34,8 @@ from .auth_views import (
     resolve_forced_password_change_scope,
     validate_application_required,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _otp_response_payload(otp, channel: str = "sms") -> dict:
@@ -51,8 +55,8 @@ class LoginOTPRequestView(APIView):
     Demande un code OTP pour connexion passwordless par téléphone.
     """
 
-    permission_classes = [AllowAny]
-    throttle_classes = [LoginOTPRequestThrottle, LoginOTPRequestDailyThrottle]
+    permission_classes: ClassVar[list] = [AllowAny]
+    throttle_classes: ClassVar[list] = [LoginOTPRequestThrottle, LoginOTPRequestDailyThrottle]
 
     @extend_schema(
         tags=["Auth"],
@@ -121,7 +125,7 @@ class LoginOTPRequestView(APIView):
         if django_user is None and auth_settings.OTP_LOGIN_AUTO_REGISTER:
             # Passwordless_Account : mot de passe aléatoire inutilisable,
             # jamais choisi par l'utilisateur.
-            success, core_user, error = register_user_with_core(
+            success, core_user, _error = register_user_with_core(
                 phone_country_code=phone_country_code,
                 phone_number=phone_number,
                 password=secrets.token_urlsafe(32),
@@ -162,8 +166,8 @@ class LoginOTPVerifyView(APIView):
     les contrôles de sécurité et la forme de réponse de LoginPhoneView.
     """
 
-    permission_classes = [AllowAny]
-    throttle_classes = [OTPVerifyThrottle]
+    permission_classes: ClassVar[list] = [AllowAny]
+    throttle_classes: ClassVar[list] = [OTPVerifyThrottle]
 
     @extend_schema(
         tags=["Auth"],
@@ -255,11 +259,6 @@ class LoginOTPVerifyView(APIView):
         if django_user is None:
             return invalid_code_response
 
-        success, error = otp_service.verify_login_otp(django_user, otp_code)
-        if not success:
-            code = "OTP_EXPIRED" if "expired" in error.lower() else "OTP_INVALID"
-            return Response({"error": error, "code": code}, status=status.HTTP_401_UNAUTHORIZED)
-
         # Account_Status_Checks (identiques à authenticate_by_phone_with_core)
         user_repo = get_core_user_repo()
         jwt_service = get_core_jwt_service()
@@ -267,6 +266,34 @@ class LoginOTPVerifyView(APIView):
         user = user_repo.get_by_id(str(django_user.id))
         if not user:
             return invalid_code_response
+
+        # Pré-contrôle 2FA AVANT la consommation de l'OTP.
+        #
+        # `verify_login_otp` est destructif : il marque l'OTP `is_used=True`
+        # dès qu'il est valide. Si on le consommait puis qu'on renvoyait
+        # `2FA_REQUIRED`, la 2ème passe (OTP + TOTP) échouerait car l'OTP
+        # serait déjà consommé. On vérifie donc la présence du `totp_code`
+        # pour les comptes 2FA AVANT de toucher à l'OTP, afin que la 1ère
+        # passe (sans TOTP) renvoie `2FA_REQUIRED` sans rien consommer.
+        #
+        # NB : le Super Admin 2FA Bootstrap (admin sans 2FA) est traité plus
+        # bas car il nécessite un OTP valide pour émettre le token restreint.
+        _pre_mfa = "none"
+        if hasattr(user, "mfa_type"):
+            _pre_mfa = user.mfa_type.value if hasattr(user.mfa_type, "value") else str(user.mfa_type)
+        elif getattr(user, "is_2fa_enabled", False):
+            _pre_mfa = "totp"
+
+        if _pre_mfa != "none" and not (serializer.validated_data.get("totp_code", "") or "").strip():
+            return Response(
+                {"error": "2FA code required", "code": "2FA_REQUIRED", "requires_2fa": True},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        success, error = otp_service.verify_login_otp(django_user, otp_code)
+        if not success:
+            code = "OTP_EXPIRED" if "expired" in error.lower() else "OTP_INVALID"
+            return Response({"error": error, "code": code}, status=status.HTTP_401_UNAUTHORIZED)
 
         if user_repo.is_account_locked(user.id):
             return Response(
@@ -325,9 +352,9 @@ class LoginOTPVerifyView(APIView):
             )
 
         if mfa_type_value != "none":
-            from tenxyte.core import TOTPService
             from tenxyte.adapters.django.cache_service import DjangoCacheService
             from tenxyte.adapters.django.totp_storage import DjangoTOTPStorage
+            from tenxyte.core import TOTPService
 
             totp_code = serializer.validated_data.get("totp_code", "")
             if not totp_code:
@@ -348,7 +375,8 @@ class LoginOTPVerifyView(APIView):
 
         # update_last_login, génération de jetons et persistance du
         # RefreshToken (identique à authenticate_by_phone_with_core).
-        from datetime import datetime, timezone as dt_timezone
+        from datetime import datetime
+        from datetime import timezone as dt_timezone
 
         user_repo.update_last_login(user.id, datetime.now(dt_timezone.utc))
 
@@ -371,11 +399,12 @@ class LoginOTPVerifyView(APIView):
                 device_info=device_info,
             )
         except Exception:
-            pass
+            logger.debug("Failed to store refresh token in database after OTP login", exc_info=True)
 
         try:
             user_data = UserSerializer(django_user).data
         except Exception:
+            logger.debug("Failed to serialize Django user after OTP login, using basic fallback", exc_info=True)
             user_data = {
                 "id": user.id,
                 "email": user.email,

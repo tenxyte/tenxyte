@@ -97,10 +97,10 @@ Admins with the appropriate permissions can access the following API groups (doc
 | Category | Endpoints | Required Permission |
 |---|---|---|
 | **User Management** | `GET/PUT /admin/users/`, ban, unban, lock, unlock | `users.view`, `users.ban`, `users.lock` |
-| **Audit Logs** | `GET /admin/audit-logs/` | `audit.view` |
-| **Login Attempts** | `GET /admin/login-attempts/` | `audit.view` |
-| **Token Management** | `GET /admin/refresh-tokens/`, revoke, blacklist cleanup | `tokens.view`, `tokens.revoke` |
-| **GDPR** | `GET /admin/deletion-requests/`, process | `gdpr.view`, `gdpr.process` |
+| **Audit Logs** | `GET /admin/audit-logs/` | `security.view` |
+| **Login Attempts** | `GET /admin/login-attempts/` | `security.view` |
+| **Token Management** | `GET /admin/refresh-tokens/`, revoke, blacklist cleanup | `security.view` |
+| **GDPR** | `GET /admin/deletion-requests/`, process | `gdpr.admin`, `gdpr.process` |
 | **Dashboard** | `GET /dashboard/stats/`, auth, security, gdpr, orgs | `dashboard.view` |
 
 ---

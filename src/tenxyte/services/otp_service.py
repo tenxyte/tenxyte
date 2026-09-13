@@ -1,6 +1,6 @@
 import logging
-from typing import Tuple
-from ..models import get_user_model, OTPCode
+
+from ..models import OTPCode, get_user_model
 
 User = get_user_model()
 
@@ -12,7 +12,7 @@ class OTPService:
     Service de gestion des codes OTP
     """
 
-    def generate_email_verification_otp(self, user: User) -> Tuple[OTPCode, str]:
+    def generate_email_verification_otp(self, user: User) -> tuple[OTPCode, str]:
         """
         Génère un code OTP pour vérification email.
 
@@ -24,7 +24,7 @@ class OTPService:
 
         return OTPCode.generate(user, "email_verification", validity_minutes=15)
 
-    def generate_phone_verification_otp(self, user: User) -> Tuple[OTPCode, str]:
+    def generate_phone_verification_otp(self, user: User) -> tuple[OTPCode, str]:
         """
         Génère un code OTP pour vérification téléphone.
 
@@ -42,7 +42,7 @@ class OTPService:
 
         return OTPCode.generate(user, "phone_verification", validity_minutes=10)
 
-    def generate_password_reset_otp(self, user: User) -> Tuple[OTPCode, str]:
+    def generate_password_reset_otp(self, user: User) -> tuple[OTPCode, str]:
         """
         Génère un code OTP pour réinitialisation mot de passe.
 
@@ -54,7 +54,7 @@ class OTPService:
 
         return OTPCode.generate(user, "password_reset", validity_minutes=15)
 
-    def generate_login_otp(self, user: User) -> Tuple[OTPCode, str]:
+    def generate_login_otp(self, user: User) -> tuple[OTPCode, str]:
         """
         Génère un code OTP pour connexion passwordless.
 
@@ -69,7 +69,7 @@ class OTPService:
         validity = auth_settings.OTP_LOGIN_VALIDITY_MINUTES
         return OTPCode.generate(user, "login", validity_minutes=validity)
 
-    def verify_login_otp(self, user: User, code: str) -> Tuple[bool, str]:
+    def verify_login_otp(self, user: User, code: str) -> tuple[bool, str]:
         """
         Vérifie un code OTP pour connexion passwordless.
         """
@@ -90,7 +90,7 @@ class OTPService:
 
         return False, f"Invalid code. {otp.max_attempts - otp.attempts} attempt(s) remaining."
 
-    def verify_email_otp(self, user: User, code: str) -> Tuple[bool, str]:
+    def verify_email_otp(self, user: User, code: str) -> tuple[bool, str]:
         """
         Vérifie un code OTP pour email
         """
@@ -113,7 +113,7 @@ class OTPService:
 
         return False, f"Invalid code. {otp.max_attempts - otp.attempts} attempt(s) remaining."
 
-    def verify_phone_otp(self, user: User, code: str) -> Tuple[bool, str]:
+    def verify_phone_otp(self, user: User, code: str) -> tuple[bool, str]:
         """
         Vérifie un code OTP pour téléphone
         """
@@ -136,7 +136,7 @@ class OTPService:
 
         return False, f"Invalid code. {otp.max_attempts - otp.attempts} attempt(s) remaining."
 
-    def verify_password_reset_otp(self, user: User, code: str) -> Tuple[bool, str]:
+    def verify_password_reset_otp(self, user: User, code: str) -> tuple[bool, str]:
         """
         Vérifie un code OTP pour réinitialisation mot de passe
         """
@@ -183,7 +183,7 @@ class OTPService:
             return email_service.send_otp_email(
                 to_email=user.email, code=raw_code, otp_type=otp_type, validity_minutes=15, app_name=app_name
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"[OTP] Email service error: {e}")
             return False
 
@@ -222,6 +222,6 @@ class OTPService:
         try:
             backend = get_sms_backend()
             return backend.send_sms(phone_number, message)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"[OTP] SMS backend error: {e}")
             return False

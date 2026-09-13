@@ -8,19 +8,18 @@ Endpoints:
 - Process all expired grace period requests
 """
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, inline_serializer
 from drf_spectacular.types import OpenApiTypes
-from rest_framework import serializers
+from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from ..decorators import require_permission
+from ..models import AccountDeletionRequest
+from ..pagination import TenxytePagination
 from ..serializers.gdpr_admin_serializers import (
     DeletionRequestSerializer,
 )
-from ..models import AccountDeletionRequest
-from ..decorators import require_permission
-from ..pagination import TenxytePagination
 
 
 class DeletionRequestListView(APIView):

@@ -4,12 +4,9 @@ Django Email Service Adapter for Tenxyte Core.
 This module provides an EmailService implementation using Django's email backend.
 """
 
-from typing import List, Optional
-
-from django.core.mail import EmailMultiAlternatives
 from django.conf import settings as django_settings
-
-from tenxyte.core.email_service import EmailService, EmailAttachment
+from django.core.mail import EmailMultiAlternatives
+from tenxyte.core.email_service import EmailAttachment, EmailService
 
 
 class DjangoEmailService(EmailService):
@@ -40,7 +37,7 @@ class DjangoEmailService(EmailService):
         )
     """
 
-    def __init__(self, default_from_email: Optional[str] = None):
+    def __init__(self, default_from_email: str | None = None):
         """
         Initialize the Django email service.
 
@@ -50,7 +47,7 @@ class DjangoEmailService(EmailService):
         """
         self._default_from_email = default_from_email
 
-    def _get_from_email(self, from_email: Optional[str] = None) -> str:
+    def _get_from_email(self, from_email: str | None = None) -> str:
         """Get the sender email address."""
         if from_email:
             return from_email
@@ -63,11 +60,11 @@ class DjangoEmailService(EmailService):
         to_email: str,
         subject: str,
         body: str,
-        html_body: Optional[str] = None,
-        from_email: Optional[str] = None,
-        cc: Optional[List[str]] = None,
-        bcc: Optional[List[str]] = None,
-        attachments: Optional[List[EmailAttachment]] = None,
+        html_body: str | None = None,
+        from_email: str | None = None,
+        cc: list[str] | None = None,
+        bcc: list[str] | None = None,
+        attachments: list[EmailAttachment] | None = None,
     ) -> bool:
         """
         Send an email using Django's email framework.
@@ -113,7 +110,7 @@ class DjangoEmailService(EmailService):
             msg.send()
             return True
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             # Log the error but don't expose details to caller
             # In production, you should use proper logging
             print(f"Failed to send email: {e}")
@@ -121,8 +118,8 @@ class DjangoEmailService(EmailService):
 
     def send_mass_email(
         self,
-        recipients: List[tuple],
-        from_email: Optional[str] = None,
+        recipients: list[tuple],
+        from_email: str | None = None,
     ) -> int:
         """
         Send mass emails efficiently using Django's send_mass_mail.
@@ -143,7 +140,7 @@ class DjangoEmailService(EmailService):
 
         try:
             return send_mass_mail(messages, fail_silently=False)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"Failed to send mass emails: {e}")
             return 0
 
@@ -206,7 +203,7 @@ class DjangoEmailService(EmailService):
         subject: str,
         template_name: str,
         context: dict,
-        from_email: Optional[str] = None,
+        from_email: str | None = None,
     ) -> bool:
         """
         Send an email using a Django template.
@@ -222,8 +219,8 @@ class DjangoEmailService(EmailService):
             True if email was sent successfully, False otherwise
         """
         try:
-            from django.template.loader import render_to_string
             from django.core.mail import EmailMultiAlternatives
+            from django.template.loader import render_to_string
 
             # Render the template
             html_content = render_to_string(template_name, context)
@@ -241,7 +238,7 @@ class DjangoEmailService(EmailService):
             email.send()
             return True
 
-        except Exception:
+        except Exception:  # noqa: BLE001
             # Log error but don't raise - return False to indicate failure
             return False
 
@@ -267,7 +264,7 @@ class DjangoEmailService(EmailService):
                 template_name="emails/account_deletion_confirmation.html",
                 context=context,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     def send_account_deletion_confirmed(self, deletion_request) -> bool:
@@ -300,7 +297,7 @@ class DjangoEmailService(EmailService):
                 template_name="emails/account_deletion_confirmed.html",
                 context=context,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     def send_account_deletion_completed(self, deletion_request) -> bool:
@@ -319,7 +316,7 @@ class DjangoEmailService(EmailService):
                 template_name="emails/account_deletion_completed.html",
                 context=context,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     def send_deletion_request_rejected(self, deletion_request) -> bool:
@@ -346,7 +343,7 @@ class DjangoEmailService(EmailService):
                 template_name="emails/account_deletion_rejected.html",
                 context=context,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     def send_security_alert_email(self, user, device_info: str, ip_address: str) -> bool:
@@ -367,7 +364,7 @@ class DjangoEmailService(EmailService):
                 template_name="emails/security_alert.html",
                 context=context,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
 

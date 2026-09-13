@@ -5,10 +5,9 @@ Implements the WebAuthnCredentialRepository and WebAuthnChallengeRepository
 protocols using Django's ORM.
 """
 
-from typing import Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
-from tenxyte.core.webauthn_service import WebAuthnCredential, WebAuthnChallenge
+from tenxyte.core.webauthn_service import WebAuthnChallenge, WebAuthnCredential
 
 
 class DjangoWebAuthnCredential:
@@ -74,9 +73,8 @@ class DjangoWebAuthnStorage:
 
     def __init__(self):
         """Initialize WebAuthn storage."""
-        pass
 
-    def get_credential(self, credential_id: str) -> Optional[dict]:
+    def get_credential(self, credential_id: str) -> dict | None:
         """
         Get a WebAuthn credential by its ID.
 
@@ -97,10 +95,10 @@ class DjangoWebAuthnStorage:
                 "public_key": cred.public_key,
                 "sign_count": getattr(cred, "sign_count", 0),
             }
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
-    def get_credentials_for_user(self, user_id: str) -> List[dict]:
+    def get_credentials_for_user(self, user_id: str) -> list[dict]:
         """
         Get all WebAuthn credentials for a user.
 
@@ -124,7 +122,7 @@ class DjangoWebAuthnStorage:
                 }
                 for c in creds
             ]
-        except Exception:
+        except Exception:  # noqa: BLE001
             return []
 
     def store_credential(self, user_id: str, credential_data: dict) -> bool:
@@ -148,7 +146,7 @@ class DjangoWebAuthnStorage:
                 sign_count=credential_data.get("sign_count", 0),
             )
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     def update_sign_count(self, credential_id: str, new_count: int) -> bool:
@@ -169,7 +167,7 @@ class DjangoWebAuthnStorage:
             cred.sign_count = new_count
             cred.save(update_fields=["sign_count"])
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     def delete_credential(self, credential_id: str) -> bool:
@@ -188,10 +186,10 @@ class DjangoWebAuthnStorage:
             cred = WebAuthnCredentialModel.objects.get(credential_id=credential_id)
             cred.delete()
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
-    def get_challenge(self, challenge_id: str) -> Optional[dict]:
+    def get_challenge(self, challenge_id: str) -> dict | None:
         """
         Get a WebAuthn challenge by ID.
 
@@ -204,7 +202,7 @@ class DjangoWebAuthnStorage:
         try:
             from tenxyte.models import WebAuthnChallenge as WebAuthnChallengeModel
 
-            challenge = WebAuthnChallengeModel.objects.get(id=challenge_id, expires_at__gt=datetime.utcnow())
+            challenge = WebAuthnChallengeModel.objects.get(id=challenge_id, expires_at__gt=datetime.now(timezone.utc))
             return {
                 "id": str(challenge.id),
                 "challenge": challenge.challenge,
@@ -212,7 +210,7 @@ class DjangoWebAuthnStorage:
                 "purpose": getattr(challenge, "purpose", "authentication"),
                 "expires_at": challenge.expires_at,
             }
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
     def store_challenge(self, challenge_data: dict) -> str:
@@ -230,16 +228,16 @@ class DjangoWebAuthnStorage:
 
             expires_at = challenge_data.get("expires_at")
             if isinstance(expires_at, int):
-                expires_at = datetime.utcnow() + timedelta(seconds=expires_at)
+                expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_at)
 
             challenge = WebAuthnChallengeModel.objects.create(
                 challenge=challenge_data["challenge"],
                 user_id=challenge_data.get("user_id"),
                 purpose=challenge_data.get("purpose", "authentication"),
-                expires_at=expires_at or (datetime.utcnow() + timedelta(minutes=5)),
+                expires_at=expires_at or (datetime.now(timezone.utc) + timedelta(minutes=5)),
             )
             return str(challenge.id)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return ""
 
     def delete_challenge(self, challenge_id: str) -> bool:
@@ -257,7 +255,7 @@ class DjangoWebAuthnStorage:
 
             WebAuthnChallengeModel.objects.filter(id=challenge_id).delete()
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     def cleanup_expired_challenges(self) -> int:
@@ -270,16 +268,16 @@ class DjangoWebAuthnStorage:
         try:
             from tenxyte.models import WebAuthnChallenge as WebAuthnChallengeModel
 
-            count, _ = WebAuthnChallengeModel.objects.filter(expires_at__lt=datetime.utcnow()).delete()
+            count, _ = WebAuthnChallengeModel.objects.filter(expires_at__lt=datetime.now(timezone.utc)).delete()
             return count
-        except Exception:
+        except Exception:  # noqa: BLE001
             return 0
 
     # =========================================================================
     # Core WebAuthn Protocol Methods
     # =========================================================================
 
-    def get_by_credential_id(self, credential_id: str) -> Optional[WebAuthnCredential]:
+    def get_by_credential_id(self, credential_id: str) -> WebAuthnCredential | None:
         """Get credential by its ID - Core WebAuthnService compatibility."""
         try:
             from tenxyte.models import WebAuthnCredential as WebAuthnCredentialModel
@@ -295,10 +293,10 @@ class DjangoWebAuthnStorage:
                 aaguid=getattr(cred, "aaguid", ""),
                 transports=getattr(cred, "transports", []),
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
-    def list_by_user(self, user_id: str) -> List[WebAuthnCredential]:
+    def list_by_user(self, user_id: str) -> list[WebAuthnCredential]:
         """List all credentials for a user - Core WebAuthnService compatibility."""
         try:
             from tenxyte.models import WebAuthnCredential as WebAuthnCredentialModel
@@ -317,7 +315,7 @@ class DjangoWebAuthnStorage:
                 )
                 for c in creds
             ]
-        except Exception:
+        except Exception:  # noqa: BLE001
             return []
 
     def create(self, *args, **kwargs):
@@ -369,17 +367,17 @@ class DjangoWebAuthnStorage:
                 aaguid=getattr(credential, "aaguid", ""),
                 transports=getattr(credential, "transports", []),
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             raise RuntimeError(f"Failed to create credential: {e}")
 
     def _create_challenge(
-        self, challenge: str, operation: str, user_id: Optional[str] = None, expiry_seconds: int = 300
+        self, challenge: str, operation: str, user_id: str | None = None, expiry_seconds: int = 300
     ) -> WebAuthnChallenge:
         """Create a new challenge - Core WebAuthnService compatibility."""
         try:
             from tenxyte.models import WebAuthnChallenge as WebAuthnChallengeModel
 
-            expires_at = datetime.utcnow() + timedelta(seconds=expiry_seconds)
+            expires_at = datetime.now(timezone.utc) + timedelta(seconds=expiry_seconds)
 
             django_challenge = WebAuthnChallengeModel.objects.create(
                 challenge=challenge,
@@ -396,7 +394,7 @@ class DjangoWebAuthnStorage:
                 expires_at=django_challenge.expires_at,
                 consumed=False,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             raise RuntimeError(f"Failed to create challenge: {e}")
 
     def delete(self, credential_id: str, user_id: str) -> bool:
@@ -407,15 +405,15 @@ class DjangoWebAuthnStorage:
             cred = WebAuthnCredentialModel.objects.get(id=credential_id, user_id=user_id)
             cred.delete()
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
-    def get_by_id(self, challenge_id: str) -> Optional[WebAuthnChallenge]:
+    def get_by_id(self, challenge_id: str) -> WebAuthnChallenge | None:
         """Get challenge by ID - Core WebAuthnService compatibility."""
         try:
             from tenxyte.models import WebAuthnChallenge as WebAuthnChallengeModel
 
-            challenge = WebAuthnChallengeModel.objects.get(id=challenge_id, expires_at__gt=datetime.utcnow())
+            challenge = WebAuthnChallengeModel.objects.get(id=challenge_id, expires_at__gt=datetime.now(timezone.utc))
 
             return WebAuthnChallenge(
                 id=str(challenge.id),
@@ -425,7 +423,7 @@ class DjangoWebAuthnStorage:
                 expires_at=challenge.expires_at,
                 consumed=challenge.is_used,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
     def consume(self, challenge_id: str) -> bool:
@@ -437,5 +435,5 @@ class DjangoWebAuthnStorage:
             challenge.is_used = True
             challenge.save(update_fields=["is_used"])
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
