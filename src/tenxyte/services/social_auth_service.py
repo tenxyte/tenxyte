@@ -12,16 +12,17 @@ Architecture:
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, Tuple
+from typing import Any
 
 import requests
 from django.conf import settings
 from django.utils import timezone
 
-from ..models import get_user_model, get_application_model, RefreshToken
-from ..models.social import SocialConnection
 from tenxyte.core.jwt_service import JWTService
+
 from ..device_info import get_device_summary
+from ..models import RefreshToken, get_application_model, get_user_model
+from ..models.social import SocialConnection
 
 logger = logging.getLogger(__name__)
 
@@ -61,16 +62,16 @@ class AbstractOAuthProvider(ABC):
         ...
 
     @abstractmethod
-    def get_user_info(self, access_token: str) -> Optional[Dict[str, Any]]:
+    def get_user_info(self, access_token: str) -> dict[str, Any] | None:
         """Récupère les infos utilisateur depuis le provider."""
         ...
 
     @abstractmethod
-    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str = None) -> Optional[Dict[str, Any]]:
+    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str | None = None) -> dict[str, Any] | None:
         """Échange un authorization code contre des tokens."""
         ...
 
-    def _get(self, url: str, access_token: str, **kwargs) -> Optional[Dict[str, Any]]:
+    def _get(self, url: str, access_token: str, **kwargs) -> dict[str, Any] | None:
         """Helper GET avec Bearer token."""
         try:
             resp = requests.get(url, headers={"Authorization": f"Bearer {access_token}"}, timeout=10, **kwargs)
@@ -78,11 +79,11 @@ class AbstractOAuthProvider(ABC):
                 return resp.json()
             logger.warning(f"{self.provider_name} GET {url} returned {resp.status_code}")
             return None
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"{self.provider_name} GET error: {e}")
             return None
 
-    def _post(self, url: str, data: dict, headers: dict = None) -> Optional[Dict[str, Any]]:
+    def _post(self, url: str, data: dict, headers: dict | None = None) -> dict[str, Any] | None:
         """Helper POST."""
         try:
             resp = requests.post(url, data=data, headers=headers or {}, timeout=10)
@@ -90,7 +91,7 @@ class AbstractOAuthProvider(ABC):
                 return resp.json()
             logger.warning(f"{self.provider_name} POST {url} returned {resp.status_code}")
             return None
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"{self.provider_name} POST error: {e}")
             return None
 
@@ -110,11 +111,11 @@ class GoogleOAuthProvider(AbstractOAuthProvider):
     def provider_name(self) -> str:
         return "google"
 
-    def verify_id_token(self, id_token: str) -> Optional[Dict[str, Any]]:
+    def verify_id_token(self, id_token: str) -> dict[str, Any] | None:
         """Vérifie un Google ID token."""
         try:
-            from google.oauth2 import id_token as google_id_token
             from google.auth.transport import requests as google_requests
+            from google.oauth2 import id_token as google_id_token
 
             client_id = getattr(settings, "GOOGLE_CLIENT_ID", "")
             idinfo = google_id_token.verify_oauth2_token(id_token, google_requests.Request(), client_id)
@@ -131,17 +132,17 @@ class GoogleOAuthProvider(AbstractOAuthProvider):
                     "picture": idinfo.get("picture", ""),
                 }
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Google ID token verification error: {e}")
             return None
 
-    def get_user_info(self, access_token: str) -> Optional[Dict[str, Any]]:
+    def get_user_info(self, access_token: str) -> dict[str, Any] | None:
         data = self._get(self.GOOGLE_USERINFO_URL, access_token)
         if not data:
             return None
         return self._normalize(data)
 
-    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str = None) -> Optional[Dict[str, Any]]:
+    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str | None = None) -> dict[str, Any] | None:
         from ..conf import auth_settings
 
         data = {
@@ -156,7 +157,7 @@ class GoogleOAuthProvider(AbstractOAuthProvider):
             data["code_verifier"] = code_verifier
         return self._post(self.GOOGLE_TOKEN_URL, data=data)
 
-    def _normalize(self, data: dict) -> Dict[str, Any]:
+    def _normalize(self, data: dict) -> dict[str, Any]:
         return {
             "provider_user_id": data.get("sub", ""),
             "email": data.get("email"),
@@ -183,7 +184,7 @@ class GitHubOAuthProvider(AbstractOAuthProvider):
     def provider_name(self) -> str:
         return "github"
 
-    def get_user_info(self, access_token: str) -> Optional[Dict[str, Any]]:
+    def get_user_info(self, access_token: str) -> dict[str, Any] | None:
         data = self._get(self.GITHUB_USERINFO_URL, access_token)
         if not data:
             return None
@@ -211,7 +212,7 @@ class GitHubOAuthProvider(AbstractOAuthProvider):
             "avatar_url": data.get("avatar_url", ""),
         }
 
-    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str = None) -> Optional[Dict[str, Any]]:
+    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str | None = None) -> dict[str, Any] | None:
         from ..conf import auth_settings
 
         data = {
@@ -245,7 +246,7 @@ class MicrosoftOAuthProvider(AbstractOAuthProvider):
     def provider_name(self) -> str:
         return "microsoft"
 
-    def get_user_info(self, access_token: str) -> Optional[Dict[str, Any]]:
+    def get_user_info(self, access_token: str) -> dict[str, Any] | None:
         data = self._get(self.MICROSOFT_USERINFO_URL, access_token)
         if not data:
             return None
@@ -260,7 +261,7 @@ class MicrosoftOAuthProvider(AbstractOAuthProvider):
             "avatar_url": "",
         }
 
-    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str = None) -> Optional[Dict[str, Any]]:
+    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str | None = None) -> dict[str, Any] | None:
         from ..conf import auth_settings
 
         data = {
@@ -291,7 +292,7 @@ class FacebookOAuthProvider(AbstractOAuthProvider):
     def provider_name(self) -> str:
         return "facebook"
 
-    def get_user_info(self, access_token: str) -> Optional[Dict[str, Any]]:
+    def get_user_info(self, access_token: str) -> dict[str, Any] | None:
         try:
             resp = requests.get(
                 self.FACEBOOK_USERINFO_URL,
@@ -304,7 +305,7 @@ class FacebookOAuthProvider(AbstractOAuthProvider):
             if resp.status_code != 200:
                 return None
             data = resp.json()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Facebook user info error: {e}")
             return None
 
@@ -317,7 +318,7 @@ class FacebookOAuthProvider(AbstractOAuthProvider):
             "avatar_url": data.get("picture", {}).get("data", {}).get("url", ""),
         }
 
-    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str = None) -> Optional[Dict[str, Any]]:
+    def exchange_code(self, code: str, redirect_uri: str, code_verifier: str | None = None) -> dict[str, Any] | None:
         from ..conf import auth_settings
 
         data = {
@@ -336,7 +337,7 @@ class FacebookOAuthProvider(AbstractOAuthProvider):
 # Provider Registry
 # ===========================================================================
 
-PROVIDER_REGISTRY: Dict[str, AbstractOAuthProvider] = {
+PROVIDER_REGISTRY: dict[str, AbstractOAuthProvider] = {
     "google": GoogleOAuthProvider(),
     "github": GitHubOAuthProvider(),
     "microsoft": MicrosoftOAuthProvider(),
@@ -344,7 +345,7 @@ PROVIDER_REGISTRY: Dict[str, AbstractOAuthProvider] = {
 }
 
 
-def get_provider(name: str) -> Optional[AbstractOAuthProvider]:
+def get_provider(name: str) -> AbstractOAuthProvider | None:
     """Retourne le provider par son nom, ou None si inconnu/désactivé."""
     from ..conf import auth_settings
 
@@ -382,8 +383,8 @@ class SocialAuthService:
         self.jwt_service = JWTService(settings=get_django_settings(), blacklist_service=DjangoCacheService())
 
     def authenticate(
-        self, provider_name: str, user_data: Dict[str, Any], application, ip_address: str, device_info: str = ""
-    ) -> Tuple[bool, Optional[Dict[str, Any]], str]:
+        self, provider_name: str, user_data: dict[str, Any], application, ip_address: str, device_info: str = ""
+    ) -> tuple[bool, dict[str, Any] | None, str]:
         """
         Authentifie ou crée un utilisateur via les données d'un provider social.
 
@@ -468,7 +469,7 @@ class SocialAuthService:
                         created_by=user,
                         description=f"Default workspace for {user.email or user.full_phone}",
                     )
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     import logging
 
                     logging.getLogger("tenxyte").error(
