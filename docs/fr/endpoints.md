@@ -5090,8 +5090,38 @@ Tenxyte inclut un ensemble complet de points de terminaison pour la sécurité d
 | `GET` | `/ai/pending-actions/` | Lister les actions en attente (human-in-the-loop) |
 | `POST` | `/ai/pending-actions/<id>/approve/` | Approuver une action en attente |
 | `POST` | `/ai/pending-actions/<id>/reject/` | Rejeter une action en attente |
+| `GET` | `/ai/.well-known/airs/` | Document de découverte AIRS (non authentifié) |
 
 → Voir le [Guide AIRS](airs.md) pour la documentation complète des requêtes/réponses, les niveaux d'habilitation et la gestion du cycle de vie des agents.
+
+### `GET /ai/.well-known/airs/`
+
+Document de découverte non authentifié pour la [spécification ouverte AIRS/1.0](../../spec/airs/AIRS-1.0.md). Retourne la version de la spécification, les niveaux de conformité réellement appliqués par ce serveur, une carte des endpoints AIRS et les limites configurées — des capacités uniquement, jamais de données utilisateur ou de token.
+
+**Réponse `200` :**
+```json
+{
+  "airs_version": "1.0",
+  "conformance": ["core", "hitl", "guards", "trace"],
+  "endpoints": {
+    "tokens": "/api/v1/auth/ai/tokens/",
+    "heartbeat": "/api/v1/auth/ai/tokens/{id}/heartbeat/",
+    "report_usage": "/api/v1/auth/ai/tokens/{id}/report-usage/",
+    "pending_actions": "/api/v1/auth/ai/pending-actions/"
+  },
+  "limits": { "token_max_lifetime": 86400, "default_expiry": 3600 }
+}
+```
+
+`conformance` reflète les settings réels : `core`/`hitl`/`trace` sont présents dès que `TENXYTE_AIRS_ENABLED` est vrai ; `guards` uniquement si `TENXYTE_AIRS_CIRCUIT_BREAKER_ENABLED` est vrai ; `budget` uniquement si `TENXYTE_AIRS_BUDGET_TRACKING_ENABLED` est vrai.
+
+**Réponse `404` (`TENXYTE_AIRS_ENABLED = False`) :**
+```json
+{
+  "error": "This feature is not enabled",
+  "code": "FEATURE_DISABLED"
+}
+```
 
 ---
 

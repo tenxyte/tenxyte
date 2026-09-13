@@ -70,6 +70,7 @@ from .views.agent_views import (
     AgentTokenRevokeAllView,
     AgentTokenRevokeView,
     AgentTokenSuspendView,
+    AIRSDiscoveryView,
 )
 from .views.dashboard_views import (
     DashboardAuthView,
@@ -233,6 +234,7 @@ urlpatterns = [
         "ai/pending-actions/<str:token>/deny/", AgentPendingActionDenyView.as_view(), name="agent_pending_action_deny"
     ),
     path("ai/tokens/<int:pk>/report-usage/", AgentTokenReportUsageView.as_view(), name="agent_token_report_usage"),
+    path("ai/.well-known/airs/", AIRSDiscoveryView.as_view(), name="airs_discovery"),
 ]
 
 # =============================================

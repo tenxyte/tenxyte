@@ -6,7 +6,7 @@ from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import serializers
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 
 from tenxyte.conf import auth_settings
@@ -717,3 +717,121 @@ class AgentTokenReportUsageView(APIView):
             return JsonResponse({"error": "Budget exceeded", "status": "suspended"}, status=403)
 
         return JsonResponse({"status": "ok"})
+
+
+def _build_endpoint_map() -> dict:
+    """
+    Construit la carte `endpoints` de la découverte AIRS (spec/airs/AIRS-1.0.md §9) en
+    inversant (`reverse()`) les routes réellement enregistrées, plutôt qu'en dupliquant les
+    chemins en dur — la carte ne peut donc pas diverger silencieusement de `urls.py`.
+    """
+    from django.urls import reverse
+
+    _ID_PLACEHOLDER = 999999999
+    _TOKEN_PLACEHOLDER = "__CONFIRMATION_TOKEN_PLACEHOLDER__"
+
+    def rev(name, **kwargs):
+        return reverse(f"authentication:{name}", kwargs=kwargs or None)
+
+    def templated_id(name):
+        return rev(name, pk=_ID_PLACEHOLDER).replace(str(_ID_PLACEHOLDER), "{id}")
+
+    def templated_token(name):
+        return rev(name, token=_TOKEN_PLACEHOLDER).replace(_TOKEN_PLACEHOLDER, "{confirmation_token}")
+
+    return {
+        "tokens": rev("agent_token_list_create"),
+        "token_detail": templated_id("agent_token_detail"),
+        "token_revoke": templated_id("agent_token_revoke"),
+        "token_suspend": templated_id("agent_token_suspend"),
+        "token_revoke_all": rev("agent_token_revoke_all"),
+        "heartbeat": templated_id("agent_token_heartbeat"),
+        "report_usage": templated_id("agent_token_report_usage"),
+        "pending_actions": rev("agent_pending_action_list"),
+        "pending_action_confirm": templated_token("agent_pending_action_confirm"),
+        "pending_action_deny": templated_token("agent_pending_action_deny"),
+        "discovery": rev("airs_discovery"),
+    }
+
+
+class AIRSDiscoveryView(APIView):
+    """
+    GET {API_PREFIX}/auth/ai/.well-known/airs/ — document de découverte AIRS.
+
+    Additif, non authentifié (AllowAny), gated par AIRS_ENABLED. Ne révèle jamais de données
+    utilisateur ou de token — capacités uniquement. Voir spec/airs/AIRS-1.0.md §9
+    ([AIRS-DISC-1], [AIRS-DISC-2], [AIRS-DISC-3]).
+    """
+
+    permission_classes: ClassVar[list] = [AllowAny]
+
+    @extend_schema(
+        tags=["AI Agents"],
+        summary="Découverte AIRS",
+        description=(
+            "Document de découverte AIRS/1.0 (spec/airs/AIRS-1.0.md) : version de spécification, "
+            "niveaux de conformité effectivement actifs (`core`/`hitl`/`trace` toujours présents "
+            "si AIRS est activé ; `guards` ssi AIRS_CIRCUIT_BREAKER_ENABLED ; `budget` ssi "
+            "AIRS_BUDGET_TRACKING_ENABLED), carte des endpoints, et limites configurées. "
+            "Non authentifié — capacités uniquement, jamais de données."
+        ),
+        responses={
+            200: inline_serializer(
+                "AIRSDiscovery",
+                fields={
+                    "airs_version": serializers.CharField(),
+                    "conformance": serializers.ListField(child=serializers.CharField()),
+                    "endpoints": serializers.DictField(child=serializers.CharField()),
+                    "limits": serializers.DictField(),
+                },
+            ),
+            404: inline_serializer("AgentErrorResponse", fields={**_ErrorOut}),
+        },
+        examples=[
+            OpenApiExample(
+                name="discovery_success",
+                summary="AIRS activé, tous niveaux",
+                response_only=True,
+                status_codes=["200"],
+                value={
+                    "airs_version": "1.0",
+                    "conformance": ["budget", "core", "guards", "hitl", "trace"],
+                    "endpoints": {
+                        "tokens": "/api/v1/auth/ai/tokens/",
+                        "heartbeat": "/api/v1/auth/ai/tokens/{id}/heartbeat/",
+                        "report_usage": "/api/v1/auth/ai/tokens/{id}/report-usage/",
+                        "pending_actions": "/api/v1/auth/ai/pending-actions/",
+                    },
+                    "limits": {"token_max_lifetime": 86400, "default_expiry": 3600},
+                },
+            ),
+            OpenApiExample(
+                name="airs_disabled",
+                summary="AIRS désactivé",
+                response_only=True,
+                status_codes=["404"],
+                value={"error": "This feature is not enabled", "code": "FEATURE_DISABLED"},
+            ),
+        ],
+    )
+    def get(self, request):
+        if not auth_settings.AIRS_ENABLED:
+            return JsonResponse({"error": "This feature is not enabled", "code": "FEATURE_DISABLED"}, status=404)
+
+        conformance = ["core", "hitl", "trace"]
+        if auth_settings.AIRS_CIRCUIT_BREAKER_ENABLED:
+            conformance.append("guards")
+        if auth_settings.AIRS_BUDGET_TRACKING_ENABLED:
+            conformance.append("budget")
+
+        return JsonResponse(
+            {
+                "airs_version": "1.0",
+                "conformance": sorted(conformance),
+                "endpoints": _build_endpoint_map(),
+                "limits": {
+                    "token_max_lifetime": auth_settings.AIRS_TOKEN_MAX_LIFETIME,
+                    "default_expiry": auth_settings.AIRS_DEFAULT_EXPIRY,
+                },
+            }
+        )

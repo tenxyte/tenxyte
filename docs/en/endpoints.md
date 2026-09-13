@@ -5052,8 +5052,38 @@ Tenxyte includes a full set of AI/Agent Identity & Runtime Security endpoints fo
 | `GET` | `/ai/pending-actions/` | List pending human-in-the-loop actions |
 | `POST` | `/ai/pending-actions/<id>/approve/` | Approve a pending action |
 | `POST` | `/ai/pending-actions/<id>/reject/` | Reject a pending action |
+| `GET` | `/ai/.well-known/airs/` | AIRS discovery document (unauthenticated) |
 
 → See [AIRS Guide](airs.md) for full request/response documentation, clearance levels, and agent lifecycle management.
+
+### `GET /ai/.well-known/airs/`
+
+Unauthenticated discovery document for the [AIRS/1.0 open specification](../../spec/airs/AIRS-1.0.md). Returns the spec version, the Conformance Levels this server actually enforces, a map of the AIRS endpoints, and the configured limits — capabilities only, never any user or token data.
+
+**Response `200`:**
+```json
+{
+  "airs_version": "1.0",
+  "conformance": ["core", "hitl", "guards", "trace"],
+  "endpoints": {
+    "tokens": "/api/v1/auth/ai/tokens/",
+    "heartbeat": "/api/v1/auth/ai/tokens/{id}/heartbeat/",
+    "report_usage": "/api/v1/auth/ai/tokens/{id}/report-usage/",
+    "pending_actions": "/api/v1/auth/ai/pending-actions/"
+  },
+  "limits": { "token_max_lifetime": 86400, "default_expiry": 3600 }
+}
+```
+
+`conformance` reflects live settings: `core`/`hitl`/`trace` are present whenever `TENXYTE_AIRS_ENABLED` is true; `guards` only if `TENXYTE_AIRS_CIRCUIT_BREAKER_ENABLED` is true; `budget` only if `TENXYTE_AIRS_BUDGET_TRACKING_ENABLED` is true.
+
+**Response `404` (`TENXYTE_AIRS_ENABLED = False`):**
+```json
+{
+  "error": "This feature is not enabled",
+  "code": "FEATURE_DISABLED"
+}
+```
 
 ---
 
