@@ -4,6 +4,7 @@ Ce guide vous aide à migrer des bibliothèques d'authentification Django couran
 
 ## Table des Matières
 
+- [Migration de Tenxyte v0.9.x vers v1.0.0 (Inversion du Packaging)](#migration-de-tenxyte-v09x-vers-v100-inversion-du-packaging)
 - [Migration de Tenxyte v0.9.x vers v0.9.3 (Réarchitecture du Cœur)](#migration-de-tenxyte-v09x-vers-v093-rearchitecture-du-coeur)
 - [Migration depuis `djangorestframework-simplejwt`](#migration-depuis-djangorestframework-simplejwt)
   - [Correspondance des Paramètres](#correspondance-des-parametres)
@@ -20,6 +21,89 @@ Ce guide vous aide à migrer des bibliothèques d'authentification Django couran
   - [Étape 3 — Mettre à jour les en-têtes du frontend](#etape-3--mettre-a-jour-les-en-tetes-du-frontend)
 - [Liste de Contrôle des Changements Majeurs](#liste-de-controle-des-changements-majeurs)
 - [Besoin d'aide ?](#besoin-daide)
+
+---
+
+## Migration de Tenxyte v0.9.x vers v1.0.0 (Inversion du Packaging)
+
+**C'est le seul changement de comportement que la 1.0.0 introduit pour les utilisateurs
+existants — tout le reste est additif.** Voir le [Contrat de stabilité](stability.md) pour la
+politique complète établie par cette version pour la suite.
+
+### Ce qui a changé
+
+Avant la 1.0.0, `pip install tenxyte` installait la stack Django complète (Django, DRF,
+django-cors-headers, drf-spectacular, google-auth) par défaut. Depuis la 1.0.0, `pip install
+tenxyte` installe **uniquement le Cœur framework-agnostique** (services JWT, TOTP, WebAuthn,
+schémas — sans Django).
+
+| | Avant (≤ 0.9.x) | Depuis 1.0.0 |
+|---|---|---|
+| `pip install tenxyte` | Stack Django complète | Cœur seul |
+| `pip install tenxyte[django]` | Stack Django complète (redondant avec le défaut) | Stack Django complète |
+| `pip install tenxyte[core]` | Cœur seul | Cœur seul (alias no-op déprécié du nouveau défaut — voir ci-dessous) |
+
+### Ce que vous devez faire
+
+**Si vous utilisez Tenxyte avec Django** (la grande majorité des utilisateurs existants), changez
+votre commande d'installation et rien d'autre :
+
+```diff
+- pip install tenxyte
++ pip install tenxyte[django]
+```
+
+```diff
+# requirements.txt / pyproject.toml
+- tenxyte>=0.9
++ tenxyte[django]>=1.0
+```
+
+C'est l'intégralité de la migration. Le comportement runtime avec `tenxyte[django]` installé est
+**strictement identique** (byte-identical) à l'ancienne installation par défaut : mêmes endpoints,
+mêmes réglages, mêmes migrations, mêmes formes de réponse. Aucun changement de code n'est requis
+dans vos vues, réglages ou modèles au-delà de la commande d'installation.
+
+**Si vous utilisez Tenxyte avec FastAPI** (ou un framework personnalisé), aucun changement n'est
+nécessaire — vous utilisiez déjà `pip install tenxyte[core]` ou `tenxyte[fastapi]`, et le défaut
+`tenxyte` seul correspond désormais à ce que `[core]` installait auparavant.
+
+**Si vous utilisez `pip install tenxyte[core]` aujourd'hui**, cela continue de fonctionner —
+`[core]` est conservé en 1.0.0 comme alias no-op déprécié (il n'installe aucune dépendance
+supplémentaire propre, puisque le Cœur est désormais le défaut). Nous recommandons d'abandonner
+l'extra `[core]` au profit de la dépendance `tenxyte` nue ; `[core]` sera retiré dans une future
+version MAJOR après un cycle de dépréciation complet selon le [Contrat de stabilité](stability.md).
+
+### L'Import_Guard : que se passe-t-il si Django est absent ?
+
+Si votre code (ou une dépendance) fait `import tenxyte` sans Django installé, l'import lui-même
+**réussit toujours** — `tenxyte.__version__` et tous les symboles `tenxyte.core.*` sont utilisables
+immédiatement. Seul l'accès à un symbole Django-only sans Django installé lève une erreur explicite :
+
+```python
+import tenxyte
+tenxyte.setup({})
+# tenxyte.TenxyteMissingDependencyError :
+#   'tenxyte.setup' requires the Django stack. Install it with: pip install tenxyte[django]
+```
+
+Ceci remplace ce qui était auparavant une `ModuleNotFoundError` déroutante surgissant depuis les
+tréfonds de `tenxyte.models` par une instruction explicite. `TenxyteMissingDependencyError` est une
+sous-classe d'`ImportError` : la gestion `except ImportError:` existante continue donc de
+fonctionner sans modification.
+
+### Vérifier votre mise à jour
+
+```bash
+pip install "tenxyte[django]>=1.0"
+python manage.py check          # doit passer sans changement
+python manage.py migrate        # aucune nouvelle migration attendue
+pytest                          # votre suite de tests existante doit être verte
+```
+
+Si quoi que ce soit se comporte différemment après la mise à jour vers `tenxyte[django]>=1.0`
+au-delà de la commande d'installation elle-même, c'est un bug — merci d'[ouvrir un
+ticket](https://github.com/tenxyte/tenxyte/issues).
 
 ---
 

@@ -151,13 +151,17 @@ class TestNoPriorityMode:
             assert s.OTP_EMAIL_VALIDITY == 15
             assert s.OTP_PHONE_VALIDITY == 10
             assert s.OTP_MAX_ATTEMPTS == 5
-            assert s.SOCIAL_PROVIDERS == ['google', 'github', 'microsoft', 'facebook']
+            assert s.SOCIAL_PROVIDERS == ['google', 'github', 'microsoft', 'facebook', 'apple']
             assert s.GITHUB_CLIENT_ID == ''
             assert s.GITHUB_CLIENT_SECRET == ''
             assert s.MICROSOFT_CLIENT_ID == ''
             assert s.MICROSOFT_CLIENT_SECRET == ''
             assert s.FACEBOOK_APP_ID == ''
             assert s.FACEBOOK_APP_SECRET == ''
+            assert s.APPLE_CLIENT_ID == ''
+            assert s.APPLE_TEAM_ID == ''
+            assert s.APPLE_KEY_ID == ''
+            assert s.APPLE_PRIVATE_KEY == ''
             assert s.WEBAUTHN_RP_ID == 'localhost'
             assert s.WEBAUTHN_RP_NAME == 'Tenxyte'
             assert s.WEBAUTHN_CHALLENGE_EXPIRY_SECONDS == 300

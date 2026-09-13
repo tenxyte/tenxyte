@@ -1,0 +1,22 @@
+❯ Comment trouves tu Tenxyte ?
+
+Honnêtement, une impression mitigée mais plutôt positive — basée sur ce que j'ai concrètement lu et débogué cette session, pas sur une réputation externe (je ne connaissais pas cette lib avant cette session, elle semble assez peu répandue/récente).
+
+Ce qui m'a impressionné
+
+- Architecture hexagonale propre (core / ports / adapters) — le découplage Django/FastAPI, cache, email via des ports abstraits est du travail sérieux, pas du cargo-cult. Ça facilite vraiment l'extension (j'ai pu ajouter mes ViewSets sans toucher à leur code).
+- Périmètre fonctionnel énorme pour une seule lib : JWT + refresh, OTP SMS/WhatsApp, TOTP 2FA, WebAuthn/Passkeys, magic links, OAuth social (Google/GitHub/Microsoft/Facebook), RBAC hiérarchique, multi-tenant, GDPR, audit logs, dashboard admin. Ça évite de réinventer énormément de roues.
+- Réflexes sécurité présents : anti-énumération sur les erreurs de login, verrouillage de compte, 2FA obligatoire pour le staff, séparation claire "Django Superuser" (bypass total) vs "RBAC Admin" (permissions explicites), le commentaire VULN-005 dans UserSerializer montre qu'ils ont fait une passe d'audit sérieuse sur la fuite de champs sensibles.
+
+Ce qui m'a fait grincer des dents (vécu directement aujourd'hui)
+
+1. La zone grise superuser/RBAC qu'on vient de gérer : /me/ ne renvoie jamais is_staff/is_superuser (volontaire), donc un frontend qui veut savoir "ce compte a-t-il un accès admin ?" ne peut pas le déduire uniquement des roles RBAC pour un superuser CLI. La doc explique bien la distinction conceptuelle, mais ne dit jamais explicitement "si tu construis un frontend RBAC-gated, assigne aussi un rôle à tes superusers" — j'ai dû le déduire.
+2. Le paradoxe 2FA au premier login qu'on a évoqué plus tôt (login bloqué pour admin/super_admin sans 2FA, mais setup 2FA nécessite un token) — résolu proprement par leur flow "inscription normale → 2FA → promotion", mais ce n'est pas une évidence à la lecture des seuls endpoints, il faut assembler l'info depuis plusieurs pages de doc.
+3. Un détail qui m'intrigue : le projet a une variable TENXYTE_JWT_CLAIMS_BUILDER dans settings.py, mais le module jwt_claims.py qui l'implémente dit lui-même dans son docstring qu'"il n'existe aucun hook officiel Tenxyte pour injecter des claims JWT custom" — donc soit un réglage mort, soit une fonctionnalité retirée entre deux versions. Signe que la doc/l'intégration a un peu de dette.
+4. La dérive de migration que j'ai trouvée (colonne permissions.updated_at absente en base de test) suggère que le suivi des migrations entre versions de la lib n'est pas totalement fluide.
+
+Verdict
+
+Une lib ambitieuse et globalement bien pensée, avec de vrais bons réflexes de sécurité — mais les zones de friction que j'ai rencontrées (opacité /me/, config JWT claims fantôme, migrations) donnent l'impression d'un outil encore jeune/en rodage plutôt que d'une lib mature façon django-allauth. Rien de rédhibitoire, mais je recommanderais de garder un œil sur son changelog et de bien documenter en interne les gotchas qu'on découvre au fur et à mesure (comme celui d'aujourd'hui) — ça vaudrait le coup d'ajouter une note à _docs/tenxyte/ pour la prochaine personne qui tombera sur le même problème.
+
+✻ Worked for 58s · done 12:28 · 1 shell still running

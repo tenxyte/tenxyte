@@ -47,12 +47,33 @@ Extending Models:
 Documentation: https://tenxyte.readthedocs.io
 """
 
-__version__ = "0.9.6.4.2"
+__version__ = "1.0.0"
 __author__ = "Tenxyte Team"
 __license__ = "MIT"
 
-# Lazy imports to avoid AppRegistryNotReady error
-# Users should import from tenxyte.models directly:
+# Final 0.9.x packaging-inversion warning (Requirement 2.7, specs/z_aud_1).
+# Self-disabling: this fires only while __version__ still starts with "0.9" — once the version is
+# bumped to 1.0.0, the packaging change described here has already happened, so the warning goes
+# silent on its own without needing a separate removal commit. See docs/en/MIGRATION_GUIDE.md
+# "0.9 -> 1.0" for the full picture.
+if __version__.startswith("0.9"):
+    import warnings as _warnings
+
+    _warnings.warn(
+        "Tenxyte 1.0 will change what 'pip install tenxyte' installs: it will install only the "
+        "framework-agnostic Core (no Django) by default. If you use Tenxyte with Django, start "
+        "pinning 'tenxyte[django]' now so your install command keeps working unchanged after "
+        "upgrading to 1.0. See the Migration Guide's '0.9 -> 1.0' section for details.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    del _warnings
+
+from tenxyte.exceptions import TenxyteMissingDependencyError
+
+# Lazy imports (PEP 562 module __getattr__) to avoid AppRegistryNotReady error AND to keep
+# `import tenxyte` succeeding in a Core-only install (`pip install tenxyte`, without Django).
+# Users can also import from tenxyte.models directly:
 #   from tenxyte.models import AbstractUser, AbstractRole, AbstractPermission
 
 __all__ = [
@@ -60,6 +81,7 @@ __all__ = [
     "AbstractPermission",
     "AbstractRole",
     "AbstractUser",
+    "TenxyteMissingDependencyError",
     "get_application_model",
     "get_permission_model",
     "get_role_model",
@@ -67,14 +89,33 @@ __all__ = [
     "setup",
 ]
 
+# Symbols resolved lazily through tenxyte.models — every entry in __all__ except "setup" (a real
+# top-level function, defined below) and "TenxyteMissingDependencyError" (already imported above).
+_DJANGO_ONLY_ATTRS = frozenset(__all__) - {"setup", "TenxyteMissingDependencyError"}
+
 
 def __getattr__(name):
-    """Lazy import of models to avoid AppRegistryNotReady error."""
-    if name in __all__:
-        from tenxyte import models
+    """Lazy import of Django-only symbols (PEP 562) to avoid AppRegistryNotReady error.
 
+    Keeps `import tenxyte` working without Django installed: only *accessing* one of these
+    attributes triggers the Django-backed import, and a missing Django stack raises
+    `TenxyteMissingDependencyError` with an explicit `pip install tenxyte[django]` instruction —
+    never a bare, confusing `ModuleNotFoundError` surfacing from deep inside `tenxyte.models`.
+    """
+    if name in _DJANGO_ONLY_ATTRS:
+        try:
+            from tenxyte import models
+        except ImportError as exc:
+            raise TenxyteMissingDependencyError(
+                f"'tenxyte.{name}' requires the Django stack. Install it with: pip install tenxyte[django]"
+            ) from exc
         return getattr(models, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    """Ensure Django-only symbols show up in introspection even before first access."""
+    return sorted(set(globals()) | set(__all__))
 
 
 def setup(settings_module=None):
@@ -98,7 +139,12 @@ def setup(settings_module=None):
         - Sets DEFAULT_AUTHENTICATION_CLASSES for REST_FRAMEWORK
         - Adds ApplicationAuthMiddleware to MIDDLEWARE
     """
-    from django.conf import settings as django_settings
+    try:
+        from django.conf import settings as django_settings
+    except ImportError as exc:
+        raise TenxyteMissingDependencyError(
+            "'tenxyte.setup' requires the Django stack. Install it with: pip install tenxyte[django]"
+        ) from exc
 
     target = settings_module or django_settings
 

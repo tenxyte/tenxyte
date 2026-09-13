@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0]
+
+**Phase 1 "Crédibilité" (`specs/z_aud_1`)** — the release that marks Tenxyte's transition from
+Beta to Production/Stable, addressing the credibility blockers identified in `AUDIT.md`.
+
+### Breaking
+- **Packaging inversion** — `pip install tenxyte` now installs **only the framework-agnostic
+  Core** (JWT, TOTP, WebAuthn, magic link services — no Django). Django users must install
+  `pip install tenxyte[django]` to get the exact same dependency set (Django, DRF,
+  django-cors-headers, drf-spectacular, google-auth) that used to be the default. This is the
+  **only** runtime-affecting change in 1.0.0 — everything else is additive, and
+  `tenxyte[django]>=1.0` behaves byte-identically to the previous default install (same endpoints,
+  settings, migrations, response shapes). The `[core]` extra is retained as a deprecated no-op
+  alias. See [`MIGRATION_GUIDE.md`](docs/en/MIGRATION_GUIDE.md#migrating-from-tenxyte-v09x-to-v100-packaging-inversion)
+  for the full "0.9 → 1.0" upgrade path, and [`stability.md`](docs/en/stability.md) for the
+  SemVer/deprecation policy this release establishes going forward.
+- `import tenxyte` now succeeds even when Django is not installed (Import_Guard, PEP 562):
+  accessing a Django-only symbol (`tenxyte.setup`, `tenxyte.AbstractUser`, etc.) without Django
+  raises an explicit `tenxyte.TenxyteMissingDependencyError` (a subclass of `ImportError`)
+  instructing `pip install tenxyte[django]`, instead of a confusing bare `ModuleNotFoundError`.
+  Behavior is unchanged when Django is installed.
+
+### Added
+- **Sign in with Apple** — fifth social login provider (`apple`), alongside Google, GitHub,
+  Microsoft, and Facebook, lifting the App Store requirement blocking iOS apps that offer any
+  third-party social login. `POST /social/apple/` accepts both the authorization-code flow and a
+  direct `id_token` flow; the client secret is a short-lived ES256 JWT generated on the fly from
+  the configured `.p8` key and never persisted; the `id_token` is validated fail-closed against
+  Apple's JWKS (signature, `iss`, `aud`, expiry — any failure or JWKS unavailability rejects the
+  request). New settings: `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`.
+  No schema change — reuses the existing `SocialConnection.provider` field. See
+  [`endpoints.md`](docs/en/endpoints.md#social-login-multi-provider) for the `form_post` and
+  private-relay-email notes.
+- **`SECURITY.md`** — formal vulnerability disclosure policy: supported-versions table, GitHub
+  Private Vulnerability Reporting as the exclusive reporting channel, a 72h/7d acknowledgment/triage
+  SLA with severity-based fix targets, a 90-day coordinated-disclosure embargo, and the internal
+  advisory-to-CVE process.
+- **Release attestations** — `publish.yml` now requests PEP 740 / Sigstore provenance attestations
+  (`attestations: true`) for every artifact published to PyPI, on top of the existing Trusted
+  Publishing (OIDC) flow — no PyPI API token is used anywhere in the workflow.
+- **Stability contract** — [`docs/en/stability.md`](docs/en/stability.md) /
+  [`docs/fr/stability.md`](docs/fr/stability.md) formally define the Public API Surface (documented
+  endpoints, `TENXYTE_*` settings, abstract models, public decorators, `tenxyte`/`tenxyte.core`
+  exports, and the error response shape), the SemVer policy, and the deprecation policy, backed by
+  an automated public-API snapshot test.
+- **Security audit preparation** — `docs/security-audit/threat-model.md`, `audit-scope.md`, and
+  `pre-audit-checklist.md` (a targeted OWASP ASVS L2 self-assessment), prepared ahead of a future
+  external security audit engagement.
+- **CI install matrix** — a new `install-matrix` job builds and installs the package in clean venvs
+  for `tenxyte`, `tenxyte[django]`, `tenxyte[core]`, and `tenxyte[django,webauthn]`, smoke-testing
+  the packaging inversion and Import_Guard on every push.
+- **Passwordless Phone Login (OTP)** — Users can now log in with only a phone number and a one-time SMS code, with no password required.
+  - `POST /login/otp/request/` — Request a login OTP. If `TENXYTE_OTP_LOGIN_AUTO_REGISTER=True` (default) and the phone number has no account, a *Passwordless Account* is created automatically.
+  - `POST /login/otp/verify/` — Verify the OTP and receive JWT tokens. Applies all the same security checks as `/login/phone/` (account status, 2FA gate, device/session limits). Response shape is identical to `/login/phone/`.
+  - `POST /password/set-initial/` — Passwordless accounts can voluntarily set a first password via a fresh OTP as proof of phone ownership. After success, both OTP and password-based login remain available.
+  - New `has_usable_password` field on the `User` model (default `True`). Set to `False` for auto-registered passwordless accounts; reset to `True` by `Set_Initial_Password_Operation`.
+  - Three new settings: `TENXYTE_OTP_LOGIN_ENABLED` (default `False`), `TENXYTE_OTP_LOGIN_AUTO_REGISTER` (default `True`), `TENXYTE_OTP_LOGIN_VALIDITY_MINUTES` (default `10`).
+  - Dedicated throttle classes `LoginOTPRequestThrottle` (5/min) and `LoginOTPRequestDailyThrottle` (20/day), independent of `/register/`.
+  - New serializers: `LoginOTPRequestSerializer`, `LoginOTPVerifySerializer`, `SetInitialPasswordSerializer`, `ReauthSerializer`.
+  - `ReauthService` — centralised re-authentication service for sensitive actions. All sensitive endpoints (`/password/change/`, `/2fa/disable/`, account deletion, data export) now accept a valid login OTP (`otp_code`) as an alternative to the current password.
+  - Migration `0017_login_otp_type_and_passwordless_account`: additive — adds `User.has_usable_password` field and `"login"` choice to `OTPCode.otp_type`. No existing field or constraint is removed.
+
+### Changed
+- Package classifier: `Development Status :: 4 - Beta` → `Development Status :: 5 - Production/Stable`.
+- **`/password/change/`** — Passwordless accounts (`has_usable_password=False`) are now rejected with `400 PASSWORDLESS_ACCOUNT_USE_SET_INITIAL_PASSWORD` and directed to the new `/password/set-initial/` endpoint.
+- **`/2fa/disable/`, account deletion endpoints, data export endpoint** — Now accept `otp_code` as an alternative to `current_password` for re-authentication, enabling passwordless users to perform sensitive actions without a password.
+
 ### Fixed
 - CI's Lint job was still red after the fix above on 4 files deliberately left out of it (`src/tenxyte/__init__.py`, `src/tenxyte/exceptions.py`, `services/social_auth_service.py`, `views/social_auth_views.py`) — confirmed by the actual CI run on this branch. Fixed: `__all__` sorting in `__init__.py`, import ordering in `exceptions.py`, and the full set of RUF012/BLE001/SIM102/G201/UP035/UP045/UP006 findings in the two social-auth files (same treatment as the rest of this fix — ClassVar annotations, `# noqa: BLE001` on adapter-boundary excepts, `logger.exception`, implicit-Optional/legacy-typing modernization). `ruff check src/tenxyte/` is now green from a fresh CI checkout, not just locally.
 - **Non-deterministic lint gate** — `ruff`/`black` were unpinned (`ruff>=0.9`) in both dev
@@ -51,6 +118,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - One incidental regression caught by the existing suite: a test asserted on
     `logger.error(...)` where the code now calls `logger.exception(...)` — updated the assertion.
 - `src/tenxyte/services/social_auth_service.py` and `src/tenxyte/views/social_auth_views.py` carry unrelated in-progress work in this branch, so their share of the BLE001/SIM102/G201 fixes above is deferred rather than force-separated out — `ruff check` will list a handful of residual findings there until that work lands.
+
+### Deprecated
+- The `[core]` packaging extra: it is now a no-op alias (Core is the new default install) and will
+  be removed in a future MAJOR release — use the bare `tenxyte` dependency instead.
+
+### Notes
+- `tenxyte/__init__.py` carries a self-disabling `DeprecationWarning` (fires only while
+  `__version__` starts with `0.9`) announcing the packaging inversion ahead of time. It is inert
+  in this 1.0.0 release; it exists so that, if a maintainer instead cuts a final `0.9.x` warning
+  release *before* publishing 1.0.0, that release will surface the warning automatically with no
+  extra work. See `specs/z_aud_1/manual_tests.md` §MT-2.
+
+### Docs
+- `docs/en/stability.md`, `docs/fr/stability.md`, `docs/security-audit/*.md`, `SECURITY.md`, and the
+  `docs/en/MIGRATION_GUIDE.md` / `docs/fr/MIGRATION_GUIDE.md` "0.9 → 1.0" sections.
+- `docs/en/endpoints.md`, `docs/fr/endpoints.md`, `docs/en/settings.md`, `docs/fr/settings.md`:
+  Apple provider documentation.
+- `README.md` / `README.fr.md`: quickstart updated to `pip install tenxyte[django]`.
 
 ## [0.9.6.4.2] - 2026-09-13
 

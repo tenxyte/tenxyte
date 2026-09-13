@@ -53,6 +53,7 @@ nav:
       - 'Quickstart': quickstart.md
       - 'FastAPI Quickstart': fastapi_quickstart.md
       - 'Settings Reference': settings.md
+      - 'Stability & Versioning': stability.md
   - 'Architecture':
       - 'Architecture Guide': architecture.md
       - 'Custom Adapters': custom_adapters.md
@@ -81,6 +82,7 @@ nav:
           - 'Deployment': runbooks/deployment.md
           - 'Incident Response': runbooks/incident_response.md
           - 'Rollback': runbooks/rollback.md
+          - 'PyPI Release': runbooks/release.md
   - 'Contributing':
       - 'Contributing Guidelines': CONTRIBUTING.md
       - 'Testing': TESTING.md

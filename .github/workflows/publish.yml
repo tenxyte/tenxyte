@@ -44,7 +44,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install -e ".[django,dev]"
 
       - name: Run Django tests
         run: pytest tests/integration/django/ --no-cov -q
@@ -74,5 +74,12 @@ jobs:
       - name: Build package
         run: python -m build
 
+      # Trusted Publishing (OIDC): no PyPI API token is used or configured anywhere in this
+      # workflow. `id-token: write` above + the `pypi` environment (approval-gated, PyPI Trusted
+      # Publisher configured for this repo/workflow — see docs/en/runbooks/release.md) are what
+      # authorize the upload. `attestations: true` requests PEP 740 / Sigstore provenance
+      # attestations for every published artifact (requires gh-action-pypi-publish >= v1.11).
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          attestations: true

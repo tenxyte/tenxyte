@@ -19,7 +19,7 @@
 ### 1. Installation
 
 ```bash
-pip install tenxyte
+pip install tenxyte[django]
 ```
 
 > **Prérequis :** Python 3.10+, Django 4.2+ ou FastAPI 0.135+
@@ -459,8 +459,8 @@ Tenxyte est le seul package d'authentification conçu pour **les humains et les 
 ## Options d'Installation
 
 ```bash
-pip install tenxyte              # Inclut l'adaptateur Django (rétrocompatible)
-pip install tenxyte[core]        # Core uniquement — sans framework, à vous de choisir
+pip install tenxyte[django]      # Stack Django (défaut avant 1.0 ; désormais optionnel)
+pip install tenxyte              # Core uniquement (défaut depuis 1.0) — sans framework, à vous de choisir
 pip install tenxyte[fastapi]     # Adaptateur FastAPI + Core
 
 # Extras optionnels (fonctionnent avec n'importe quel adaptateur)
@@ -641,7 +641,7 @@ Tenxyte nécessite des tâches périodiques (nettoyage des tokens, purge OTP, ro
 
 ```bash
 git clone https://github.com/tenxyte/tenxyte.git
-pip install -e ".[dev]"
+pip install -e ".[django,dev]"
 pytest                               # 1553 tests, 100% de réussite
 pytest --cov=tenxyte --cov-report=html
 ```
