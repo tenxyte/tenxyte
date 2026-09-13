@@ -288,6 +288,26 @@ jobs:
           pytest spec/airs/conformance/negative_mock -q --no-cov
 
   # ===========================================================================
+  # Async_Purity_Check (spec z_aud_3, Requirement 5.4, Property 7) — scripts/check_async_purity.py
+  # walks adapters/fastapi/ for blocking patterns in async def bodies. Pure AST/stdlib, no install
+  # of tenxyte itself needed (the checker only reads source text, never imports the package).
+  # ===========================================================================
+  async-purity:
+    name: Async Purity Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run scripts/check_async_purity.py
+        run: python scripts/check_async_purity.py
+
+  # ===========================================================================
   # Upload combined coverage to Codecov
   # ===========================================================================
   coverage:

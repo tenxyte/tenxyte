@@ -138,10 +138,20 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - _Requirements: 8.4_
 
 - [ ] 3. Outillage de preuve (avant toute vague de parité)
-  - [ ] 3.1 Implémenter la Parity_Matrix
-    - `scripts/parity_matrix.py` (introspection des deux routeurs, normalisation, diff,
-      `--groups`), `parity_exclusions.toml` (justifications obligatoires), sortie
-      `docs/*/parity_table.md`
+  - [x] 3.1 Implémenter la Parity_Matrix
+    - `scripts/parity_matrix.py` : introspection réelle des deux côtés — Django via
+      `tenxyte.urls.urlpatterns` (résolution des méthodes HTTP par introspection de la classe de
+      vue DRF / fonction `@api_view`, pas une liste recopiée à la main), FastAPI via
+      `create_tenxyte_router().routes` — normalisées à la même forme `(MÉTHODE, /chemin/)`
+      (convertisseurs Django `<type:nom>` → `{nom}`). `group_of(path)` classe chaque route dans
+      son Parity_Group (A–G) par préfixe, table dérivée des listes d'endpoints propres à chaque
+      tâche de vague (5.1, 6.1, 7.1, 9.1, 10.1, 11.1, 12.1) — couverture totale vérifiée par
+      test (aucune route réelle sans groupe). `parity_exclusions.toml` créé (vide pour l'instant
+      — aucune route de `tenxyte.urls` n'est Django-only aujourd'hui), raison vide rejetée au
+      chargement. Sortie `docs/{en,fr}/parity_table.md` régénérée (114 endpoints, tous 🔜 vague
+      planifiée — aucune vague livrée). CLI : `--groups` absent → rapport seul, jamais
+      d'échec (bootstrap de l'outil avant toute vague) ; `--groups=X,Y` ou `--groups=all` → échec
+      si un gap non excusé existe dans un groupe nommé. 31 tests dans `test_parity_matrix.py`.
     - **Property 1 (socle)**
     - _Requirements: 5.1, 4.5_
 
@@ -152,9 +162,31 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - **Property 2 (socle)**
     - _Requirements: 5.2_
 
-  - [ ] 3.3 Implémenter l'Async_Purity_Check
-    - `scripts/check_async_purity.py` (AST, motifs interdits, ignore justifié) + job CI + cas de
-      test du checker (un motif introduit → échec)
+  - [x] 3.3 Implémenter l'Async_Purity_Check
+    - `scripts/check_async_purity.py` : AST walk de chaque `AsyncFunctionDef` sous
+      `adapters/fastapi/`, interdit — appel non-awaité à une méthode de port sync
+      *distinctive* (`get_by_id`, `get_by_email`, `update_last_login`, `set_mfa_secret`,
+      `verify_email` de `UserRepository` ; `add_to_blacklist`, `is_blacklisted`,
+      `remove_from_blacklist`, `check_rate_limit`, `reset_rate_limit` de `CacheService`) ;
+      `requests.<verbe>(...)` ; `time.sleep(...)` ; `open(...)` hors `asyncio.to_thread`/
+      `anyio.to_thread.run_sync`. **Écart documenté délibéré :** les verbes génériques
+      (`get`/`set`/`create`/`update`/`delete`/`count`/`exists`/`list_all`/`increment`/`expire`/
+      `ttl`) sont explicitement exclus de la liste — ils entrent en collision avec des API
+      omniprésentes déjà utilisées légitimement dans l'adaptateur (`dict.get`, `Headers.get`,
+      `AsyncSession.get`/`.delete`), ce qui aurait rendu `# async-purity: ignore` du bruit plutôt
+      qu'un signal de revue réel ; la liste retenue reste assez distinctive pour qu'un appel non
+      awaité soit sans ambiguïté un bug (appel sync direct ou `await` oublié). Un appel déjà
+      `await`-é n'est jamais signalé, quelle que soit la méthode. Une `def` sync imbriquée dans
+      une `async def` est hors périmètre (elle s'exécute de façon synchrone quand appelée, pas
+      sur la boucle événementielle). Job CI `async-purity` ajouté à `.github/workflows/ci.yml`
+      (aucune installation du package nécessaire — le checker ne fait que parser du texte
+      source). **Violation réelle trouvée et documentée** (pas corrigée en douce) : deux appels
+      non-awaités dans `routers.py` — le routeur PoC déjà marqué pour suppression à la tâche
+      5.1 — annotés `# async-purity: ignore[PoC router, removed at z_aud_3 task 5.1]` plutôt que
+      modifiés, puisque ce fichier entier disparaît à la vague A. 11 tests dans
+      `test_check_async_purity.py`, dont un qui tourne le checker contre le vrai répertoire
+      `adapters/fastapi/` (garde de non-régression : tout nouveau motif bloquant introduit le
+      fait échouer).
     - **Property 7: Pureté async des handlers**
     - **Validates: Requirements 5.4**
 

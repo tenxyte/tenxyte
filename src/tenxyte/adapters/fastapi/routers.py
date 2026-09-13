@@ -41,7 +41,7 @@ async def login(
     """
     Authenticate a user and return JWT tokens.
     """
-    user = user_repo.get_by_email(request.email)
+    user = user_repo.get_by_email(request.email)  # async-purity: ignore[PoC router, removed at z_aud_3 task 5.1]
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -82,7 +82,9 @@ async def login(
     )
 
     # Update last login
-    user_repo.update_last_login(user.id, datetime.now(timezone.utc))
+    user_repo.update_last_login(  # async-purity: ignore[PoC router, removed at z_aud_3 task 5.1]
+        user.id, datetime.now(timezone.utc)
+    )
 
     return TokenResponse(
         access_token=token_pair.access_token,
