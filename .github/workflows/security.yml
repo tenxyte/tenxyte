@@ -43,7 +43,9 @@ jobs:
 
       - name: pip-audit (CVE database check)
         # Transitive dependencies with no fix available:
-        # nltk: GHSA-rf74-v2fm-23pw, CVE-2026-33230, CVE-2026-33231
+        # nltk: GHSA-rf74-v2fm-23pw, CVE-2026-33230, CVE-2026-33231, PYSEC-2026-3740
+        #   (nltk is not a tenxyte dependency — it's pulled in transitively by `safety`
+        #   itself, installed for the scan step below, never shipped to tenxyte users)
         # pygments: CVE-2026-4539 (transitive via rich)
         # Review periodically and remove ignores when a fix is released.
         run: |
@@ -51,6 +53,7 @@ jobs:
             --ignore-vuln GHSA-rf74-v2fm-23pw \
             --ignore-vuln CVE-2026-33230 \
             --ignore-vuln CVE-2026-33231 \
+            --ignore-vuln PYSEC-2026-3740 \
             --ignore-vuln CVE-2026-4539 \
             --ignore-vuln PYSEC-2026-597
 
