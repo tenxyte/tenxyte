@@ -316,6 +316,15 @@ class Settings:
         must stay in sync with real password hashing cost)."""
         return self._get("BCRYPT_ROUNDS", 12)
 
+    @property
+    def otp_login_validity_minutes(self) -> int:
+        """Validity window for a passwordless-login OTP code (spec z_aud_3, Wave C) — the only
+        OTP expiry that's actually settings-driven in the Django_Adapter's own implementation;
+        email/phone-verification and password-reset OTP validity are hardcoded literals there
+        (15/10/15 minutes respectively) despite unused OTP_EMAIL_VALIDITY/OTP_PHONE_VALIDITY
+        settings existing — not replicated here since porting dead config would be pointless."""
+        return self._get("OTP_LOGIN_VALIDITY_MINUTES", 10)
+
     # ============================================================
     # 2FA Settings
     # ============================================================

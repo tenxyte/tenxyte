@@ -1,13 +1,15 @@
 """
-Pydantic request bodies for the Wave A/B routers (spec z_aud_3, tasks 5.1/6.1) — response bodies
-are deliberately plain `dict`s built by hand in `routers/*.py`, not `response_model`s: the Django
-contract's response shape genuinely varies by branch (bootstrap token vs restricted-scope token
-vs normal success), and forcing all three through one Pydantic response model would either lose
-fields or require a union type that adds no real validation value over just building the dict
-that matches the branch actually taken.
+Pydantic request bodies for the Wave A/B/C routers (spec z_aud_3, tasks 5.1/6.1/7.1) — response
+bodies are deliberately plain `dict`s built by hand in `routers/*.py`, not `response_model`s: the
+Django contract's response shape genuinely varies by branch (bootstrap token vs restricted-scope
+token vs normal success), and forcing all three through one Pydantic response model would either
+lose fields or require a union type that adds no real validation value over just building the
+dict that matches the branch actually taken.
 """
 
 from __future__ import annotations
+
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -60,3 +62,33 @@ class ChangePasswordRequest(BaseModel):
 class PasswordStrengthRequest(BaseModel):
     password: str = ""
     email: EmailStr | None = None
+
+
+class RequestOTPRequest(BaseModel):
+    otp_type: Literal["email", "phone"]
+
+
+class VerifyOTPRequest(BaseModel):
+    code: str = Field(min_length=6, max_length=6)
+
+
+class PasswordResetRequestRequest(BaseModel):
+    """Named with the doubled `Request` deliberately — mirrors the endpoint
+    (`password/reset/request/`), not a typo."""
+
+    email: EmailStr | None = None
+    phone_country_code: str | None = None
+    phone_number: str | None = None
+
+
+class PasswordResetConfirmRequest(BaseModel):
+    otp_code: str = Field(min_length=6, max_length=6)
+    new_password: str = Field(min_length=8)
+    email: EmailStr | None = None
+    phone_country_code: str | None = None
+    phone_number: str | None = None
+
+
+class SetInitialPasswordRequest(BaseModel):
+    otp_code: str = Field(min_length=6, max_length=6)
+    new_password: str = Field(min_length=8)

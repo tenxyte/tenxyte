@@ -287,3 +287,193 @@ async def test_change_password_breached_password_hard_rejected():
     body = response.json()
     assert body["code"] == "PASSWORD_BREACHED"
     assert "42" in body["error"]
+
+
+# ---------------------------------------------------------------------------
+# password/reset/request, password/reset/confirm, password/set-initial
+# ---------------------------------------------------------------------------
+
+
+async def _get_raw_otp(app, session, user_id: str, otp_type: str) -> str:
+    from tenxyte.adapters.fastapi import otp_service
+
+    _row, raw_code = await otp_service.generate_otp(session, user_id, otp_type, app.state.tenxyte_settings)
+    return raw_code
+
+
+@pytest.mark.anyio
+async def test_password_reset_request_existing_account():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _create_user(app, email="resetme@example.com")
+        async with await _client(app) as client:
+            response = await client.post("/api/v1/password/reset/request/", json={"email": "resetme@example.com"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["message"] == "Password reset code sent"
+    assert body["channel"] == "email"
+
+
+@pytest.mark.anyio
+async def test_password_reset_request_unknown_account_is_anti_enumeration():
+    app = _build_app()
+    async with app.router.lifespan_context(app), await _client(app) as client:
+        response = await client.post("/api/v1/password/reset/request/", json={"email": "nobody@example.com"})
+
+    assert response.status_code == 200
+    assert response.content == b""
+
+
+@pytest.mark.anyio
+async def test_password_reset_request_neither_email_nor_phone():
+    app = _build_app()
+    async with app.router.lifespan_context(app), await _client(app) as client:
+        response = await client.post("/api/v1/password/reset/request/", json={})
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.anyio
+async def test_password_reset_confirm_success_and_new_password_works():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        user = await _create_user(app, email="confirmreset@example.com")
+        session_factory = app.state.tenxyte_session_factory
+        async with session_factory() as session:
+            raw_code = await _get_raw_otp(app, session, user.id, "password_reset")
+
+        async with await _client(app) as client:
+            response = await client.post(
+                "/api/v1/password/reset/confirm/",
+                json={"email": "confirmreset@example.com", "otp_code": raw_code, "new_password": "New-Correct-Horse-1"},
+            )
+            assert response.status_code == 200
+            body = response.json()
+            assert body["message"] == "Password reset successful"
+            assert body["password_safe"] is True
+
+            old_login = await client.post(
+                "/api/v1/login/email/",
+                json={"email": "confirmreset@example.com", "password": "correct-horse-battery-staple"},
+            )
+            new_login = await client.post(
+                "/api/v1/login/email/", json={"email": "confirmreset@example.com", "password": "New-Correct-Horse-1"}
+            )
+
+    assert old_login.status_code == 401
+    assert new_login.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_password_reset_confirm_unknown_account_same_code_as_bad_otp():
+    app = _build_app()
+    async with app.router.lifespan_context(app), await _client(app) as client:
+        response = await client.post(
+            "/api/v1/password/reset/confirm/",
+            json={"email": "ghost@example.com", "otp_code": "123456", "new_password": "New-Correct-Horse-1"},
+        )
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "RESET_FAILED"
+
+
+@pytest.mark.anyio
+async def test_password_reset_confirm_wrong_code():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        user = await _create_user(app, email="wrongresetcode@example.com")
+        session_factory = app.state.tenxyte_session_factory
+        async with session_factory() as session:
+            await _get_raw_otp(app, session, user.id, "password_reset")
+
+        async with await _client(app) as client:
+            response = await client.post(
+                "/api/v1/password/reset/confirm/",
+                json={
+                    "email": "wrongresetcode@example.com",
+                    "otp_code": "000000",
+                    "new_password": "New-Correct-Horse-1",
+                },
+            )
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "RESET_FAILED"
+
+
+@pytest.mark.anyio
+async def test_password_reset_confirm_weak_password_rejected_before_otp_check():
+    app = _build_app()
+    async with app.router.lifespan_context(app), await _client(app) as client:
+        response = await client.post(
+            "/api/v1/password/reset/confirm/",
+            json={"email": "ghost2@example.com", "otp_code": "123456", "new_password": "short"},
+        )
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "VALIDATION_ERROR"
+
+
+@pytest.mark.anyio
+async def test_set_initial_password_success():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        user = await _create_user(app, email="setinitial@example.com", password_hash=None)
+        session_factory = app.state.tenxyte_session_factory
+        async with session_factory() as session:
+            raw_code = await _get_raw_otp(app, session, user.id, "login")
+
+        async with await _client(app) as client:
+            access_token = app.state.tenxyte_jwt_service.generate_new_token_pair(
+                user_id=user.id, application_id="default"
+            ).access_token
+            response = await client.post(
+                "/api/v1/password/set-initial/",
+                json={"otp_code": raw_code, "new_password": "New-Correct-Horse-1"},
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+            assert response.status_code == 200
+            assert response.json() == {"message": "Password set successfully"}
+
+            login_response = await client.post(
+                "/api/v1/login/email/", json={"email": "setinitial@example.com", "password": "New-Correct-Horse-1"}
+            )
+
+    assert login_response.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_set_initial_password_rejected_when_already_has_password():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _create_user(app, email="alreadyhas@example.com")
+        async with await _client(app) as client:
+            access_token = await _login(client, "alreadyhas@example.com")
+            response = await client.post(
+                "/api/v1/password/set-initial/",
+                json={"otp_code": "123456", "new_password": "New-Correct-Horse-1"},
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "ALREADY_HAS_PASSWORD"
+
+
+@pytest.mark.anyio
+async def test_set_initial_password_no_otp_requested_yet():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        user = await _create_user(app, email="noinitialotp@example.com", password_hash=None)
+        async with await _client(app) as client:
+            access_token = app.state.tenxyte_jwt_service.generate_new_token_pair(
+                user_id=user.id, application_id="default"
+            ).access_token
+            response = await client.post(
+                "/api/v1/password/set-initial/",
+                json={"otp_code": "123456", "new_password": "New-Correct-Horse-1"},
+                headers={"Authorization": f"Bearer {access_token}"},
+            )
+
+    assert response.status_code == 400
+    assert response.json()["code"] == "OTP_REQUIRED"

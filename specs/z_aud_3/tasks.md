@@ -327,46 +327,107 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       et surtout — **`PasswordHistory.add_password` est défini mais jamais appelé nulle part**,
       donc le rejet `PASSWORD_REUSED` documenté est fictif : ne PAS le porter aurait été une
       régression de parité, pas un raccourci.
-      3 des 6 endpoints portés et testés pour de vrai (12 tests dans `test_password_router.py`) :
-      `password/strength` (calculateur de force réimplémenté — pas une réutilisation de
-      `tenxyte.validators` : ce module fait `from .conf import auth_settings`, qui importe
-      `django.conf.settings` au chargement, donc inimportable depuis un process FastAPI sans
-      Django ; réimplémentation pilotée par les propriétés déjà existantes sur
-      `core/settings.py` — `password_min_length`, `password_require_uppercase/lowercase/digit/
-      special` —, formes structurelles identiques, messages en anglais plutôt que le catalogue
-      français de Django, qu'aucun contrat d'API raisonnable n'exige de reproduire mot pour
-      mot), `password/requirements`, `password/change` (reauth par mot de passe actuel réel,
-      check HIBP réel — `breach_check.py`, même raison de réimplémentation que
-      `tenxyte.services.breach_check_service` : import Django au chargement —, hash + révocation
-      réelle des sessions). `core/settings.py` gagne `breach_check_reject` (n'existait pas,
-      seul `breach_check_enabled` y était déjà).
-      **Bloqué sur un prérequis commun, documenté (pas silencieux) :** `password/reset/request`,
-      `password/reset/confirm`, `password/set-initial`, et le volet reauth-par-OTP de
-      `password/change` — tous entièrement dépendants d'`OTPService` (codes email/SMS à usage
-      unique), qui n'existe pas dans le Reference_Stack (distinct de `totp_storage.py`, lequel
-      couvre seulement les secrets TOTP d'app d'authentification) ; ce stockage OTP est le
-      travail du Groupe C (tâche 7.1). Un `otp_code` seul (sans `current_password`) sur
-      `password/change` donne `REAUTH_REQUIRED` — signal honnête, pas une acceptation
-      silencieuse. Également hors scope, à raison (comportement Django réel, pas un manque) :
-      historique de mots de passe (voir plus haut — code mort côté Django), et la branche
-      `must_change_password`/upgrade de scope sur changement réussi (le scope
+      **Les 6/6 endpoints désormais portés et testés pour de vrai** (34 tests dans
+      `test_password_router.py`, complétés en deux temps) : `password/strength` (calculateur de
+      force réimplémenté — pas une réutilisation de `tenxyte.validators` : ce module fait
+      `from .conf import auth_settings`, qui importe `django.conf.settings` au chargement, donc
+      inimportable depuis un process FastAPI sans Django ; réimplémentation pilotée par les
+      propriétés déjà existantes sur `core/settings.py` — `password_min_length`,
+      `password_require_uppercase/lowercase/digit/special` —, formes structurelles identiques,
+      messages en anglais plutôt que le catalogue français de Django, qu'aucun contrat d'API
+      raisonnable n'exige de reproduire mot pour mot), `password/requirements`, `password/change`
+      (reauth par mot de passe actuel réel, check HIBP réel — `breach_check.py`, même raison de
+      réimplémentation que `tenxyte.services.breach_check_service` : import Django au
+      chargement —, hash + révocation réelle des sessions, **et désormais aussi un rejet réel des
+      mots de passe faibles** — `password_strength.validate()` en gate avant le reauth, manquant
+      dans la première passe). `core/settings.py` gagne `breach_check_reject` (n'existait pas,
+      seul `breach_check_enabled` y était déjà) et `otp_login_validity_minutes` (la seule
+      expiration OTP réellement pilotée par un setting côté Django — les autres, voir tâche 7.1,
+      sont des littéraux en dur malgré des settings `OTP_EMAIL_VALIDITY`/`OTP_PHONE_VALIDITY`
+      jamais lus). Une fois le stockage OTP construit (tâche 7.1) : `password/reset/request`
+      (anti-énumération — 200 à corps vide si compte inconnu, 200 avec `otp_id`/`expires_at` si
+      trouvé, exactement le comportement Django réel — même si les DEUX cas ne sont PAS
+      byte-identiques, Django lui-même ne le garantit pas ici, seul le code 200 l'est),
+      `password/reset/confirm` (compte inconnu et code invalide donnent le même code
+      `RESET_FAILED` — reproduit tel quel ; check HIBP **non bloquant** — `password_safe: false`
+      dans la réponse, mot de passe quand même réinitialisé — comportement Django réel vérifié,
+      pas un raccourci), `password/set-initial` (garde-fou compte déjà pourvu d'un mot de passe,
+      OTP de type `login` obligatoire comme preuve, aucun mot de passe existant à vérifier).
+      OTP-based reauth sur `password/change` reste hors scope (réutiliserait un OTP de type
+      `login` en dehors du flux de login lui-même — plus que ce que cet endpoint justifie à lui
+      seul) : un `otp_code` seul (sans `current_password`) donne toujours `REAUTH_REQUIRED`.
+      Également hors scope, à raison (comportement Django réel, pas un manque) : historique de
+      mots de passe (voir plus haut — code mort côté Django), et la branche
+      `must_change_password`/upgrade de scope sur changement/reset réussi (le scope
       `password_change_only` n'est émis nulle part par défaut — même constat que pour le
-      Groupe A). `parity_matrix --groups=B` : 3/6, les 3 manquants sont exactement les
-      endpoints bloqués par l'OTP ci-dessus.
+      Groupe A). `parity_matrix --groups=B` : **6/6, vert**.
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
   - [ ] 6.2 Contract_Suite + matrice sur A+B (anti-énumération reset incluse)
-    - **Bloqué** : `password/reset/request` (le seul endpoint à anti-énumération de ce groupe)
-      dépend du même prérequis OTP que la tâche 6.1 — Property 3 (reset) et
-      `parity_matrix --groups=A,B` vert restent à faire une fois le Groupe C livré (ou un
-      stockage OTP construit en avance de phase).
+    - `parity_matrix --groups=A,B` : vert (tâche 6.1 fermée). Reste à faire : étendre
+      `tests/contract/` (tâche 3.2) aux nouveaux endpoints de A et B — Property 3 (reset) n'a
+      pour l'instant qu'un test direct (`test_password_reset_request_unknown_account_is_anti_enumeration`
+      dans `test_password_router.py`), pas encore un test de contrat partagé avec le côté Django.
     - **Property 3 (reset)** · _Requirements: 4.3, 5.1, 5.2_
 
 - [ ] 7. Vague de parité C — OTP, passwordless, 2FA
   - [ ] 7.1 Porter le groupe C
-    - `routers/otp_2fa.py` : otp/request, otp/verify/email|phone, login/otp/request|verify,
-      magic-link/request|verify, 2fa/status|setup|confirm|disable|backup-codes — feature-flags
-      (`FEATURE_DISABLED`), anti-énumération login OTP, réauthentification OTP
+    - **Contrat extrait par recherche exhaustive** de `views/otp_views.py`,
+      `views/login_otp_views.py`, `views/magic_link_views.py`, `views/twofa_views.py`,
+      `services/otp_service.py`, et du modèle `OTPCode` (`models/operational.py`) — recherche
+      qui a confirmé que Django n'a **jamais extrait l'OTP vers Core** (contrairement à
+      TOTP/MagicLink) : `OTPService` est 100 % couplé à l'ORM Django, donc pas de "réimplémen­
+      tation évitant un import Django" possible ici comme pour `password_strength.py`/
+      `breach_check.py` — il fallait un algorithme neuf, vérifié contre le comportement Django
+      *réel* (constaté, pas documenté) : codes à 6 chiffres (`secrets.randbelow`, pas `random`),
+      seul le hash SHA-256 est stocké (jamais le code en clair), vérification par
+      `hmac.compare_digest`, comptage des tentatives via `UPDATE` conditionnel **atomique**
+      (jamais lecture-puis-écriture Python, pour éviter une race entre vérifications
+      concurrentes), `max_attempts` toujours 3 (le vrai défaut du modèle — le setting
+      `OTP_MAX_ATTEMPTS` existe mais n'est lu nulle part), expirations 15/10/15 min pour
+      email/téléphone/reset (littéraux en dur côté Django malgré des settings
+      `OTP_EMAIL_VALIDITY`/`OTP_PHONE_VALIDITY` jamais lus — non répliqués, porter un setting
+      mort n'aurait aucun sens), 10 min pour `login` (seule expiration réellement pilotée par un
+      setting côté Django — `core/settings.py` gagne `otp_login_validity_minutes`).
+      **Infrastructure construite** : `OTPCodeDB` (nouvelle table, `models_sa.py`),
+      `otp_service.py` (`generate_otp`/`verify_otp`, framework-agnostic, algorithme ci-dessus) ;
+      `SQLAlchemyTOTPStorage` (`totp_storage.py`) passe de lecture-seule à lecture/écriture
+      complète — `save_totp_secret_async`/`save_backup_codes_async`/`enable_2fa_async`/
+      `disable_2fa_async` implémentés (délèguent à de nouvelles méthodes Reference_Stack-only
+      sur `SQLAlchemyAsyncUserRepository`) ; `UserDB` gagne les colonnes `phone_verified` et
+      `backup_codes` (JSON, codes de secours hashés bcrypt — jamais le texte en clair). Le
+      dataclass Core `User` (port partagé Django+FastAPI) gagne `phone_verified: bool` par
+      cohérence avec `email_verified` existant.
+      **Bug réel trouvé et corrigé côté Django, pas côté FastAPI** (découvert en ajoutant
+      `phone_verified` juste à côté) : `DjangoUserRepository._django_user_to_core` lisait
+      `getattr(django_user, "email_verified", False)` — mais le champ du modèle s'appelle
+      `is_email_verified`, pas `email_verified` ; l'attribut n'existait donc jamais et
+      `email_verified` retombait TOUJOURS sur `False`, quel que soit le vrai statut de
+      vérification, pour tout objet `User` Core construit depuis Django. Corrigé
+      (`getattr(django_user, "is_email_verified", False)`), suite Django complète relancée pour
+      confirmer l'absence de régression avant de committer ce correctif.
+      **3 des 11 endpoints du groupe portés et testés pour de vrai** (`routers/otp.py`, 8 tests
+      dans `test_otp_router.py`) : `otp/request` (email/téléphone, `NO_EMAIL`/`NO_PHONE` si le
+      champ manque sur le compte, livraison "fire-and-forget" comme Django — aucun backend
+      email/SMS réel dans le Reference_Stack, un simple log tient lieu d'envoi, ce qui est
+      observationnellement identique à Django du point de vue de l'appelant puisque Django
+      lui-même renvoie 200 sans vérifier si l'envoi a réussi), `otp/verify/email`,
+      `otp/verify/phone` (marquent `email_verified`/`phone_verified`, code générique
+      `OTP_VERIFICATION_FAILED` pour tous les échecs — comportement Django réel confirmé, pas
+      une simplification : les codes `INVALID_OTP`/`OTP_EXPIRED`/`MAX_ATTEMPTS_REACHED` des
+      exemples `@extend_schema` sont de la documentation aspirationnelle, jamais produits par le
+      vrai code). Complète aussi la tâche 6.1 (`password/reset/*`, `password/set-initial`), qui
+      dépendait de cette même infrastructure OTP.
+      **Restant, non commencé :** `login/otp/request`/`login/otp/verify` (auto-inscription,
+      bootstrap 2FA, anti-énumération — mêmes branches que Groupe A) ; `magic-link/request`/
+      `magic-link/verify` (mécanisme séparé, pas basé sur `OTPCode` — `MagicLinkTokenDB` déjà
+      créé dans `models_sa.py` mais pas encore de repository/routeur ; `core.magic_link_service`
+      confirmé 100 % framework-agnostic et déjà async-complet, prêt à consommer un repository
+      Reference_Stack dès qu'il existe) ; `2fa/status|setup|confirm|disable|backup-codes` (le
+      routeur n'existe pas encore, bien que la couche de stockage — `TOTPStorage` en écriture —
+      soit prête ; nécessite aussi `enable_mfa`/`disable_mfa` sur le user repo, déjà ajoutés).
+      Feature-flags `OTP_LOGIN_ENABLED`/`MAGIC_LINK_ENABLED` pas encore câblés (pas nécessaires
+      tant que `login/otp/*`/`magic-link/*` n'existent pas côté FastAPI).
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
   - [ ] 7.2 Write property test for feature-flag and scope parity

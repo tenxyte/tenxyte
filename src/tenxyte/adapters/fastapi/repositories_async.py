@@ -57,6 +57,7 @@ class SQLAlchemyAsyncUserRepository(AsyncUserRepository):
             mfa_type=user.mfa_type,
             mfa_secret=user.mfa_secret,
             email_verified=user.email_verified,
+            phone_verified=user.phone_verified,
             created_at=user.created_at,
             updated_at=user.updated_at,
             last_login=user.last_login,
@@ -88,6 +89,7 @@ class SQLAlchemyAsyncUserRepository(AsyncUserRepository):
         db_user.mfa_type = user.mfa_type
         db_user.mfa_secret = user.mfa_secret
         db_user.email_verified = user.email_verified
+        db_user.phone_verified = user.phone_verified
         db_user.last_login = user.last_login
         db_user.user_metadata = user.metadata
 
@@ -149,5 +151,55 @@ class SQLAlchemyAsyncUserRepository(AsyncUserRepository):
         if not db_user:
             return False
         db_user.email_verified = True
+        await self.session.commit()
+        return True
+
+    # -- Reference_Stack-only extensions (not part of the AsyncUserRepository port ABC) --
+    # Wave C (z_aud_3 task 7.1): phone verification and 2FA enrollment writes, mirroring
+    # DjangoUserRepository's equivalents (verify_phone, enable_mfa, disable_mfa) and feeding
+    # SQLAlchemyTOTPStorage's write methods for the secret/backup-codes columns.
+
+    async def verify_phone(self, user_id: str) -> bool:
+        db_user = await self.session.get(UserDB, user_id)
+        if not db_user:
+            return False
+        db_user.phone_verified = True
+        await self.session.commit()
+        return True
+
+    async def save_totp_secret(self, user_id: str, encrypted_secret: str) -> bool:
+        """Only the secret — 2FA isn't enabled yet at Setup time; `enable_mfa` is the separate
+        confirmation step, matching Django's split between `storage.save_totp_secret` (Setup) and
+        `storage.enable_2fa` + `user_repo.enable_mfa` (Confirm)."""
+        db_user = await self.session.get(UserDB, user_id)
+        if not db_user:
+            return False
+        db_user.mfa_secret = encrypted_secret
+        await self.session.commit()
+        return True
+
+    async def save_backup_codes(self, user_id: str, hashed_codes: list[str]) -> bool:
+        db_user = await self.session.get(UserDB, user_id)
+        if not db_user:
+            return False
+        db_user.backup_codes = hashed_codes
+        await self.session.commit()
+        return True
+
+    async def enable_mfa(self, user_id: str, mfa_type: MFAType = MFAType.TOTP) -> bool:
+        db_user = await self.session.get(UserDB, user_id)
+        if not db_user:
+            return False
+        db_user.mfa_type = mfa_type
+        await self.session.commit()
+        return True
+
+    async def disable_mfa(self, user_id: str) -> bool:
+        db_user = await self.session.get(UserDB, user_id)
+        if not db_user:
+            return False
+        db_user.mfa_type = MFAType.NONE
+        db_user.mfa_secret = None
+        db_user.backup_codes = []
         await self.session.commit()
         return True

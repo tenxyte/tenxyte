@@ -13,6 +13,7 @@ from tenxyte.adapters.fastapi import db as db_module
 from tenxyte.adapters.fastapi.application_auth import ApplicationAuthMiddleware
 from tenxyte.adapters.fastapi.errors import register_exception_handlers
 from tenxyte.adapters.fastapi.routers.auth import router as auth_router
+from tenxyte.adapters.fastapi.routers.otp import router as otp_router
 from tenxyte.adapters.fastapi.routers.password import router as password_router
 from tenxyte.adapters.fastapi.settings import get_default_settings
 from tenxyte.core.cache_service import InMemoryCacheService
@@ -23,7 +24,8 @@ from tenxyte.core.settings import Settings
 def _build_router(settings: Settings) -> APIRouter:
     """
     The Parity_Group routers are mounted here as each wave (A→G) ships (spec z_aud_3,
-    Requirement 4) — Wave A (`routers/auth.py`) and Wave B (`routers/password.py`) so far.
+    Requirement 4) — Wave A (`routers/auth.py`), Wave B (`routers/password.py`), and Wave C's
+    OTP-verification router (`routers/otp.py`) so far.
     """
     router = APIRouter(prefix=settings.api_prefix)
 
@@ -36,6 +38,7 @@ def _build_router(settings: Settings) -> APIRouter:
 
     router.include_router(auth_router)
     router.include_router(password_router)
+    router.include_router(otp_router)
     return router
 
 

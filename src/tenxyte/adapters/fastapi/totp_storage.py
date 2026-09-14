@@ -1,13 +1,9 @@
 """
-`TOTPStorage` for the Reference_Stack (spec z_aud_3, Wave A) — read path only. Wave A's login
-router needs to verify a TOTP code for a user who already has 2FA enabled (`load_user_data`), but
-setting up/disabling 2FA or issuing backup codes is Group C's endpoint group (task 7.1, OTP/2FA):
-those write paths raise `NotImplementedError` here rather than being silently half-implemented.
-
-`UserDB` has no `backup_codes` column yet (that arrives with Group C's storage), so
-`TOTPUserData.backup_codes` is always `[]` here — `TOTPService.verify_2fa_async`'s backup-code
-fallback simply never matches, which is correct: no FastAPI-created account can have backup codes
-yet, since nothing in this adapter issues them.
+`TOTPStorage` for the Reference_Stack (spec z_aud_3, Wave C, task 7.1) — full read/write, backing
+the 2FA-enrollment router (`routers/twofa.py`: setup, confirm, disable, backup-codes). Backed by
+`SQLAlchemyAsyncUserRepository`'s Reference_Stack-only extensions (`save_totp_secret`,
+`save_backup_codes`, `enable_mfa`, `disable_mfa`), which live on the user repo rather than here
+since they all operate on `UserDB` columns, the same table `load_user_data_async` already reads.
 """
 
 from __future__ import annotations
@@ -29,7 +25,7 @@ class SQLAlchemyTOTPStorage:
             email=user.email,
             totp_secret=user.mfa_secret,
             is_2fa_enabled=user.mfa_type.value != "none",
-            backup_codes=[],
+            backup_codes=list(user.metadata.get("backup_codes", [])) if user.metadata else [],
         )
 
     def load_user_data(self, user_id: str) -> TOTPUserData | None:
@@ -37,14 +33,30 @@ class SQLAlchemyTOTPStorage:
             "SQLAlchemyTOTPStorage is async-only in the Reference_Stack; use load_user_data_async."
         )
 
+    async def save_totp_secret_async(self, user_id: str, encrypted_secret: str) -> bool:
+        return await self.user_repo.save_totp_secret(user_id, encrypted_secret)
+
     def save_totp_secret(self, user_id: str, encrypted_secret: str) -> bool:
-        raise NotImplementedError("2FA setup is Group C (z_aud_3 task 7.1), not yet ported to the Reference_Stack.")
+        raise NotImplementedError(
+            "SQLAlchemyTOTPStorage is async-only in the Reference_Stack; use save_totp_secret_async."
+        )
+
+    async def save_backup_codes_async(self, user_id: str, hashed_codes: list[str]) -> bool:
+        return await self.user_repo.save_backup_codes(user_id, hashed_codes)
 
     def save_backup_codes(self, user_id: str, hashed_codes: list[str]) -> bool:
-        raise NotImplementedError("2FA backup codes are Group C (z_aud_3 task 7.1), not yet ported.")
+        raise NotImplementedError(
+            "SQLAlchemyTOTPStorage is async-only in the Reference_Stack; use save_backup_codes_async."
+        )
+
+    async def enable_2fa_async(self, user_id: str) -> bool:
+        return await self.user_repo.enable_mfa(user_id)
 
     def enable_2fa(self, user_id: str) -> bool:
-        raise NotImplementedError("2FA setup is Group C (z_aud_3 task 7.1), not yet ported to the Reference_Stack.")
+        raise NotImplementedError("SQLAlchemyTOTPStorage is async-only in the Reference_Stack; use enable_2fa_async.")
+
+    async def disable_2fa_async(self, user_id: str) -> bool:
+        return await self.user_repo.disable_mfa(user_id)
 
     def disable_2fa(self, user_id: str) -> bool:
-        raise NotImplementedError("2FA disable is Group C (z_aud_3 task 7.1), not yet ported to the Reference_Stack.")
+        raise NotImplementedError("SQLAlchemyTOTPStorage is async-only in the Reference_Stack; use disable_2fa_async.")
