@@ -38,3 +38,11 @@ LOGIN_PHONE_REQUIRED_FIELDS = {
     "session_id",
     "device_id",
 }
+
+PASSWORD_REQUIREMENTS_FIELDS = {"requirements", "min_length", "max_length"}
+
+PASSWORD_RESET_REQUEST_KNOWN_ACCOUNT_FIELDS = {"message", "otp_id", "expires_at", "channel"}
+
+TWOFA_STATUS_FIELDS = {"is_enabled", "backup_codes_remaining"}
+
+AUTH_REQUIRED_FIELDS = {"error", "code"}

@@ -363,11 +363,11 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       Groupe A). `parity_matrix --groups=B` : **6/6, vert**.
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-  - [ ] 6.2 Contract_Suite + matrice sur A+B (anti-énumération reset incluse)
-    - `parity_matrix --groups=A,B` : vert (tâche 6.1 fermée). Reste à faire : étendre
-      `tests/contract/` (tâche 3.2) aux nouveaux endpoints de A et B — Property 3 (reset) n'a
-      pour l'instant qu'un test direct (`test_password_reset_request_unknown_account_is_anti_enumeration`
-      dans `test_password_router.py`), pas encore un test de contrat partagé avec le côté Django.
+  - [x] 6.2 Contract_Suite + matrice sur A+B (anti-énumération reset incluse)
+    - `parity_matrix --groups=A,B` : vert. `tests/contract/` étendu (task 7.3, fait en même temps
+      que l'extension à C — voir cette tâche pour le détail : `test_group_b_shapes.py`,
+      `password/requirements`, `password/reset/request` (Property 3, y compris la variante
+      "corps vide" du cas compte-inconnu, comportement Django réel préservé, voir docstring)).
     - **Property 3 (reset)** · _Requirements: 4.3, 5.1, 5.2_
 
 - [ ] 7. Vague de parité C — OTP, passwordless, 2FA
@@ -489,16 +489,47 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       hors périmètre de cette tâche de parité.
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-  - [ ] 7.2 Write property test for feature-flag and scope parity
+  - [x] 7.2 Write property test for feature-flag and scope parity
     - **Property 8: Parité des feature-flags et des scopes** (combinatoire flags × endpoints,
-      scopes `2fa_setup_only`/`password_change_only`)
+      scopes `2fa_setup_only`/`password_change_only`) — `test_feature_flag_scope_parity_property.py`
+      (5 tests). Seuls les flags réellement câblés dans le Reference_Stack aujourd'hui sont
+      couverts (`otp_login_enabled`, `magic_link_enabled`) — `WEBAUTHN_ENABLED`/`AIRS_ENABLED`/
+      `FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED` (aussi nommés dans `design.md`) n'existent
+      pas encore côté FastAPI (Vagues F/G non commencées, force-password-change explicitement
+      hors périmètre — voir docstring `routers/auth.py`) ; à étendre quand ces vagues arriveront.
+      **Trouvaille documentée, pas un bug** : `magic_link_enabled=False` ne produit PAS le même
+      `404 FEATURE_DISABLED` générique que `otp_login_enabled=False` — comportement Django réel
+      déjà vérifié en tâche 7.1 (`request/` → `503 SERVICE_UNAVAILABLE`, `verify/` → `401
+      MAGIC_LINK_INVALID`, indissociable d'un token simplement invalide). Le test combinatoire de
+      scope (`test_scope_allow_list_enforced_consistently_across_every_protected_endpoint`) couvre
+      les 14 endpoints actuellement protégés par JWT × 4 scopes de jetons (plein, `2fa_setup_only`,
+      `password_change_only`, un scope arbitraire inconnu) — 56 combinaisons en une seule requête
+      chacune, un jeton neuf par appel (pas de réutilisation : `logout/all/` blackliste réellement
+      le jeton qui l'appelle, un jeton réutilisé aurait pollué les assertions suivantes — trouvé et
+      corrigé pendant l'écriture du test lui-même, pas dans le code produit).
     - **Validates: Requirements 4.4**
 
-  - [ ] 7.3 Contract_Suite + matrice sur A+B+C
+  - [x] 7.3 Contract_Suite + matrice sur A+B+C
+    - `parity_matrix --groups=A,B,C` : vert. `tests/contract/conftest.py` gagne `get()` (les deux
+      clients — `2fa/status`, `password/requirements`, `magic-link/verify` sont des GET),
+      `register_and_login()` (helper partagé : inscription + connexion, identique sur les deux
+      adapters puisque Group A est déjà prouvé) et une normalisation de corps vide (`{}` au lieu
+      d'un crash `.json()`/`response.data is None` — nécessaire pour `password/reset/request`,
+      dont la branche compte-inconnu renvoie un corps HTTP réellement vide côté Django, `Response
+      (status=200)` sans `data`) et une normalisation `JsonResponse` (`@require_jwt`'s propre
+      court-circuit d'échec d'auth renvoie du Django brut, pas un DRF `Response`, donc pas de
+      `.data`). `test_group_b_shapes.py` (3 tests), `test_group_c_shapes.py` (5 tests) : pas une
+      couverture exhaustive de chaque endpoint des deux groupes (même échelle que
+      `test_group_a_shapes.py`, qui n'en couvre pas non plus la totalité) mais un échantillon
+      représentatif — forme du succès + anti-énumération là où elle s'applique
+      (`password/reset/request`, `magic-link/request`) + parité du 401 `AUTH_REQUIRED`.
     - _Requirements: 5.1, 5.2_
 
-- [ ] 8. Checkpoint - Ensure all tests pass
-  - Vagues A–C vertes sous toutes les gates ; ask the user if questions arise.
+- [x] 8. Checkpoint - Ensure all tests pass
+  - Vagues A–C vertes sous toutes les gates : `parity_matrix --groups=A,B,C` (27/114 dont 100 %
+    de A+B+C), `check_async_purity.py` (aucun motif bloquant), Contract_Suite (22 tests, deux
+    adapters), coverage FastAPI 94%+ (seuil CI 90 %), suite Django complète (2238 passed, 5
+    skipped, aucune régression), `ruff`/`black` propres sur `src/`.
 
 - [ ] 9. Vague de parité F — AIRS
   - [ ] 9.1 Porter le groupe F
