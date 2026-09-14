@@ -303,6 +303,13 @@ class Settings:
         return self._get("BREACH_CHECK_ENABLED", True)
 
     @property
+    def breach_check_reject(self) -> bool:
+        """Whether a breach-check hit hard-rejects the password (True) or is only reported back
+        to the caller for it to decide (False) — used by the FastAPI_Adapter's password/change/
+        (spec z_aud_3, Wave B)."""
+        return self._get("BREACH_CHECK_REJECT", True)
+
+    @property
     def bcrypt_rounds(self) -> int:
         """Bcrypt cost factor for password hashing (also used for the dummy
         hash computed by AuthenticationService's timing-attack mitigation —

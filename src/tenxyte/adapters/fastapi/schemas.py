@@ -1,6 +1,6 @@
 """
-Pydantic request bodies for the Wave A auth router (spec z_aud_3, task 5.1) — response bodies are
-deliberately plain `dict`s built by hand in `routers/auth.py`, not `response_model`s: the Django
+Pydantic request bodies for the Wave A/B routers (spec z_aud_3, tasks 5.1/6.1) — response bodies
+are deliberately plain `dict`s built by hand in `routers/*.py`, not `response_model`s: the Django
 contract's response shape genuinely varies by branch (bootstrap token vs restricted-scope token
 vs normal success), and forcing all three through one Pydantic response model would either lose
 fields or require a union type that adds no real validation value over just building the dict
@@ -44,4 +44,19 @@ class RefreshTokenRequest(BaseModel):
 class UpdateProfileRequest(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
+    email: EmailStr | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    """`otp_code` is accepted for schema/shape parity with the Django_Adapter's
+    `ChangePasswordSerializer` but OTP-based reauth isn't implemented yet (see
+    routers/password.py's module docstring) — `current_password` is the only working proof."""
+
+    current_password: str = ""
+    new_password: str = Field(min_length=8)
+    otp_code: str = ""
+
+
+class PasswordStrengthRequest(BaseModel):
+    password: str = ""
     email: EmailStr | None = None

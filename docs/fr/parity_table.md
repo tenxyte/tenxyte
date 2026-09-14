@@ -44,7 +44,7 @@
 | GET | `/organizations/list/` | list_organizations | E | 🔜 E |
 | GET | `/organizations/members/` | list_members | E | 🔜 E |
 | GET | `/organizations/tree/` | get_organization_tree | E | 🔜 E |
-| GET | `/password/requirements/` | PasswordRequirementsView | B | 🔜 B |
+| GET | `/password/requirements/` | PasswordRequirementsView | B | ✅ B |
 | GET | `/permissions/` | PermissionListView | D | 🔜 D |
 | GET | `/permissions/{permission_id}/` | PermissionDetailView | D | 🔜 D |
 | GET | `/roles/` | RoleListView | D | 🔜 D |
@@ -97,11 +97,11 @@
 | POST | `/otp/request/` | RequestOTPView | C | 🔜 C |
 | POST | `/otp/verify/email/` | VerifyEmailOTPView | C | 🔜 C |
 | POST | `/otp/verify/phone/` | VerifyPhoneOTPView | C | 🔜 C |
-| POST | `/password/change/` | ChangePasswordView | B | 🔜 B |
+| POST | `/password/change/` | ChangePasswordView | B | ✅ B |
 | POST | `/password/reset/confirm/` | PasswordResetConfirmView | B | 🔜 B |
 | POST | `/password/reset/request/` | PasswordResetRequestView | B | 🔜 B |
 | POST | `/password/set-initial/` | SetInitialPasswordView | B | 🔜 B |
-| POST | `/password/strength/` | PasswordStrengthView | B | 🔜 B |
+| POST | `/password/strength/` | PasswordStrengthView | B | ✅ B |
 | POST | `/permissions/` | PermissionListView | D | 🔜 D |
 | POST | `/refresh/` | RefreshTokenView | A | ✅ A |
 | POST | `/register/` | RegisterView | A | ✅ A |

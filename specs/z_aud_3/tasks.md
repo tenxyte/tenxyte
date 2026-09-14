@@ -315,12 +315,51 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - _Requirements: 5.1, 5.2_
 
 - [ ] 6. Vague de parité B — Password
-  - [ ] 6.1 Porter le groupe B
-    - `routers/password.py` : reset request/confirm, change, set-initial, strength,
-      requirements — incluant scope `password_change_only`, HIBP, historique
+  - [x] 6.1 Porter le groupe B
+    - **Contrat extrait par recherche exhaustive de `views/password_views.py` +
+      `serializers/password_serializers.py`** — recherche qui a aussi trouvé plusieurs
+      divergences doc/code réelles côté Django lui-même (pas des trouvailles côté FastAPI) :
+      `PasswordResetConfirmView` n'a jamais de code `OTP_EXPIRED`/champ `details` (toujours
+      `{"error", "code": "RESET_FAILED"}`) et n'a JAMAIS de rejet 400 sur mot de passe compromis
+      (200 + `password_safe: false` seulement) ; `ChangePasswordView`'s vrai message de rejet
+      HIBP diffère du texte documenté ; `PasswordStrengthView`/`PasswordRequirementsView`'s
+      `requirements` est une `list[str]`, pas l'objet `{"min_length": ..., ...}` documenté ;
+      et surtout — **`PasswordHistory.add_password` est défini mais jamais appelé nulle part**,
+      donc le rejet `PASSWORD_REUSED` documenté est fictif : ne PAS le porter aurait été une
+      régression de parité, pas un raccourci.
+      3 des 6 endpoints portés et testés pour de vrai (12 tests dans `test_password_router.py`) :
+      `password/strength` (calculateur de force réimplémenté — pas une réutilisation de
+      `tenxyte.validators` : ce module fait `from .conf import auth_settings`, qui importe
+      `django.conf.settings` au chargement, donc inimportable depuis un process FastAPI sans
+      Django ; réimplémentation pilotée par les propriétés déjà existantes sur
+      `core/settings.py` — `password_min_length`, `password_require_uppercase/lowercase/digit/
+      special` —, formes structurelles identiques, messages en anglais plutôt que le catalogue
+      français de Django, qu'aucun contrat d'API raisonnable n'exige de reproduire mot pour
+      mot), `password/requirements`, `password/change` (reauth par mot de passe actuel réel,
+      check HIBP réel — `breach_check.py`, même raison de réimplémentation que
+      `tenxyte.services.breach_check_service` : import Django au chargement —, hash + révocation
+      réelle des sessions). `core/settings.py` gagne `breach_check_reject` (n'existait pas,
+      seul `breach_check_enabled` y était déjà).
+      **Bloqué sur un prérequis commun, documenté (pas silencieux) :** `password/reset/request`,
+      `password/reset/confirm`, `password/set-initial`, et le volet reauth-par-OTP de
+      `password/change` — tous entièrement dépendants d'`OTPService` (codes email/SMS à usage
+      unique), qui n'existe pas dans le Reference_Stack (distinct de `totp_storage.py`, lequel
+      couvre seulement les secrets TOTP d'app d'authentification) ; ce stockage OTP est le
+      travail du Groupe C (tâche 7.1). Un `otp_code` seul (sans `current_password`) sur
+      `password/change` donne `REAUTH_REQUIRED` — signal honnête, pas une acceptation
+      silencieuse. Également hors scope, à raison (comportement Django réel, pas un manque) :
+      historique de mots de passe (voir plus haut — code mort côté Django), et la branche
+      `must_change_password`/upgrade de scope sur changement réussi (le scope
+      `password_change_only` n'est émis nulle part par défaut — même constat que pour le
+      Groupe A). `parity_matrix --groups=B` : 3/6, les 3 manquants sont exactement les
+      endpoints bloqués par l'OTP ci-dessus.
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
   - [ ] 6.2 Contract_Suite + matrice sur A+B (anti-énumération reset incluse)
+    - **Bloqué** : `password/reset/request` (le seul endpoint à anti-énumération de ce groupe)
+      dépend du même prérequis OTP que la tâche 6.1 — Property 3 (reset) et
+      `parity_matrix --groups=A,B` vert restent à faire une fois le Groupe C livré (ou un
+      stockage OTP construit en avance de phase).
     - **Property 3 (reset)** · _Requirements: 4.3, 5.1, 5.2_
 
 - [ ] 7. Vague de parité C — OTP, passwordless, 2FA
