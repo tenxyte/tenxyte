@@ -242,8 +242,11 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       91.24 % sur `tenxyte.adapters.fastapi`, gate 90 % franchie.
     - _Requirements: 5.3_
 
-- [ ] 4. Checkpoint - Ensure all tests pass
-  - Fondations + socle + outillage verts ; suite Django intacte ; ask the user if questions arise.
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Fondations (tâche 1) + socle (tâche 2) + outillage (tâche 3) verts ; suite Django intacte.
+    Vérifié après coup (au moment où 2.4/3.2/3.4 ont fermé) plutôt qu'en s'arrêtant dessus, car
+    aucune question ne s'est posée nécessitant l'utilisateur — suite complète : 2842 passed,
+    5 skipped, 97.56% de couverture.
 
 - [ ] 5. Vague de parité A — Auth de base
   - [x] 5.1 Porter le groupe A
