@@ -406,28 +406,55 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       vérification, pour tout objet `User` Core construit depuis Django. Corrigé
       (`getattr(django_user, "is_email_verified", False)`), suite Django complète relancée pour
       confirmer l'absence de régression avant de committer ce correctif.
-      **3 des 11 endpoints du groupe portés et testés pour de vrai** (`routers/otp.py`, 8 tests
-      dans `test_otp_router.py`) : `otp/request` (email/téléphone, `NO_EMAIL`/`NO_PHONE` si le
-      champ manque sur le compte, livraison "fire-and-forget" comme Django — aucun backend
-      email/SMS réel dans le Reference_Stack, un simple log tient lieu d'envoi, ce qui est
-      observationnellement identique à Django du point de vue de l'appelant puisque Django
-      lui-même renvoie 200 sans vérifier si l'envoi a réussi), `otp/verify/email`,
+      **8 des 11 endpoints du groupe désormais portés et testés pour de vrai** :
+      `routers/otp.py` (8 tests dans `test_otp_router.py`) — `otp/request` (email/téléphone,
+      `NO_EMAIL`/`NO_PHONE` si le champ manque sur le compte, livraison "fire-and-forget" comme
+      Django — aucun backend email/SMS réel dans le Reference_Stack, un simple log tient lieu
+      d'envoi, ce qui est observationnellement identique à Django du point de vue de l'appelant
+      puisque Django lui-même renvoie 200 sans vérifier si l'envoi a réussi), `otp/verify/email`,
       `otp/verify/phone` (marquent `email_verified`/`phone_verified`, code générique
       `OTP_VERIFICATION_FAILED` pour tous les échecs — comportement Django réel confirmé, pas
       une simplification : les codes `INVALID_OTP`/`OTP_EXPIRED`/`MAX_ATTEMPTS_REACHED` des
       exemples `@extend_schema` sont de la documentation aspirationnelle, jamais produits par le
       vrai code). Complète aussi la tâche 6.1 (`password/reset/*`, `password/set-initial`), qui
       dépendait de cette même infrastructure OTP.
+      `routers/twofa.py` (10 tests dans `test_twofa_router.py`) — `2fa/status`, `2fa/setup`
+      (`TOTPService.setup_2fa_async` écrit secret + codes de secours via `SQLAlchemyTOTPStorage`,
+      désormais en écriture complète), `2fa/confirm` (active le MFA, upgrade bootstrap → token
+      plein scope + blacklist du token bootstrap quand `auth.scope == "2fa_setup_only"` — même
+      mécanique que Django, vérifiée par un test qui reconfirme que le token bootstrap est
+      *rejeté* après usage), `2fa/disable` (reauth par mot de passe uniquement — même raison que
+      `password/change/`, voir le docstring du module —, désactive), `2fa/backup-codes`
+      (régénération, vérifiée avec un code du pas TOTP suivant pour éviter la protection anti-
+      rejeu légitime qui aurait autrement rejeté un `now()` répété dans la même fenêtre de 30s).
+      Contrairement à Django (deux écritures séparées — `TOTPStorage.enable_2fa`/`disable_2fa`
+      **et** `user_repo.enable_mfa`/`disable_mfa`, deux champs distincts sur `User`), le
+      Reference_Stack n'a qu'un seul signal (`mfa_type`) donc `SQLAlchemyTOTPStorage.
+      enable_2fa_async`/`disable_2fa_async` appellent déjà `enable_mfa`/`disable_mfa`
+      en interne — pas de double écriture nécessaire côté routeur. `app.state.tenxyte_totp_service`
+      ajouté (instance unique construite dans le lifespan, pas une par requête — sa
+      `replay_protection` doit survivre entre requêtes pour protéger réellement contre le
+      rejeu ; corrige au passage un bug latent dans `routers/auth.py`'s `_login()`, qui
+      instanciait un `TOTPService` neuf à chaque connexion, rendant sa protection anti-rejeu
+      inopérante depuis la Vague A — la connexion utilise maintenant la même instance partagée).
+      **Deuxième bug réel trouvé et corrigé, celui-ci dans le code FastAPI déjà livré** (Vague A) :
+      la branche anti-énumération de `register` construisait à la main un dict `user` différent
+      en forme de celui que produit `_serialize_user()` sur le chemin réel (clés manquantes —
+      `username`/`avatar`/`roles`/... —, et `phone: ""` au lieu de `phone: None`) : exactement le
+      signal d'énumération que cet endpoint existe pour empêcher. Trouvé par le test de propriété
+      Hypothesis d'anti-énumération (tâche 5.2) sur un exemple qu'il n'avait pas exploré
+      auparavant. Corrigé en construisant un `User` synthétique et en le passant par la même
+      `_serialize_user()` que le chemin réel, garantissant une forme identique par construction
+      plutôt que par appariement manuel.
       **Restant, non commencé :** `login/otp/request`/`login/otp/verify` (auto-inscription,
       bootstrap 2FA, anti-énumération — mêmes branches que Groupe A) ; `magic-link/request`/
       `magic-link/verify` (mécanisme séparé, pas basé sur `OTPCode` — `MagicLinkTokenDB` déjà
       créé dans `models_sa.py` mais pas encore de repository/routeur ; `core.magic_link_service`
       confirmé 100 % framework-agnostic et déjà async-complet, prêt à consommer un repository
-      Reference_Stack dès qu'il existe) ; `2fa/status|setup|confirm|disable|backup-codes` (le
-      routeur n'existe pas encore, bien que la couche de stockage — `TOTPStorage` en écriture —
-      soit prête ; nécessite aussi `enable_mfa`/`disable_mfa` sur le user repo, déjà ajoutés).
-      Feature-flags `OTP_LOGIN_ENABLED`/`MAGIC_LINK_ENABLED` pas encore câblés (pas nécessaires
-      tant que `login/otp/*`/`magic-link/*` n'existent pas côté FastAPI).
+      Reference_Stack dès qu'il existe). Feature-flags `OTP_LOGIN_ENABLED`/`MAGIC_LINK_ENABLED`
+      pas encore câblés (pas nécessaires tant que `login/otp/*`/`magic-link/*` n'existent pas
+      côté FastAPI). `parity_matrix --groups=C` : 8/11 — les 4 manquants sont exactement
+      `login/otp/request`, `login/otp/verify`, `magic-link/request`, `magic-link/verify`.
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
   - [ ] 7.2 Write property test for feature-flag and scope parity

@@ -20,6 +20,7 @@ from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepos
 from tenxyte.core.cache_service import CacheService
 from tenxyte.core.jwt_service import JWTService
 from tenxyte.core.settings import Settings
+from tenxyte.core.totp_service import TOTPService
 from tenxyte.ports.async_repositories import AsyncUserRepository
 
 
@@ -42,3 +43,9 @@ def get_jwt_service(request: Request) -> JWTService:
 
 def get_cache_service(request: Request) -> CacheService:
     return request.app.state.tenxyte_cache_service
+
+
+def get_totp_service(request: Request) -> TOTPService:
+    """A single shared instance (built once in the App_Factory's lifespan, not per-request) —
+    its `replay_protection` must persist across requests to actually protect against replay."""
+    return request.app.state.tenxyte_totp_service

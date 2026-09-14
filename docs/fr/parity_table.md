@@ -14,7 +14,7 @@
 | DELETE | `/users/{user_id}/permissions/` | UserDirectPermissionsView | D | 🔜 D |
 | DELETE | `/users/{user_id}/roles/` | UserRolesView | D | 🔜 D |
 | DELETE | `/webauthn/credentials/{credential_id}/` | WebAuthnCredentialDeleteView | G | 🔜 G |
-| GET | `/2fa/status/` | TwoFactorStatusView | C | 🔜 C |
+| GET | `/2fa/status/` | TwoFactorStatusView | C | ✅ C |
 | GET | `/account-deletion-status/` | account_deletion_status | G | 🔜 G |
 | GET | `/admin/audit-logs/` | AuditLogListView | D | 🔜 D |
 | GET | `/admin/audit-logs/{log_id}/` | AuditLogDetailView | D | 🔜 D |
@@ -59,10 +59,10 @@
 | PATCH | `/me/` | MeView | A | ✅ A |
 | PATCH | `/organizations/members/{user_id}/` | update_member_role | E | 🔜 E |
 | PATCH | `/organizations/update/` | update_organization | E | 🔜 E |
-| POST | `/2fa/backup-codes/` | TwoFactorBackupCodesView | C | 🔜 C |
-| POST | `/2fa/confirm/` | TwoFactorConfirmView | C | 🔜 C |
-| POST | `/2fa/disable/` | TwoFactorDisableView | C | 🔜 C |
-| POST | `/2fa/setup/` | TwoFactorSetupView | C | 🔜 C |
+| POST | `/2fa/backup-codes/` | TwoFactorBackupCodesView | C | ✅ C |
+| POST | `/2fa/confirm/` | TwoFactorConfirmView | C | ✅ C |
+| POST | `/2fa/disable/` | TwoFactorDisableView | C | ✅ C |
+| POST | `/2fa/setup/` | TwoFactorSetupView | C | ✅ C |
 | POST | `/admin/blacklisted-tokens/cleanup/` | BlacklistedTokenCleanupView | D | 🔜 D |
 | POST | `/admin/deletion-requests/process-expired/` | ProcessExpiredDeletionsView | G | 🔜 G |
 | POST | `/admin/deletion-requests/{request_id}/process/` | ProcessDeletionView | G | 🔜 G |

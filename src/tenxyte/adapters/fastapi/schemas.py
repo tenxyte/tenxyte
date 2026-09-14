@@ -92,3 +92,21 @@ class PasswordResetConfirmRequest(BaseModel):
 class SetInitialPasswordRequest(BaseModel):
     otp_code: str = Field(min_length=6, max_length=6)
     new_password: str = Field(min_length=8)
+
+
+class TwoFactorConfirmRequest(BaseModel):
+    code: str = ""
+
+
+class TwoFactorDisableRequest(BaseModel):
+    """`otp_code` is accepted for schema/shape parity with the Django_Adapter's reauth gate but
+    OTP-based reauth isn't implemented yet (see routers/twofa.py's module docstring) —
+    `password` is the only working proof."""
+
+    code: str = ""
+    password: str = ""
+    otp_code: str = ""
+
+
+class TwoFactorBackupCodesRequest(BaseModel):
+    code: str = ""

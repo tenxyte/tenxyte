@@ -49,7 +49,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from tenxyte.adapters.fastapi.auth_lookup import SQLAlchemyEmailPasswordLookup, SQLAlchemyPhonePasswordLookup
-from tenxyte.adapters.fastapi.deps import get_cache_service, get_db_session, get_jwt_service, get_settings
+from tenxyte.adapters.fastapi.deps import (
+    get_cache_service,
+    get_db_session,
+    get_jwt_service,
+    get_settings,
+    get_totp_service,
+)
 from tenxyte.adapters.fastapi.errors import TenxyteAPIError
 from tenxyte.adapters.fastapi.refresh_tokens import issue_refresh_token as _issue_refresh_token
 from tenxyte.adapters.fastapi.refresh_tokens import (
@@ -177,18 +183,25 @@ async def register(
         # not. The Django_Adapter also emails a security alert to the real owner on this path —
         # not replicated here (no email service wired into the Reference_Stack), but that's an
         # invisible side channel to the caller either way, so parity of the *response* holds.
+        #
+        # Built via the SAME _serialize_user() the real path uses below, not a hand-rolled dict —
+        # a prior hand-rolled version silently drifted from _serialize_user()'s shape (missing
+        # keys like username/avatar/roles, and phone:"" instead of phone:None), which Hypothesis
+        # eventually caught: differing response *shape* between the two branches is exactly the
+        # enumeration signal this endpoint exists to prevent, so the two must be built identically.
+        now = datetime.now(timezone.utc)
+        fake_user = User(
+            id=str(uuid4()),
+            email=body.email,
+            first_name=body.first_name,
+            last_name=body.last_name,
+            is_active=True,
+            created_at=now,
+            updated_at=now,
+        )
         return {
             "message": "Registration successful",
-            "user": {
-                "id": str(uuid4()),
-                "email": body.email,
-                "phone": "",
-                "first_name": body.first_name,
-                "last_name": body.last_name,
-                "is_email_verified": False,
-                "is_phone_verified": False,
-                "is_2fa_enabled": False,
-            },
+            "user": _serialize_user(fake_user),
             "verification_required": {"email": True, "phone": False},
         }
 
@@ -246,6 +259,7 @@ async def _login(
     session: AsyncSession,
     settings: Settings,
     jwt_service: JWTService,
+    totp_service: TOTPService,
     lookup,
     identifier: object,
     password: str,
@@ -301,7 +315,6 @@ async def _login(
             raise TenxyteAPIError(
                 "2FA code required", code="2FA_REQUIRED", status_code=401, extra={"requires_2fa": True}
             )
-        totp_service = TOTPService(settings=settings)
         storage = SQLAlchemyTOTPStorage(user_repo)
         ok, error_message = await totp_service.verify_2fa_async(user.id, totp_code, storage)
         if not ok:
@@ -339,6 +352,7 @@ async def login_email(
     session: AsyncSession = Depends(get_db_session),  # noqa: B008
     settings: Settings = Depends(get_settings),  # noqa: B008
     jwt_service: JWTService = Depends(get_jwt_service),  # noqa: B008
+    totp_service: TOTPService = Depends(get_totp_service),  # noqa: B008
     cache_service: CacheService = Depends(get_cache_service),  # noqa: B008
 ):
     user_repo = SQLAlchemyAsyncUserRepository(session)
@@ -348,6 +362,7 @@ async def login_email(
         session=session,
         settings=settings,
         jwt_service=jwt_service,
+        totp_service=totp_service,
         lookup=lookup,
         identifier=body.email,
         password=body.password,
@@ -363,6 +378,7 @@ async def login_phone(
     session: AsyncSession = Depends(get_db_session),  # noqa: B008
     settings: Settings = Depends(get_settings),  # noqa: B008
     jwt_service: JWTService = Depends(get_jwt_service),  # noqa: B008
+    totp_service: TOTPService = Depends(get_totp_service),  # noqa: B008
     cache_service: CacheService = Depends(get_cache_service),  # noqa: B008
 ):
     user_repo = SQLAlchemyAsyncUserRepository(session)
@@ -372,6 +388,7 @@ async def login_phone(
         session=session,
         settings=settings,
         jwt_service=jwt_service,
+        totp_service=totp_service,
         lookup=lookup,
         identifier=(body.phone_country_code, body.phone_number),
         password=body.password,
