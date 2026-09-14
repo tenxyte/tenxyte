@@ -369,6 +369,61 @@ jobs:
           pytest spec/airs/conformance/negative_mock -q --no-cov
 
   # ===========================================================================
+  # AIRS Conformance Suite against FastAPI (spec z_aud_3, Wave F, task 9.2, Property 11) — the
+  # exact same black-box suite as the job above, unmodified, run against a real ephemeral
+  # FastAPI_Adapter instance instead of Django, proving AIRS conformance is adapter-independent.
+  # Two Conformance Suite tests skip here by design (not a gap): `revoke_delegating_user_permission`
+  # (the Reference_Stack has no RBAC tables yet — see airs_service.py's module docstring) and
+  # --airs-audit-log-path (no public admin endpoint serializes prompt_trace_id in either adapter
+  # yet — see spec/airs/AIRS-1.0.md's Annex A). No negative-control re-run needed: that half of
+  # Property 4 only tests the suite's own discriminating power, already proven by the job above.
+  # ===========================================================================
+  airs-conformance-fastapi:
+    name: AIRS Conformance Suite (FastAPI)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[fastapi,dev]"
+          pip install httpx
+
+      - name: Start the ephemeral FastAPI Tenxyte instance
+        run: |
+          python -m spec.airs.conformance.tenxyte_ci_fastapi.seed_and_serve --port 8812 > server.log 2>&1 &
+          for _ in $(seq 1 30); do
+            grep -q '"base_url"' server.log && break
+            sleep 1
+          done
+          grep -m1 '"base_url"' server.log > spec/airs/conformance/tenxyte_ci_fastapi/_ci_info.json
+          cat spec/airs/conformance/tenxyte_ci_fastapi/_ci_info.json
+
+      - name: Run the Conformance Suite against FastAPI (Property 11)
+        run: |
+          JWT=$(python -c "import json; print(json.load(open('spec/airs/conformance/tenxyte_ci_fastapi/_ci_info.json'))['user_jwt'])")
+          pytest spec/airs/conformance -q -m "not negative_control" --no-cov \
+            --airs-base-url "http://127.0.0.1:8812" \
+            --airs-discovery-path "/api/v1/ai/.well-known/airs/" \
+            --airs-user-jwt "$JWT" \
+            --airs-conformance-probe-path "/api/v1/ai/_conformance_probe/" \
+            --airs-hitl-probe-path "/api/v1/ai/_hitl_probe/"
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: airs-conformance-fastapi-server-log
+          path: server.log
+
+  # ===========================================================================
   # Async_Purity_Check (spec z_aud_3, Requirement 5.4, Property 7) — scripts/check_async_purity.py
   # walks adapters/fastapi/ for blocking patterns in async def bodies. Pure AST/stdlib, no install
   # of tenxyte itself needed (the checker only reads source text, never imports the package).

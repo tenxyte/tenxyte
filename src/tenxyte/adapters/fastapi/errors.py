@@ -49,6 +49,18 @@ class TenxyteAPIError(Exception):
         self.extra = extra
 
 
+class AgentClearancePending(Exception):
+    """Raised by `airs_clearance.require_agent_clearance` (spec z_aud_3, Wave F, task 9.2) to
+    short-circuit a business endpoint with AIRS/1.0's [AIRS-HITL-3] `202 pending_confirmation`
+    contract — the FastAPI equivalent of the Django_Adapter's `@require_agent_clearance` decorator
+    returning early instead of calling the wrapped view."""
+
+    def __init__(self, confirmation_token: str, expires_at: str):
+        super().__init__("Action requires human approval")
+        self.confirmation_token = confirmation_token
+        self.expires_at = expires_at
+
+
 def _canonical_body(error: str, code: str, details: Any = None, extra: dict[str, Any] | None = None) -> dict[str, Any]:
     body: dict[str, Any] = {"error": error, "code": code}
     if details is not None:
@@ -83,6 +95,18 @@ async def _handle_http_exception(request: Request, exc: StarletteHTTPException) 
     return JSONResponse(status_code=exc.status_code, content=content, headers=getattr(exc, "headers", None))
 
 
+async def _handle_agent_clearance_pending(request: Request, exc: AgentClearancePending) -> JSONResponse:
+    return JSONResponse(
+        status_code=202,
+        content={
+            "status": "pending_confirmation",
+            "message": "This action requires human approval.",
+            "confirmation_token": exc.confirmation_token,
+            "expires_at": exc.expires_at,
+        },
+    )
+
+
 async def _handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
     # Never leak internals — the same fail-closed posture as the Django_Adapter's generic 500s.
     logger.exception("Unhandled exception in FastAPI_Adapter request")
@@ -94,6 +118,7 @@ async def _handle_unexpected_error(request: Request, exc: Exception) -> JSONResp
 
 def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(TenxyteAPIError, _handle_tenxyte_error)
+    app.add_exception_handler(AgentClearancePending, _handle_agent_clearance_pending)
     app.add_exception_handler(RequestValidationError, _handle_validation_error)
     app.add_exception_handler(StarletteHTTPException, _handle_http_exception)
     app.add_exception_handler(Exception, _handle_unexpected_error)

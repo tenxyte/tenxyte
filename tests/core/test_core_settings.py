@@ -73,6 +73,7 @@ def test_properties_defaults():
     assert s.airs_default_max_total == 1000
     assert s.airs_default_max_failures == 10
     assert s.airs_budget_tracking_enabled is False
+    assert s.airs_confirmation_required == []
     assert s.mfa_required is False
     assert s.application_auth_enabled is True
     assert s.exempt_paths == ["/admin/", "/api/v1/health/", "/api/v1/docs/"]

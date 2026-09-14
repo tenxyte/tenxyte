@@ -57,6 +57,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from tenxyte.adapters.fastapi import airs_service
+from tenxyte.adapters.fastapi.airs_service import resolve_agent_token_async
 from tenxyte.adapters.fastapi.deps import get_cache_service, get_db_session, get_settings
 from tenxyte.adapters.fastapi.errors import TenxyteAPIError
 from tenxyte.adapters.fastapi.models_sa import AgentPendingActionDB, AgentTokenDB, ApplicationDB
@@ -82,32 +83,6 @@ def _serialize_token(row: AgentTokenDB) -> dict:
         "organization": row.organization_id,
         "current_request_count": row.current_request_count,
     }
-
-
-async def resolve_agent_token_async(
-    session: AsyncSession, raw_token: str, settings: Settings, cache_service: CacheService
-) -> AgentTokenDB:
-    """Reproduces `AgentAuthMiddleware`'s resolution: AIRS-enabled check, token validation
-    ([AIRS-CORE-9]/[AIRS-CORE-16]), then circuit breaker ([AIRS-GUARDS-1]/[AIRS-GUARDS-2]) — the
-    same three gates every `AgentBearer` request passes through in the Django_Adapter, in the same
-    order, with the same `code` values (Annex A)."""
-    if not settings.airs_enabled:
-        raise TenxyteAPIError("AIRS module is disabled.", code="AIRS_DISABLED", status_code=403)
-
-    row, error = await airs_service.validate_async(session, raw_token)
-    if error:
-        raise TenxyteAPIError(error, code=f"AGENT_TOKEN_{error}", status_code=403)
-
-    ok, suspend_reason = await airs_service.check_circuit_breaker_async(session, row, settings, cache_service)
-    if not ok:
-        raise TenxyteAPIError(
-            "Agent token suspended by circuit breaker",
-            code="AGENT_TOKEN_SUSPENDED",
-            status_code=403,
-            extra={"reason": suspend_reason},
-        )
-
-    return row
 
 
 @router.get("/ai/tokens/")

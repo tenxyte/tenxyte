@@ -510,6 +510,12 @@ class Settings:
         """Whether usage-cost accumulation and budget-triggered suspension are enforced."""
         return self._get("AIRS_BUDGET_TRACKING_ENABLED", False)
 
+    @property
+    def airs_confirmation_required(self) -> list[str]:
+        """Permission codes that always require HITL confirmation, even when the caller doesn't
+        explicitly request it — used by `require_agent_clearance` (task 9.2)."""
+        return self._get("AIRS_CONFIRMATION_REQUIRED", [])
+
 
 # Global settings instance (will be initialized by framework adapters)
 _settings: Settings | None = None

@@ -98,6 +98,10 @@ logs
 spec/airs/conformance/tenxyte_ci/_ephemeral.sqlite3
 spec/airs/conformance/tenxyte_ci/_ci_info.json
 
+# AIRS Conformance Suite ephemeral FastAPI CI instance (spec z_aud_3, Wave F, task 9.2)
+spec/airs/conformance/tenxyte_ci_fastapi/_ephemeral.sqlite3
+spec/airs/conformance/tenxyte_ci_fastapi/_ci_info.json
+
 # AIRS benchmark raw output (RESULTS.md is the canonical human-readable record)
 benchmarks/airs/results_*.json
 

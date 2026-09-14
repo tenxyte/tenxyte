@@ -592,9 +592,42 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       exactement comme prévu par le design du conftest partagé).
     - _Requirements: 4.1, 4.2, 4.4, 4.6_
 
-  - [ ] 9.2 Exécuter la Conformance_Suite z_aud_2 contre FastAPI
-    - **Property 11: Conformité AIRS indépendante de l'adapter** — job CI `airs-conformance`
-      contre l'app FastAPI éphémère, tous niveaux
+  - [x] 9.2 Exécuter la Conformance_Suite z_aud_2 contre FastAPI
+    - **Property 11: Conformité AIRS indépendante de l'adapter** — nouveau job CI
+      `airs-conformance-fastapi` (`airs-conformance` était déjà pris par la version Django —
+      deux jobs ne peuvent pas partager un ID, même nom d'esprit que `fastapi-tests`/
+      `django-tests`/`core-tests` déjà voisins dans ce workflow) contre l'app FastAPI éphémère,
+      tous niveaux (`core`/`hitl`/`guards`/`budget`/`trace`).
+      **Construit** : `airs_clearance.py` (`require_agent_clearance`, équivalent FastAPI du
+      décorateur Django — ne gate que les appelants `AgentBearer`, laisse passer tout le reste
+      sans condition, exactement comme Django n'inspecte `request.agent_token` que pour ce
+      schéma) ; `AgentClearancePending` + son exception handler (`errors.py`) pour le contrat
+      202 `pending_confirmation` (`[AIRS-HITL-3]`) — un handler d'exception plutôt qu'un
+      court-circuit ad-hoc par endpoint, pour que n'importe quel endpoint protégé obtienne le
+      contrat 202 gratuitement ; `spec/airs/conformance/tenxyte_ci_fastapi/` (miroir FastAPI de
+      `tenxyte_ci/` côté Django) — `demo_views.py` (`_conformance_probe/`/`_hitl_probe/`,
+      réutilisés tels quels par `test_airs_clearance.py`, pas dupliqués) et `seed_and_serve.py`.
+      `resolve_agent_token_async` déplacé de `routers/airs.py` vers `airs_service.py` (tâche
+      9.1) pour être partageable entre le routeur canonique et `airs_clearance.py` sans import
+      circulaire.
+      **`seed_and_serve.py` sème un superuser, pas un utilisateur RBAC normal** (contrairement à
+      Django) — conséquence directe de la décision de la tâche 9.1 (bypass superuser
+      uniquement) : sans ça, `issue_token()` échouerait dès la première requête. Le JWT est miné
+      directement (pas de login HTTP) pour éviter le bootstrap 2FA qu'un superuser sans MFA
+      recevrait sur un vrai login. Aucun hook `revoke_delegating_user_permission` fourni — le
+      test correspondant skip proprement, comme prévu.
+      **Bug de test réel trouvé et corrigé pendant la vérification locale** (pas un bug produit) :
+      `base_url` incluait initialement `settings.api_prefix` (`http://host:port/api/v1`) — httpx
+      `Client(base_url=...)` *concatène* plutôt que remplace un chemin absolu passé à `.post()`
+      quand `base_url` porte déjà un chemin, donnant `/api/v1/api/v1/ai/tokens/` (404). Corrigé en
+      alignant sur la convention exacte de Django : `base_url` est une origine nue
+      (`http://host:port`, sans chemin), chaque endpoint découvert porte son chemin complet.
+      **Vérifié localement en conditions réelles avant tout job CI** (pas seulement "ça devrait
+      marcher") : serveur FastAPI éphémère démarré, `spec/airs/conformance/` (hors
+      `negative_control`) exécuté contre lui — **22 passed, 2 skipped** (exactement les deux
+      skips documentés ci-dessus), confirmant que la conformité AIRS est bien indépendante de
+      l'adapter. 9 tests unitaires supplémentaires (`test_airs_clearance.py`) couvrant
+      Double Validation et le cycle HITL confirm/deny/replay directement.
     - **Validates: Requirements 4.6, 5.5**
 
   - [ ] 9.3 Contract_Suite + matrice sur A+B+C+F
