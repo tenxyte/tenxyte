@@ -64,6 +64,15 @@ def test_properties_defaults():
     assert s.otp_login_validity_minutes == 10
     assert s.otp_login_enabled is False
     assert s.otp_login_auto_register is True
+    assert s.airs_enabled is True
+    assert s.airs_token_max_lifetime == 86400
+    assert s.airs_default_expiry == 3600
+    assert s.airs_require_explicit_permissions is True
+    assert s.airs_circuit_breaker_enabled is True
+    assert s.airs_default_max_rpm == 60
+    assert s.airs_default_max_total == 1000
+    assert s.airs_default_max_failures == 10
+    assert s.airs_budget_tracking_enabled is False
     assert s.mfa_required is False
     assert s.application_auth_enabled is True
     assert s.exempt_paths == ["/admin/", "/api/v1/health/", "/api/v1/docs/"]

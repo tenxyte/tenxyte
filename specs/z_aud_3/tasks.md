@@ -532,11 +532,64 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     skipped, aucune régression), `ruff`/`black` propres sur `src/`.
 
 - [ ] 9. Vague de parité F — AIRS
-  - [ ] 9.1 Porter le groupe F
-    - `routers/airs.py` : ai/tokens (CRUD, revoke, suspend, heartbeat, report-usage,
-      revoke-all), ai/pending-actions (list, confirm, deny), découverte `.well-known/airs`
-      (conformance reflétant la config FastAPI) — AgentBearer, double RBAC, HITL 202,
-      `X-Prompt-Trace-ID`
+  - [x] 9.1 Porter le groupe F
+    - **Contrat extrait par recherche exhaustive** de `views/agent_views.py`,
+      `services/agent_service.py`, `models/agent.py`, `middleware.py`'s `AgentAuthMiddleware`,
+      `conf/airs.py`, **et** la spec normative `spec/airs/AIRS-1.0.md` (§2–11) elle-même — porté
+      contre le protocole normatif, pas seulement contre le code Django, avec les clauses
+      `[AIRS-<LEVEL>-n]` citées en commentaire dans `airs_service.py`/`routers/airs.py`.
+      **Blocage architectural trouvé avant tout code** : `AgentTokenService.create()` exige de
+      vérifier que l'utilisateur humain détient réellement chaque permission déléguée
+      (`has_permission`/`has_org_permission`, RBAC complet — rôles, hiérarchie, octrois directs)
+      — c'est-à-dire le Groupe D, qui arrive *après* F dans l'ordre A→B→C→F→D→E→G. Décision
+      utilisateur (confirmée) : bypass `is_superuser` uniquement, rejet pour tout le monde
+      d'autre — fail-closed, aucune régression de sécurité par rapport à Django, mais seul un
+      superuser peut utiliser la délégation de permissions tant que le Groupe D n'existe pas.
+      Documenté en tête de `airs_service.py`.
+      **Infrastructure construite** : `AgentTokenDB`/`AgentPendingActionDB` (nouvelles tables,
+      `models_sa.py` — `granted_permissions` en JSON, pas de M2M vers une table `Permission`
+      inexistante) ; `airs_service.py` (create/validate/revoke/suspend/revoke_all/heartbeat/
+      check_circuit_breaker/create_pending_action/confirm/deny/report_usage, framework-agnostic
+      au même sens que `otp_service.py` — AIRS n'a jamais été extrait vers Core côté Django non
+      plus, donc rien à réutiliser) ; `routers/airs.py` (12 endpoints).
+      **`resolve_agent_token_async` reproduit `AgentAuthMiddleware`** (enabled-check → validation
+      du token → circuit breaker, mêmes codes `AGENT_TOKEN_<raison>`/`AIRS_DISABLED` qu'en Annexe
+      A) en dépendance locale aux deux endpoints qui en ont besoin (`heartbeat`,
+      `report-usage`) plutôt qu'en middleware global — le Reference_Stack n'a encore aucun autre
+      endpoint métier pour laquelle une authentification `AgentBearer` site-wide aurait un sens
+      (Groupes D/E).
+      **Non répliqué, documenté** : le double-comptage de `current_request_count` (le middleware
+      Django valide et incrémente une fois, puis la vue elle-même revalide et incrémente une
+      deuxième fois sans jamais lire `request.agent_token` — effet de bord d'un code mort, pas un
+      contrat délibéré ; aucun test de la Conformance_Suite ne vérifie un compte exact, seul le
+      franchissement de seuil compte).
+      **Erreurs non codées répliquées telles quelles** (vérifiées directement dans
+      `agent_views.py`, pas supposées) : `AIRS is disabled` (400), `Application context required`
+      (400), `Organization not found` (404), l'en-tête `Authorization` absent/malformé et le
+      mismatch id-de-token sur heartbeat/report-usage (401/403) — aucun de ces cinq n'a de champ
+      `code` côté Django réel, construits ici via `JSONResponse` brut plutôt que
+      `TenxyteAPIError` (qui exige un `code`).
+      **Trouvaille de fidélité au spec, corrigée avant qu'elle ne devienne un vrai gap** : la
+      découverte annonçait `"trace"` sans qu'aucune persistance de `X-Prompt-Trace-ID` n'existe
+      réellement — violation directe de `[AIRS-CORE-19]` ("MUST NOT claim a level... without
+      satisfying every normative clause"). Corrigé en ajoutant `AgentActionLogDB` (table d'audit
+      minimale, `models_sa.py`) et `airs_service.sanitize_prompt_trace_id`/`log_agent_action_async`
+      — persistance réelle sur `heartbeat`/`report-usage`, testée (`test_wellformed_trace_id_is_durably_persisted`).
+      Organisations (`organization`) acceptées et renvoyées mais jamais utilisées pour autoriser
+      quoi que ce soit (pas de table `Organization` — Groupe E) ; une recherche sur une table
+      toujours vide renvoie honnêtement 404 "Organization not found" pour n'importe quel slug,
+      donc le comportement observable ne diverge pas silencieusement.
+      25 tests (`test_airs_router.py`), aucun mock, base aiosqlite éphémère réelle.
+      `parity_matrix --groups=F` : **12/12, vert** (nécessitait de renommer les path params
+      FastAPI `{token_id}`/`{path_token}` en `{pk}`/`{token}` pour matcher exactement les noms de
+      convertisseur Django `<int:pk>`/`<str:token>` — le comparateur du script matche les chemins
+      littéralement, pas juste "est un paramètre").
+      **Restant pour 9.2** : `require_agent_clearance`-équivalent (dépendance FastAPI) + endpoints
+      de démo `_conformance_probe/`/`_hitl_probe/` + équivalent `seed_and_serve.py` + job CI —
+      nécessaires pour exécuter `spec/airs/conformance/` (les 5 fichiers `test_*.py`, ~21 tests)
+      contre le Reference_Stack ; le hook optionnel `revoke_delegating_user_permission` ne sera
+      pas fourni côté FastAPI (RBAC non implémenté — le test correspondant skippera proprement,
+      exactement comme prévu par le design du conftest partagé).
     - _Requirements: 4.1, 4.2, 4.4, 4.6_
 
   - [ ] 9.2 Exécuter la Conformance_Suite z_aud_2 contre FastAPI

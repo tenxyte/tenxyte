@@ -461,6 +461,55 @@ class Settings:
         """Magic link expiry time in minutes."""
         return self._get("MAGIC_LINK_EXPIRY_MINUTES", 15)
 
+    # ============================================================
+    # AIRS Settings (spec z_aud_3, Wave F) — mirrors tenxyte.conf.airs's defaults exactly.
+    # ============================================================
+
+    @property
+    def airs_enabled(self) -> bool:
+        """Whether AIRS (AI agent delegation) is enabled."""
+        return self._get("AIRS_ENABLED", True)
+
+    @property
+    def airs_token_max_lifetime(self) -> int:
+        """Hard cap, in seconds, on an Agent Token's requested expiry."""
+        return self._get("AIRS_TOKEN_MAX_LIFETIME", 86400)
+
+    @property
+    def airs_default_expiry(self) -> int:
+        """Default Agent Token lifetime, in seconds, when `expires_in` isn't requested."""
+        return self._get("AIRS_DEFAULT_EXPIRY", 3600)
+
+    @property
+    def airs_require_explicit_permissions(self) -> bool:
+        """Whether Agent Token issuance must request at least one explicit permission."""
+        return self._get("AIRS_REQUIRE_EXPLICIT_PERMISSIONS", True)
+
+    @property
+    def airs_circuit_breaker_enabled(self) -> bool:
+        """Whether circuit-breaker guardrails (rate/total/failure thresholds) are enforced."""
+        return self._get("AIRS_CIRCUIT_BREAKER_ENABLED", True)
+
+    @property
+    def airs_default_max_rpm(self) -> int:
+        """Default max requests per minute for a newly issued Agent Token."""
+        return self._get("AIRS_DEFAULT_MAX_RPM", 60)
+
+    @property
+    def airs_default_max_total(self) -> int:
+        """Default max total requests over an Agent Token's lifetime."""
+        return self._get("AIRS_DEFAULT_MAX_TOTAL", 1000)
+
+    @property
+    def airs_default_max_failures(self) -> int:
+        """Default max failed requests before an Agent Token is suspended for anomaly."""
+        return self._get("AIRS_DEFAULT_MAX_FAILURES", 10)
+
+    @property
+    def airs_budget_tracking_enabled(self) -> bool:
+        """Whether usage-cost accumulation and budget-triggered suspension are enforced."""
+        return self._get("AIRS_BUDGET_TRACKING_ENABLED", False)
+
 
 # Global settings instance (will be initialized by framework adapters)
 _settings: Settings | None = None

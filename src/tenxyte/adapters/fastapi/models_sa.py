@@ -16,8 +16,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Index, String
+from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Index, Numeric, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from tenxyte.ports.repositories import MFAType, UserStatus
@@ -191,4 +192,106 @@ class MagicLinkTokenDB(Base):
     is_used: Mapped[bool] = mapped_column(Boolean, default=False)
     used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class AgentTokenDB(Base):
+    """
+    Wave F (z_aud_3 task 9.1) — mirrors `tenxyte.models.agent.AgentToken`. `token_hash` stores
+    only the SHA-256 hash of the raw 48-character token (`AgentTokenService._generate_token`),
+    never the raw value — same invariant as every other bearer credential in the Reference_Stack,
+    and required by AIRS/1.0 [AIRS-CORE-12].
+
+    `granted_permissions` is a JSON array of permission-code strings rather than a many-to-many
+    relation to a `Permission` table, the way Django's model does it — the Reference_Stack has no
+    RBAC/permission tables yet (Group D). This is a genuine simplification, not a full port: see
+    `airs_service.py`'s module docstring for how permission validation is scoped down accordingly
+    until Group D ships.
+    """
+
+    __tablename__ = "tenxyte_agent_tokens"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    agent_id: Mapped[str] = mapped_column(String(100))
+    triggered_by_user_id: Mapped[str] = mapped_column(ForeignKey("tenxyte_users.id", ondelete="CASCADE"), index=True)
+    application_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tenxyte_applications.id", ondelete="SET NULL"), nullable=True
+    )
+    organization_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    granted_permissions: Mapped[list] = mapped_column(JSON, default=list)
+
+    # -- Lifecycle (AIRS/1.0 §3) --
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE", index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked_by_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    suspended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    suspended_reason: Mapped[str | None] = mapped_column(String(30), nullable=True)
+
+    # -- Circuit breaker (AIRS/1.0 §6.1) --
+    max_requests_per_minute: Mapped[int] = mapped_column(default=60)
+    max_requests_total: Mapped[int] = mapped_column(default=1000)
+    current_request_count: Mapped[int] = mapped_column(default=0)
+    max_failed_requests: Mapped[int] = mapped_column(default=10)
+    current_failed_count: Mapped[int] = mapped_column(default=0)
+
+    # -- Dead man's switch (AIRS/1.0 §6.2) --
+    heartbeat_required_every: Mapped[int | None] = mapped_column(nullable=True)
+    last_heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # -- Budget (AIRS/1.0 §6.3) --
+    budget_limit_usd: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True)
+    current_spend_usd: Mapped[Decimal] = mapped_column(Numeric(10, 4), default=0)
+
+    # -- Audit --
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index("ix_tenxyte_agent_tokens_status_expires", "status", "expires_at"),
+        Index("ix_tenxyte_agent_tokens_user_status", "triggered_by_user_id", "status"),
+    )
+
+
+class AgentPendingActionDB(Base):
+    """
+    Wave F (z_aud_3 task 9.1) — mirrors `tenxyte.models.agent.AgentPendingAction`: a HITL
+    (Human-In-The-Loop) action awaiting confirmation or denial, per AIRS/1.0 §5.
+    """
+
+    __tablename__ = "tenxyte_agent_pending_actions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    agent_token_id: Mapped[str] = mapped_column(ForeignKey("tenxyte_agent_tokens.id", ondelete="CASCADE"), index=True)
+    permission_requested: Mapped[str] = mapped_column(String(100))
+    endpoint: Mapped[str] = mapped_column(String(255))
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    confirmation_token: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    denied_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    prompt_trace_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
+
+class AgentActionLogDB(Base):
+    """
+    Wave F (z_aud_3 task 9.1) — a minimal internal audit trail for successful, state-changing
+    Agent Token requests, existing specifically to satisfy AIRS/1.0 [AIRS-TRACE-3]: "a server
+    offering the `trace` Conformance Level MUST durably persist the Prompt Trace ID somewhere it
+    associates with that action... persistence usable by the implementation's own
+    operators/tooling... is sufficient to satisfy this clause; exposing it through a public
+    endpoint is enough but not required." No FastAPI route currently reads this table — it is
+    intentionally not part of the public wire contract, mirroring the Django_Adapter's own current
+    state (Annex A: `prompt_trace_id` is persisted on `AuditLog` but not yet serialized by any
+    public admin endpoint either).
+    """
+
+    __tablename__ = "tenxyte_agent_action_logs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    agent_token_id: Mapped[str] = mapped_column(ForeignKey("tenxyte_agent_tokens.id", ondelete="CASCADE"), index=True)
+    endpoint: Mapped[str] = mapped_column(String(255))
+    prompt_trace_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

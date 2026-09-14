@@ -132,3 +132,27 @@ class LoginOTPVerifyRequest(BaseModel):
     phone_number: str = Field(default="", max_length=20)
     otp_code: str = ""
     totp_code: str = ""
+
+
+class AgentTokenCreateRequest(BaseModel):
+    """`circuit_breaker`/`dead_mans_switch` stay untyped `dict`s — same as the Django_Adapter's
+    own `serializers.DictField()` — since AIRS/1.0 doesn't mandate their exact shape beyond the
+    handful of keys `airs_service.create_async` reads out of them."""
+
+    agent_id: str = "unknown"
+    expires_in: int | None = None
+    permissions: list[str] = Field(default_factory=list)
+    organization: str | None = None
+    budget_limit_usd: float | None = None
+    circuit_breaker: dict | None = None
+    dead_mans_switch: dict | None = None
+
+
+class AgentReportUsageRequest(BaseModel):
+    cost_usd: float = 0.0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+
+
+class PendingActionTokenRequest(BaseModel):
+    token: str = ""
