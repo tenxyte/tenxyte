@@ -187,6 +187,15 @@ def _register_group_c_views():
     _register_django_view("/2fa/status/", TwoFactorStatusView)
 
 
+@pytest.fixture(autouse=True)
+def _register_group_f_views():
+    """Registers Django's Group F (AIRS) view classes (spec z_aud_3, task 9.3)."""
+    from tenxyte.views.agent_views import AgentTokenListCreateView, AIRSDiscoveryView
+
+    _register_django_view("/ai/tokens/", AgentTokenListCreateView)
+    _register_django_view("/ai/.well-known/airs/", AIRSDiscoveryView)
+
+
 async def register_and_login(api) -> tuple[str, str]:
     """Shared helper (spec z_aud_3, task 7.3): register a fresh account and log in, returning
     `(access_token, email)` — identical on both backends since Group A's `/register/`/

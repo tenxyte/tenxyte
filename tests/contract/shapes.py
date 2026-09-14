@@ -46,3 +46,5 @@ PASSWORD_RESET_REQUEST_KNOWN_ACCOUNT_FIELDS = {"message", "otp_id", "expires_at"
 TWOFA_STATUS_FIELDS = {"is_enabled", "backup_codes_remaining"}
 
 AUTH_REQUIRED_FIELDS = {"error", "code"}
+
+AIRS_DISCOVERY_FIELDS = {"airs_version", "conformance", "endpoints", "limits"}

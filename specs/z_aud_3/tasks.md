@@ -630,8 +630,33 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       Double Validation et le cycle HITL confirm/deny/replay directement.
     - **Validates: Requirements 4.6, 5.5**
 
-  - [ ] 9.3 Contract_Suite + matrice sur A+B+C+F
+  - [x] 9.3 Contract_Suite + matrice sur A+B+C+F
+    - `parity_matrix --groups=A,B,C,F` : vert (39/114). `test_group_f_shapes.py` (4 tests ×
+      2 adapters = 8) : découverte (forme documentée + identique anonyme/authentifié,
+      `[AIRS-DISC-2]`), `ai/tokens/` (liste vide pour un utilisateur neuf, 401 si non
+      authentifié). Volontairement plus étroit que A–C : exercer `ai/tokens/` (create) exigerait
+      un Delegating User détenant réellement la permission demandée sur les **deux** adapters —
+      le vrai RBAC Django (rôles/octrois directs) contre le bypass `is_superuser` uniquement du
+      Reference_Stack (voir `airs_service.py`) — et l'`api` fixture n'a encore aucun moyen
+      partagé de promouvoir un utilisateur `register_and_login()` vers l'un ou l'autre état.
+      Laissé pour une extension future plutôt que bricolé ici ; la Conformance_Suite AIRS (tâche
+      9.2) exerce déjà l'émission de tokens de bout en bout sur les deux adapters, Double
+      Validation incluse, donc ce n'est pas un vrai trou de couverture côté comportement — juste
+      de la portée non couverte par le Contract_Suite lui-même.
+      **Trouvaille réelle, vérifiée, documentée plutôt que masquée** :
+      `test_token_list_requires_auth_on_both_adapters` ne compare que le code de statut (401 sur
+      les deux), pas la forme du corps — `AgentTokenListCreateView` utilise le DRF
+      `IsAuthenticated` brut (jamais migré vers le format canonique `{error, code}` du reste de
+      `agent_views.py`), donc son 401 est `{"detail": "Authentication credentials were not
+      provided."}` (le défaut DRF), vérifié directement via `APIRequestFactory`, pas supposé —
+      alors que le FastAPI_Adapter renvoie toujours la forme canonique via `require_jwt()`.
     - _Requirements: 5.1, 5.2_
+
+- [x] Checkpoint Vague F : `parity_matrix --groups=F` (12/12), Conformance_Suite AIRS verte sur
+  les deux adapters (22 passed, 2 skipped côté FastAPI — mêmes deux skips que documentés en 9.2),
+  Contract_Suite étendue, coverage FastAPI 94%+ (seuil CI 90 %), suite Django complète (2238
+  passed, 5 skipped, aucune régression à chaque commit de la vague), `ruff`/`black` propres sur
+  `src/`.
 
 - [ ] 10. Vague de parité D — RBAC, applications, admin
   - [ ] 10.1 Porter le groupe D
