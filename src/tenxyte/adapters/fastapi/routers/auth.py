@@ -24,11 +24,11 @@ Deliberately out of scope for this pass (documented rather than silently skipped
   been executed. `logout/all/`'s `require_jwt(allowed_scopes=["password_change_only"])` keeps the
   same allow-list entry as Django for structural parity, even though nothing here currently issues
   such a token.
-- **Real RBAC on `me/roles/`** — no roles/permissions tables exist in the Reference_Stack yet
-  (Group D, task 10.1); the endpoint enforces the same auth/scope contract as Django but returns
-  empty `roles`/`permissions` lists.
 - **`RefreshTokenDB` admin listing** — Group D's endpoints (`admin/refresh-tokens/*`), not
   needed for Wave A's own contract.
+
+`me/roles/` now returns real data (Wave D, task 10.1, closed the RBAC gap this endpoint used to
+document — see `rbac_service.py`).
 
 2FA: the admin-no-mfa-configured *bootstrap* path (`2fa_setup_only`, 15-minute restricted token)
 is fully implemented — it only needs `User.mfa_type`/`is_superuser`/`is_staff`, already on the
@@ -458,7 +458,15 @@ async def update_me(
 
 
 @router.get("/me/roles/")
-async def my_roles(auth: AuthContext = Depends(require_jwt())):  # noqa: B008
-    # No RBAC tables in the Reference_Stack yet (Group D, task 10.1) — the auth/scope contract is
-    # enforced identically to Django, but the lists themselves are empty until that group ships.
-    return {"roles": [], "permissions": []}
+async def my_roles(
+    session: AsyncSession = Depends(get_db_session),  # noqa: B008
+    auth: AuthContext = Depends(require_jwt()),  # noqa: B008
+):
+    # Wave D (z_aud_3 task 10.1) closed the gap this endpoint used to document (no RBAC tables
+    # existed yet) — mirrors Django's `MyRolesView.get()` exactly: `get_all_roles()` +
+    # `get_all_permissions()` (hierarchy-expanded).
+    from tenxyte.adapters.fastapi import rbac_service
+
+    roles = await rbac_service.get_all_role_codes_async(session, auth.user.id)
+    permissions = await rbac_service.effective_permission_codes_async(session, auth.user.id)
+    return {"roles": roles, "permissions": permissions}

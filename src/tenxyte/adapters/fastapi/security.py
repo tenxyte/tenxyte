@@ -89,3 +89,25 @@ def require_jwt(
         return AuthContext(user=user, payload=payload, scope=scope)
 
     return _dependency
+
+
+def require_permission(permission_code: str) -> Callable[..., Coroutine[Any, Any, AuthContext]]:
+    """Parity with `tenxyte.decorators.require_permission` (spec z_aud_3, Wave D, task 10.1):
+    `require_jwt()` (bare — a restricted-scope token is rejected, matching `@require_jwt` with no
+    `allowed_scopes`) followed by `rbac_service.has_permission_async`. The denial message is the
+    generic `"Permission denied."` — Django's own default when `TENXYTE_VERBOSE_ERRORS` is off
+    (which it is by default); the specific `permission_code` is deliberately never echoed back to
+    the caller, matching that default posture exactly rather than the verbose-only variant."""
+    _require_jwt = require_jwt()
+
+    async def _dependency(
+        auth: AuthContext = Depends(_require_jwt),  # noqa: B008
+        session: AsyncSession = Depends(get_db_session),  # noqa: B008
+    ) -> AuthContext:
+        from tenxyte.adapters.fastapi import rbac_service
+
+        if not await rbac_service.has_permission_async(session, auth.user, permission_code):
+            raise TenxyteAPIError("Permission denied.", code="PERMISSION_REQUIRED", status_code=403)
+        return auth
+
+    return _dependency

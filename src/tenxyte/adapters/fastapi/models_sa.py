@@ -18,7 +18,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Index, Numeric, String
+from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Index, Numeric, String, Table, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from tenxyte.ports.repositories import MFAType, UserStatus
@@ -295,3 +295,66 @@ class AgentActionLogDB(Base):
     endpoint: Mapped[str] = mapped_column(String(255))
     prompt_trace_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+# Wave D (z_aud_3 task 10.1) — plain association `Table`s, not ORM `relationship(secondary=...)`
+# collections: every other many-to-many-shaped access in this adapter already goes through
+# explicit `select()`/`join()` calls rather than lazy relationship traversal (see
+# `routers/airs.py`'s `list_pending_actions`), since SQLAlchemy's async session needs an explicit
+# eager-loading strategy for lazy relationships anyway — querying the association tables directly
+# in `rbac_service.py` avoids that entirely and stays consistent with the rest of the file.
+role_permissions_table = Table(
+    "tenxyte_role_permissions",
+    Base.metadata,
+    Column("role_id", String(36), ForeignKey("tenxyte_roles.id", ondelete="CASCADE"), primary_key=True),
+    Column("permission_id", String(36), ForeignKey("tenxyte_permissions.id", ondelete="CASCADE"), primary_key=True),
+)
+
+user_roles_table = Table(
+    "tenxyte_user_roles",
+    Base.metadata,
+    Column("user_id", String(36), ForeignKey("tenxyte_users.id", ondelete="CASCADE"), primary_key=True),
+    Column("role_id", String(36), ForeignKey("tenxyte_roles.id", ondelete="CASCADE"), primary_key=True),
+)
+
+user_direct_permissions_table = Table(
+    "tenxyte_user_direct_permissions",
+    Base.metadata,
+    Column("user_id", String(36), ForeignKey("tenxyte_users.id", ondelete="CASCADE"), primary_key=True),
+    Column("permission_id", String(36), ForeignKey("tenxyte_permissions.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
+class PermissionDB(Base):
+    """
+    Wave D (z_aud_3 task 10.1) — mirrors `tenxyte.models.auth.Permission`. Hierarchical via
+    `parent_id`: holding a permission implicitly grants every one of its descendants too (see
+    `rbac_service.py`'s `has_permission_async`, which replicates Django's real
+    `User.has_permission()` ancestor-walk exactly).
+    """
+
+    __tablename__ = "tenxyte_permissions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    code: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str] = mapped_column(Text, default="")
+    parent_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tenxyte_permissions.id", ondelete="CASCADE"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class RoleDB(Base):
+    """Wave D (z_aud_3 task 10.1) — mirrors `tenxyte.models.auth.Role`."""
+
+    __tablename__ = "tenxyte_roles"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    code: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str] = mapped_column(Text, default="")
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

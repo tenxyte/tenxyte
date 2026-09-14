@@ -156,3 +156,39 @@ class AgentReportUsageRequest(BaseModel):
 
 class PendingActionTokenRequest(BaseModel):
     token: str = ""
+
+
+class PermissionCreateRequest(BaseModel):
+    code: str
+    name: str
+    description: str = ""
+    parent_code: str | None = None
+
+
+class PermissionUpdateRequest(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    parent_code: str | None = Field(default="__unset__")
+
+
+class RoleCreateRequest(BaseModel):
+    code: str
+    name: str
+    description: str = ""
+    is_default: bool = False
+    permission_codes: list[str] = Field(default_factory=list)
+
+
+class RoleUpdateRequest(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    is_default: bool | None = None
+    permission_codes: list[str] | None = None
+
+
+class ManageRolePermissionsRequest(BaseModel):
+    permission_codes: list[str] = Field(default_factory=list)
+
+
+class AssignRoleRequest(BaseModel):
+    role_code: str = ""

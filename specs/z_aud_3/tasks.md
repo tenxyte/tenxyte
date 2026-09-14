@@ -659,10 +659,61 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
   `src/`.
 
 - [ ] 10. Vague de parité D — RBAC, applications, admin
-  - [ ] 10.1 Porter le groupe D
-    - `routers/rbac.py` : permissions/*, roles/*, users/<id>/roles|permissions, applications/*,
-      admin/users/* (dont PATCH `must_change_password`, ban/unban/lock/unlock), admin sécurité
-      (audit-logs, login-attempts, blacklisted/refresh tokens), dashboard/*
+  - [ ] 10.1 Porter le groupe D (46 endpoints — la plus grosse vague du plan, largement plus
+    grande que les précédentes ; découpée en chunks committables séparément plutôt qu'en un seul
+    gros commit, même logique que les vagues précédentes)
+    - **Chunk 1/5 fait — RBAC core (19/46)** : `permissions/*` (5), `roles/*` (5),
+      `roles/{id}/permissions/*` (3), `users/{id}/roles/*` (3), `users/{id}/permissions/*` (3).
+      **Contrat extrait par recherche exhaustive** de `views/rbac_views.py`,
+      `serializers/rbac_serializers.py`, `filters.py` (`apply_permission_filters`/
+      `apply_role_filters`), `pagination.py` (`TenxytePagination` — forme exacte
+      count/page/page_size/total_pages/next/previous/results), et `models/auth.py`
+      (`AbstractPermission`/`AbstractRole`/`User.has_permission`/
+      `_get_effective_permission_codes`/`assign_role`/`remove_role`/`get_all_roles`).
+      **Nouvelle infrastructure** : `PermissionDB`/`RoleDB` + trois tables d'association pures
+      (`role_permissions_table`/`user_roles_table`/`user_direct_permissions_table`, `models_sa.py`
+      — interrogées directement via `select`/`insert`/`delete`, pas de `relationship(secondary=…)`
+      ORM, cohérent avec le reste de l'adapter qui évite le lazy-loading async) ; `rbac_service.py`
+      (framework-agnostic au même sens que `otp_service.py`/`airs_service.py` — Django n'a jamais
+      extrait le RBAC vers Core non plus) ; `pagination.py` (nouveau, réutilisable par tous les
+      futurs endpoints listés de la vague D — `next`/`previous` construits via
+      `request.url.include_query_params()`/`remove_query_params()`, vérifiés identiques au
+      comportement exact de `get_next_link`/`get_previous_link` de DRF, y compris le retrait du
+      paramètre `page` pour revenir à la page 1) ; `security.require_permission(code)` (nouvelle
+      dépendance, compose `require_jwt()` bare + `rbac_service.has_permission_async`).
+      **Hiérarchie des permissions répliquée exactement** : détenir une permission accorde
+      implicitement tous ses descendants (et, formulation équivalente utilisée par
+      `has_permission_async`, une permission est détenue si elle est directe OU si un ancêtre
+      l'est) — vérifié par test contre une hiérarchie parent/enfant réelle. Bypass `is_superuser`
+      **et** bypass rôle `super_admin` répliqués tous les deux (le second est facile à manquer en
+      lisant vite `has_permission()` — capturé en lisant le code au lieu de le supposer).
+      **Message d'erreur générique répliqué fidèlement** : `TENXYTE_VERBOSE_ERRORS` vaut `False`
+      par défaut côté Django, donc un refus de permission renvoie toujours `{"error": "Permission
+      denied.", "code": "PERMISSION_REQUIRED"}` — jamais le code de permission spécifique qui a
+      manqué (`f"Permission required: {code}"` n'est produit qu'en mode verbeux, non répliqué).
+      **Non répliqué, documenté** : le fallback MongoDB de `_safe_add_permissions`/
+      `_safe_remove_permissions` (contourne un problème du collecteur de suppression Django ORM
+      spécifique à MongoDB — sans objet pour le backend SQLAlchemy du Reference_Stack).
+      **`me/roles/` (Vague A) corrigé au passage** : retournait `{"roles": [], "permissions": []}`
+      en dur, documenté comme dépendant du Groupe D depuis sa création — maintenant que le RBAC
+      existe, branché sur `rbac_service.get_all_role_codes_async`/`effective_permission_codes_async`,
+      exactement comme Django's `MyRolesView`.
+      14 tests (`test_rbac_router.py`), aucun mock, base aiosqlite éphémère réelle — CRUD complet
+      permissions/rôles, hiérarchie, pagination (25 permissions créées pour forcer une 2ᵉ page),
+      filtres (`search`, `parent=null`), erreurs (`NOT_FOUND`, `VALIDATION_ERROR`,
+      `PERMISSIONS_NOT_FOUND`, `ROLE_NOT_FOUND`, `MISSING_PARAM`), bypass superuser/`super_admin`,
+      refus générique, `me/roles/` avec données réelles.
+      `parity_matrix` : 58/114 endpoints Django portés au total (19 nouveaux) — Groupe D pas
+      encore gaté (`--groups=D` échouerait tant que les 27 endpoints restants ne sont pas prêts),
+      Groupes A/B/C/F toujours verts.
+      **Restant (chunks 2 à 5)** : `applications/*` (7 — réutilise `ApplicationDB`, déjà
+      existante depuis la Vague A) ; `admin/users/*` (8 — nécessite d'étendre `UserDB`
+      avec `is_banned`/`is_locked`/`locked_until`/`is_deleted`/`must_change_password`/
+      `max_sessions`/`max_devices`, plus la logique d'anonymisation RGPD du soft-delete de
+      Django, vérifiée dans `models/auth.py`) ; admin sécurité (7 — `AuditLogDB`/
+      `LoginAttemptDB` nouvelles tables, plus persistance requêtable de la blacklist JWT,
+      actuellement en mémoire seulement côté Reference_Stack) ; `dashboard/*` (5 — agrégations
+      en lecture seule sur tout ce qui précède).
     - _Requirements: 4.1, 4.2, 4.5_
 
   - [ ] 10.2 Contract_Suite + matrice sur A–D (+F) ; exclusions justifiées le cas échéant
