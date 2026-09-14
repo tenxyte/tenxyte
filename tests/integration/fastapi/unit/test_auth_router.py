@@ -53,9 +53,14 @@ async def _create_user(
     is_staff: bool = False,
     mfa_type: MFAType = MFAType.NONE,
     mfa_secret: str | None = None,
+    phone_country_code: str | None = None,
+    phone_number: str | None = None,
 ) -> User:
     session_factory = app.state.tenxyte_session_factory
     hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    metadata = {}
+    if phone_country_code and phone_number:
+        metadata = {"phone_country_code": phone_country_code, "phone_number": phone_number}
     async with session_factory() as session:
         repo = SQLAlchemyAsyncUserRepository(session)
         return await repo.create(
@@ -68,6 +73,7 @@ async def _create_user(
                 is_staff=is_staff,
                 mfa_type=mfa_type,
                 mfa_secret=mfa_secret,
+                metadata=metadata,
             )
         )
 
@@ -327,6 +333,99 @@ async def test_login_with_2fa_invalid_code_rejected():
 
     assert response.status_code == 401
     assert response.json()["code"] == "INVALID_2FA_CODE"
+
+
+# ---------------------------------------------------------------------------
+# login/phone
+# ---------------------------------------------------------------------------
+# Registration itself is still email-only (see routers/auth.py's module docstring), and the
+# Reference_Stack's UserDB.email is NOT NULL + unique (unlike Django, where email is nullable
+# for a phone-only account) — so phone-login test users get a synthetic placeholder email,
+# a Reference_Stack storage detail invisible to the login/phone contract itself.
+
+
+@pytest.mark.anyio
+async def test_login_phone_success():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _create_user(
+            app,
+            email=f"phone-user-{uuid.uuid4().hex}@example.invalid",
+            phone_country_code="33",
+            phone_number="612345678",
+        )
+        async with await _client(app) as client:
+            response = await client.post(
+                "/api/v1/login/phone/",
+                json={
+                    "phone_country_code": "33",
+                    "phone_number": "612345678",
+                    "password": "correct-horse-battery-staple",
+                },
+            )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["access_token"]
+    assert body["refresh_token"]
+    assert body["requires_2fa"] is False
+
+
+@pytest.mark.anyio
+async def test_login_phone_unknown_and_wrong_password_are_anti_enumeration():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _create_user(
+            app,
+            email=f"phone-user-{uuid.uuid4().hex}@example.invalid",
+            phone_country_code="33",
+            phone_number="612345679",
+        )
+        async with await _client(app) as client:
+            unknown = await client.post(
+                "/api/v1/login/phone/",
+                json={"phone_country_code": "33", "phone_number": "699999999", "password": "whatever12"},
+            )
+            wrong = await client.post(
+                "/api/v1/login/phone/",
+                json={"phone_country_code": "33", "phone_number": "612345679", "password": "wrong-password"},
+            )
+
+    assert unknown.status_code == 401
+    assert wrong.status_code == 401
+    assert unknown.json()["error"] == wrong.json()["error"] == "Invalid phone number or password"
+    assert unknown.json()["code"] == wrong.json()["code"] == "LOGIN_FAILED"
+
+
+@pytest.mark.anyio
+async def test_login_phone_and_email_response_shapes_are_identical():
+    """Parity: Django's own snapshot tests assert /login/email/ and /login/phone/ return the
+    same key set — this Reference_Stack port should hold the same invariant."""
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _create_user(app, email="cross-email@example.com")
+        await _create_user(
+            app,
+            email=f"phone-user-{uuid.uuid4().hex}@example.invalid",
+            phone_country_code="33",
+            phone_number="612345680",
+        )
+        async with await _client(app) as client:
+            email_response = await client.post(
+                "/api/v1/login/email/",
+                json={"email": "cross-email@example.com", "password": "correct-horse-battery-staple"},
+            )
+            phone_response = await client.post(
+                "/api/v1/login/phone/",
+                json={
+                    "phone_country_code": "33",
+                    "phone_number": "612345680",
+                    "password": "correct-horse-battery-staple",
+                },
+            )
+
+    assert email_response.status_code == phone_response.status_code == 200
+    assert set(email_response.json().keys()) == set(phone_response.json().keys())
 
 
 # ---------------------------------------------------------------------------

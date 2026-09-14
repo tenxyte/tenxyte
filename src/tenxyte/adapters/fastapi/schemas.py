@@ -30,6 +30,13 @@ class LoginEmailRequest(BaseModel):
     totp_code: str = ""
 
 
+class LoginPhoneRequest(BaseModel):
+    phone_country_code: str = Field(max_length=5)
+    phone_number: str = Field(max_length=20)
+    password: str
+    totp_code: str = ""
+
+
 class RefreshTokenRequest(BaseModel):
     refresh_token: str = ""
 

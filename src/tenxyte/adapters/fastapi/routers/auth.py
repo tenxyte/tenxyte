@@ -1,14 +1,21 @@
 """
-Parity_Group A — basic auth (spec z_aud_3, task 5.1): register, login/email, refresh, logout,
-logout/all, me (GET/PATCH), me/roles. Contract extracted from the Django_Adapter's
-`views/auth_views.py` and `views/user_views.py` (register/login/refresh anti-enumeration and
-lockout semantics, the `2fa_setup_only` admin bootstrap, the refresh-token cookie opt-in).
+Parity_Group A — basic auth (spec z_aud_3, task 5.1): register, login/email, login/phone,
+refresh, logout, logout/all, me (GET/PATCH), me/roles. Contract extracted from the
+Django_Adapter's `views/auth_views.py` and `views/user_views.py` (register/login/refresh
+anti-enumeration and lockout semantics, the `2fa_setup_only` admin bootstrap, the refresh-token
+cookie opt-in).
+
+`login/phone/` resolves users via `UserDB.phone_country_code`/`phone_number` (dedicated indexed
+columns added as a Wave A follow-up — see `models_sa.py`), mirrored into the port `User`'s
+`metadata` dict on read since the Core dataclass has no dedicated phone fields. `register/` itself
+is still email-only: nothing here creates a phone-registered account, so `login/phone/`'s tests
+seed one directly through the repository, the same convention already used for 2FA-enabled test
+accounts (Group C hasn't shipped 2FA setup either).
 
 Deliberately out of scope for this pass (documented rather than silently skipped):
 
-- **`login/phone/`** — the Reference_Stack's `UserDB` has no indexed phone columns (phone data
-  lives in the Core `User.metadata` dict); a real phone lookup needs schema work belonging with
-  a dedicated follow-up, not bundled into this already-large router.
+- **Phone *registration*** — `RegisterRequest` stays email-only; Django's `RegisterSerializer`
+  accepts email-or-phone via a cross-field `validate()` rule this port doesn't replicate yet.
 - **`must_change_password` / `password_change_only` scope** — this flag lives only on Django's
   `User` model (`DJANGO_ONLY_FIELDS = {"must_change_password"}` in the admin view), is not part
   of the framework-agnostic Core `User` port dataclass, and the feature it drives
@@ -41,7 +48,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
-from tenxyte.adapters.fastapi.auth_lookup import SQLAlchemyEmailPasswordLookup
+from tenxyte.adapters.fastapi.auth_lookup import SQLAlchemyEmailPasswordLookup, SQLAlchemyPhonePasswordLookup
 from tenxyte.adapters.fastapi.deps import get_cache_service, get_db_session, get_jwt_service, get_settings
 from tenxyte.adapters.fastapi.errors import TenxyteAPIError
 from tenxyte.adapters.fastapi.refresh_tokens import issue_refresh_token as _issue_refresh_token
@@ -54,6 +61,7 @@ from tenxyte.adapters.fastapi.refresh_tokens import (
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
 from tenxyte.adapters.fastapi.schemas import (
     LoginEmailRequest,
+    LoginPhoneRequest,
     RefreshTokenRequest,
     RegisterRequest,
     UpdateProfileRequest,
@@ -75,6 +83,13 @@ _EMAIL_LOGIN_ERROR_MESSAGES = {
     "account_inactive": "Account is inactive",
     "account_banned": "Account has been banned",
     "invalid_password": "Invalid email or password",
+}
+
+_PHONE_LOGIN_ERROR_MESSAGES = {
+    "user_not_found": "Invalid phone number or password",
+    "account_inactive": "Account is inactive",
+    "account_banned": "Account has been banned",
+    "invalid_password": "Invalid phone number or password",
 }
 
 
@@ -225,20 +240,25 @@ async def register(
     return response_data
 
 
-@router.post("/login/email/")
-async def login_email(
-    body: LoginEmailRequest,
+async def _login(
+    *,
     request: Request,
-    session: AsyncSession = Depends(get_db_session),  # noqa: B008
-    settings: Settings = Depends(get_settings),  # noqa: B008
-    jwt_service: JWTService = Depends(get_jwt_service),  # noqa: B008
-    cache_service: CacheService = Depends(get_cache_service),  # noqa: B008
-):
-    user_repo = SQLAlchemyAsyncUserRepository(session)
-    lookup = SQLAlchemyEmailPasswordLookup(user_repo, cache_service, settings)
+    session: AsyncSession,
+    settings: Settings,
+    jwt_service: JWTService,
+    lookup,
+    identifier: object,
+    password: str,
+    totp_code: str,
+    error_messages: dict[str, str],
+) -> JSONResponse:
+    """Shared by `login_email` and `login_phone` — the Django_Adapter's `LoginEmailView` and
+    `LoginPhoneView` differ only in identifier resolution and their anti-enumeration message
+    map, never in lockout/2FA-bootstrap/2FA-verify/token-issuance logic."""
+    user_repo = lookup.user_repo
     auth_service = AuthenticationService(settings=settings, user_lookup=lookup)
 
-    result = await auth_service.authenticate_async(body.email, body.password)
+    result = await auth_service.authenticate_async(identifier, password)
 
     if not result.success:
         if result.failure_reason == "account_locked":
@@ -249,7 +269,7 @@ async def login_email(
                 details=result.error,
                 extra={"retry_after": settings.lockout_duration},
             )
-        message = _EMAIL_LOGIN_ERROR_MESSAGES.get(result.failure_reason, result.error)
+        message = error_messages.get(result.failure_reason, result.error)
         raise TenxyteAPIError(message, code="LOGIN_FAILED", status_code=401)
 
     user = result.user
@@ -277,13 +297,13 @@ async def login_email(
 
     requires_2fa = mfa_type_value != "none"
     if requires_2fa:
-        if not body.totp_code:
+        if not totp_code:
             raise TenxyteAPIError(
                 "2FA code required", code="2FA_REQUIRED", status_code=401, extra={"requires_2fa": True}
             )
         totp_service = TOTPService(settings=settings)
         storage = SQLAlchemyTOTPStorage(user_repo)
-        ok, error_message = await totp_service.verify_2fa_async(user.id, body.totp_code, storage)
+        ok, error_message = await totp_service.verify_2fa_async(user.id, totp_code, storage)
         if not ok:
             raise TenxyteAPIError(error_message, code="INVALID_2FA_CODE", status_code=401)
 
@@ -310,6 +330,54 @@ async def login_email(
         "must_change_password": False,
     }
     return _finalize_login_response(data, settings)
+
+
+@router.post("/login/email/")
+async def login_email(
+    body: LoginEmailRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),  # noqa: B008
+    settings: Settings = Depends(get_settings),  # noqa: B008
+    jwt_service: JWTService = Depends(get_jwt_service),  # noqa: B008
+    cache_service: CacheService = Depends(get_cache_service),  # noqa: B008
+):
+    user_repo = SQLAlchemyAsyncUserRepository(session)
+    lookup = SQLAlchemyEmailPasswordLookup(user_repo, cache_service, settings)
+    return await _login(
+        request=request,
+        session=session,
+        settings=settings,
+        jwt_service=jwt_service,
+        lookup=lookup,
+        identifier=body.email,
+        password=body.password,
+        totp_code=body.totp_code,
+        error_messages=_EMAIL_LOGIN_ERROR_MESSAGES,
+    )
+
+
+@router.post("/login/phone/")
+async def login_phone(
+    body: LoginPhoneRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),  # noqa: B008
+    settings: Settings = Depends(get_settings),  # noqa: B008
+    jwt_service: JWTService = Depends(get_jwt_service),  # noqa: B008
+    cache_service: CacheService = Depends(get_cache_service),  # noqa: B008
+):
+    user_repo = SQLAlchemyAsyncUserRepository(session)
+    lookup = SQLAlchemyPhonePasswordLookup(user_repo, cache_service, settings)
+    return await _login(
+        request=request,
+        session=session,
+        settings=settings,
+        jwt_service=jwt_service,
+        lookup=lookup,
+        identifier=(body.phone_country_code, body.phone_number),
+        password=body.password,
+        totp_code=body.totp_code,
+        error_messages=_PHONE_LOGIN_ERROR_MESSAGES,
+    )
 
 
 @router.post("/refresh/")

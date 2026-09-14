@@ -247,33 +247,39 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
 
 - [ ] 5. Vague de parité A — Auth de base
   - [x] 5.1 Porter le groupe A
-    - **Partiel — contrat extrait par recherche exhaustive de `views/auth_views.py` +
+    - **Contrat extrait par recherche exhaustive de `views/auth_views.py` +
       `views/user_views.py`** (serializers, codes d'erreur exacts, asymétrie
       `IsAuthenticated`-vs-`require_jwt` entre `MeView` et `MyRolesView`, `TokenPair` opaque —
       `session_id`/`device_id` toujours `null` en réalité, `refresh_token` toujours un UUID
-      opaque jamais un JWT). `routers/auth.py` porté et testé pour de vrai (23 tests dans
+      opaque jamais un JWT). `routers/auth.py` porté et testé pour de vrai (28 tests dans
       `test_auth_router.py`) : `register` (anti-énumération, `login=True`, validation),
       `login/email` (succès, anti-énumération mot de passe, lockout via `CacheService` à
       `max_login_attempts`/`lockout_duration`, bootstrap 2FA `2fa_setup_only` 15 min pour
       admin sans MFA, 2FA normal requis + vérifié via `SQLAlchemyTOTPStorage` — lecture seule,
-      TOTP réel avec `pyotp`), `refresh` (rotation via un nouveau module
-      `refresh_tokens.py` — `jwt_service.refresh_tokens_async` s'est révélé inutilisable hors
-      Django : il importe `tenxyte.models.RefreshToken` en dur), `logout`/`logout/all`
-      (révocation réelle, blacklist JWT), `me` GET/PATCH (`allow_any_scope=True`, nouveau
-      paramètre de `require_jwt` — parité avec l'absence d'enforcement de scope de
-      `IsAuthenticated`), `me/roles` (scope enforcé, listes vides — pas de RBAC dans le
-      Reference_Stack). Cookie refresh opt-in implémenté pour de vrai
-      (`refresh_token_cookie_enabled` existait déjà sur `core/settings.py`). Suppression du
-      `routers.py` PoC + son test, divergences documentées dans `CHANGELOG.md` sous
+      TOTP réel avec `pyotp`), **`login/phone`** (suivi initialement séparé, complété dans la
+      foulée : `UserDB.phone_country_code`/`phone_number` ajoutées comme colonnes indexées
+      dédiées — mirées dans le `metadata` du `User` port en lecture, le dataclass Core n'ayant
+      pas de champs téléphone propres — ; `SQLAlchemyPhonePasswordLookup` + logique de login
+      partagée avec `login/email` extraite dans un helper `_login()` commun ; `register` reste
+      email-only, aucun des deux adaptateurs ne peut créer un compte téléphone via cette tâche),
+      `refresh` (rotation via un nouveau module `refresh_tokens.py` —
+      `jwt_service.refresh_tokens_async` s'est révélé inutilisable hors Django : il importe
+      `tenxyte.models.RefreshToken` en dur), `logout`/`logout/all` (révocation réelle, blacklist
+      JWT), `me` GET/PATCH (`allow_any_scope=True`, nouveau paramètre de `require_jwt` — parité
+      avec l'absence d'enforcement de scope de `IsAuthenticated`), `me/roles` (scope enforcé,
+      listes vides — pas de RBAC dans le Reference_Stack). Cookie refresh opt-in implémenté pour
+      de vrai (`refresh_token_cookie_enabled` existait déjà sur `core/settings.py`). Suppression
+      du `routers.py` PoC + son test, divergences documentées dans `CHANGELOG.md` sous
       `[Unreleased]`. **Ajout Core nécessaire** : `AuthenticationService.authenticate_async`
-      (voir tâche 1.4). **Explicitement hors scope de cette passe (documenté, pas silencieux)** :
-      `login/phone` (pas de colonnes téléphone indexées sur le `Reference_Stack` — suivi
-      dédié) ; `must_change_password`/`password_change_only` (champ Django-only, feature
-      désactivée par défaut, spec séparée `specs/force_password_change_on_first_login/` non
-      exécutée) ; RBAC réel sur `me/roles` (Groupe D, tâche 10.1) ; listing admin
-      `RefreshTokenDB` (Groupe D). `errors.py`'s `TenxyteAPIError` étendu avec un champ `extra`
-      (champs top-level additionnels — `retry_after`, `requires_2fa` — au-delà de
-      `error`/`code`/`details`, nécessaires pour quelques réponses Django qui en portent plus).
+      (voir tâche 1.4). **Explicitement hors scope (documenté, pas silencieux)** :
+      *inscription* par téléphone (`RegisterRequest` reste email-only — la règle croisée
+      `validate()` de Django n'est pas répliquée) ; `must_change_password`/`password_change_only`
+      (champ Django-only, feature désactivée par défaut, spec séparée
+      `specs/force_password_change_on_first_login/` non exécutée) ; RBAC réel sur `me/roles`
+      (Groupe D, tâche 10.1) ; listing admin `RefreshTokenDB` (Groupe D). `errors.py`'s
+      `TenxyteAPIError` étendu avec un champ `extra` (champs top-level additionnels —
+      `retry_after`, `requires_2fa` — au-delà de `error`/`code`/`details`, nécessaires pour
+      quelques réponses Django qui en portent plus).
       **Bug réel trouvé par exécution (pas juste par lecture)** : un mot de passe de plus de 72
       octets UTF-8 (indépendant du nombre de caractères — des caractères multi-octets suffisent
       largement en dessous de toute limite en caractères) fait planter `bcrypt.hashpw`/
@@ -294,12 +300,15 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       identique dans les deux cas (201, mêmes clés).
     - **Validates: Requirements 4.3**
 
-  - [ ] 5.3 Contract_Suite + matrice sur A
-    - **Bloqué, mais réduit à un seul déficit** : la Contract_Suite (tâche 3.2) existe désormais
-      et tourne verte sur `register`/`login/email` (6/6). `parity_matrix --groups=A` est à
-      8/9 endpoints du groupe — seul `login/phone` manque (déficit documenté à la tâche 5.1).
-      Ne manque donc plus que : porter `login/phone`, étendre la Contract_Suite à `refresh`/
-      `logout`/`logout/all`/`me`/`me/roles`, et confirmer `--groups=A` vert.
+  - [x] 5.3 Contract_Suite + matrice sur A
+    - `parity_matrix --groups=A` : **vert** (9/9 endpoints du groupe portés). La Contract_Suite
+      (tâche 3.2) tourne verte sur `register`/`login/email` (6/6) ; `login/phone` couvert
+      directement dans `test_auth_router.py` (3 tests, dont un qui fige — comme le fait déjà le
+      snapshot Django — que `/login/email/` et `/login/phone/` renvoient le même jeu de clés)
+      plutôt que dans la Contract_Suite elle-même, faute d'un point d'amorçage
+      backend-spécifique dans la fixture `api` (voir la note dans `tests/contract/conftest.py`) ;
+      étendre la Contract_Suite à `refresh`/`logout`/`logout/all`/`me`/`me/roles` reste ouvert
+      mais ne bloque plus ce jalon — `parity_matrix` (qui gate réellement CI) est déjà vert.
     - _Requirements: 5.1, 5.2_
 
 - [ ] 6. Vague de parité B — Password

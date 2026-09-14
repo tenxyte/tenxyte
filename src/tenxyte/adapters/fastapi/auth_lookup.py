@@ -34,20 +34,15 @@ def _locked_key(user_id: str) -> str:
     return f"account_locked:{user_id}"
 
 
-class SQLAlchemyEmailPasswordLookup:
-    """Email-based login lookup — the Reference_Stack's equivalent of the Django_Adapter's
-    `_EmailPasswordLookup`. Phone-based login (`_PhonePasswordLookup`'s counterpart) is deferred:
-    the Reference_Stack's `UserDB` has no indexed phone columns yet (phone data lives in the
-    Core `User.metadata` dict, same as the register flow), so a real phone lookup needs schema
-    work that's out of scope for this pass — tracked as a follow-up to task 5.1."""
+class _BasePasswordLookup:
+    """Shared lockout/password-check logic for both identifier types — the Django_Adapter's
+    `_EmailPasswordLookup` and `_PhonePasswordLookup` differ only in how they resolve an
+    identifier to a user, never in how lockout or password verification works."""
 
     def __init__(self, user_repo: SQLAlchemyAsyncUserRepository, cache_service: CacheService, settings: Settings):
         self.user_repo = user_repo
         self.cache_service = cache_service
         self.settings = settings
-
-    async def get_by_identifier_async(self, identifier: object) -> User | None:
-        return await self.user_repo.get_by_email(str(identifier))
 
     async def is_account_locked_async(self, user_id: str) -> bool:
         return await self.cache_service.exists_async(_locked_key(user_id))
@@ -71,3 +66,21 @@ class SQLAlchemyEmailPasswordLookup:
             await self.cache_service.expire_async(key, _FAILED_LOGIN_WINDOW_SECONDS)
         if count >= self.settings.max_login_attempts:
             await self.cache_service.set_async(_locked_key(user_id), True, timeout=self.settings.lockout_duration)
+
+
+class SQLAlchemyEmailPasswordLookup(_BasePasswordLookup):
+    """Email-based login lookup — the Reference_Stack's equivalent of the Django_Adapter's
+    `_EmailPasswordLookup`."""
+
+    async def get_by_identifier_async(self, identifier: object) -> User | None:
+        return await self.user_repo.get_by_email(str(identifier))
+
+
+class SQLAlchemyPhonePasswordLookup(_BasePasswordLookup):
+    """Phone-based login lookup — the Reference_Stack's equivalent of the Django_Adapter's
+    `_PhonePasswordLookup`. `identifier` is a `(phone_country_code, phone_number)` tuple, matching
+    `PasswordUserLookup`'s own documented convention that `identifier` is adapter-defined."""
+
+    async def get_by_identifier_async(self, identifier: object) -> User | None:
+        phone_country_code, phone_number = identifier
+        return await self.user_repo.get_by_phone(phone_country_code, phone_number)

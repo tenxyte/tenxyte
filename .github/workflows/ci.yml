@@ -310,8 +310,6 @@ jobs:
 
       - name: Run the Parity_Matrix (gated on shipped groups only)
         run: |
-          # Intentionally red until login/phone ships (tasks.md 5.1/5.3) — a --groups=A gate
-          # failing is the correct signal that Group A isn't fully delivered yet, not a CI bug.
           python scripts/parity_matrix.py --groups=A
 
   # ===========================================================================

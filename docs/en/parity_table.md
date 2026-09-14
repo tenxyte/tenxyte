@@ -87,7 +87,7 @@
 | POST | `/login/email/` | LoginEmailView | A | ✅ A |
 | POST | `/login/otp/request/` | LoginOTPRequestView | C | 🔜 C |
 | POST | `/login/otp/verify/` | LoginOTPVerifyView | C | 🔜 C |
-| POST | `/login/phone/` | LoginPhoneView | A | 🔜 A |
+| POST | `/login/phone/` | LoginPhoneView | A | ✅ A |
 | POST | `/logout/` | LogoutView | A | ✅ A |
 | POST | `/logout/all/` | LogoutAllView | A | ✅ A |
 | POST | `/magic-link/request/` | MagicLinkRequestView | C | 🔜 C |

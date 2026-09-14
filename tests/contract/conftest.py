@@ -107,7 +107,12 @@ async def api(request):
 def _register_group_a_views():
     """Registers Django's Group A view classes under the same relative paths the FastAPI side
     mounts them at, so `api.post("/register/", ...)` means the same thing on both backends."""
-    from tenxyte.views.auth_views import LoginEmailView, RegisterView
+    from tenxyte.views.auth_views import LoginEmailView, LoginPhoneView, RegisterView
 
     _register_django_view("/register/", RegisterView)
     _register_django_view("/login/email/", LoginEmailView)
+    # No contract test exercises this yet — FastAPI's /register/ is still email-only, so a
+    # shape-parity test would need a backend-specific seeding hook the `api` fixture doesn't
+    # expose yet. Registered for when that lands; both adapters' own suites already cover
+    # login/phone directly in the meantime.
+    _register_django_view("/login/phone/", LoginPhoneView)

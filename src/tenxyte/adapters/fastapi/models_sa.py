@@ -17,7 +17,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, String
+from sqlalchemy import JSON, Boolean, DateTime, Enum, ForeignKey, Index, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from tenxyte.ports.repositories import MFAType, UserStatus
@@ -42,6 +42,14 @@ class UserDB(Base):
     first_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
     last_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
 
+    # Wave A follow-up (login/phone, z_aud_3 task 5.1) — mirrors
+    # tenxyte.models.auth.User's phone_country_code/phone_number, indexed the same way (a
+    # composite index for lookup; SQLite has no partial-unique-index support in this dev driver,
+    # so uniqueness among phone users is enforced at the application layer, not the schema, same
+    # as documented for the Reference_Stack elsewhere).
+    phone_country_code: Mapped[str | None] = mapped_column(String(5), nullable=True)
+    phone_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
     is_staff: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -60,8 +68,15 @@ class UserDB(Base):
 
     refresh_tokens: Mapped[list[RefreshTokenDB]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
+    __table_args__ = (Index("ix_tenxyte_users_phone", "phone_country_code", "phone_number"),)
+
     def to_port_model(self):
         from tenxyte.ports.repositories import User
+
+        metadata = dict(self.user_metadata or {})
+        if self.phone_country_code and self.phone_number:
+            metadata.setdefault("phone_country_code", self.phone_country_code)
+            metadata.setdefault("phone_number", self.phone_number)
 
         return User(
             id=self.id,
@@ -79,7 +94,7 @@ class UserDB(Base):
             created_at=self.created_at,
             updated_at=self.updated_at,
             last_login=self.last_login,
-            metadata=self.user_metadata or {},
+            metadata=metadata,
         )
 
 

@@ -32,7 +32,18 @@ class SQLAlchemyAsyncUserRepository(AsyncUserRepository):
         db_user = (await self.session.execute(stmt)).scalar_one_or_none()
         return db_user.to_port_model() if db_user else None
 
+    async def get_by_phone(self, phone_country_code: str, phone_number: str) -> User | None:
+        """Not part of the `AsyncUserRepository` port ABC — phone isn't a Core concept (the port
+        `User` dataclass has no dedicated phone fields), so this is a Reference_Stack-only
+        extension used by `SQLAlchemyPhonePasswordLookup` (Wave A follow-up, login/phone)."""
+        stmt = select(UserDB).where(
+            UserDB.phone_country_code == phone_country_code, UserDB.phone_number == phone_number
+        )
+        db_user = (await self.session.execute(stmt)).scalar_one_or_none()
+        return db_user.to_port_model() if db_user else None
+
     async def create(self, user: User) -> User:
+        metadata = user.metadata or {}
         db_user = UserDB(
             id=user.id,
             email=user.email,
@@ -49,7 +60,12 @@ class SQLAlchemyAsyncUserRepository(AsyncUserRepository):
             created_at=user.created_at,
             updated_at=user.updated_at,
             last_login=user.last_login,
-            user_metadata=user.metadata,
+            user_metadata=metadata,
+            # Wave A follow-up (login/phone): phone_country_code/phone_number are stored as
+            # dedicated indexed columns, mirrored in from Core's generic metadata dict — the port
+            # dataclass itself has no dedicated phone fields (see models_sa.py's docstring).
+            phone_country_code=metadata.get("phone_country_code"),
+            phone_number=metadata.get("phone_number"),
         )
         self.session.add(db_user)
         await self.session.commit()
