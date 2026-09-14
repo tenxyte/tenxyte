@@ -36,7 +36,7 @@
 | GET | `/dashboard/organizations/` | DashboardOrganizationsView | D | 🔜 D |
 | GET | `/dashboard/security/` | DashboardSecurityView | D | 🔜 D |
 | GET | `/dashboard/stats/` | DashboardGlobalView | D | 🔜 D |
-| GET | `/magic-link/verify/` | MagicLinkVerifyView | C | 🔜 C |
+| GET | `/magic-link/verify/` | MagicLinkVerifyView | C | ✅ C |
 | GET | `/me/` | MeView | A | ✅ A |
 | GET | `/me/roles/` | MyRolesView | A | ✅ A |
 | GET | `/org-roles/` | list_org_roles | E | 🔜 E |
@@ -85,12 +85,12 @@
 | POST | `/confirm-account-deletion/` | confirm_account_deletion | G | 🔜 G |
 | POST | `/export-user-data/` | export_user_data | G | 🔜 G |
 | POST | `/login/email/` | LoginEmailView | A | ✅ A |
-| POST | `/login/otp/request/` | LoginOTPRequestView | C | 🔜 C |
-| POST | `/login/otp/verify/` | LoginOTPVerifyView | C | 🔜 C |
+| POST | `/login/otp/request/` | LoginOTPRequestView | C | ✅ C |
+| POST | `/login/otp/verify/` | LoginOTPVerifyView | C | ✅ C |
 | POST | `/login/phone/` | LoginPhoneView | A | ✅ A |
 | POST | `/logout/` | LogoutView | A | ✅ A |
 | POST | `/logout/all/` | LogoutAllView | A | ✅ A |
-| POST | `/magic-link/request/` | MagicLinkRequestView | C | 🔜 C |
+| POST | `/magic-link/request/` | MagicLinkRequestView | C | ✅ C |
 | POST | `/organizations/` | create_organization | E | 🔜 E |
 | POST | `/organizations/invitations/` | invite_member | E | 🔜 E |
 | POST | `/organizations/members/add/` | add_member | E | 🔜 E |

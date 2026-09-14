@@ -325,6 +325,19 @@ class Settings:
         settings existing — not replicated here since porting dead config would be pointless."""
         return self._get("OTP_LOGIN_VALIDITY_MINUTES", 10)
 
+    @property
+    def otp_login_enabled(self) -> bool:
+        """Whether passwordless login via SMS OTP is enabled (spec z_aud_3, Wave C) — defaults
+        off, same as the Django_Adapter's `auth_settings.OTP_LOGIN_ENABLED`."""
+        return self._get("OTP_LOGIN_ENABLED", False)
+
+    @property
+    def otp_login_auto_register(self) -> bool:
+        """Whether `login/otp/request/` auto-creates a passwordless account for an unknown phone
+        number (spec z_aud_3, Wave C) — mirrors `auth_settings.OTP_LOGIN_AUTO_REGISTER` (default
+        on)."""
+        return self._get("OTP_LOGIN_AUTO_REGISTER", True)
+
     # ============================================================
     # 2FA Settings
     # ============================================================

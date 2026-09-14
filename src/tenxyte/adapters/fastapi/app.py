@@ -13,11 +13,14 @@ from tenxyte.adapters.fastapi import db as db_module
 from tenxyte.adapters.fastapi.application_auth import ApplicationAuthMiddleware
 from tenxyte.adapters.fastapi.errors import register_exception_handlers
 from tenxyte.adapters.fastapi.routers.auth import router as auth_router
+from tenxyte.adapters.fastapi.routers.login_otp import router as login_otp_router
+from tenxyte.adapters.fastapi.routers.magic_link import router as magic_link_router
 from tenxyte.adapters.fastapi.routers.otp import router as otp_router
 from tenxyte.adapters.fastapi.routers.password import router as password_router
 from tenxyte.adapters.fastapi.routers.twofa import router as twofa_router
 from tenxyte.adapters.fastapi.settings import get_default_settings
 from tenxyte.core.cache_service import InMemoryCacheService
+from tenxyte.core.email_service import ConsoleEmailService
 from tenxyte.core.jwt_service import InMemoryTokenBlacklistService, JWTService
 from tenxyte.core.settings import Settings
 from tenxyte.core.totp_service import TOTPService
@@ -27,7 +30,8 @@ def _build_router(settings: Settings) -> APIRouter:
     """
     The Parity_Group routers are mounted here as each wave (A→G) ships (spec z_aud_3,
     Requirement 4) — Wave A (`routers/auth.py`), Wave B (`routers/password.py`), and Wave C's
-    OTP-verification and 2FA-enrollment routers (`routers/otp.py`, `routers/twofa.py`) so far.
+    OTP-verification, 2FA-enrollment, magic-link, and passwordless-login-OTP routers
+    (`routers/otp.py`, `routers/twofa.py`, `routers/magic_link.py`, `routers/login_otp.py`) so far.
     """
     router = APIRouter(prefix=settings.api_prefix)
 
@@ -42,6 +46,8 @@ def _build_router(settings: Settings) -> APIRouter:
     router.include_router(password_router)
     router.include_router(otp_router)
     router.include_router(twofa_router)
+    router.include_router(magic_link_router)
+    router.include_router(login_otp_router)
     return router
 
 
@@ -86,6 +92,10 @@ def create_tenxyte_app(
         # A single shared instance — its replay_protection (in-memory by default) must persist
         # across requests to actually protect against TOTP code replay.
         app.state.tenxyte_totp_service = TOTPService(settings=resolved_settings)
+        # No real email/SMS backend wired into the Reference_Stack yet — Core's own
+        # ConsoleEmailService (prints instead of sending) backs magic-link delivery, the same
+        # "no real backend wired in" posture otp_service.py already documents for OTP delivery.
+        app.state.tenxyte_email_service = ConsoleEmailService()
 
         try:
             yield

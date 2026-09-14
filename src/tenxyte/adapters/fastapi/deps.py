@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, Request
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
 from tenxyte.core.cache_service import CacheService
+from tenxyte.core.email_service import EmailService
 from tenxyte.core.jwt_service import JWTService
 from tenxyte.core.settings import Settings
 from tenxyte.core.totp_service import TOTPService
@@ -49,3 +50,11 @@ def get_totp_service(request: Request) -> TOTPService:
     """A single shared instance (built once in the App_Factory's lifespan, not per-request) —
     its `replay_protection` must persist across requests to actually protect against replay."""
     return request.app.state.tenxyte_totp_service
+
+
+def get_email_service(request: Request) -> EmailService:
+    """`ConsoleEmailService` by default (spec z_aud_3, Wave C) — a Core-provided implementation
+    that prints instead of sending, the same "no real backend wired in" posture `otp_service.py`
+    already documents for its own delivery. Overridable via `app.dependency_overrides` like every
+    other dependency here."""
+    return request.app.state.tenxyte_email_service

@@ -110,3 +110,25 @@ class TwoFactorDisableRequest(BaseModel):
 
 class TwoFactorBackupCodesRequest(BaseModel):
     code: str = ""
+
+
+class MagicLinkRequestRequest(BaseModel):
+    """`email`/`validation_url` default to `""` rather than being Pydantic-required — same
+    convention as `PasswordResetRequestRequest` — so a missing field produces the exact
+    `EMAIL_REQUIRED`/`VALIDATION_URL_REQUIRED` canonical error the Django_Adapter returns, not a
+    generic 422."""
+
+    email: str = ""
+    validation_url: str = ""
+
+
+class LoginOTPRequestRequest(BaseModel):
+    phone_country_code: str = Field(default="", max_length=5)
+    phone_number: str = Field(default="", max_length=20)
+
+
+class LoginOTPVerifyRequest(BaseModel):
+    phone_country_code: str = Field(default="", max_length=5)
+    phone_number: str = Field(default="", max_length=20)
+    otp_code: str = ""
+    totp_code: str = ""

@@ -57,6 +57,8 @@ from tenxyte.adapters.fastapi.deps import (
     get_totp_service,
 )
 from tenxyte.adapters.fastapi.errors import TenxyteAPIError
+from tenxyte.adapters.fastapi.login_response import clear_refresh_cookie as _clear_refresh_cookie
+from tenxyte.adapters.fastapi.login_response import finalize_login_response as _finalize_login_response
 from tenxyte.adapters.fastapi.refresh_tokens import issue_refresh_token as _issue_refresh_token
 from tenxyte.adapters.fastapi.refresh_tokens import (
     redeem_refresh_token,
@@ -73,6 +75,7 @@ from tenxyte.adapters.fastapi.schemas import (
     UpdateProfileRequest,
 )
 from tenxyte.adapters.fastapi.security import AuthContext, require_jwt
+from tenxyte.adapters.fastapi.serialization import serialize_user as _serialize_user
 from tenxyte.adapters.fastapi.totp_storage import SQLAlchemyTOTPStorage
 from tenxyte.core.auth_service import AuthenticationService
 from tenxyte.core.cache_service import CacheService
@@ -99,72 +102,9 @@ _PHONE_LOGIN_ERROR_MESSAGES = {
 }
 
 
-def _serialize_user(user: User) -> dict:
-    """Same field names as the Django_Adapter's `UserSerializer` — several (username, phone,
-    avatar, bio, timezone, language, custom_fields, roles, permissions) have no Reference_Stack
-    storage yet and are stubbed to their empty value rather than omitted, so the response shape
-    matches even where the content doesn't yet."""
-    return {
-        "id": user.id,
-        "email": user.email,
-        "username": None,
-        "phone": None,
-        "avatar": None,
-        "bio": "",
-        "timezone": "",
-        "language": "",
-        "first_name": user.first_name or "",
-        "last_name": user.last_name or "",
-        "is_active": user.is_active,
-        "is_email_verified": user.email_verified,
-        "is_phone_verified": False,
-        "is_2fa_enabled": user.mfa_type.value != "none",
-        "created_at": user.created_at.isoformat() if user.created_at else None,
-        "updated_at": user.updated_at.isoformat() if user.updated_at else None,
-        "last_login": user.last_login.isoformat() if user.last_login else None,
-        "custom_fields": {},
-        "preferences": {"email_notifications": True, "sms_notifications": False, "marketing_emails": False},
-        "roles": [],
-        "permissions": [],
-    }
-
-
 def _resolved_application_id(request: Request) -> str:
     application = getattr(request.state, "application", None)
     return str(application.id) if application is not None else "default"
-
-
-def _set_refresh_cookie(response: JSONResponse, settings: Settings, refresh_token: str) -> None:
-    response.set_cookie(
-        key=settings.refresh_token_cookie_name,
-        value=refresh_token,
-        max_age=settings.jwt_refresh_token_lifetime,
-        httponly=True,
-        secure=True,
-        samesite=settings.refresh_token_cookie_samesite,
-        path=settings.refresh_token_cookie_path,
-    )
-
-
-def _clear_refresh_cookie(response: JSONResponse, settings: Settings) -> None:
-    response.delete_cookie(
-        key=settings.refresh_token_cookie_name,
-        path=settings.refresh_token_cookie_path,
-        samesite=settings.refresh_token_cookie_samesite,
-    )
-
-
-def _finalize_login_response(data: dict, settings: Settings, status_code: int = 200) -> JSONResponse:
-    """Builds the outgoing response, moving `refresh_token` into an HttpOnly cookie and out of
-    the JSON body when `TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED` is on — same conditional shape the
-    Django_Adapter's `_set_refresh_cookie` produces."""
-    refresh_token = data.get("refresh_token")
-    if settings.refresh_token_cookie_enabled and refresh_token is not None:
-        data = {k: v for k, v in data.items() if k != "refresh_token"}
-        response = JSONResponse(status_code=status_code, content=data)
-        _set_refresh_cookie(response, settings, refresh_token)
-        return response
-    return JSONResponse(status_code=status_code, content=data)
 
 
 @router.post("/register/", status_code=201)

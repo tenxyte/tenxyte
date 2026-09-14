@@ -62,6 +62,8 @@ def test_properties_defaults():
     assert s.breach_check_enabled is True
     assert s.breach_check_reject is True
     assert s.otp_login_validity_minutes == 10
+    assert s.otp_login_enabled is False
+    assert s.otp_login_auto_register is True
     assert s.mfa_required is False
     assert s.application_auth_enabled is True
     assert s.exempt_paths == ["/admin/", "/api/v1/health/", "/api/v1/docs/"]

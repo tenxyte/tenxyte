@@ -371,7 +371,7 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - **Property 3 (reset)** · _Requirements: 4.3, 5.1, 5.2_
 
 - [ ] 7. Vague de parité C — OTP, passwordless, 2FA
-  - [ ] 7.1 Porter le groupe C
+  - [x] 7.1 Porter le groupe C
     - **Contrat extrait par recherche exhaustive** de `views/otp_views.py`,
       `views/login_otp_views.py`, `views/magic_link_views.py`, `views/twofa_views.py`,
       `services/otp_service.py`, et du modèle `OTPCode` (`models/operational.py`) — recherche
@@ -446,15 +446,47 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       auparavant. Corrigé en construisant un `User` synthétique et en le passant par la même
       `_serialize_user()` que le chemin réel, garantissant une forme identique par construction
       plutôt que par appariement manuel.
-      **Restant, non commencé :** `login/otp/request`/`login/otp/verify` (auto-inscription,
-      bootstrap 2FA, anti-énumération — mêmes branches que Groupe A) ; `magic-link/request`/
-      `magic-link/verify` (mécanisme séparé, pas basé sur `OTPCode` — `MagicLinkTokenDB` déjà
-      créé dans `models_sa.py` mais pas encore de repository/routeur ; `core.magic_link_service`
-      confirmé 100 % framework-agnostic et déjà async-complet, prêt à consommer un repository
-      Reference_Stack dès qu'il existe). Feature-flags `OTP_LOGIN_ENABLED`/`MAGIC_LINK_ENABLED`
-      pas encore câblés (pas nécessaires tant que `login/otp/*`/`magic-link/*` n'existent pas
-      côté FastAPI). `parity_matrix --groups=C` : 8/11 — les 4 manquants sont exactement
-      `login/otp/request`, `login/otp/verify`, `magic-link/request`, `magic-link/verify`.
+      **Les 4 derniers endpoints du groupe (`login/otp/request`, `login/otp/verify`,
+      `magic-link/request`, `magic-link/verify`) portés et testés** — `parity_matrix --groups=C` :
+      **12/12, vert** (le groupe compte en réalité 12 endpoints, pas 11 comme estimé plus haut ;
+      décompte corrigé après génération complète de `docs/{en,fr}/parity_table.md`).
+      `core.magic_link_service.MagicLinkService` s'est confirmé 100 % framework-agnostic et déjà
+      async-complet à la lecture (aucun import Django dans le fichier) — seul un repository
+      Reference_Stack manquait : `magic_link_repo.py` (`SQLAlchemyMagicLinkRepository` +
+      `SQLAlchemyUserLookup`, async uniquement — même convention que `SQLAlchemyTOTPStorage` :
+      les méthodes sync du Protocol lèvent `NotImplementedError`), adossé à `MagicLinkTokenDB`
+      (déjà créé). `email` n'est pas une colonne de `MagicLinkTokenDB` (comme le vrai modèle
+      Django `MagicLinkToken`, qui n'en a pas non plus) — dérivé via une seconde requête sur
+      `UserDB`, à l'identique de `DjangoMagicLinkRepository.get_by_token`'s `token_obj.user.email`.
+      Livraison email adossée à `ConsoleEmailService` (déjà fourni par Core, imprime au lieu
+      d'envoyer) — même posture "aucun backend réel câblé" que `otp_service.py`.
+      `routers/magic_link.py` (9 tests, `test_magic_link_router.py`) préserve deux
+      excentricités **réelles** de `MagicLinkVerifyView` plutôt que de les "corriger" (ce qui
+      serait une rupture de parité) : la réponse de `verify/` utilise les clés `access`/`refresh`
+      (pas `access_token`/`refresh_token` comme partout ailleurs), et `application_id` n'est
+      jamais transmis ni à `request_magic_link` ni à `verify_magic_link` par la vue Django
+      elle-même, rendant sa propre vérification de correspondance d'application morte en
+      pratique.
+      `login/otp` a nécessité deux nouvelles properties Core (`Settings.otp_login_enabled`,
+      défaut `False`, et `otp_login_auto_register`, défaut `True` — `otp_login_validity_minutes`
+      existait déjà) et un `LoginOTPRequestRequest`/`LoginOTPVerifyRequest` (schemas.py).
+      `routers/login_otp.py` (12 tests, `test_login_otp_router.py`) réplique fidèlement
+      `_login()` (bootstrap admin 2FA, vérification TOTP normale, anti-énumération) sans le
+      mot de passe — la vérification pré-consommation du code (2FA requis AVANT que l'OTP soit
+      marqué utilisé, pour permettre une seconde passe OTP+TOTP) est couverte par un test dédié.
+      Le port phone-only Django (compte sans email) n'existe pas dans le Reference_Stack
+      (`UserDB.email` reste `nullable=False, unique=True`) — l'auto-inscription y génère un email
+      placeholder unique non routable (`{uuid4()}@passwordless.invalid`), documenté dans le
+      routeur comme un compromis de schéma, pas un oubli.
+      **Trouvaille vérifiée, pré-existante côté Django, non corrigée ici** (voir le docstring de
+      `routers/login_otp.py` et `test_verify_unknown_account_and_wrong_code_both_401_otp_invalid`) :
+      l'anti-énumération de `login/otp/verify/` ne tient qu'au niveau statut/`code` — le champ
+      `error` diffère réellement selon le cas (compte inconnu → `"Invalid or expired code"` ;
+      compte réel sans code en attente → `"No login code found"` ; compte réel avec code actif et
+      mauvaise tentative → `"Invalid code. N attempt(s) remaining."`). C'est le comportement réel
+      de `LoginOTPVerifyView`/`OTPService.verify_login_otp`, pas une régression introduite par ce
+      port — répliqué tel quel plutôt que silencieusement durci, ce qui serait une amélioration
+      hors périmètre de cette tâche de parité.
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
   - [ ] 7.2 Write property test for feature-flag and scope parity
