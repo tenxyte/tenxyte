@@ -124,3 +124,38 @@ async def test_property_10_http_register_login_me_journey():
 
     assert me_response.status_code == 200
     assert me_response.json()["email"] == "journey@example.com"
+
+
+class _AppAuthEnabledProvider(EnvSettingsProvider):
+    """Application-level auth left at its real default (`True`) — the bug this test guards
+    against only reproduces when it's on."""
+
+    def get(self, name, default=None):
+        if name == "TENXYTE_JWT_SECRET_KEY":
+            return "test-secret-key-for-docs-exemption"
+        return super().get(name, default)
+
+
+@pytest.mark.anyio
+async def test_docs_reachable_without_application_credentials():
+    """`docs_url`/`openapi_url` are placed under `{api_prefix}/docs/` specifically so Core's
+    shared `exempt_paths` default (`{api_prefix}/docs/`, a prefix match) actually covers them —
+    left at FastAPI's own bare `/docs`/`/openapi.json` defaults, this 401s even with
+    `application_auth_enabled` at its real default, silently breaking the FastAPI quickstart's own
+    "Swagger reachable at /docs" claim (spec z_aud_3, Requirement 7.1, MT-1) for every zero-config
+    app. Found while manually verifying that exact quickstart flow end-to-end, not by reading the
+    code."""
+    settings = Settings(provider=_AppAuthEnabledProvider())
+    assert settings.application_auth_enabled is True
+    app = create_tenxyte_app(settings=settings, database_url=_fresh_sqlite_url())
+
+    async with app.router.lifespan_context(app):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            docs_response = await client.get("/api/v1/docs/")
+            openapi_response = await client.get("/api/v1/docs/openapi.json")
+            # No X-Access-Key/X-Access-Secret headers sent on either request above.
+
+    assert docs_response.status_code == 200
+    assert openapi_response.status_code == 200
+    assert openapi_response.json()["info"]["title"] == "Tenxyte"

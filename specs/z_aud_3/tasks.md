@@ -1620,15 +1620,56 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - **Property 13 (volet styled)** · _Requirements: 6.4, 6.5_
 
 - [ ] 16. Documentation
-  - [ ] 16.1 Réécrire les quickstarts FastAPI `[MT-1]`
+  - [x] 16.1 Réécrire les quickstarts FastAPI `[MT-1]`
     - `docs/en/fastapi_quickstart.md` + FR : install → factory → uvicorn → premier appel ;
       validé chronométré par MT-1
+    - _Requirements: 7.1_
+    - **Fait.** Les deux docs (EN/FR) réécrites autour de l'App_Factory
+      (`create_tenxyte_app()`) — l'ancienne version datait d'avant l'App_Factory et câblait tout
+      manuellement (routers, dépendances, DB laissés à la charge du lecteur, appelant même des
+      fonctions jamais définies comme `verify_user_credentials`/`create_user`). Chaque commande du
+      nouveau parcours — install, `main.py`, variable d'environnement, `uvicorn`, création d'une
+      Application, inscription, connexion, `GET /me/`, erreur 401 avec mauvais mot de passe —
+      exécutée réellement contre un vrai serveur avant d'être écrite dans la doc, pas seulement
+      lue dans le code.
+      **Un vrai bug trouvé en vérifiant le parcours de bout en bout, pas juste un choix de
+      contenu** : `/docs` (Swagger UI, généré nativement par FastAPI) restait bloqué derrière
+      l'authentification applicative même avec les identifiants d'application par défaut absents
+      de la doc — `create_tenxyte_app()` ne passait aucun `docs_url` explicite à `FastAPI(...)`,
+      donc FastAPI montait sa documentation à la racine (`/docs`, `/openapi.json`), alors que le
+      défaut partagé `exempt_paths` de Core (`conf/base.py`'s `EXEMPT_PATHS`, aussi lu par
+      `ApplicationAuthMiddleware` côté FastAPI) exempte `{api_prefix}/docs/` — une convention de
+      projet Django (l'endroit où un vrai déploiement monterait la vue Swagger de
+      drf-spectacular), qui ne correspondait à rien de réel côté FastAPI. Résultat : `/docs`
+      random 401 pour toute app FastAPI fraîchement créée, en contradiction directe avec la
+      propre promesse de MT-1 ("Swagger accessible"). **Corrigé** dans `app.py` :
+      `docs_url`/`openapi_url`/`redoc_url` placés explicitement sous `{api_prefix}/docs/` (avec
+      le slash final — un deuxième piège trouvé en vérifiant réellement : sans le slash final,
+      `path.startswith(prefix)` ne matche pas `{api_prefix}/docs/`) pour que la même entrée
+      d'exemption couvre à la fois la page Swagger et le JSON `openapi.json` qu'elle charge.
+      Nouveau test réel (pas de mock) : `test_docs_reachable_without_application_credentials`
+      dans `test_app_factory.py` — auth applicative à son vrai défaut (`True`), `/api/v1/docs/`
+      et `/api/v1/docs/openapi.json` tous deux 200 sans aucun en-tête `X-Access-Key`/
+      `X-Access-Secret`. Suite FastAPI unitaire complète relancée après le correctif : 282 passed
+      (281 + 1 nouveau), aucune régression.
     - _Requirements: 7.1_
 
   - [ ] 16.2 Publier la table de parité et le guide async
     - `parity_table.md` (EN/FR, régénérée en CI) ; `async_guide.md` mis à jour (Async_Ports,
       résolution, gabarit jwt_service) ; doc UI dans `integration/javascript/`
     - _Requirements: 7.2, 7.3, 7.4_
+    - **Partiellement fait.** `docs/{en,fr}/parity_table.md` : déjà régénérée automatiquement à
+      chaque exécution de `parity_matrix.py` depuis la Vague D (effet de bord du script, pas une
+      étape séparée) — confirmée à jour (114/114) après le correctif `docs_url` de 16.1.
+      `async_guide.md` (EN/FR, 599 lignes chacune) : contenu déjà substantiel et documentant
+      `jwt_service`/le motif Async_Ports — pas trouvé de trace de la même obsolescence
+      pré-App_Factory que le quickstart (ne référence pas de câblage manuel), donc pas réécrit
+      dans ce chunk ; un audit ligne à ligne complet n'a pas été fait, seulement un sondage
+      ciblé. **Non fait** : doc UI dans `docs/*/integration/javascript/` — bloquée sur la tâche
+      15 (les composants `@tenxyte/ui-headless`/`@tenxyte/ui` n'existent pas encore, implémentés
+      dans le monorepo JS externe) ; documenter des composants qui n'existent pas serait une
+      fausse promesse, même raisonnement que la fixture `must_change_password` retirée du seed
+      de la tâche 14.2.
 
 - [ ] 17. Non-régression finale et validation manuelle
   - [ ] 17.1 Vérifier la non-régression Django totale

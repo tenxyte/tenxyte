@@ -145,7 +145,29 @@ def create_tenxyte_app(
         finally:
             await engine.dispose()
 
-    app = FastAPI(title="Tenxyte", lifespan=lifespan)
+    # `docs_url`/`openapi_url`/`redoc_url` explicitly placed under the API prefix rather than
+    # left at FastAPI's own bare-root default (`/docs`, `/openapi.json`, `/redoc`) — Core's
+    # shared `exempt_paths` default (`conf/base.py`'s `EXEMPT_PATHS`, also read by
+    # `ApplicationAuthMiddleware` here) has always exempted `{api_prefix}/docs/` from
+    # application-level auth, a Django-project convention (a real deployment mounts
+    # drf-spectacular's Swagger view there itself). Left at FastAPI's own unprefixed default,
+    # that exemption pattern matches nothing real, so `/docs` stayed silently gated behind
+    # `X-Access-Key`/`X-Access-Secret` even for a fresh, zero-config app — found while verifying
+    # the FastAPI quickstart doc's own "Swagger reachable at /docs" claim (spec z_aud_3,
+    # Requirement 7.1, MT-1) end-to-end against a real running server, not by reading the code.
+    docs_prefix = f"{resolved_settings.api_prefix}/docs/"
+    app = FastAPI(
+        title="Tenxyte",
+        lifespan=lifespan,
+        # `exempt_paths`'s default entry is a *prefix* match on `{api_prefix}/docs/` (trailing
+        # slash) — every one of `docs_url`/`openapi_url`/`redoc_url` is placed AT or UNDER that
+        # exact prefix (not left as FastAPI's own root-level `/docs`/`/openapi.json`/`/redoc`
+        # defaults) so the one exemption entry actually covers every asset Swagger UI's page
+        # needs to fetch, not just the HTML shell.
+        docs_url=docs_prefix,
+        openapi_url=f"{docs_prefix}openapi.json",
+        redoc_url=f"{docs_prefix}redoc",
+    )
     register_exception_handlers(app)
     app.add_middleware(ApplicationAuthMiddleware)
     app.include_router(create_tenxyte_router(resolved_settings))
