@@ -51,7 +51,9 @@ class DjangoContractClient:
     def __init__(self, application):
         self.application = application
 
-    async def post(self, path: str, json: dict, *, headers: dict[str, str] | None = None) -> ContractResponse:
+    async def post(
+        self, path: str, json: dict, *, headers: dict[str, str] | None = None, view_kwargs: dict | None = None
+    ) -> ContractResponse:
         from unittest.mock import patch
 
         from rest_framework.test import APIRequestFactory
@@ -66,13 +68,18 @@ class DjangoContractClient:
             request = factory.post(path, data=json, format="json", **extra)
             request.application = self.application
             with patch("rest_framework.throttling.SimpleRateThrottle.allow_request", return_value=True):
-                response = view_cls.as_view()(request)
+                response = view_cls.as_view()(request, **(view_kwargs or {}))
             return ContractResponse(status_code=response.status_code, body=_django_response_body(response))
 
         return await sync_to_async(_call, thread_sensitive=True)()
 
     async def get(
-        self, path: str, params: dict | None = None, *, headers: dict[str, str] | None = None
+        self,
+        path: str,
+        params: dict | None = None,
+        *,
+        headers: dict[str, str] | None = None,
+        view_kwargs: dict | None = None,
     ) -> ContractResponse:
         from unittest.mock import patch
 
@@ -88,7 +95,7 @@ class DjangoContractClient:
             request = factory.get(path, data=params or {}, **extra)
             request.application = self.application
             with patch("rest_framework.throttling.SimpleRateThrottle.allow_request", return_value=True):
-                response = view_cls.as_view()(request)
+                response = view_cls.as_view()(request, **(view_kwargs or {}))
             return ContractResponse(status_code=response.status_code, body=_django_response_body(response))
 
         return await sync_to_async(_call, thread_sensitive=True)()
@@ -104,16 +111,28 @@ def _body_or_empty(response) -> dict:
 
 
 class FastAPIContractClient:
+    """`view_kwargs` is accepted (and ignored) on both methods purely for call-site parity with
+    `DjangoContractClient` — a path like `/social/linkedin/` already embeds the provider directly
+    here, whereas Django's view needs it re-supplied as a URL kwarg since `DjangoContractClient`
+    bypasses real URL routing entirely (see its own module docstring)."""
+
     def __init__(self, client: AsyncClient, api_prefix: str):
         self.client = client
         self.api_prefix = api_prefix
 
-    async def post(self, path: str, json: dict, *, headers: dict[str, str] | None = None) -> ContractResponse:
+    async def post(
+        self, path: str, json: dict, *, headers: dict[str, str] | None = None, view_kwargs: dict | None = None
+    ) -> ContractResponse:
         response = await self.client.post(f"{self.api_prefix}{path}", json=json, headers=headers or {})
         return ContractResponse(status_code=response.status_code, body=_body_or_empty(response))
 
     async def get(
-        self, path: str, params: dict | None = None, *, headers: dict[str, str] | None = None
+        self,
+        path: str,
+        params: dict | None = None,
+        *,
+        headers: dict[str, str] | None = None,
+        view_kwargs: dict | None = None,
     ) -> ContractResponse:
         response = await self.client.get(f"{self.api_prefix}{path}", params=params or {}, headers=headers or {})
         return ContractResponse(status_code=response.status_code, body=_body_or_empty(response))
@@ -237,6 +256,34 @@ def _register_group_e_views():
     _register_django_view("/organizations/", create_organization.cls)
     _register_django_view("/organizations/list/", list_organizations.cls)
     _register_django_view("/organizations/detail/", get_organization.cls)
+
+
+@pytest.fixture(autouse=True)
+def _register_group_g_views():
+    """Registers Django's Group G view classes/functions (spec z_aud_3, task 12.2).
+
+    `request_account_deletion`/`confirm_account_deletion`/`account_deletion_status` are
+    `@api_view`-decorated functions, same `.cls` pattern as Group E's registrations above.
+    `WebAuthnRegisterBeginView`/`SocialAuthView`/`DeletionRequestListView` are ordinary `APIView`
+    subclasses. `SocialAuthView.post` takes `provider` as a URL kwarg (`<str:provider>` in the
+    real `urls.py`) — `DjangoContractClient` bypasses real URL routing (see its own module
+    docstring), so `test_group_g_shapes.py` supplies it via `view_kwargs={"provider": ...}`
+    instead."""
+    from tenxyte.views.account_deletion_views import (
+        account_deletion_status,
+        confirm_account_deletion,
+        request_account_deletion,
+    )
+    from tenxyte.views.gdpr_admin_views import DeletionRequestListView
+    from tenxyte.views.social_auth_views import SocialAuthView
+    from tenxyte.views.webauthn_views import WebAuthnRegisterBeginView
+
+    _register_django_view("/request-account-deletion/", request_account_deletion.cls)
+    _register_django_view("/confirm-account-deletion/", confirm_account_deletion.cls)
+    _register_django_view("/account-deletion-status/", account_deletion_status.cls)
+    _register_django_view("/admin/deletion-requests/", DeletionRequestListView)
+    _register_django_view("/webauthn/register/begin/", WebAuthnRegisterBeginView)
+    _register_django_view("/social/linkedin/", SocialAuthView)
 
 
 async def register_and_login(api) -> tuple[str, str]:

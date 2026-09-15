@@ -1470,8 +1470,40 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       **Vague G clôturée — les 17/17 endpoints du Groupe G sont portés.**
     - _Requirements: 4.1, 4.2, 4.4_
 
-  - [ ] 12.2 Contract_Suite + matrice COMPLÈTE (tous groupes)
-    - **Property 1 (finale)** — 100 % porté ou exclu-justifié
+  - [x] 12.2 Contract_Suite + matrice COMPLÈTE (tous groupes)
+    - **`tests/contract/test_group_g_shapes.py` (nouveau)** — mêmes assertions écrites une fois
+      contre le fixture `api`, exécutées à l'identique contre les deux adaptateurs. Endpoints GDPR
+      user couverts par un **vrai aller-retour réussi** (register+login puis un vrai appel
+      `account-deletion-status/` pour un utilisateur frais, réponse `{"total_requests": 0,
+      "active_request": None, "history": []}` identique) — même raisonnement que
+      `create_organization`/`list_organizations` de la Vague E : ces endpoints n'exigent que
+      `@require_jwt`/`IsAuthenticated`, aucune promotion RBAC que le fixture ne sait pas accorder.
+      WebAuthn/Social/GDPR-admin limités à des preuves de porte ou de forme d'erreur fixe, pas
+      d'aller-retour complet — même motif restreint que les Vagues D/E/F : WebAuthn exigerait un
+      vrai authentificateur FIDO2 sur les deux adaptateurs (déjà prouvé exhaustivement côté
+      FastAPI par `test_webauthn_router.py` et côté Django par `test_webauthn.py` — pas un trou de
+      couverture du comportement, seulement de la portée du Contract_Suite) ;
+      `admin/deletion-requests/` exige `gdpr.admin`, que le fixture ne sait pas accorder sur les
+      deux adaptateurs (même limite que la Delegating User de la Vague F) — seule la porte
+      `PERMISSION_REQUIRED` est prouvée. **`PROVIDER_NOT_SUPPORTED` de Social EST une vraie preuve
+      de forme complète** malgré l'absence d'auth/OAuth réel — le kwarg d'URL `provider` de
+      `SocialAuthView.post` est fourni via un nouveau paramètre `view_kwargs` ajouté à
+      `DjangoContractClient.post`/`get` (et accepté-mais-ignoré côté `FastAPIContractClient`, pour
+      la parité des sites d'appel), puisque `DjangoContractClient` contourne le vrai routage
+      d'URL (`APIRequestFactory` direct, sans middleware ni résolveur d'URL).
+      6 tests × 2 adaptateurs = 12, tous verts au premier lancement réel : `webauthn/register/
+      begin/` exige l'auth identiquement (401), `social/linkedin/` renvoie la forme
+      `PROVIDER_NOT_SUPPORTED` complète identique (message, code, `supported_providers`),
+      `request-account-deletion/` sans preuve d'identité renvoie `REAUTH_REQUIRED` identique,
+      statut de suppression vide identique pour un utilisateur frais, token de confirmation
+      inconnu renvoie la même erreur générique 400, `admin/deletion-requests/` sans permission
+      renvoie `PERMISSION_REQUIRED` identique (403).
+      **Property 1 (finale)** — `parity_matrix --groups=A,B,C,D,E,F,G` : **114/114 endpoints
+      Django portés, 0 exclus — 100 % de parité réelle sur toute la surface REST de tenxyte**.
+      Suite Contract_Suite complète relancée après l'ajout du Groupe G : 68 passed (tous groupes
+      A-G), aucune régression. Suite FastAPI unitaire complète, couverture FastAPI (seuil 90 %),
+      vérification de pureté async, et suite de régression Django complète toutes relancées une
+      dernière fois — toutes vertes (voir le récapitulatif du commit de clôture).
     - **Validates: Requirements 4.1, 4.5, 5.1**
 
 - [ ] 13. Checkpoint - Ensure all tests pass
