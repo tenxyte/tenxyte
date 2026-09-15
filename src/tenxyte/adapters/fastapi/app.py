@@ -13,6 +13,7 @@ from tenxyte.adapters.fastapi import db as db_module
 from tenxyte.adapters.fastapi.application_auth import ApplicationAuthMiddleware
 from tenxyte.adapters.fastapi.errors import register_exception_handlers
 from tenxyte.adapters.fastapi.routers.airs import router as airs_router
+from tenxyte.adapters.fastapi.routers.applications import router as applications_router
 from tenxyte.adapters.fastapi.routers.auth import router as auth_router
 from tenxyte.adapters.fastapi.routers.login_otp import router as login_otp_router
 from tenxyte.adapters.fastapi.routers.magic_link import router as magic_link_router
@@ -53,6 +54,7 @@ def _build_router(settings: Settings) -> APIRouter:
     router.include_router(login_otp_router)
     router.include_router(airs_router)
     router.include_router(rbac_router)
+    router.include_router(applications_router)
     return router
 
 

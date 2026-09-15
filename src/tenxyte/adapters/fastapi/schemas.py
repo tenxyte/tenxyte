@@ -192,3 +192,24 @@ class ManageRolePermissionsRequest(BaseModel):
 
 class AssignRoleRequest(BaseModel):
     role_code: str = ""
+
+
+class ApplicationCreateRequest(BaseModel):
+    name: str
+    description: str = ""
+    allowed_origins: list[str] = Field(default_factory=list)
+
+
+class ApplicationUpdateRequest(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    is_active: bool | None = None
+    allowed_origins: list[str] | None = None
+
+
+class ApplicationToggleRequest(BaseModel):
+    is_active: bool | None = None
+
+
+class ApplicationRegenerateRequest(BaseModel):
+    confirmation: str = ""

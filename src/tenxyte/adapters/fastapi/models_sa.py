@@ -140,11 +140,16 @@ class ApplicationDB(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
     name: Mapped[str] = mapped_column(String(100))
+    # Wave D follow-up (z_aud_3 task 10.1) — mirrors AbstractApplication.description, missing
+    # from Wave A's original columns (which only needed access-credential fields for
+    # X-Access-Key/X-Access-Secret auth, not the full CRUD surface applications/* exposes).
+    description: Mapped[str] = mapped_column(Text, default="")
     access_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     access_secret: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     allowed_origins: Mapped[list] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class OTPCodeDB(Base):

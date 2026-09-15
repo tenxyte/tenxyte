@@ -714,6 +714,29 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       `LoginAttemptDB` nouvelles tables, plus persistance requêtable de la blacklist JWT,
       actuellement en mémoire seulement côté Reference_Stack) ; `dashboard/*` (5 — agrégations
       en lecture seule sur tout ce qui précède).
+    - **Chunk 2/5 fait — Applications (7/46, 26/46 cumulé)** : `applications/*` — liste (avec
+      pagination/recherche/filtre `is_active`), création (émet `access_key`/`access_secret` en
+      clair une seule fois, jamais restitué ensuite), détail, mise à jour complète, activation/
+      désactivation (`PATCH`), suppression, régénération des identifiants (exige
+      `{"confirmation": "REGENERATE"}`). **Contrat extrait** de `views/application_views.py`,
+      `serializers/application_serializers.py`, `filters.py` (`apply_application_filters`).
+      **Réutilise `ApplicationDB`** (créée en Vague A pour l'auth `X-Access-Key`/
+      `X-Access-Secret` — voir `application_auth.py`) plutôt qu'une nouvelle table ; colonnes de
+      suivi Vague A (`description`/`updated_at`) ajoutées à `models_sa.py` car les colonnes
+      d'origine ne couvraient que les besoins de `ApplicationAuthMiddleware`, pas toute la surface
+      CRUD de ce chunk. `application_service.py` (nouveau, framework-agnostic même logique que
+      `rbac_service.py`) ; `routers/applications.py` (nouveau, 7 endpoints, tous gatés par
+      `require_permission` — `applications.view`/`create`/`update`/`delete`/`regenerate`,
+      réutilise `pagination.py` du chunk 1 telle quelle).
+      5 tests (`test_applications_router.py`), aucun mock, base aiosqlite éphémère réelle — cycle
+      de vie CRUD complet, activation/désactivation avec rejet `INVALID_FIELDS` si aucun champ,
+      régénération avec rejet `CONFIRMATION_REQUIRED` puis succès, pagination/recherche (22
+      applications créées pour forcer une 2ᵉ page), refus générique de permission.
+      `parity_matrix` : 65/114 endpoints Django portés au total (7 nouveaux) — Groupes A/B/C/F
+      toujours verts ; coverage FastAPI 92.89 % (seuil CI 90 %) ; suite Django complète relancée,
+      aucune régression.
+      **Restant (chunks 3 à 5)** : `admin/users/*` (8) ; admin sécurité (7) ; `dashboard/*` (5) —
+      inchangé par rapport à la note laissée au chunk 1.
     - _Requirements: 4.1, 4.2, 4.5_
 
   - [ ] 10.2 Contract_Suite + matrice sur A–D (+F) ; exclusions justifiées le cas échéant

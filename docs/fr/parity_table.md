@@ -5,7 +5,7 @@
 | Méthode | Chemin | Vue Django | Groupe | État |
 |---|---|---|---|---|
 | DELETE | `/admin/users/{user_id}/` | UserDetailView | D | 🔜 D |
-| DELETE | `/applications/{app_id}/` | ApplicationDetailView | D | 🔜 D |
+| DELETE | `/applications/{app_id}/` | ApplicationDetailView | D | ✅ D |
 | DELETE | `/organizations/delete/` | delete_organization | E | 🔜 E |
 | DELETE | `/organizations/members/{user_id}/remove/` | remove_member | E | 🔜 E |
 | DELETE | `/permissions/{permission_id}/` | PermissionDetailView | D | ✅ D |
@@ -29,8 +29,8 @@
 | GET | `/ai/pending-actions/` | AgentPendingActionListView | F | ✅ F |
 | GET | `/ai/tokens/` | AgentTokenListCreateView | F | ✅ F |
 | GET | `/ai/tokens/{pk}/` | AgentTokenDetailView | F | ✅ F |
-| GET | `/applications/` | ApplicationListView | D | 🔜 D |
-| GET | `/applications/{app_id}/` | ApplicationDetailView | D | 🔜 D |
+| GET | `/applications/` | ApplicationListView | D | ✅ D |
+| GET | `/applications/{app_id}/` | ApplicationDetailView | D | ✅ D |
 | GET | `/dashboard/auth/` | DashboardAuthView | D | 🔜 D |
 | GET | `/dashboard/gdpr/` | DashboardGDPRView | D | 🔜 D |
 | GET | `/dashboard/organizations/` | DashboardOrganizationsView | D | 🔜 D |
@@ -55,7 +55,7 @@
 | GET | `/users/{user_id}/roles/` | UserRolesView | D | ✅ D |
 | GET | `/webauthn/credentials/` | WebAuthnCredentialListView | G | 🔜 G |
 | PATCH | `/admin/users/{user_id}/` | UserDetailView | D | 🔜 D |
-| PATCH | `/applications/{app_id}/` | ApplicationDetailView | D | 🔜 D |
+| PATCH | `/applications/{app_id}/` | ApplicationDetailView | D | ✅ D |
 | PATCH | `/me/` | MeView | A | ✅ A |
 | PATCH | `/organizations/members/{user_id}/` | update_member_role | E | 🔜 E |
 | PATCH | `/organizations/update/` | update_organization | E | 🔜 E |
@@ -79,8 +79,8 @@
 | POST | `/ai/tokens/{pk}/report-usage/` | AgentTokenReportUsageView | F | ✅ F |
 | POST | `/ai/tokens/{pk}/revoke/` | AgentTokenRevokeView | F | ✅ F |
 | POST | `/ai/tokens/{pk}/suspend/` | AgentTokenSuspendView | F | ✅ F |
-| POST | `/applications/` | ApplicationListView | D | 🔜 D |
-| POST | `/applications/{app_id}/regenerate/` | ApplicationRegenerateView | D | 🔜 D |
+| POST | `/applications/` | ApplicationListView | D | ✅ D |
+| POST | `/applications/{app_id}/regenerate/` | ApplicationRegenerateView | D | ✅ D |
 | POST | `/cancel-account-deletion/` | cancel_account_deletion | G | 🔜 G |
 | POST | `/confirm-account-deletion/` | confirm_account_deletion | G | 🔜 G |
 | POST | `/export-user-data/` | export_user_data | G | 🔜 G |
@@ -115,6 +115,6 @@
 | POST | `/webauthn/authenticate/complete/` | WebAuthnAuthenticateCompleteView | G | 🔜 G |
 | POST | `/webauthn/register/begin/` | WebAuthnRegisterBeginView | G | 🔜 G |
 | POST | `/webauthn/register/complete/` | WebAuthnRegisterCompleteView | G | 🔜 G |
-| PUT | `/applications/{app_id}/` | ApplicationDetailView | D | 🔜 D |
+| PUT | `/applications/{app_id}/` | ApplicationDetailView | D | ✅ D |
 | PUT | `/permissions/{permission_id}/` | PermissionDetailView | D | ✅ D |
 | PUT | `/roles/{role_id}/` | RoleDetailView | D | ✅ D |
