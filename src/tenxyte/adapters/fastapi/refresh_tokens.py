@@ -64,6 +64,12 @@ async def redeem_refresh_token(session: AsyncSession, raw_token: str) -> Refresh
     if expires_at < datetime.now(timezone.utc):
         return None
 
+    # Wave D chunk 4 follow-up (z_aud_3 task 10.1) — mirrors Django's RefreshToken.last_used_at
+    # (auto_now=True: touched on every save, including revoke()) so admin/refresh-tokens/ has a
+    # real value to show.
+    row.last_used_at = datetime.now(timezone.utc)
+    await session.commit()
+
     return row
 
 

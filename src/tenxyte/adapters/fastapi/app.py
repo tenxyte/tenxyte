@@ -12,6 +12,7 @@ from fastapi import APIRouter, FastAPI
 from tenxyte.adapters.fastapi import db as db_module
 from tenxyte.adapters.fastapi.application_auth import ApplicationAuthMiddleware
 from tenxyte.adapters.fastapi.errors import register_exception_handlers
+from tenxyte.adapters.fastapi.routers.admin_security import router as admin_security_router
 from tenxyte.adapters.fastapi.routers.admin_users import router as admin_users_router
 from tenxyte.adapters.fastapi.routers.airs import router as airs_router
 from tenxyte.adapters.fastapi.routers.applications import router as applications_router
@@ -36,8 +37,9 @@ def _build_router(settings: Settings) -> APIRouter:
     Requirement 4) — Wave A (`routers/auth.py`), Wave B (`routers/password.py`), Wave C's
     OTP-verification, 2FA-enrollment, magic-link, and passwordless-login-OTP routers
     (`routers/otp.py`, `routers/twofa.py`, `routers/magic_link.py`, `routers/login_otp.py`),
-    Wave F's AIRS router (`routers/airs.py`), and Wave D's RBAC/applications/admin-users routers
-    (`routers/rbac.py`, `routers/applications.py`, `routers/admin_users.py`) so far.
+    Wave F's AIRS router (`routers/airs.py`), and Wave D's RBAC/applications/admin-users/
+    admin-security routers (`routers/rbac.py`, `routers/applications.py`,
+    `routers/admin_users.py`, `routers/admin_security.py`) so far.
     """
     router = APIRouter(prefix=settings.api_prefix)
 
@@ -58,6 +60,7 @@ def _build_router(settings: Settings) -> APIRouter:
     router.include_router(rbac_router)
     router.include_router(applications_router)
     router.include_router(admin_users_router)
+    router.include_router(admin_security_router)
     return router
 
 

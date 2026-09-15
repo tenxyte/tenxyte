@@ -138,6 +138,18 @@ class RefreshTokenDB(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
+    # Wave D chunk 4 follow-up (z_aud_3 task 10.1) — mirrors tenxyte.models.operational.
+    # RefreshToken's admin-visible fields (application/device_info/ip_address/last_used_at),
+    # added only now since no earlier wave's contract needed them. `device_id` (above) is a
+    # distinct, earlier (Wave A) concept — a caller-supplied device identifier used for lookup,
+    # not the free-text description `device_info` mirrors.
+    application_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tenxyte_applications.id", ondelete="SET NULL"), nullable=True
+    )
+    device_info: Mapped[str] = mapped_column(String(255), default="")
+    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    last_used_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
     user: Mapped[UserDB] = relationship(back_populates="refresh_tokens")
 
 
@@ -376,3 +388,67 @@ class RoleDB(Base):
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class BlacklistedTokenDB(Base):
+    """Wave D chunk 4 (z_aud_3 task 10.1) — mirrors `tenxyte.models.security.BlacklistedToken`'s
+    admin-visible fields. A separate, persisted record from the actual blacklist-checking path
+    (`core.jwt_service.InMemoryTokenBlacklistService`, still in-memory and still what
+    `require_jwt()` actually checks against) — this table only exists to give
+    `admin/blacklisted-tokens/*` something real to list, written alongside (not instead of) the
+    in-memory blacklist at every call site that already blacklists a token (`routers/auth.py`'s
+    `logout`/`logout_all`, `routers/twofa.py`'s bootstrap-token blacklist on 2FA confirm) — see
+    `admin_security_service.record_blacklisted_token_async`.
+    """
+
+    __tablename__ = "tenxyte_blacklisted_tokens"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    token_jti: Mapped[str] = mapped_column(String(191), unique=True, index=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("tenxyte_users.id", ondelete="SET NULL"), nullable=True)
+    blacklisted_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    reason: Mapped[str] = mapped_column(String(100), default="")
+
+
+class AuditLogDB(Base):
+    """Wave D chunk 4 (z_aud_3 task 10.1) — mirrors the subset of `tenxyte.models.security.
+    AuditLog`'s fields that `AuditLogSerializer` actually exposes (its AIRS-context columns —
+    `agent_token`/`on_behalf_of`/`prompt_trace_id` — aren't in that serializer's output, so
+    they're not replicated here). No Reference_Stack auth flow writes to this table yet — unlike
+    `BlacklistedTokenDB`, wiring every Wave A-C endpoint to call `AuditLog.log()`-equivalent
+    write paths is out of this chunk's scope (it's an admin-visibility listing endpoint, not an
+    audit-logging retrofit of the whole adapter) — `admin/audit-logs/*` correctly serves whatever
+    rows exist, which is currently none outside of tests that seed them directly.
+    """
+
+    __tablename__ = "tenxyte_audit_logs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("tenxyte_users.id", ondelete="SET NULL"), nullable=True)
+    action: Mapped[str] = mapped_column(String(50), index=True)
+    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[str] = mapped_column(String(500), default="")
+    application_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tenxyte_applications.id", ondelete="SET NULL"), nullable=True
+    )
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+
+class LoginAttemptDB(Base):
+    """Wave D chunk 4 (z_aud_3 task 10.1) — mirrors `tenxyte.models.operational.LoginAttempt`.
+    Same scope note as `AuditLogDB`: no login endpoint writes to this table yet, for the same
+    reason (out of this chunk's scope)."""
+
+    __tablename__ = "tenxyte_login_attempts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    identifier: Mapped[str] = mapped_column(String(191), index=True)
+    ip_address: Mapped[str] = mapped_column(String(45))
+    application_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tenxyte_applications.id", ondelete="SET NULL"), nullable=True
+    )
+    success: Mapped[bool] = mapped_column(Boolean, default=False)
+    failure_reason: Mapped[str] = mapped_column(String(100), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

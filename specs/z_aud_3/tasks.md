@@ -795,6 +795,59 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       **Restant (chunks 4-5/5)** : admin sécurité (7 — `AuditLogDB`/`LoginAttemptDB` nouvelles
       tables, plus persistance requêtable de la blacklist JWT) ; `dashboard/*` (5 — agrégations
       en lecture seule).
+    - **Chunk 4/5 fait — Admin Security (7/46, 40/46 cumulé)** : `admin/audit-logs/*` (liste +
+      détail), `admin/login-attempts/*` (liste), `admin/blacklisted-tokens/*` (liste + cleanup),
+      `admin/refresh-tokens/*` (liste + revoke). **Contrat extrait** de `views/security_views.py`
+      (`AuditLogListView`/`AuditLogDetailView`/`LoginAttemptListView`/`BlacklistedTokenListView`/
+      `BlacklistedTokenCleanupView`/`RefreshTokenListView`/`RefreshTokenRevokeView`),
+      `serializers/security_serializers.py`, `filters.py` (`apply_audit_log_filters`/
+      `apply_login_attempt_filters`).
+      **Trouvaille vérifiée en lisant le code plutôt que supposée** : les 7 endpoints exigent tous
+      la même permission `security.view` — y compris les deux actions `POST` (cleanup, revoke),
+      qui n'ont **pas** de permission d'écriture séparée type `security.manage`. Répliqué à
+      l'identique.
+      **Nouvelles tables** (`models_sa.py`) : `BlacklistedTokenDB`, `AuditLogDB` (sous-ensemble de
+      `tenxyte.models.security.AuditLog` — seulement les champs qu'`AuditLogSerializer` expose
+      réellement ; le contexte AIRS du modèle Django — `agent_token`/`on_behalf_of`/
+      `prompt_trace_id` — n'est pas dans ce serializer, donc pas répliqué ici), `LoginAttemptDB`.
+      `RefreshTokenDB` (Vague A) étendue avec `application_id`/`device_info`/`ip_address`/
+      `last_used_at` pour couvrir la forme complète d'`RefreshTokenAdminSerializer`.
+      **`BlacklistedTokenDB` réellement alimentée, pas une coquille vide** : contrairement à
+      `AuditLogDB`/`LoginAttemptDB` (voir note de portée ci-dessous), le blacklisting est câblé
+      dans les 3 points d'appel réels qui blacklistent déjà un token en mémoire
+      (`routers/auth.py`'s `logout`/`logout_all`, `routers/twofa.py`'s blacklist du token
+      bootstrap au confirm 2FA) via `admin_security_service.record_blacklisted_token_async`,
+      appelé **en plus de** (pas à la place de) `InMemoryTokenBlacklistService` — le chemin de
+      vérification réel (`require_jwt()`) continue d'interroger le service en mémoire, cette
+      table n'existe que pour donner à `admin/blacklisted-tokens/*` de vraies lignes à lister.
+      Vérifié par test : un logout réel apparaît dans la liste admin avec la bonne `reason`.
+      **`last_used_at` du refresh token câblé** dans `refresh_tokens.redeem_refresh_token` (Vague
+      A, seul point d'appel) — touché à chaque redemption, y compris lors d'un `revoke()` (mirroir
+      exact du `auto_now=True` de Django, qui touche le champ à chaque `.save()`).
+      **Deux quirks de tri répliqués à l'identique plutôt que normalisés vers le
+      `pagination.apply_ordering` partagé** : `BlacklistedTokenListView`/`RefreshTokenListView` ne
+      passent pas par `filters.apply_ordering()` — chacune fait sa propre vérification inline
+      contre un petit ensemble littéral de valeurs `?ordering=` exactes (pas de tri multi-champs
+      séparé par virgules, pas de retrait du préfixe `-`) et **ignore silencieusement** toute
+      valeur hors de cet ensemble plutôt que de retomber sur un tri par défaut — testé
+      explicitement (`?ordering=not_a_real_field` → 200, tri inchangé).
+      **Note de portée, documentée plutôt que masquée** : `AuditLogDB`/`LoginAttemptDB` sont
+      correctement servies par leurs endpoints de liste/détail, mais aucun flux d'auth des vagues
+      A-C n'écrit dedans — câbler `AuditLog.log()`-équivalent dans chaque endpoint concerné serait
+      un chantier de rétrofit d'audit-logging à part entière, hors de la portée de ce chunk (des
+      endpoints de visibilité admin, pas un rétrofit de logging de tout l'adaptateur). Les tests
+      correspondants seedent ces deux tables directement.
+      7 tests (`test_admin_security_router.py`), aucun mock, base aiosqlite éphémère réelle —
+      logout réel → apparition dans la liste blacklist avec la bonne raison, cleanup (aucune
+      suppression tant que rien n'a expiré, vérifié via `?expired=true`), cycle liste/revoke de
+      refresh token avec rejets `ALREADY_REVOKED`/`NOT_FOUND`, liste/détail d'audit-log avec 404,
+      liste/filtre de login-attempts, tri non reconnu silencieusement ignoré, refus générique de
+      permission.
+      `parity_matrix` : 80/114 endpoints Django portés au total (7 nouveaux) — Groupes A/B/C/F
+      toujours verts ; coverage FastAPI 91.96 % (seuil CI 90 %, 210 tests) ; suite Django complète
+      relancée, aucune régression.
+      **Restant (chunk 5/5)** : `dashboard/*` (5 — agrégations en lecture seule sur tout ce qui
+      précède).
     - _Requirements: 4.1, 4.2, 4.5_
 
   - [ ] 10.2 Contract_Suite + matrice sur A–D (+F) ; exclusions justifiées le cas échéant

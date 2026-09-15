@@ -48,6 +48,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
+from tenxyte.adapters.fastapi import admin_security_service
 from tenxyte.adapters.fastapi.auth_lookup import SQLAlchemyEmailPasswordLookup, SQLAlchemyPhonePasswordLookup
 from tenxyte.adapters.fastapi.deps import (
     get_cache_service,
@@ -396,6 +397,7 @@ async def logout(
     if auth_header.startswith("Bearer "):
         access_token = auth_header[7:]
         await jwt_service.blacklist_token_async(access_token, reason="logout")
+        await admin_security_service.record_blacklisted_token_async(session, jwt_service, access_token, reason="logout")
 
     response = JSONResponse(status_code=200, content={"message": "Logged out successfully"})
     if settings.refresh_token_cookie_enabled:
@@ -414,6 +416,9 @@ async def logout_all(
     if auth_header.startswith("Bearer "):
         access_token = auth_header[7:]
         await jwt_service.blacklist_token_async(access_token, reason="logout_all")
+        await admin_security_service.record_blacklisted_token_async(
+            session, jwt_service, access_token, user_id=auth.user.id, reason="logout_all"
+        )
 
     count = await revoke_all_for_user(session, auth.user.id)
     return {"message": f"Logged out from {count} devices"}

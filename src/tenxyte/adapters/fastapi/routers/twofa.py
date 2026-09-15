@@ -25,6 +25,7 @@ import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, Request
+from tenxyte.adapters.fastapi import admin_security_service
 from tenxyte.adapters.fastapi.deps import get_db_session, get_jwt_service, get_totp_service
 from tenxyte.adapters.fastapi.errors import TenxyteAPIError
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
@@ -112,8 +113,10 @@ async def twofa_confirm(
         )
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
-            await jwt_service.blacklist_token_async(
-                auth_header[7:], user_id=auth.user.id, reason="2fa_bootstrap_completed"
+            old_token = auth_header[7:]
+            await jwt_service.blacklist_token_async(old_token, user_id=auth.user.id, reason="2fa_bootstrap_completed")
+            await admin_security_service.record_blacklisted_token_async(
+                session, jwt_service, old_token, user_id=auth.user.id, reason="2fa_bootstrap_completed"
             )
 
     return response_data
