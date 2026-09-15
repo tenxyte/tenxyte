@@ -105,3 +105,9 @@ spec/airs/conformance/tenxyte_ci_fastapi/_ci_info.json
 # AIRS benchmark raw output (RESULTS.md is the canonical human-readable record)
 benchmarks/airs/results_*.json
 
+# js-contract-backend ephemeral demo instance (spec z_aud_3, task 14.2) — written to the current
+# working directory wherever seed_and_serve.py is launched from (repo root when run directly,
+# /app inside the container), recreated on every run, same convention as the AIRS Conformance
+# Suite's own ephemeral instances above.
+js-contract-backend.db
+

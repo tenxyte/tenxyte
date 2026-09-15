@@ -1567,10 +1567,46 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       FastAPI, `check_async_purity.py`, Contract_Suite complète (68 passed) et suite de régression
       Django complète toutes relancées après ce chunk — voir le récapitulatif du commit.
 
-  - [ ] 14.2 Backend démo docker pour la CI JS
+  - [x] 14.2 Backend démo docker pour la CI JS
     - `examples/js-contract-backend/` : compose FastAPI + seed déterministe, consommé par les
       E2E du monorepo JS
     - _Requirements: 6.5, 6.6_
+    - **Fait.** `examples/js-contract-backend/` (Dockerfile, `docker-compose.yml`,
+      `seed_and_serve.py`, `README.md`) — même contrat que
+      `spec/airs/conformance/tenxyte_ci/seed_and_serve.py` (précédent déjà établi pour l'exemple
+      CrewAI/la Conformance Suite AIRS) : imprime une ligne JSON de connexion sur stdout une fois
+      prêt (`base_url`, identifiants de l'utilisateur seedé, un vrai JWT obtenu en appelant
+      réellement `/login/email/`), puis sert indéfiniment. Adapté de WSGI+Django à ASGI+FastAPI
+      (uvicorn en tâche asyncio, attente de `server.started`, seed via le vrai
+      `session_factory` de l'app avant le premier appel).
+      **Base de données** : fichier SQLite réel (pas `:memory:`) supprimé et recréé à chaque
+      démarrage — `db.py`'s `create_engine` n'a pas d'override `StaticPool`, donc `:memory:`
+      donnerait une base différente à chaque nouvelle connexion du pool (même raison que les
+      fixtures de `tests/integration/fastapi/` utilisent un URI `file:...?mode=memory&cache=
+      shared&uri=true` plutôt que `:memory:` nu) — un fichier réel évite complètement le problème.
+      **Auth applicative désactivée** (`TENXYTE_APPLICATION_AUTH_ENABLED=False`), même convention
+      que toute la suite de tests FastAPI de ce repo.
+      **Une trouvaille réelle en construisant le seed, pas juste un choix de scope** : un second
+      utilisateur seedé avec `must_change_password=True` (pour tester `ForcedPasswordChange`) a
+      été essayé puis retiré — `UserDB.must_change_password` est une vraie colonne, mais
+      `routers/auth.py` code en dur `"must_change_password": False` dans chaque réponse de
+      connexion, vérifié en appelant réellement `/login/email/` contre une ligne seedée avec le
+      flag actif (pas seulement en lisant le code). La fonctionnalité est réelle côté Django mais
+      désactivée par défaut là aussi, et son port FastAPI est sa propre spec non encore exécutée
+      (`specs/force_password_change_on_first_login/`) — semer une fixture que l'API ne peut pas
+      actuellement exposer aurait été une fausse promesse pour quiconque écrirait le test E2E
+      `ForcedPasswordChange` contre ce backend. Documenté dans `_seed()`'s docstring et le README
+      plutôt que silencieusement omis.
+      **Vérifié réellement, pas seulement lu** : le script exécuté directement (hors Docker,
+      démon Docker indisponible dans cet environnement) démarre un vrai serveur, seed un vrai
+      utilisateur avec un vrai hash bcrypt, répond `{"status":"ok"}` sur `/api/v1/health/`, et
+      réussit une vraie connexion HTTP retournant un JWT valide — relancé plusieurs fois après
+      chaque changement, y compris après le retrait de la fixture `must_change_password`.
+      Le `Dockerfile`/`docker-compose.yml` suivent exactement le motif déjà éprouvé et fonctionnel
+      de `examples/crewai/` (build multi-service, healthcheck, install `-e ".[fastapi]"` depuis
+      les sources locales) — non testé via `docker build` réel dans cet environnement (démon
+      Docker absent), mais le point d'entrée qu'il exécute (`seed_and_serve.py`) l'a été
+      directement et de façon répétée.
 
 - [ ] 15. Composants UI (monorepo JS — tracé ici, implémenté là-bas)
   - [ ] 15.1 Livrer `@tenxyte/ui-headless` (7 composants) `[MT-5]`
