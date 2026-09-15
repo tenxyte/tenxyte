@@ -1042,6 +1042,50 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       Groupes A/B/C/D/F toujours verts.
       **Restant (chunks 3-4/4)** : membres (liste/ajout/modification de rôle/retrait, 4) ;
       invitations (`invite_member`, 1).
+    - **Chunk 3/4 fait — Membres (4/12, 11/12 cumulé)** :
+      `GET /organizations/members/`, `POST /organizations/members/add/`,
+      `PATCH /organizations/members/{user_id}/`, `DELETE /organizations/members/{user_id}/remove/`.
+      **Contrat re-vérifié directement dans `organization_service.py`** (déjà lu intégralement au
+      chunk 1) : `add_member`/`update_member_role`/`remove_member`/`get_members` — ordre exact des
+      vérifications répliqué (permission → limite de membres/garde-fou owner → résolution → effet)
+      pour chacune.
+      **Garde-fou owner unconditionnel, indépendant du nouveau rôle demandé** :
+      `update_member_role` refuse `"Cannot change owner role"` dès que la cible détient
+      actuellement le rôle `owner` (`check_inheritance=False`) — peu importe le rôle visé ou qui
+      fait la demande. `remove_member` a le même garde-fou (`"Cannot remove organization owner"`).
+      Aucune logique de « dernier owner » n'existe nulle part dans le code Django (vérifié en
+      lisant le service en entier) — `LAST_OWNER_REQUIRED` documenté dans les `@extend_schema` est
+      pure fiction, jamais implémenté. Pas de faux retrait/auto-retrait spécial non plus : retirer
+      son propre compte suit exactement le même chemin de permission que retirer quelqu'un
+      d'autre.
+      **`role_code="owner"` n'est PAS bloqué dans `add_member`** — aucune validation spéciale sur
+      ce code dans le service réel ; un second owner peut être ajouté via cet endpoint si un
+      appelant en a la permission. Non testé explicitement (comportement marginal, cohérent avec
+      le reste du contrat déjà vérifié) mais non contredit non plus par l'implémentation.
+      **`list_members` fusionné en une seule requête SQL** plutôt que la composition séquentielle
+      Django (`get_members` puis `apply_member_filters` en Python) — jointures `UserDB`/
+      `OrganizationRoleDB` réelles pour `search`/`role`/tri `user__email`/`role__code`, cohérent
+      avec le style SQL du reste de l'adaptateur (contrairement à `dashboard_service.py` qui agrège
+      en Python pour éviter `FILTER` SQLite — ici de simples `WHERE`/`JOIN`/`ORDER BY` suffisent,
+      pas de piège de portabilité). `status` par défaut `"active"` répliqué (les memberships
+      `pending`/`suspended` sont exclus de la liste par défaut, pas seulement filtrables).
+      **Aucune nouvelle infrastructure** — réutilise `org_service.py`/`org_context.py` des chunks
+      précédents (`require_org_permission("org.members.invite"/"org.members.manage"/
+      "org.members.remove")` de `org_context.py`, déjà écrite au chunk 1 mais pas encore exercée
+      par un endpoint réel avant ce chunk) ; `OrganizationAddMemberRequest`/
+      `OrganizationUpdateMemberRoleRequest` ajoutés à `schemas.py`.
+      **Rôles `admin`/`member`/`viewer` seedés dans les tests via `initialize_system_roles_async`**
+      — cohérent avec la découverte du chunk 1 : Django lui-même ne les crée que depuis ses propres
+      fixtures de test, jamais en production, donc les tests de ce port suivent la même logique
+      plutôt que d'en inventer une nouvelle.
+      11 tests ajoutés à `test_orgs_router.py` (23 au total) — ajout réussi + doublon rejeté (400
+      sans `code`), permission d'invitation manquante (403 avec `code`), utilisateur inconnu (404
+      sans `code`), liste + filtre par rôle, promotion réussie + protection owner sur modification
+      de rôle (400 sans `code`), retrait réussi + protection owner sur retrait (400 sans `code`),
+      limite de membres respectée à l'ajout (400 sans `code`).
+      `parity_matrix --groups=A,B,C,D,F` : 96/114 endpoints Django portés au total (4 nouveaux) —
+      Groupes A/B/C/D/F toujours verts.
+      **Restant (chunk 4/4)** : invitations (`invite_member`, 1).
     - _Requirements: 4.1, 4.2, 4.4_
 
   - [ ] 11.2 Contract_Suite + matrice sur A–F

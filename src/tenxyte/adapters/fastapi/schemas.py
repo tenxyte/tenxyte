@@ -263,3 +263,15 @@ class OrganizationUpdateRequest(BaseModel):
     description: str | None = None
     metadata: dict | None = None
     max_members: int | None = Field(default=None, ge=0)
+
+
+class OrganizationAddMemberRequest(BaseModel):
+    """`user_id` is a UUID string here, not the `IntegerField` Django's `AddMemberSerializer`
+    uses — same reason as `OrganizationCreateRequest.parent_id`."""
+
+    user_id: str
+    role_code: str = Field(max_length=50)
+
+
+class OrganizationUpdateMemberRoleRequest(BaseModel):
+    role_code: str = Field(max_length=50)

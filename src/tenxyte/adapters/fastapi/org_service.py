@@ -530,6 +530,250 @@ async def delete_organization_async(
 
 
 # ============================================================
+# Member management (Wave E chunk 3/4)
+# ============================================================
+
+
+async def serialize_membership_async(session: AsyncSession, membership: OrganizationMembershipDB) -> dict:
+    """Matches `OrganizationMembershipSerializer` exactly — nested `user`/`role` objects, not just
+    ids/codes."""
+    user = await session.get(UserDB, membership.user_id)
+    role = await session.get(OrganizationRoleDB, membership.role_id)
+    organization = await session.get(OrganizationDB, membership.organization_id)
+    return {
+        "id": membership.id,
+        "user": (
+            {
+                "id": user.id,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+            }
+            if user
+            else None
+        ),
+        "organization_name": organization.name if organization else None,
+        "role": serialize_org_role(role) if role else None,
+        "status": membership.status,
+        "invited_by": membership.invited_by_id,
+        "invited_at": membership.invited_at.isoformat() if membership.invited_at else None,
+        "created_at": membership.created_at.isoformat(),
+        "updated_at": membership.updated_at.isoformat(),
+    }
+
+
+async def get_members_async(
+    session: AsyncSession, organization_id: str, *, status: str | None = "active"
+) -> list[OrganizationMembershipDB]:
+    """Mirrors `OrganizationService.get_members` — defaults to `status="active"` (applied before
+    `apply_member_filters`'s own optional `?status=` even runs, so pending/suspended memberships
+    are excluded from `list_members` by default, not just filterable)."""
+    stmt = select(OrganizationMembershipDB).where(OrganizationMembershipDB.organization_id == organization_id)
+    if status:
+        stmt = stmt.where(OrganizationMembershipDB.status == status)
+    stmt = stmt.order_by(OrganizationMembershipDB.created_at.desc())
+    return list((await session.execute(stmt)).scalars().all())
+
+
+async def list_members_async(
+    session: AsyncSession,
+    organization_id: str,
+    *,
+    search: str = "",
+    role: str | None = None,
+    status: str | None = "active",
+    ordering: str = "-created_at",
+    page: int,
+    page_size: int,
+) -> tuple[list[OrganizationMembershipDB], int]:
+    """Mirrors `list_members`: `get_members(organization)` (already `status="active"`-filtered by
+    default) then `apply_member_filters`'s own `search`/`role`/`status`/`ordering`. Any `status`
+    value here is accepted verbatim (not restricted to a fixed enum, despite the view's own
+    `@extend_schema` documenting one) — matching `apply_member_filters`'s real
+    `queryset.filter(status=status)`, no validation. `status` defaults to `"active"` here as it
+    does in `get_members`; pass `status=None` to see every membership regardless of status."""
+    stmt = select(OrganizationMembershipDB).where(OrganizationMembershipDB.organization_id == organization_id)
+    count_stmt = select(func.count(OrganizationMembershipDB.id)).where(
+        OrganizationMembershipDB.organization_id == organization_id
+    )
+
+    if status:
+        stmt = stmt.where(OrganizationMembershipDB.status == status)
+        count_stmt = count_stmt.where(OrganizationMembershipDB.status == status)
+
+    needs_user_join = search or ordering in ("user__email", "-user__email")
+    if needs_user_join:
+        stmt = stmt.join(UserDB, UserDB.id == OrganizationMembershipDB.user_id)
+
+    if search:
+        count_stmt = count_stmt.join(UserDB, UserDB.id == OrganizationMembershipDB.user_id)
+        like = f"%{search}%"
+        clause = or_(UserDB.email.ilike(like), UserDB.first_name.ilike(like), UserDB.last_name.ilike(like))
+        stmt = stmt.where(clause)
+        count_stmt = count_stmt.where(clause)
+
+    if role:
+        role_subq = select(OrganizationRoleDB.id).where(OrganizationRoleDB.code == role)
+        stmt = stmt.where(OrganizationMembershipDB.role_id.in_(role_subq))
+        count_stmt = count_stmt.where(OrganizationMembershipDB.role_id.in_(role_subq))
+
+    if ordering in ("user__email", "-user__email"):
+        stmt = stmt.order_by(UserDB.email.desc() if ordering.startswith("-") else UserDB.email.asc())
+    elif ordering in ("role__code", "-role__code"):
+        stmt = stmt.join(OrganizationRoleDB, OrganizationRoleDB.id == OrganizationMembershipDB.role_id)
+        stmt = stmt.order_by(
+            OrganizationRoleDB.code.desc() if ordering.startswith("-") else OrganizationRoleDB.code.asc()
+        )
+    else:
+        allowed_ordering = {
+            "created_at": OrganizationMembershipDB.created_at,
+            "status": OrganizationMembershipDB.status,
+        }
+        stmt = apply_ordering(stmt, ordering, allowed_ordering, default="-created_at")
+
+    total = (await session.execute(count_stmt)).scalar_one()
+    stmt = stmt.offset((page - 1) * page_size).limit(page_size)
+    rows = (await session.execute(stmt)).scalars().all()
+    return list(rows), total
+
+
+async def add_member_async(
+    session: AsyncSession,
+    organization: OrganizationDB,
+    user_to_add_id: str,
+    role_code: str,
+    added_by_id: str,
+    *,
+    org_role_inheritance: bool = True,
+) -> tuple[OrganizationMembershipDB | None, str | None]:
+    """Mirrors `OrganizationService.add_member` exactly — order: permission -> member-limit ->
+    role lookup -> already-member check -> create."""
+    has_permission = await has_org_permission_async(
+        session, added_by_id, organization, "org.members.invite", org_role_inheritance=org_role_inheritance
+    )
+    if not has_permission:
+        return None, "Insufficient permissions to add members"
+
+    if await is_at_member_limit_async(session, organization):
+        return None, "Organization has reached its member limit"
+
+    role_stmt = select(OrganizationRoleDB).where(OrganizationRoleDB.code == role_code)
+    role = (await session.execute(role_stmt)).scalar_one_or_none()
+    if role is None:
+        return None, f"Role {role_code} not found"
+
+    existing = await get_org_membership_async(session, user_to_add_id, organization.id)
+    if existing is not None:
+        return None, "User is already a member"
+
+    membership = OrganizationMembershipDB(
+        user_id=user_to_add_id,
+        organization_id=organization.id,
+        role_id=role.id,
+        status="active",
+        invited_by_id=added_by_id,
+        invited_at=datetime.now(timezone.utc),
+    )
+    session.add(membership)
+    await session.commit()
+    await session.refresh(membership)
+
+    await _audit_log_async(
+        session,
+        "member_added",
+        added_by_id,
+        {"organization_id": organization.id, "user_id": user_to_add_id, "role_code": role_code},
+    )
+
+    return membership, None
+
+
+async def update_member_role_async(
+    session: AsyncSession,
+    organization: OrganizationDB,
+    user_to_update_id: str,
+    new_role_code: str,
+    updated_by_id: str,
+    *,
+    org_role_inheritance: bool = True,
+) -> tuple[bool, str | None]:
+    """Mirrors `OrganizationService.update_member_role` exactly — order: permission -> owner-guard
+    (`check_inheritance=False`, unconditional regardless of `new_role_code`) -> membership lookup
+    -> new-role lookup -> mutate."""
+    has_permission = await has_org_permission_async(
+        session, updated_by_id, organization, "org.members.manage", org_role_inheritance=org_role_inheritance
+    )
+    if not has_permission:
+        return False, "Insufficient permissions to manage members"
+
+    is_owner = await has_org_role_async(session, user_to_update_id, organization, "owner", check_inheritance=False)
+    if is_owner:
+        return False, "Cannot change owner role"
+
+    membership = await get_org_membership_async(session, user_to_update_id, organization.id)
+    if membership is None:
+        return False, "User is not a member"
+
+    new_role_stmt = select(OrganizationRoleDB).where(OrganizationRoleDB.code == new_role_code)
+    new_role = (await session.execute(new_role_stmt)).scalar_one_or_none()
+    if new_role is None:
+        return False, f"Role {new_role_code} not found"
+
+    old_role = await session.get(OrganizationRoleDB, membership.role_id)
+    membership.role_id = new_role.id
+    membership.updated_at = datetime.now(timezone.utc)
+    await session.commit()
+
+    await _audit_log_async(
+        session,
+        "member_role_updated",
+        updated_by_id,
+        {
+            "organization_id": organization.id,
+            "user_id": user_to_update_id,
+            "old_role": old_role.code if old_role else None,
+            "new_role": new_role_code,
+        },
+    )
+
+    return True, None
+
+
+async def remove_member_async(
+    session: AsyncSession,
+    organization: OrganizationDB,
+    user_to_remove_id: str,
+    removed_by_id: str,
+    *,
+    org_role_inheritance: bool = True,
+) -> tuple[bool, str | None]:
+    """Mirrors `OrganizationService.remove_member` exactly — order: permission -> owner-guard
+    (`check_inheritance=False`) -> membership lookup -> hard delete (not soft)."""
+    has_permission = await has_org_permission_async(
+        session, removed_by_id, organization, "org.members.remove", org_role_inheritance=org_role_inheritance
+    )
+    if not has_permission:
+        return False, "Insufficient permissions to remove members"
+
+    is_owner = await has_org_role_async(session, user_to_remove_id, organization, "owner", check_inheritance=False)
+    if is_owner:
+        return False, "Cannot remove organization owner"
+
+    membership = await get_org_membership_async(session, user_to_remove_id, organization.id)
+    if membership is None:
+        return False, "User is not a member"
+
+    await session.delete(membership)
+    await session.commit()
+
+    await _audit_log_async(
+        session, "member_removed", removed_by_id, {"organization_id": organization.id, "user_id": user_to_remove_id}
+    )
+
+    return True, None
+
+
+# ============================================================
 # Utility — ported for test/seed symmetry with Django, never auto-invoked (see module docstring).
 # ============================================================
 

@@ -1,7 +1,7 @@
 """
 Tests for the Wave E Organizations router (spec z_aud_3, Wave E, task 11.1) — organization CRUD
-(chunk 1/4) and hierarchy tree + org-roles listing (chunk 2/4) — against a real app, a real
-ephemeral aiosqlite database, and real signed tokens (no mocks).
+(chunk 1/4), hierarchy tree + org-roles listing (chunk 2/4), and member management (chunk 3/4) —
+against a real app, a real ephemeral aiosqlite database, and real signed tokens (no mocks).
 """
 
 import uuid
@@ -338,3 +338,182 @@ async def test_list_org_roles_requires_auth():
     async with app.router.lifespan_context(app), await _client(app) as client:
         response = await client.get("/api/v1/org-roles/")
     assert response.status_code == 401
+
+
+async def _seed_system_roles(app):
+    """Django itself only ever creates admin/member/viewer roles from its own test fixtures
+    (`initialize_system_roles()` is never called by any application code path — see
+    org_service.py's module docstring); this port's tests seed the same way for the same reason."""
+    from tenxyte.adapters.fastapi import org_service
+
+    async with app.state.tenxyte_session_factory() as session:
+        await org_service.initialize_system_roles_async(session)
+
+
+@pytest.mark.anyio
+async def test_add_member_success_and_rejects_duplicate():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _seed_system_roles(app)
+        _, owner_headers = await _create_user(app)
+        member_id, _ = await _create_user(app)
+        async with await _client(app) as client:
+            await client.post("/api/v1/organizations/", json={"name": "Acme"}, headers=owner_headers)
+            org_headers = {**owner_headers, "X-Org-Slug": "acme"}
+
+            add = await client.post(
+                "/api/v1/organizations/members/add/",
+                json={"user_id": member_id, "role_code": "member"},
+                headers=org_headers,
+            )
+            assert add.status_code == 201
+            assert add.json()["user"]["id"] == member_id
+            assert add.json()["role"]["code"] == "member"
+            assert add.json()["status"] == "active"
+
+            duplicate = await client.post(
+                "/api/v1/organizations/members/add/",
+                json={"user_id": member_id, "role_code": "member"},
+                headers=org_headers,
+            )
+            assert duplicate.status_code == 400
+            assert duplicate.json() == {"error": "User is already a member"}
+
+
+@pytest.mark.anyio
+async def test_add_member_requires_invite_permission():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _seed_system_roles(app)
+        _, owner_headers = await _create_user(app)
+        _, outsider_headers = await _create_user(app)
+        target_id, _ = await _create_user(app)
+        async with await _client(app) as client:
+            await client.post("/api/v1/organizations/", json={"name": "Acme"}, headers=owner_headers)
+            response = await client.post(
+                "/api/v1/organizations/members/add/",
+                json={"user_id": target_id, "role_code": "member"},
+                headers={**outsider_headers, "X-Org-Slug": "acme"},
+            )
+    assert response.status_code == 403
+    assert response.json() == {"error": "Permission denied.", "code": "ORG_PERMISSION_REQUIRED"}
+
+
+@pytest.mark.anyio
+async def test_add_member_unknown_user_404():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _seed_system_roles(app)
+        _, owner_headers = await _create_user(app)
+        async with await _client(app) as client:
+            await client.post("/api/v1/organizations/", json={"name": "Acme"}, headers=owner_headers)
+            response = await client.post(
+                "/api/v1/organizations/members/add/",
+                json={"user_id": str(uuid.uuid4()), "role_code": "member"},
+                headers={**owner_headers, "X-Org-Slug": "acme"},
+            )
+    assert response.status_code == 404
+    assert response.json() == {"error": "User not found"}
+
+
+@pytest.mark.anyio
+async def test_list_members_and_filters():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _seed_system_roles(app)
+        owner_id, owner_headers = await _create_user(app)
+        member_id, _ = await _create_user(app)
+        async with await _client(app) as client:
+            await client.post("/api/v1/organizations/", json={"name": "Acme"}, headers=owner_headers)
+            org_headers = {**owner_headers, "X-Org-Slug": "acme"}
+            await client.post(
+                "/api/v1/organizations/members/add/",
+                json={"user_id": member_id, "role_code": "member"},
+                headers=org_headers,
+            )
+
+            listing = await client.get("/api/v1/organizations/members/", headers=org_headers)
+            assert listing.status_code == 200
+            assert listing.json()["count"] == 2
+
+            owners_only = await client.get("/api/v1/organizations/members/?role=owner", headers=org_headers)
+            assert owners_only.json()["count"] == 1
+            assert owners_only.json()["results"][0]["user"]["id"] == owner_id
+
+
+@pytest.mark.anyio
+async def test_update_member_role_success_and_owner_protected():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _seed_system_roles(app)
+        owner_id, owner_headers = await _create_user(app)
+        member_id, _ = await _create_user(app)
+        async with await _client(app) as client:
+            await client.post("/api/v1/organizations/", json={"name": "Acme"}, headers=owner_headers)
+            org_headers = {**owner_headers, "X-Org-Slug": "acme"}
+            await client.post(
+                "/api/v1/organizations/members/add/",
+                json={"user_id": member_id, "role_code": "member"},
+                headers=org_headers,
+            )
+
+            promote = await client.patch(
+                f"/api/v1/organizations/members/{member_id}/",
+                json={"role_code": "admin"},
+                headers=org_headers,
+            )
+            assert promote.status_code == 200
+            assert promote.json()["role"]["code"] == "admin"
+
+            protect_owner = await client.patch(
+                f"/api/v1/organizations/members/{owner_id}/",
+                json={"role_code": "member"},
+                headers=org_headers,
+            )
+            assert protect_owner.status_code == 400
+            assert protect_owner.json() == {"error": "Cannot change owner role"}
+
+
+@pytest.mark.anyio
+async def test_remove_member_success_and_owner_protected():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _seed_system_roles(app)
+        owner_id, owner_headers = await _create_user(app)
+        member_id, _ = await _create_user(app)
+        async with await _client(app) as client:
+            await client.post("/api/v1/organizations/", json={"name": "Acme"}, headers=owner_headers)
+            org_headers = {**owner_headers, "X-Org-Slug": "acme"}
+            await client.post(
+                "/api/v1/organizations/members/add/",
+                json={"user_id": member_id, "role_code": "member"},
+                headers=org_headers,
+            )
+
+            remove = await client.delete(f"/api/v1/organizations/members/{member_id}/remove/", headers=org_headers)
+            assert remove.status_code == 200
+            assert remove.json() == {"message": "Member removed successfully"}
+
+            protect_owner = await client.delete(
+                f"/api/v1/organizations/members/{owner_id}/remove/", headers=org_headers
+            )
+            assert protect_owner.status_code == 400
+            assert protect_owner.json() == {"error": "Cannot remove organization owner"}
+
+
+@pytest.mark.anyio
+async def test_add_member_respects_member_limit():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _seed_system_roles(app)
+        _, owner_headers = await _create_user(app)
+        target_id, _ = await _create_user(app)
+        async with await _client(app) as client:
+            await client.post("/api/v1/organizations/", json={"name": "Acme", "max_members": 1}, headers=owner_headers)
+            response = await client.post(
+                "/api/v1/organizations/members/add/",
+                json={"user_id": target_id, "role_code": "member"},
+                headers={**owner_headers, "X-Org-Slug": "acme"},
+            )
+    assert response.status_code == 400
+    assert response.json() == {"error": "Organization has reached its member limit"}

@@ -7,7 +7,7 @@
 | DELETE | `/admin/users/{user_id}/` | UserDetailView | D | ✅ D |
 | DELETE | `/applications/{app_id}/` | ApplicationDetailView | D | ✅ D |
 | DELETE | `/organizations/delete/` | delete_organization | E | ✅ E |
-| DELETE | `/organizations/members/{user_id}/remove/` | remove_member | E | 🔜 E |
+| DELETE | `/organizations/members/{user_id}/remove/` | remove_member | E | ✅ E |
 | DELETE | `/permissions/{permission_id}/` | PermissionDetailView | D | ✅ D |
 | DELETE | `/roles/{role_id}/` | RoleDetailView | D | ✅ D |
 | DELETE | `/roles/{role_id}/permissions/` | RolePermissionsView | D | ✅ D |
@@ -42,7 +42,7 @@
 | GET | `/org-roles/` | list_org_roles | E | ✅ E |
 | GET | `/organizations/detail/` | get_organization | E | ✅ E |
 | GET | `/organizations/list/` | list_organizations | E | ✅ E |
-| GET | `/organizations/members/` | list_members | E | 🔜 E |
+| GET | `/organizations/members/` | list_members | E | ✅ E |
 | GET | `/organizations/tree/` | get_organization_tree | E | ✅ E |
 | GET | `/password/requirements/` | PasswordRequirementsView | B | ✅ B |
 | GET | `/permissions/` | PermissionListView | D | ✅ D |
@@ -57,7 +57,7 @@
 | PATCH | `/admin/users/{user_id}/` | UserDetailView | D | ✅ D |
 | PATCH | `/applications/{app_id}/` | ApplicationDetailView | D | ✅ D |
 | PATCH | `/me/` | MeView | A | ✅ A |
-| PATCH | `/organizations/members/{user_id}/` | update_member_role | E | 🔜 E |
+| PATCH | `/organizations/members/{user_id}/` | update_member_role | E | ✅ E |
 | PATCH | `/organizations/update/` | update_organization | E | ✅ E |
 | POST | `/2fa/backup-codes/` | TwoFactorBackupCodesView | C | ✅ C |
 | POST | `/2fa/confirm/` | TwoFactorConfirmView | C | ✅ C |
@@ -93,7 +93,7 @@
 | POST | `/magic-link/request/` | MagicLinkRequestView | C | ✅ C |
 | POST | `/organizations/` | create_organization | E | ✅ E |
 | POST | `/organizations/invitations/` | invite_member | E | 🔜 E |
-| POST | `/organizations/members/add/` | add_member | E | 🔜 E |
+| POST | `/organizations/members/add/` | add_member | E | ✅ E |
 | POST | `/otp/request/` | RequestOTPView | C | ✅ C |
 | POST | `/otp/verify/email/` | VerifyEmailOTPView | C | ✅ C |
 | POST | `/otp/verify/phone/` | VerifyPhoneOTPView | C | ✅ C |
