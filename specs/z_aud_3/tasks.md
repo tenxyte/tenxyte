@@ -1016,6 +1016,32 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       chunks 2-4, qui les couvriront).
       **Restant (chunks 2-4/4)** : hiérarchie (`tree`) + `org-roles/` (2) ; membres (liste/ajout/
       modification de rôle/retrait, 4) ; invitations (`invite_member`, 1).
+    - **Chunk 2/4 fait — Hiérarchie + org-roles (2/12, 7/12 cumulé)** :
+      `GET /organizations/tree/`, `GET /org-roles/`.
+      **`get_organization_tree` construit toujours l'arbre depuis la racine, pas depuis
+      l'organisation courante** — vérifié dans `OrganizationService.get_organization_tree`
+      (`organization.get_root()` avant la construction récursive) : même scopé sur un enfant via
+      `X-Org-Slug`, la réponse démarre en haut de la hiérarchie. Répliqué à l'identique et testé
+      explicitement (`test_organization_tree_always_starts_at_root` — scope sur l'enfant, vérifie
+      que la racine est retournée avec l'enfant nesté dedans).
+      `list_org_roles` (`GET /org-roles/`) est globale, non scopée à une organisation — gatée
+      uniquement par `@require_jwt` (pas de `X-Org-Slug`/appartenance requis), retourne
+      **toutes** les lignes `OrganizationRole` existantes. Testé explicitement qu'aucun rôle
+      n'existe tant qu'aucune organisation n'a été créée (le rôle `owner` n'est créé que
+      paresseusement au premier `create_organization`, cf. chunk 1), et que l'endpoint reste
+      utilisable sans header `X-Org-Slug` du tout.
+      Aucune nouvelle infrastructure — réutilise entièrement `org_service.py`/`org_context.py`
+      du chunk 1 (`get_organization_tree_async`/`list_org_roles_async`/`serialize_org_role`
+      ajoutées à `org_service.py`, `require_org_membership()` réutilisée telle quelle pour
+      `tree/`).
+      4 tests ajoutés à `test_orgs_router.py` (16 au total sur le fichier), aucun mock — arbre
+      correct (racine + profondeur + enfant nesté + `member_count`), arbre exige l'appartenance
+      (403), liste des rôles globale avec formes vides/peuplées, liste des rôles exige
+      l'authentification (401).
+      `parity_matrix --groups=A,B,C,D,F` : 92/114 endpoints Django portés au total (2 nouveaux) —
+      Groupes A/B/C/D/F toujours verts.
+      **Restant (chunks 3-4/4)** : membres (liste/ajout/modification de rôle/retrait, 4) ;
+      invitations (`invite_member`, 1).
     - _Requirements: 4.1, 4.2, 4.4_
 
   - [ ] 11.2 Contract_Suite + matrice sur A–F

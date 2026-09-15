@@ -1,7 +1,8 @@
 """
-Framework-agnostic-in-spirit organizations service for the Reference_Stack (spec z_aud_3, Wave E
-chunk 1/4, task 11.1) — organization CRUD (create/list/get/update/delete), hierarchy, and
-membership/permission resolution. Contract extracted from `views/organization_views.py`,
+Framework-agnostic-in-spirit organizations service for the Reference_Stack (spec z_aud_3, Wave E,
+task 11.1) — organization CRUD (create/list/get/update/delete), hierarchy (tree, chunk 2/4),
+org-roles listing (chunk 2/4), and membership/permission resolution shared by every chunk.
+Contract extracted from `views/organization_views.py`,
 `services/organization_service.py`'s `OrganizationService`, `serializers/organization_serializers.py`,
 `filters.py` (`apply_organization_filters`), and the `User.get_org_*`/`has_org_*`/`is_org_*` methods
 on `models/auth.py`. Like `rbac_service.py`, Django never extracted this to Core — this is a new
@@ -99,6 +100,32 @@ async def get_root_async(session: AsyncSession, organization: OrganizationDB) ->
             break
         current = parent
     return current
+
+
+async def get_organization_tree_async(session: AsyncSession, organization: OrganizationDB) -> dict:
+    """Mirrors `OrganizationService.get_organization_tree` exactly — including the real (if
+    slightly surprising) behavior that it always builds the tree from the *root* ancestor down,
+    not from `organization` itself: even scoped into a child via `X-Org-Slug`, the response starts
+    at the top of the hierarchy. Active children only at every level (`children.filter(is_active=
+    True)`), recursive."""
+
+    async def _build(org: OrganizationDB) -> dict:
+        children_stmt = select(OrganizationDB).where(
+            OrganizationDB.parent_id == org.id, OrganizationDB.is_active.is_(True)
+        )
+        children = (await session.execute(children_stmt)).scalars().all()
+        return {
+            "id": org.id,
+            "name": org.name,
+            "slug": org.slug,
+            "depth": await _depth_async(session, org),
+            "is_root": org.parent_id is None,
+            "member_count": await get_member_count_async(session, org.id),
+            "children": [await _build(child) for child in children],
+        }
+
+    root = await get_root_async(session, organization)
+    return await _build(root)
 
 
 # ============================================================
@@ -560,3 +587,23 @@ async def initialize_system_roles_async(session: AsyncSession) -> list[Organizat
         created_roles.append(role)
 
     return created_roles
+
+
+def serialize_org_role(role: OrganizationRoleDB) -> dict:
+    """Matches `OrganizationRoleSerializer` exactly."""
+    return {
+        "id": role.id,
+        "code": role.code,
+        "name": role.name,
+        "description": role.description,
+        "is_system": role.is_system,
+        "is_default": role.is_default,
+        "permissions": role.permissions,
+        "created_at": role.created_at.isoformat(),
+    }
+
+
+async def list_org_roles_async(session: AsyncSession) -> list[OrganizationRoleDB]:
+    """Mirrors `list_org_roles`: every `OrganizationRole` row, globally — not tenant-scoped, no
+    pagination, no filtering (`@require_jwt` only, no `X-Org-Slug`/membership needed)."""
+    return list((await session.execute(select(OrganizationRoleDB))).scalars().all())

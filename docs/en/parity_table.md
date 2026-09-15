@@ -39,11 +39,11 @@
 | GET | `/magic-link/verify/` | MagicLinkVerifyView | C | ✅ C |
 | GET | `/me/` | MeView | A | ✅ A |
 | GET | `/me/roles/` | MyRolesView | A | ✅ A |
-| GET | `/org-roles/` | list_org_roles | E | 🔜 E |
+| GET | `/org-roles/` | list_org_roles | E | ✅ E |
 | GET | `/organizations/detail/` | get_organization | E | ✅ E |
 | GET | `/organizations/list/` | list_organizations | E | ✅ E |
 | GET | `/organizations/members/` | list_members | E | 🔜 E |
-| GET | `/organizations/tree/` | get_organization_tree | E | 🔜 E |
+| GET | `/organizations/tree/` | get_organization_tree | E | ✅ E |
 | GET | `/password/requirements/` | PasswordRequirementsView | B | ✅ B |
 | GET | `/permissions/` | PermissionListView | D | ✅ D |
 | GET | `/permissions/{permission_id}/` | PermissionDetailView | D | ✅ D |

@@ -1,7 +1,7 @@
 """
-Tests for the Wave E Organizations router (spec z_aud_3, Wave E chunk 1/4, task 11.1) —
-organization CRUD — against a real app, a real ephemeral aiosqlite database, and real signed
-tokens (no mocks).
+Tests for the Wave E Organizations router (spec z_aud_3, Wave E, task 11.1) — organization CRUD
+(chunk 1/4) and hierarchy tree + org-roles listing (chunk 2/4) — against a real app, a real
+ephemeral aiosqlite database, and real signed tokens (no mocks).
 """
 
 import uuid
@@ -271,3 +271,70 @@ async def test_list_organizations_only_shows_membership():
             assert listing_a.status_code == 200
             names = [org["name"] for org in listing_a.json()["results"]]
             assert names == ["Org A"]
+
+
+@pytest.mark.anyio
+async def test_organization_tree_always_starts_at_root():
+    """Real Django finding (see org_service.py docstring): the tree always builds from the root
+    ancestor down, even when scoped into a child via X-Org-Slug."""
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        _, headers = await _create_user(app)
+        async with await _client(app) as client:
+            parent = await client.post("/api/v1/organizations/", json={"name": "Parent"}, headers=headers)
+            parent_id = parent.json()["id"]
+            await client.post("/api/v1/organizations/", json={"name": "Child", "parent_id": parent_id}, headers=headers)
+
+            tree = await client.get("/api/v1/organizations/tree/", headers={**headers, "X-Org-Slug": "child"})
+            assert tree.status_code == 200
+            body = tree.json()
+            assert body["slug"] == "parent"
+            assert body["is_root"] is True
+            assert body["depth"] == 0
+            assert len(body["children"]) == 1
+            assert body["children"][0]["slug"] == "child"
+            assert body["children"][0]["depth"] == 1
+            assert body["children"][0]["children"] == []
+
+
+@pytest.mark.anyio
+async def test_organization_tree_requires_membership():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        _, owner_headers = await _create_user(app)
+        _, outsider_headers = await _create_user(app)
+        async with await _client(app) as client:
+            await client.post("/api/v1/organizations/", json={"name": "Acme"}, headers=owner_headers)
+            response = await client.get(
+                "/api/v1/organizations/tree/", headers={**outsider_headers, "X-Org-Slug": "acme"}
+            )
+    assert response.status_code == 403
+
+
+@pytest.mark.anyio
+async def test_list_org_roles_is_global_and_unscoped():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        _, headers = await _create_user(app)
+        async with await _client(app) as client:
+            # No organization exists yet, so no "owner" role has been lazily created either.
+            empty = await client.get("/api/v1/org-roles/", headers=headers)
+            assert empty.status_code == 200
+            assert empty.json() == []
+
+            await client.post("/api/v1/organizations/", json={"name": "Acme"}, headers=headers)
+
+            # Still callable with no X-Org-Slug at all -- this endpoint is global, not org-scoped.
+            listing = await client.get("/api/v1/org-roles/", headers=headers)
+            assert listing.status_code == 200
+            codes = [role["code"] for role in listing.json()]
+            assert codes == ["owner"]
+            assert listing.json()[0]["permissions"] == ["org.*"]
+
+
+@pytest.mark.anyio
+async def test_list_org_roles_requires_auth():
+    app = _build_app()
+    async with app.router.lifespan_context(app), await _client(app) as client:
+        response = await client.get("/api/v1/org-roles/")
+    assert response.status_code == 401

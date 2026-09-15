@@ -1,11 +1,12 @@
 """
-Parity_Group E — Organizations (spec z_aud_3, Wave E chunk 1/4, task 11.1): organization CRUD —
-create, list, get, update, delete. Contract extracted from `views/organization_views.py`
-(`create_organization`, `list_organizations`, `get_organization`, `update_organization`,
-`delete_organization`). Only registered into the app when `settings.organizations_enabled` is
-`True` (see `app.py`) — mirrors Django's own conditionally-registered `urlpatterns` block exactly
-(a disabled deployment 404s on these paths rather than getting a JSON `ORG_FEATURE_DISABLED`
-body; see `org_context.py`'s module docstring for why that body only exists as unreachable
+Parity_Group E — Organizations (spec z_aud_3, Wave E, task 11.1): organization CRUD (chunk 1/4:
+create, list, get, update, delete), hierarchy tree and org-roles listing (chunk 2/4). Contract
+extracted from `views/organization_views.py` (`create_organization`, `list_organizations`,
+`get_organization`, `update_organization`, `delete_organization`, `get_organization_tree`,
+`list_org_roles`). Only registered into the app when `settings.organizations_enabled` is `True`
+(see `app.py`) — mirrors Django's own conditionally-registered `urlpatterns` block exactly (a
+disabled deployment 404s on these paths rather than getting a JSON `ORG_FEATURE_DISABLED` body;
+see `org_context.py`'s module docstring for why that body only exists as unreachable
 defense-in-depth on both adapters).
 """
 
@@ -114,3 +115,20 @@ async def delete_organization(
     if not success:
         raise TenxyteAPIError(error, code=None, status_code=400)
     return {"message": "Organization deleted successfully"}
+
+
+@router.get("/organizations/tree/")
+async def get_organization_tree(
+    session: AsyncSession = Depends(get_db_session),  # noqa: B008
+    ctx: OrgAuthContext = Depends(require_org_membership()),  # noqa: B008
+):
+    return await org_service.get_organization_tree_async(session, ctx.organization)
+
+
+@router.get("/org-roles/")
+async def list_org_roles(
+    session: AsyncSession = Depends(get_db_session),  # noqa: B008
+    _auth: AuthContext = Depends(require_jwt()),  # noqa: B008
+):
+    roles = await org_service.list_org_roles_async(session)
+    return [org_service.serialize_org_role(role) for role in roles]
