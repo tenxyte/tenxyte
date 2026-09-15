@@ -213,3 +213,28 @@ class ApplicationToggleRequest(BaseModel):
 
 class ApplicationRegenerateRequest(BaseModel):
     confirmation: str = ""
+
+
+class AdminUserUpdateRequest(BaseModel):
+    """Accepts the same fields as Django's `AdminUserUpdateSerializer`, including
+    `is_staff`/`is_superuser`/`max_sessions`/`max_devices` — matched for validation-shape parity
+    even though `admin_user_service.update_user_async` deliberately drops them, mirroring a real
+    Django behavior (see admin_user_service.py's module docstring)."""
+
+    first_name: str | None = None
+    last_name: str | None = None
+    is_active: bool | None = None
+    is_staff: bool | None = None
+    is_superuser: bool | None = None
+    max_sessions: int | None = Field(default=None, ge=0)
+    max_devices: int | None = Field(default=None, ge=0)
+    must_change_password: bool | None = None
+
+
+class BanUserRequest(BaseModel):
+    reason: str = Field(default="", max_length=500)
+
+
+class LockUserRequest(BaseModel):
+    duration_minutes: int = Field(default=30, ge=1, le=43200)
+    reason: str = Field(default="", max_length=500)

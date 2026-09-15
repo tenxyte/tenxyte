@@ -4,7 +4,7 @@
 
 | Method | Path | Django view | Group | Status |
 |---|---|---|---|---|
-| DELETE | `/admin/users/{user_id}/` | UserDetailView | D | 🔜 D |
+| DELETE | `/admin/users/{user_id}/` | UserDetailView | D | ✅ D |
 | DELETE | `/applications/{app_id}/` | ApplicationDetailView | D | ✅ D |
 | DELETE | `/organizations/delete/` | delete_organization | E | 🔜 E |
 | DELETE | `/organizations/members/{user_id}/remove/` | remove_member | E | 🔜 E |
@@ -23,8 +23,8 @@
 | GET | `/admin/deletion-requests/{request_id}/` | DeletionRequestDetailView | G | 🔜 G |
 | GET | `/admin/login-attempts/` | LoginAttemptListView | D | 🔜 D |
 | GET | `/admin/refresh-tokens/` | RefreshTokenListView | D | 🔜 D |
-| GET | `/admin/users/` | UserListView | D | 🔜 D |
-| GET | `/admin/users/{user_id}/` | UserDetailView | D | 🔜 D |
+| GET | `/admin/users/` | UserListView | D | ✅ D |
+| GET | `/admin/users/{user_id}/` | UserDetailView | D | ✅ D |
 | GET | `/ai/.well-known/airs/` | AIRSDiscoveryView | F | ✅ F |
 | GET | `/ai/pending-actions/` | AgentPendingActionListView | F | ✅ F |
 | GET | `/ai/tokens/` | AgentTokenListCreateView | F | ✅ F |
@@ -54,7 +54,7 @@
 | GET | `/users/{user_id}/permissions/` | UserDirectPermissionsView | D | ✅ D |
 | GET | `/users/{user_id}/roles/` | UserRolesView | D | ✅ D |
 | GET | `/webauthn/credentials/` | WebAuthnCredentialListView | G | 🔜 G |
-| PATCH | `/admin/users/{user_id}/` | UserDetailView | D | 🔜 D |
+| PATCH | `/admin/users/{user_id}/` | UserDetailView | D | ✅ D |
 | PATCH | `/applications/{app_id}/` | ApplicationDetailView | D | ✅ D |
 | PATCH | `/me/` | MeView | A | ✅ A |
 | PATCH | `/organizations/members/{user_id}/` | update_member_role | E | 🔜 E |
@@ -67,10 +67,10 @@
 | POST | `/admin/deletion-requests/process-expired/` | ProcessExpiredDeletionsView | G | 🔜 G |
 | POST | `/admin/deletion-requests/{request_id}/process/` | ProcessDeletionView | G | 🔜 G |
 | POST | `/admin/refresh-tokens/{token_id}/revoke/` | RefreshTokenRevokeView | D | 🔜 D |
-| POST | `/admin/users/{user_id}/ban/` | UserBanView | D | 🔜 D |
-| POST | `/admin/users/{user_id}/lock/` | UserLockView | D | 🔜 D |
-| POST | `/admin/users/{user_id}/unban/` | UserUnbanView | D | 🔜 D |
-| POST | `/admin/users/{user_id}/unlock/` | UserUnlockView | D | 🔜 D |
+| POST | `/admin/users/{user_id}/ban/` | UserBanView | D | ✅ D |
+| POST | `/admin/users/{user_id}/lock/` | UserLockView | D | ✅ D |
+| POST | `/admin/users/{user_id}/unban/` | UserUnbanView | D | ✅ D |
+| POST | `/admin/users/{user_id}/unlock/` | UserUnlockView | D | ✅ D |
 | POST | `/ai/pending-actions/{token}/confirm/` | AgentPendingActionConfirmView | F | ✅ F |
 | POST | `/ai/pending-actions/{token}/deny/` | AgentPendingActionDenyView | F | ✅ F |
 | POST | `/ai/tokens/` | AgentTokenListCreateView | F | ✅ F |

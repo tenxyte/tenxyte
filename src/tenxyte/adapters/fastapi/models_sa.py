@@ -18,7 +18,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Index, Numeric, String, Table, Text
+from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Index, Integer, Numeric, String, Table, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from tenxyte.ports.repositories import MFAType, UserStatus
@@ -62,6 +62,19 @@ class UserDB(Base):
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     # Wave C follow-up (z_aud_3 task 7.1) — mirrors tenxyte.models.auth.User.is_phone_verified.
     phone_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Wave D chunk 3 follow-up (z_aud_3 task 10.1) — mirrors tenxyte.models.auth.User's
+    # ban/lock/soft-delete/session-limit fields, added only now since no earlier wave needed them.
+    is_locked: Mapped[bool] = mapped_column(Boolean, default=False)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    lockout_count: Mapped[int] = mapped_column(Integer, default=0)
+    is_banned: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    anonymization_token: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
+    max_sessions: Mapped[int] = mapped_column(Integer, default=1)
+    max_devices: Mapped[int] = mapped_column(Integer, default=1)
 
     # Wave C (z_aud_3 task 7.1) — bcrypt-hashed 2FA backup codes (never the plaintext codes,
     # shown to the caller once at generation time and never persisted), mirroring

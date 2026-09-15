@@ -737,6 +737,64 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       aucune régression.
       **Restant (chunks 3 à 5)** : `admin/users/*` (8) ; admin sécurité (7) ; `dashboard/*` (5) —
       inchangé par rapport à la note laissée au chunk 1.
+    - **Chunk 3/5 fait — Admin Users (8/46, 33/46 cumulé)** : `admin/users/*` — liste (pagination
+      + 8 filtres + recherche + tri), détail, mise à jour partielle, suppression (soft-delete
+      RGPD), bannissement, débannissement, verrouillage, déverrouillage. **Contrat extrait** de
+      `views/user_views.py` (`UserListView`/`UserDetailView`/`UserBanView`/`UserUnbanView`/
+      `UserLockView`/`UserUnlockView`), `serializers/user_admin_serializers.py`, `filters.py`
+      (`apply_user_filters`), et — point important — de `adapters/django/repositories.py`'s
+      `DjangoUserRepository` (ce que la vue appelle réellement), pas seulement des serializers.
+      **`UserDB` étendue** (`models_sa.py`) : `is_locked`/`locked_until`/`lockout_count`/
+      `is_banned`/`is_deleted`/`deleted_at`/`anonymization_token`/`must_change_password`/
+      `max_sessions`/`max_devices`. `admin_user_service.py` (nouveau, framework-agnostic même
+      logique que `rbac_service.py`/`application_service.py`) ; `routers/admin_users.py`
+      (nouveau, 8 endpoints, tous gatés par `require_permission` —
+      `users.view`/`update`/`delete`/`ban`/`lock`). `pagination.py`'s `_apply_ordering` (privée,
+      dupliquée dans `rbac_service.py` depuis le chunk 1) **extraite et partagée** en
+      `pagination.apply_ordering`, réutilisée par les trois services de tri de la vague D
+      (`rbac_service.py` mis à jour pour l'utiliser, sans changement de comportement — 19 tests
+      RBAC relancés, toujours verts).
+      **Deux trouvailles réelles, vérifiées en lisant `DjangoUserRepository` (pas supposées),
+      répliquées plutôt que « corrigées »** (documentées en détail dans le docstring de module de
+      `admin_user_service.py`) :
+      1. `AdminUserUpdateSerializer` valide `is_staff`/`is_superuser`/`max_sessions`/
+         `max_devices` en entrée, mais `DjangoUserRepository.update_user()` — la seule chose que
+         la vue appelle pour persister — ne reconnaît que `first_name`/`last_name`/`email`/
+         `is_active`/`is_email_verified`/`phone_country_code`/`phone_number`/
+         `is_phone_verified`/`username`/`bio`/`timezone`/`language`/`custom_fields`. Ces quatre
+         champs passent la validation et sont silencieusement ignorés — aucune erreur, aucun
+         effet. `must_change_password` est le seul cas particulier (`DJANGO_ONLY_FIELDS` dans la
+         vue, appliqué directement au modèle Django, en contournant le Core repository).
+      2. `UserBanView`/`UserLockView` acceptent toutes deux un champ `reason` documenté comme
+         « stocké dans le journal d'audit », mais `DjangoUserRepository.ban()`/`lock()` ne le
+         persistent nulle part — aucune écriture `AuditLog` sur ce chemin (le chunk 4 ajoutera une
+         vraie persistance d'audit-log, mais même une fois en place, cet appel précis ne
+         l'alimente pas). `reason` est accepté, validé, puis abandonné.
+      **Deux implémentations de soft-delete chez Django, une seule utilisée par l'API admin** :
+      `AbstractUser.delete()` (override du `.delete()` Django ORM — anonymisation lourde : email
+      `deleted_{id}_{timestamp}@anonymized.local`, vide aussi téléphone/TOTP/backup_codes) et
+      `User.soft_delete()` (anonymisation plus légère : email `deleted_{id}@deleted.local`,
+      prénom/nom vidés, révoque les refresh tokens). `DjangoUserRepository.soft_delete()` appelle
+      exclusivement la seconde — c'est elle qui a été répliquée dans `soft_delete_async`
+      (révocation des refresh tokens non répliquée : le Reference_Stack n'a pas de table de
+      sessions persistée à révoquer, les refresh tokens n'y sont retrouvés que par hash).
+      **Verrouillage avec escalade exponentielle répliquée exactement** : `lock_account()`
+      double la durée à chaque verrouillage consécutif (`duration * 2^(lockout_count-1)`),
+      plafonné à 1440 min (valeur par défaut de `LOCKOUT_MAX_DURATION_MINUTES`, codée en dur côté
+      Reference_Stack faute d'équivalent de ce setting) — vérifié par test (verrouillage à 10 min,
+      déverrouillage, second verrouillage à 10 min → 20 min effectifs).
+      6 tests (`test_admin_users_router.py`), aucun mock, base aiosqlite éphémère réelle — liste/
+      détail/404, mise à jour avec vérification explicite que les champs de privilège sont bien
+      ignorés (trouvaille 1 testée, pas seulement documentée), soft-delete + rejet
+      `ALREADY_DELETED` en double suppression, cycle ban/unban avec rejets `ALREADY_BANNED`/
+      `NOT_BANNED`, cycle lock/unlock avec escalade et rejets `ALREADY_LOCKED`/`NOT_LOCKED`, refus
+      générique de permission.
+      `parity_matrix` : 73/114 endpoints Django portés au total (8 nouveaux) — Groupes A/B/C/F
+      toujours verts ; coverage FastAPI 92.56 % (seuil CI 90 %, 203 tests) ; suite Django complète
+      relancée, aucune régression.
+      **Restant (chunks 4-5/5)** : admin sécurité (7 — `AuditLogDB`/`LoginAttemptDB` nouvelles
+      tables, plus persistance requêtable de la blacklist JWT) ; `dashboard/*` (5 — agrégations
+      en lecture seule).
     - _Requirements: 4.1, 4.2, 4.5_
 
   - [ ] 10.2 Contract_Suite + matrice sur A–D (+F) ; exclusions justifiées le cas échéant

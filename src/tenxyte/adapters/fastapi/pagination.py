@@ -16,6 +16,23 @@ DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
 
 
+def apply_ordering(stmt: Any, ordering: str, allowed: dict[str, Any], *, default: str) -> Any:
+    """Shared `?ordering=` handling for every Wave D list endpoint (first extracted in
+    `rbac_service.py`, task 10.1 chunk 1) — comma-separated fields, `-` prefix for descending,
+    unknown field names silently ignored, matching `filters.apply_ordering`'s own behavior."""
+    fields = [f.strip() for f in (ordering or "").split(",") if f.strip()]
+    if not fields:
+        fields = [default]
+    for field in fields:
+        desc = field.startswith("-")
+        name = field[1:] if desc else field
+        column = allowed.get(name)
+        if column is None:
+            continue
+        stmt = stmt.order_by(column.desc() if desc else column.asc())
+    return stmt
+
+
 def get_page_params(request: Request) -> tuple[int, int]:
     """`(page, page_size)` from query params, clamped the same way DRF's `PageNumberPagination`
     does: `page` floors at 1, `page_size` is capped at `MAX_PAGE_SIZE`."""

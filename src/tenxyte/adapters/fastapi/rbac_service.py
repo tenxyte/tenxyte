@@ -33,6 +33,7 @@ from tenxyte.adapters.fastapi.models_sa import (
     user_direct_permissions_table,
     user_roles_table,
 )
+from tenxyte.adapters.fastapi.pagination import apply_ordering
 from tenxyte.ports.repositories import User
 
 SUPER_ADMIN_ROLE_CODE = "super_admin"
@@ -186,26 +187,12 @@ async def list_permissions_async(
             count_stmt = count_stmt.where(PermissionDB.parent_id == parent)
 
     allowed_ordering = {"code": PermissionDB.code, "name": PermissionDB.name, "created_at": PermissionDB.created_at}
-    stmt = _apply_ordering(stmt, ordering, allowed_ordering, default="code")
+    stmt = apply_ordering(stmt, ordering, allowed_ordering, default="code")
 
     total = (await session.execute(count_stmt)).scalar_one()
     stmt = stmt.offset((page - 1) * page_size).limit(page_size)
     rows = (await session.execute(stmt)).scalars().all()
     return list(rows), total
-
-
-def _apply_ordering(stmt, ordering: str, allowed: dict, *, default: str):
-    fields = [f.strip() for f in (ordering or "").split(",") if f.strip()]
-    if not fields:
-        fields = [default]
-    for field in fields:
-        desc = field.startswith("-")
-        name = field[1:] if desc else field
-        column = allowed.get(name)
-        if column is None:
-            continue
-        stmt = stmt.order_by(column.desc() if desc else column.asc())
-    return stmt
 
 
 # ============================================================
@@ -310,7 +297,7 @@ async def list_roles_async(
         "is_default": RoleDB.is_default,
         "created_at": RoleDB.created_at,
     }
-    stmt = _apply_ordering(stmt, ordering, allowed_ordering, default="name")
+    stmt = apply_ordering(stmt, ordering, allowed_ordering, default="name")
 
     total = (await session.execute(count_stmt)).scalar_one()
     stmt = stmt.offset((page - 1) * page_size).limit(page_size)
