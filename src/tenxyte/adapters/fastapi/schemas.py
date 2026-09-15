@@ -302,3 +302,19 @@ class WebAuthnAuthenticateCompleteRequest(BaseModel):
     credential: dict = Field(default_factory=dict)
     challenge_id: str = ""
     device_info: str = ""
+
+
+class SocialAuthRequest(BaseModel):
+    """Accepts `access_token`, `code`+`redirect_uri` (+`code_verifier`, PKCE), or `id_token`
+    (Google/Apple only) — same three-way branch `SocialAuthView.post` reads, all optional at the
+    schema level since exactly which combination is required depends on which one was actually
+    sent (validated in `routers/social.py`, matching Django's own `request.data.get(...)` style
+    rather than a Pydantic-level `oneOf`)."""
+
+    access_token: str = ""
+    code: str = ""
+    redirect_uri: str = ""
+    code_verifier: str = ""
+    id_token: str = ""
+    user: dict | None = None
+    device_info: str = ""

@@ -50,7 +50,7 @@
 | GET | `/roles/` | RoleListView | D | ✅ D |
 | GET | `/roles/{role_id}/` | RoleDetailView | D | ✅ D |
 | GET | `/roles/{role_id}/permissions/` | RolePermissionsView | D | ✅ D |
-| GET | `/social/{provider}/callback/` | SocialAuthCallbackView | G | 🔜 G |
+| GET | `/social/{provider}/callback/` | SocialAuthCallbackView | G | ✅ G |
 | GET | `/users/{user_id}/permissions/` | UserDirectPermissionsView | D | ✅ D |
 | GET | `/users/{user_id}/roles/` | UserRolesView | D | ✅ D |
 | GET | `/webauthn/credentials/` | WebAuthnCredentialListView | G | ✅ G |
@@ -108,7 +108,7 @@
 | POST | `/request-account-deletion/` | request_account_deletion | G | 🔜 G |
 | POST | `/roles/` | RoleListView | D | ✅ D |
 | POST | `/roles/{role_id}/permissions/` | RolePermissionsView | D | ✅ D |
-| POST | `/social/{provider}/` | SocialAuthView | G | 🔜 G |
+| POST | `/social/{provider}/` | SocialAuthView | G | ✅ G |
 | POST | `/users/{user_id}/permissions/` | UserDirectPermissionsView | D | ✅ D |
 | POST | `/users/{user_id}/roles/` | UserRolesView | D | ✅ D |
 | POST | `/webauthn/authenticate/begin/` | WebAuthnAuthenticateBeginView | G | ✅ G |

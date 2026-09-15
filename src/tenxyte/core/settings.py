@@ -466,6 +466,92 @@ class Settings:
         return self._get("MAGIC_LINK_EXPIRY_MINUTES", 15)
 
     # ============================================================
+    # Social Auth Settings (spec z_aud_3, Wave G, task 12.1) — mirrors tenxyte.conf.social's
+    # defaults exactly (the client id/secret/key properties mirror Django's own `getattr(settings,
+    # "X", "")` pattern — a plain deployment secret, not a `conf`-namespaced setting there either).
+    # ============================================================
+
+    @property
+    def social_providers(self) -> list[str]:
+        """Enabled OAuth2 providers — mirrors `SOCIAL_PROVIDERS` (default: all five)."""
+        return self._get("SOCIAL_PROVIDERS", ["google", "github", "microsoft", "facebook", "apple"])
+
+    @property
+    def social_auto_merge_accounts(self) -> bool:
+        """Whether a social login with a verified email matching an existing local account is
+        auto-linked, or refused (asking the user to log in with email/password first to link
+        explicitly) — mirrors `SOCIAL_AUTO_MERGE_ACCOUNTS` (default `False`, a deliberate security
+        default per Django's own "R-05 Mitigation" comment in `social_auth_service.py`)."""
+        return self._get("SOCIAL_AUTO_MERGE_ACCOUNTS", False)
+
+    @property
+    def google_client_id(self) -> str:
+        return self._get("GOOGLE_CLIENT_ID", "")
+
+    @property
+    def google_client_secret(self) -> str:
+        return self._get("GOOGLE_CLIENT_SECRET", "")
+
+    @property
+    def github_client_id(self) -> str:
+        return self._get("GITHUB_CLIENT_ID", "")
+
+    @property
+    def github_client_secret(self) -> str:
+        return self._get("GITHUB_CLIENT_SECRET", "")
+
+    @property
+    def microsoft_client_id(self) -> str:
+        return self._get("MICROSOFT_CLIENT_ID", "")
+
+    @property
+    def microsoft_client_secret(self) -> str:
+        return self._get("MICROSOFT_CLIENT_SECRET", "")
+
+    @property
+    def facebook_app_id(self) -> str:
+        return self._get("FACEBOOK_APP_ID", "")
+
+    @property
+    def facebook_app_secret(self) -> str:
+        return self._get("FACEBOOK_APP_SECRET", "")
+
+    @property
+    def apple_client_id(self) -> str:
+        """Apple Services ID (OAuth client_id, e.g. `com.example.app.signin`)."""
+        return self._get("APPLE_CLIENT_ID", "")
+
+    @property
+    def apple_team_id(self) -> str:
+        return self._get("APPLE_TEAM_ID", "")
+
+    @property
+    def apple_key_id(self) -> str:
+        """Key ID of the Sign in with Apple private key (`.p8`)."""
+        return self._get("APPLE_KEY_ID", "")
+
+    @property
+    def apple_private_key(self) -> str:
+        """PEM content of the `.p8` private key — never a file path, the content itself."""
+        return self._get("APPLE_PRIVATE_KEY", "")
+
+    @property
+    def social_google_scopes(self) -> str:
+        return self._get("SOCIAL_GOOGLE_SCOPES", "openid email profile")
+
+    @property
+    def social_github_scopes(self) -> str:
+        return self._get("SOCIAL_GITHUB_SCOPES", "read:user user:email")
+
+    @property
+    def social_microsoft_scopes(self) -> str:
+        return self._get("SOCIAL_MICROSOFT_SCOPES", "openid email profile")
+
+    @property
+    def social_facebook_scopes(self) -> str:
+        return self._get("SOCIAL_FACEBOOK_SCOPES", "email,public_profile")
+
+    # ============================================================
     # AIRS Settings (spec z_aud_3, Wave F) — mirrors tenxyte.conf.airs's defaults exactly.
     # ============================================================
 

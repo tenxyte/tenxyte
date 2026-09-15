@@ -103,6 +103,11 @@ fastapi = [
     # (documented in fastapi_quickstart.md) rather than pulling it in as a hard dependency here.
     "aiosqlite>=0.20",
     "alembic>=1.13",
+    # Wave G (spec z_aud_3, task 12.1) — social_auth_service.py calls OAuth providers'
+    # token/userinfo endpoints via httpx.AsyncClient (Django's equivalent uses the blocking
+    # `requests` library; this adapter is async-first throughout, so httpx is the real
+    # runtime dependency here, not just a test one — see the `dev` extra's own httpx entry below).
+    "httpx>=0.27",
 ]
 
 # ===== DATABASE ADAPTERS =====
@@ -162,8 +167,10 @@ dev = [
     "pytest-cov>=6.0",
     "pytest-asyncio>=0.24",
     "anyio>=4.0",
-    # ASGITransport/AsyncClient for the FastAPI_Adapter's test suite (spec z_aud_3) — test-only,
-    # the adapter's own runtime code never imports httpx.
+    # ASGITransport/AsyncClient for the FastAPI_Adapter's test suite (spec z_aud_3) — also a real
+    # runtime dependency of the `fastapi` extra itself since Wave G (social_auth_service.py's
+    # OAuth provider calls), listed again here so `dev`-only installs (no `fastapi` extra, e.g.
+    # core-only test runs) still get it.
     "httpx>=0.27",
     "black==26.5.1",
     "ruff==0.16.7",

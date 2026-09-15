@@ -24,6 +24,7 @@ from tenxyte.adapters.fastapi.routers.orgs import router as orgs_router
 from tenxyte.adapters.fastapi.routers.otp import router as otp_router
 from tenxyte.adapters.fastapi.routers.password import router as password_router
 from tenxyte.adapters.fastapi.routers.rbac import router as rbac_router
+from tenxyte.adapters.fastapi.routers.social import router as social_router
 from tenxyte.adapters.fastapi.routers.twofa import router as twofa_router
 from tenxyte.adapters.fastapi.routers.webauthn import router as webauthn_router
 from tenxyte.adapters.fastapi.settings import get_default_settings
@@ -70,6 +71,10 @@ def _build_router(settings: Settings) -> APIRouter:
     # urls.py registers webauthn/* unconditionally too, gating WEBAUTHN_ENABLED at the
     # service-call level instead (see webauthn_service.py's module docstring).
     router.include_router(webauthn_router)
+    # Wave G chunk 2/4 (z_aud_3 task 12.1) — social/* is also unconditionally registered in
+    # Django's urls.py; per-provider enablement is gated at the service-call level via
+    # `settings.social_providers` (see social_auth_service.py's module docstring).
+    router.include_router(social_router)
 
     # Wave E (z_aud_3 task 11.1) — mirrors Django's own conditionally-registered `urlpatterns`
     # block exactly (`if org_settings.ORGANIZATIONS_ENABLED: urlpatterns += [...]`, evaluated once

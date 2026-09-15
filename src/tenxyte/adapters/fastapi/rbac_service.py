@@ -209,6 +209,14 @@ async def get_role_by_code_async(session: AsyncSession, code: str) -> RoleDB | N
     return (await session.execute(stmt)).scalar_one_or_none()
 
 
+async def get_default_role_async(session: AsyncSession) -> RoleDB | None:
+    """Mirrors `Role.get_default_role()` (`cls.objects.filter(is_default=True).first()`) — used by
+    `User.assign_default_role()`, called on new-user creation via social auth (Wave G, task
+    12.1)."""
+    stmt = select(RoleDB).where(RoleDB.is_default.is_(True)).limit(1)
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
 async def _set_role_permissions_async(session: AsyncSession, role_id: str, permission_codes: list[str]) -> None:
     await session.execute(delete(role_permissions_table).where(role_permissions_table.c.role_id == role_id))
     if permission_codes:

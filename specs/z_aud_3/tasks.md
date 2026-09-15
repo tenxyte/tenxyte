@@ -1270,6 +1270,68 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       les changements : 250 passed, aucune régression.
       **Restant (chunks 2-4/4)** : social auth (2, + callback Apple z_aud_1) ; GDPR user (5) ;
       GDPR admin (4).
+    - **Chunk 2/4 fait — Social Auth (2/17)** : `POST social/{provider}/`,
+      `GET social/{provider}/callback/`, 5 fournisseurs (google/github/microsoft/facebook/apple).
+      **Contrat extrait** par lecture intégrale de `views/social_auth_views.py`
+      (`SocialAuthView.post`, `SocialAuthCallbackView.get`) — Django n'a jamais extrait cette
+      logique vers Core, donc ce chunk la réimplémente entièrement en async-natif plutôt que de
+      câbler un service Core existant.
+      **`httpx.AsyncClient` remplace le `requests` bloquant de Django** — nouvelle dépendance
+      runtime réelle de l'extra `fastapi` (pas seulement `dev`, `pyproject.toml` mis à jour en
+      conséquence, avec le commentaire de justification "test-only" retiré puisqu'il n'est plus
+      vrai). Vérification `id_token` (google/apple) faite via un utilitaire JWKS-puis-PyJWT partagé
+      (`_verify_id_token_via_jwks_async` : fetch JWKS async via httpx, vérification RS256
+      synchrone via PyJWT — calcul pur, aucune I/O, donc sûr à appeler directement sous la règle de
+      pureté async) plutôt que d'ajouter `google-auth`/`google-auth-oauthlib` (extras Django
+      uniquement).
+      **Logique de fusion de compte de sécurité répliquée à l'identique** (propres commentaires
+      Django "F-03"/"R-05") : une connexion sociale correspondant par email à un compte local
+      existant n'est liée que si le fournisseur a marqué l'email vérifié ET que
+      `social_auto_merge_accounts` vaut `True` (défaut `False`) — sinon refusée, dans cet ordre
+      exact, sans repli silencieux. Testé explicitement dans les deux sens
+      (`test_unverified_email_refuses_fusion`, `test_verified_email_refuses_fusion_without_auto_merge`).
+      **Forme de réponse réellement différente entre les deux endpoints** — vérifié en lisant le
+      code réel de chaque vue, pas les docs `@extend_schema` : `POST social/{provider}/` retire
+      `device_summary` et ajoute `message` ; `GET social/{provider}/callback/` garde
+      `device_summary` et n'ajoute jamais `message`. Les deux ajoutent `provider`. Pas une
+      incohérence à corriger — les deux vues Django font ça indépendamment, ce routeur reproduit
+      le post-traitement propre à chacune (testé explicitement dans les deux sens).
+      **`token_pair` sans `token_type`/`expires_in`** pour l'auth sociale (contrairement à la
+      connexion par mot de passe/email) — vérifié en lisant le dict réellement renvoyé
+      (`access_token`, `refresh_token`, `device_summary`, `user`, `is_new_user` seulement) ; les
+      docs `@extend_schema` prétendent à tort qu'il y a plus de champs.
+      **`SocialConnectionDB`** (`models_sa.py`) omet délibérément les colonnes
+      `access_token`/`refresh_token` de Django (ses propres commentaires d'audit R10 confirment
+      qu'elles sont toujours codées en dur à `""`, jamais peuplées) plutôt que de modéliser des
+      colonnes mortes.
+      **Délibérément non câblé dans ce chunk** : Django crée aussi une Organisation par défaut
+      pour un nouvel utilisateur social quand `ORGANIZATIONS_ENABLED` et
+      `CREATE_DEFAULT_ORGANIZATION` sont tous deux vrais — documenté comme lacune connue et
+      délibérée (pas intégré dans un chunk déjà volumineux) plutôt que construit à moitié.
+      **Tests avec vraie crypto et vrai HTTP, aucun mock** : `_fake_oauth_server.py` (nouveau,
+      `tests/integration/fastapi/unit/`) est une vraie app ASGI Starlette exposant les chemins
+      URL réels exacts (pas les hôtes, `httpx.ASGITransport` ne dispatchant que sur
+      chemin/méthode) des endpoints token/userinfo/JWKS des 5 fournisseurs, avec une vraie paire
+      de clés RSA pour signer de vrais `id_token`s de test et construire un vrai document JWKS.
+      `social_auth_service.py` expose un point d'ancrage `_test_transport` (une variable de
+      module, jamais de fonction mockée) pour rediriger tout `httpx.AsyncClient` vers ce serveur
+      factice en test ; `None` (transport réseau réel) en production.
+      11 tests (`test_social_router.py`) — fournisseur non supporté, identifiants manquants,
+      `code` sans `redirect_uri`, flux `access_token` Google créant un nouvel utilisateur (+
+      rachat réel du refresh token émis contre `/refresh/`), flux `access_token` GitHub avec repli
+      sur `/user/emails` (email primaire vérifié choisi parmi plusieurs), flux `id_token` Google
+      vérifié via de vrais JWKS RS256, échange de code Apple avec fusion du payload
+      `First_Auth_User_Payload` (nom fourni uniquement à la toute première autorisation) et vraie
+      signature ES256 du `client_secret` généré (vérifié que le JWT reçu par le serveur factice a
+      bien 2 points, donc 3 segments), connexion sociale existante réutilisant le même utilisateur
+      (`is_new_user=False`), refus de fusion email non vérifié, refus de fusion email vérifié sans
+      `social_auto_merge_accounts`, endpoint callback gardant `device_summary` et sans `message`.
+      `parity_matrix --groups=A,B,C,D,E,F` : 105/114 endpoints Django portés au total (2
+      nouveaux) — Groupes A/B/C/D/E/F toujours verts. Suite FastAPI unitaire complète relancée
+      après tous les changements : 261 passed, aucune régression. Vérification de pureté async
+      (`check_async_purity.py`) : OK, aucun pattern bloquant.
+      **Restant (chunks 3-4/4)** : GDPR user (5 : demande de suppression, confirmation,
+      annulation, statut, export) ; GDPR admin (4).
     - _Requirements: 4.1, 4.2, 4.4_
 
   - [ ] 12.2 Contract_Suite + matrice COMPLÈTE (tous groupes)

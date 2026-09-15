@@ -600,3 +600,29 @@ class WebAuthnChallengeDB(Base):
     is_used: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class SocialConnectionDB(Base):
+    """Wave G chunk 2/4 (z_aud_3 task 12.1) — mirrors `tenxyte.models.social.SocialConnection`.
+    Django's model also has `access_token`/`refresh_token` columns, but its own R10-audit
+    comments document them as *always* empty — `get_or_create_for_user` hardcodes both to `""`
+    unconditionally, never persisting a real OAuth token. Since nothing on either adapter ever
+    reads or writes a real value through them, they're dead columns; omitted here entirely rather
+    than modeled and left permanently empty."""
+
+    __tablename__ = "tenxyte_social_connections"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("tenxyte_users.id", ondelete="CASCADE"), index=True)
+    provider: Mapped[str] = mapped_column(String(32), index=True)
+    provider_user_id: Mapped[str] = mapped_column(String(191), index=True)
+    email: Mapped[str] = mapped_column(String(191), default="")
+    first_name: Mapped[str] = mapped_column(String(100), default="")
+    last_name: Mapped[str] = mapped_column(String(100), default="")
+    avatar_url: Mapped[str] = mapped_column(String(500), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("provider", "provider_user_id", name="uq_tenxyte_social_connection_provider_user"),
+    )

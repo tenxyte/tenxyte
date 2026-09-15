@@ -32,14 +32,18 @@ async def issue_refresh_token(
     *,
     lifetime_seconds: int,
     device_id: str | None = None,
+    ip_address: str | None = None,
 ) -> str:
     """Create a new opaque refresh token, persist only its hash, return the raw token (shown to
-    the caller exactly once — it can never be recovered from storage afterwards)."""
+    the caller exactly once — it can never be recovered from storage afterwards). `ip_address` is
+    optional (added for Wave G's social-auth chunk, task 12.1 — `RefreshTokenDB.ip_address` has
+    existed since Wave D chunk 4 but no earlier caller had a real value to pass)."""
     raw_token = str(uuid4())
     row = RefreshTokenDB(
         user_id=user_id,
         token_hash=hash_token(raw_token),
         device_id=device_id,
+        ip_address=ip_address,
         expires_at=datetime.now(timezone.utc) + timedelta(seconds=lifetime_seconds),
     )
     session.add(row)
