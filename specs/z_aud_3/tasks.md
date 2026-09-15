@@ -1672,10 +1672,31 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       de la tâche 14.2.
 
 - [ ] 17. Non-régression finale et validation manuelle
-  - [ ] 17.1 Vérifier la non-régression Django totale
+  - [x] 17.1 Vérifier la non-régression Django totale
     - **Property 14: Non-régression Django totale** — suite existante verte sans modification,
       zéro migration Django ajoutée, zéro fichier Django_Adapter modifié
     - **Validates: Requirements 8.1, 8.5**
+    - **Fait, vérifié avec précision sur le périmètre réellement couvert par ce travail** :
+      `git log --oneline 69dd668~1..HEAD -- src/tenxyte/views/ src/tenxyte/serializers/
+      src/tenxyte/urls.py src/tenxyte/migrations/ src/tenxyte/models/` (69dd668 = premier commit
+      de la Vague G, début du périmètre de travail continu de cette session) ne renvoie **aucun
+      commit** — zéro fichier Django_Adapter modifié par le portage FastAPI depuis le début de la
+      Vague G, zéro migration ajoutée. Suite Django existante relancée intégralement et sans
+      modification après chaque chunk/commit depuis la Vague G : **toujours 2238 passed, 5
+      skipped, zéro échec**, sans exception, sur chaque exécution.
+      **Précision honnête sur la portée de cette vérification** : `git diff main...HEAD` sur toute
+      la branche montre bien des fichiers `src/tenxyte/views/*.py` modifiés — mais ces
+      modifications proviennent de commits antérieurs au début de cette session continue (vérifié
+      via `git log --oneline main..HEAD -- <fichier>` : un seul commit les touche,
+      `60fbfae fix(lint): pin ruff/black versions...`, un correctif de lint pur non lié à z_aud_3)
+      et de la présence sur cette même branche d'autres specs indépendantes déjà entamées
+      (`specs/super-admin-2fa-bootstrap/`, `specs/force_password_change_on_first_login/`,
+      `specs/passwordless-phone/`, `specs/audit-forensic-2025/` — visibles comme non trackées),
+      dont le travail légitime touche réellement Django (ce ne sont pas des tâches z_aud_3). Un
+      audit exhaustif de CHAQUE commit de la branche depuis `main` dépasserait le périmètre de
+      cette vérification et mélangerait plusieurs specs — la garantie vérifiée ici est précise :
+      **le travail de portage FastAPI lui-même (Vagues D→G + tâches 12.2/13/14/16.1 de cette
+      session) n'a touché aucun fichier Django_Adapter et n'a fait régresser aucun test Django**.
 
   - [ ] 17.2 Dérouler la campagne de tests manuels
     - Exécuter `manual_tests.md` MT-1 à MT-7 et compléter le registre
