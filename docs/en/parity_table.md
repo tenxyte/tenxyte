@@ -92,7 +92,7 @@
 | POST | `/logout/all/` | LogoutAllView | A | ✅ A |
 | POST | `/magic-link/request/` | MagicLinkRequestView | C | ✅ C |
 | POST | `/organizations/` | create_organization | E | ✅ E |
-| POST | `/organizations/invitations/` | invite_member | E | 🔜 E |
+| POST | `/organizations/invitations/` | invite_member | E | ✅ E |
 | POST | `/organizations/members/add/` | add_member | E | ✅ E |
 | POST | `/otp/request/` | RequestOTPView | C | ✅ C |
 | POST | `/otp/verify/email/` | VerifyEmailOTPView | C | ✅ C |

@@ -1,7 +1,8 @@
 """
 Tests for the Wave E Organizations router (spec z_aud_3, Wave E, task 11.1) — organization CRUD
-(chunk 1/4), hierarchy tree + org-roles listing (chunk 2/4), and member management (chunk 3/4) —
-against a real app, a real ephemeral aiosqlite database, and real signed tokens (no mocks).
+(chunk 1/4), hierarchy tree + org-roles listing (chunk 2/4), member management (chunk 3/4), and
+invitations (chunk 4/4) — against a real app, a real ephemeral aiosqlite database, and real signed
+tokens (no mocks).
 """
 
 import uuid
@@ -517,3 +518,93 @@ async def test_add_member_respects_member_limit():
             )
     assert response.status_code == 400
     assert response.json() == {"error": "Organization has reached its member limit"}
+
+
+@pytest.mark.anyio
+async def test_invite_member_success():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _seed_system_roles(app)
+        _, owner_headers = await _create_user(app)
+        async with await _client(app) as client:
+            await client.post("/api/v1/organizations/", json={"name": "Acme"}, headers=owner_headers)
+            response = await client.post(
+                "/api/v1/organizations/invitations/",
+                json={"email": "invitee@example.com", "role_code": "member"},
+                headers={**owner_headers, "X-Org-Slug": "acme"},
+            )
+            assert response.status_code == 201
+            body = response.json()
+            assert body["organization_name"] == "Acme"
+            assert body["email"] == "invitee@example.com"
+            assert body["role_name"] == "Member"
+            assert body["status"] == "pending"
+            assert body["invited_by_email"] is not None
+            assert len(body["token"]) > 10
+            assert "organization" not in body
+            assert "role" not in body
+            assert "invited_by" not in body
+
+
+@pytest.mark.anyio
+async def test_invite_member_duplicate_expires_previous_not_rejected():
+    """Real Django finding (see org_service.py docstring): no INVITATION_EXISTS rejection --
+    a second invite to the same email silently expires the first and creates a fresh one."""
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _seed_system_roles(app)
+        _, owner_headers = await _create_user(app)
+        async with await _client(app) as client:
+            await client.post("/api/v1/organizations/", json={"name": "Acme"}, headers=owner_headers)
+            org_headers = {**owner_headers, "X-Org-Slug": "acme"}
+
+            first = await client.post(
+                "/api/v1/organizations/invitations/",
+                json={"email": "invitee@example.com", "role_code": "member"},
+                headers=org_headers,
+            )
+            second = await client.post(
+                "/api/v1/organizations/invitations/",
+                json={"email": "invitee@example.com", "role_code": "admin"},
+                headers=org_headers,
+            )
+            assert first.status_code == 201
+            assert second.status_code == 201
+            assert first.json()["token"] != second.json()["token"]
+            assert second.json()["role_name"] == "Admin"
+
+
+@pytest.mark.anyio
+async def test_invite_member_rejects_existing_member_email():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _seed_system_roles(app)
+        _, owner_headers = await _create_user(app)
+        async with await _client(app) as client:
+            create = await client.post("/api/v1/organizations/", json={"name": "Acme"}, headers=owner_headers)
+            owner_email = create.json()["created_by_email"]
+            response = await client.post(
+                "/api/v1/organizations/invitations/",
+                json={"email": owner_email, "role_code": "member"},
+                headers={**owner_headers, "X-Org-Slug": "acme"},
+            )
+    assert response.status_code == 400
+    assert response.json() == {"error": "User is already a member"}
+
+
+@pytest.mark.anyio
+async def test_invite_member_requires_permission():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _seed_system_roles(app)
+        _, owner_headers = await _create_user(app)
+        _, outsider_headers = await _create_user(app)
+        async with await _client(app) as client:
+            await client.post("/api/v1/organizations/", json={"name": "Acme"}, headers=owner_headers)
+            response = await client.post(
+                "/api/v1/organizations/invitations/",
+                json={"email": "invitee@example.com", "role_code": "member"},
+                headers={**outsider_headers, "X-Org-Slug": "acme"},
+            )
+    assert response.status_code == 403
+    assert response.json() == {"error": "Permission denied.", "code": "ORG_PERMISSION_REQUIRED"}

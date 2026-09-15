@@ -1,11 +1,12 @@
 """
 Parity_Group E — Organizations (spec z_aud_3, Wave E, task 11.1): organization CRUD (chunk 1/4:
 create, list, get, update, delete), hierarchy tree and org-roles listing (chunk 2/4), member
-management (chunk 3/4: list, add, update role, remove). Contract extracted from
-`views/organization_views.py` (`create_organization`, `list_organizations`, `get_organization`,
-`update_organization`, `delete_organization`, `get_organization_tree`, `list_org_roles`,
-`list_members`, `add_member`, `update_member_role`, `remove_member`). Only registered into the app
-when `settings.organizations_enabled` is `True` (see `app.py`) — mirrors Django's own
+management (chunk 3/4: list, add, update role, remove), invitations (chunk 4/4: invite_member —
+the last of Group E's 12 real endpoints). Contract extracted from `views/organization_views.py`
+(`create_organization`, `list_organizations`, `get_organization`, `update_organization`,
+`delete_organization`, `get_organization_tree`, `list_org_roles`, `list_members`, `add_member`,
+`update_member_role`, `remove_member`, `invite_member`). Only registered into the app when
+`settings.organizations_enabled` is `True` (see `app.py`) — mirrors Django's own
 conditionally-registered `urlpatterns` block exactly (a disabled deployment 404s on these paths
 rather than getting a JSON `ORG_FEATURE_DISABLED` body; see `org_context.py`'s module docstring
 for why that body only exists as unreachable defense-in-depth on both adapters).
@@ -31,6 +32,7 @@ from tenxyte.adapters.fastapi.pagination import get_page_params, paginated_respo
 from tenxyte.adapters.fastapi.schemas import (
     OrganizationAddMemberRequest,
     OrganizationCreateRequest,
+    OrganizationInviteMemberRequest,
     OrganizationUpdateMemberRoleRequest,
     OrganizationUpdateRequest,
 )
@@ -235,3 +237,24 @@ async def remove_member(
     if not success:
         raise TenxyteAPIError(error, code=None, status_code=400)
     return {"message": "Member removed successfully"}
+
+
+@router.post("/organizations/invitations/", status_code=201)
+async def invite_member(
+    body: OrganizationInviteMemberRequest,
+    session: AsyncSession = Depends(get_db_session),  # noqa: B008
+    settings: Settings = Depends(get_settings),  # noqa: B008
+    ctx: OrgAuthContext = Depends(require_org_permission("org.members.invite")),  # noqa: B008
+):
+    invitation, error = await org_service.create_invitation_async(
+        session,
+        ctx.organization,
+        email=body.email,
+        role_code=body.role_code,
+        invited_by_id=ctx.auth.user.id,
+        expires_in_days=body.expires_in_days,
+        org_role_inheritance=settings.org_role_inheritance,
+    )
+    if error is not None:
+        raise TenxyteAPIError(error, code=None, status_code=400)
+    return await org_service.serialize_invitation_async(session, invitation)

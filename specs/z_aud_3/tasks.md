@@ -926,8 +926,8 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
   précédentes, nécessaire ici vu que le Groupe D est, de loin, la plus grosse vague du plan (46
   endpoints contre 11-12 pour chaque vague précédente).
 
-- [ ] 11. Vague de parité E — Organisations
-  - [ ] 11.1 Porter le groupe E (12 endpoints réels — pas 13 : `OrganizationInvitation` expose
+- [x] 11. Vague de parité E — Organisations
+  - [x] 11.1 Porter le groupe E (12 endpoints réels — pas 13 : `OrganizationInvitation` expose
     `accept()`/`decline()` au niveau modèle mais aucune route HTTP Django ne les appelle, vérifié
     dans `urls.py` — seul `invite_member` (création) est enregistré. Découpé en 4 chunks
     committables séparément, même logique que la Vague D)
@@ -1086,10 +1086,85 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       `parity_matrix --groups=A,B,C,D,F` : 96/114 endpoints Django portés au total (4 nouveaux) —
       Groupes A/B/C/D/F toujours verts.
       **Restant (chunk 4/4)** : invitations (`invite_member`, 1).
+    - **Chunk 4/4 fait — Invitations (1/12, 12/12 cumulé — Groupe E complet)** :
+      `POST /organizations/invitations/`. **Contrat re-vérifié directement dans
+      `organization_service.py`** : `create_invitation` — ordre exact répliqué (permission →
+      limite de membres → résolution du rôle → vérification appartenance-déjà-membre par email →
+      expiration silencieuse des invitations `pending` existantes pour le même `(organisation,
+      email)` → création).
+      **Aucune erreur `INVITATION_EXISTS`/de doublon n'existe** — vérifié en lisant la méthode
+      réelle : une deuxième invitation vers le même email expire silencieusement la première
+      (`status="expired"`) et en crée une nouvelle, malgré les `@extend_schema` qui laissent
+      entendre un 400. Répliqué à l'identique et testé explicitement (deux invitations successives
+      vers le même email → toutes deux 201, tokens différents, la deuxième reflète le nouveau
+      rôle).
+      **Aucun email n'est réellement envoyé** — le corps de la méthode Django se termine par un
+      simple commentaire `# TODO: Send invitation email` ; le token n'est jamais restitué que dans
+      le corps de la réponse HTTP. Non simulé ici non plus — même posture « aucun backend de
+      livraison réel » déjà documentée pour OTP/magic-link, sauf qu'ici c'est Django lui-même qui
+      ne l'a jamais câblé, pas seulement le Reference_Stack.
+      **Nouvelle infrastructure minimale** : `create_invitation_async`/`serialize_invitation_async`
+      ajoutées à `org_service.py` (réutilise entièrement `OrganizationInvitationDB` du chunk 1,
+      jamais utilisée avant ce chunk) ; `OrganizationInviteMemberRequest` ajoutée à `schemas.py` ;
+      `require_org_permission("org.members.invite")` de `org_context.py` réutilisée telle quelle.
+      4 tests ajoutés à `test_orgs_router.py` (27 au total) — invitation réussie (forme exacte,
+      vérifie explicitement l'absence des champs `organization`/`role`/`invited_by` imbriqués que
+      la doc annonce à tort), doublon non rejeté (la trouvaille, testée pas seulement documentée),
+      email déjà membre rejeté (400 sans `code`), permission d'invitation manquante (403 avec
+      `code`).
+      `parity_matrix --groups=A,B,C,D,E,F` : **97/114 endpoints Django portés au total (1 nouveau)
+      — Groupe E désormais complet (12/12) et vert aux côtés de A/B/C/D/F**.
     - _Requirements: 4.1, 4.2, 4.4_
 
-  - [ ] 11.2 Contract_Suite + matrice sur A–F
+  - [x] 11.2 Contract_Suite + matrice sur A–F
+    - `tests/contract/test_group_e_shapes.py` (nouveau, 6 tests × 2 adaptateurs = pas de
+      paramétrage supplémentaire ici, juste 6 fonctions de test). **Contrairement aux Groupes D/F,
+      une vraie preuve de succès est possible ici, pas seulement une preuve de portail** :
+      `create_organization`/`list_organizations` n'exigent que `@require_jwt` (aucune permission
+      RBAC à promouvoir que la fixture `api` ne sait pas accorder), donc un `register_and_login()`
+      frais peut immédiatement créer une organisation, en devenir owner, et la relister — un aller-
+      retour réel comparé champ par champ sur les deux adaptateurs, pas juste un statut HTTP.
+      `conftest.py` étendu : `_NoApplicationAuthProvider` force désormais aussi
+      `TENXYTE_ORGANIZATIONS_ENABLED=True` côté FastAPI (le côté Django l'a déjà via
+      `tests/integration/django/settings.py`) ; `_register_group_e_views` enregistre
+      `create_organization.cls`/`list_organizations.cls`/`get_organization.cls` — ces vues Django
+      sont des **fonctions** décorées `@api_view`, pas des classes `APIView` comme tous les autres
+      groupes déjà enregistrés, mais DRF expose la classe générée dynamiquement via l'attribut
+      `.cls` de la fonction, exactement compatible avec la machinerie `DjangoContractClient`
+      existante (`view_cls.as_view()`) sans aucune modification.
+      **Trouvaille réelle capturée PAR le Contract_Suite lui-même, pas anticipée** : le premier
+      lancement du test échouait — `parent_name` (un `CharField(source="parent.name")` en lecture
+      seule) est **entièrement absent** du corps de réponse Django quand l'organisation n'a pas de
+      parent, pas `null` comme mon implémentation FastAPI le produisait. Cause : DRF's
+      `Field.get_attribute()` lève `AttributeError` en remontant la chaîne `parent.name` quand
+      `parent` est `None`, et comme le champ est `read_only` (donc implicitement
+      `required=False`), DRF lève `SkipField()` au lieu de retomber sur `None` — la clé disparaît
+      du dict de sortie. `org_service.serialize_organization_async` corrigé pour reproduire
+      exactement ce comportement (`created_by_email`, même mécanisme DRF, traité pareil par
+      cohérence même si jamais empiriquement `None` dans ce port). Corrigé et vérifié avant
+      commit, pas laissé en l'état — exactement le genre de divergence que ce test avait pour but
+      de capturer.
+      **Portée volontairement plus étroite pour le reste du Groupe E** (même schéma que Groupes
+      D/F) : `DjangoContractClient` pilote les vues via `APIRequestFactory`, qui ne fait jamais
+      tourner le middleware Django — donc `OrganizationContextMiddleware` (qui résout
+      `X-Org-Slug` en `request.organization`) ne s'exécute jamais dans ce harnais de test. Le cas
+      « header absent » fonctionne quand même par accident (`hasattr(request, "organization")`
+      est simplement `False` sur une requête `APIRequestFactory` nue, exactement ce que
+      `require_org_context` traite comme « aucun contexte fourni ») — testé explicitement
+      (`test_organization_detail_requires_context_identically`). Reproduire le cas de succès (un
+      slug valide résolu) demanderait de simuler le middleware à la main dans le client de test
+      partagé — un changement d'infrastructure de test à part entière, hors de portée de cette
+      tâche.
+      Suite contract complète relancée : 56 passed (6 nouveaux + 50 existants), aucune régression.
+      Suite unitaire `test_orgs_router.py` relancée après la correction `parent_name` : 27 passed,
+      aucune régression. `parity_matrix --groups=A,B,C,D,E,F` toujours vert (97/114).
     - _Requirements: 5.1, 5.2_
+
+- [x] Checkpoint Vague E : `parity_matrix --groups=A,B,C,D,E,F` (97/114, Groupe E 12/12), Contract_Suite
+  étendue (56 passed), coverage FastAPI ~91-92 % (seuil CI 90 %), suite Django complète (2238
+  passed, 5 skipped, aucune régression à chaque commit des 4 chunks), `ruff`/`black` propres sur
+  `src/`. Vague E fermée en 4 chunks committables séparément (fondations+CRUD, hiérarchie+rôles,
+  membres, invitations) — même logique que les vagues D et précédentes.
 
 - [ ] 12. Vague de parité G — WebAuthn, Social, GDPR
   - [ ] 12.1 Porter le groupe G

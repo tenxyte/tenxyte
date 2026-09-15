@@ -275,3 +275,9 @@ class OrganizationAddMemberRequest(BaseModel):
 
 class OrganizationUpdateMemberRoleRequest(BaseModel):
     role_code: str = Field(max_length=50)
+
+
+class OrganizationInviteMemberRequest(BaseModel):
+    email: EmailStr
+    role_code: str = Field(max_length=50)
+    expires_in_days: int = Field(default=7, ge=1, le=30)

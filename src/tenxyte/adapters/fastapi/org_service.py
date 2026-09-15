@@ -45,14 +45,16 @@ Replicated exactly: `create_organization_async` below performs no such check eit
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tenxyte.adapters.fastapi.models_sa import (
     AuditLogDB,
     OrganizationDB,
+    OrganizationInvitationDB,
     OrganizationMembershipDB,
     OrganizationRoleDB,
     UserDB,
@@ -257,37 +259,49 @@ async def get_user_organizations_async(session: AsyncSession, user_id: str) -> l
 async def serialize_organization_async(
     session: AsyncSession, organization: OrganizationDB, *, current_user_id: str | None = None
 ) -> dict:
-    parent_name = None
-    if organization.parent_id:
-        parent = await session.get(OrganizationDB, organization.parent_id)
-        parent_name = parent.name if parent else None
-
-    created_by_email = None
-    if organization.created_by_id:
-        creator = await session.get(UserDB, organization.created_by_id)
-        created_by_email = creator.email if creator else None
-
-    user_role = None
-    if current_user_id:
-        role = await get_org_role_async(session, current_user_id, organization.id)
-        user_role = role.code if role else None
-
-    return {
+    """Matches `OrganizationSerializer` exactly, **including a real DRF quirk verified by the
+    Contract_Suite (task 11.2), not just static reading**: `parent_name`/`created_by_email` are
+    `CharField(source="parent.name" / "created_by.email", read_only=True)` — a *dotted* source
+    DRF resolves by attribute-chasing the instance. When the first hop (`parent`/`created_by`) is
+    `None`, that chase raises `AttributeError`; DRF's `Field.get_attribute()` catches it and,
+    because a `read_only` field is implicitly `required=False`, raises `SkipField()` instead of
+    falling back to `None` — so the key is **omitted from the response body entirely**, not
+    present with a `null` value. `parent` itself (a plain FK field, not a dotted `CharField`
+    source) still serializes as `null` normally when there's no parent — only the *_name/*_email
+    sibling fields disappear. Both are handled the same way below since both use the same DRF
+    dotted-source pattern, even though only `parent_name` is empirically exercised by
+    `create_organization` (every org this port can create always has a real `created_by`)."""
+    fields = {
         "id": organization.id,
         "name": organization.name,
         "slug": organization.slug,
         "description": organization.description,
         "parent": organization.parent_id,
-        "parent_name": parent_name,
         "metadata": organization.org_metadata,
         "is_active": organization.is_active,
         "max_members": organization.max_members,
         "member_count": await get_member_count_async(session, organization.id),
         "created_at": organization.created_at.isoformat(),
         "updated_at": organization.updated_at.isoformat(),
-        "created_by_email": created_by_email,
-        "user_role": user_role,
     }
+
+    if organization.parent_id:
+        parent = await session.get(OrganizationDB, organization.parent_id)
+        if parent is not None:
+            fields["parent_name"] = parent.name
+
+    if organization.created_by_id:
+        creator = await session.get(UserDB, organization.created_by_id)
+        if creator is not None:
+            fields["created_by_email"] = creator.email
+
+    if current_user_id:
+        role = await get_org_role_async(session, current_user_id, organization.id)
+        fields["user_role"] = role.code if role else None
+    else:
+        fields["user_role"] = None
+
+    return fields
 
 
 # ============================================================
@@ -771,6 +785,113 @@ async def remove_member_async(
     )
 
     return True, None
+
+
+# ============================================================
+# Invitations (Wave E chunk 4/4)
+# ============================================================
+
+
+async def serialize_invitation_async(session: AsyncSession, invitation: OrganizationInvitationDB) -> dict:
+    """Matches `OrganizationInvitationSerializer` exactly — flattened `organization_name`/
+    `role_name`/`invited_by_email` strings, not nested objects (despite the view's own
+    `@extend_schema` documenting `organization`/`role`/`invited_by` as nested objects — verified
+    against the real serializer, which has none of those three fields)."""
+    organization = await session.get(OrganizationDB, invitation.organization_id)
+    role = await session.get(OrganizationRoleDB, invitation.role_id)
+    invited_by = await session.get(UserDB, invitation.invited_by_id) if invitation.invited_by_id else None
+    return {
+        "id": invitation.id,
+        "organization_name": organization.name if organization else None,
+        "email": invitation.email,
+        "role_name": role.name if role else None,
+        "status": invitation.status,
+        "invited_by_email": invited_by.email if invited_by else None,
+        "created_at": invitation.created_at.isoformat(),
+        "expires_at": invitation.expires_at.isoformat(),
+        "token": invitation.token,
+    }
+
+
+async def create_invitation_async(
+    session: AsyncSession,
+    organization: OrganizationDB,
+    *,
+    email: str,
+    role_code: str,
+    invited_by_id: str,
+    expires_in_days: int = 7,
+    org_role_inheritance: bool = True,
+) -> tuple[OrganizationInvitationDB | None, str | None]:
+    """Mirrors `OrganizationService.create_invitation` exactly — order: permission -> member-limit
+    -> role lookup -> already-a-member check (only if a `User` with that email exists; skipped
+    silently otherwise) -> cancel any existing pending invitation for the same `(organization,
+    email)` (`status="expired"`, not rejected as a duplicate — see below) -> create.
+
+    **No `INVITATION_EXISTS`/duplicate-rejection error is ever raised** — verified by reading the
+    real method: a second invite to the same email silently expires the first and creates a fresh
+    one, despite `@extend_schema`'s docs implying a 400 for that case. Replicated exactly.
+
+    **No email is actually sent** — Django's own method body ends with a bare `# TODO: Send
+    invitation email` comment; the token is only ever returned in the response body. Not
+    replicated with a fake send here either — same "no real delivery backend" posture already
+    documented for OTP/magic-link in `otp_service.py`/`login_response.py`, except here Django
+    itself never wired one in the first place, not just the Reference_Stack."""
+    has_permission = await has_org_permission_async(
+        session, invited_by_id, organization, "org.members.invite", org_role_inheritance=org_role_inheritance
+    )
+    if not has_permission:
+        return None, "Insufficient permissions to invite members"
+
+    if await is_at_member_limit_async(session, organization):
+        return None, "Organization has reached its member limit"
+
+    role_stmt = select(OrganizationRoleDB).where(OrganizationRoleDB.code == role_code)
+    role = (await session.execute(role_stmt)).scalar_one_or_none()
+    if role is None:
+        return None, f"Role {role_code} not found"
+
+    user_stmt = select(UserDB).where(UserDB.email == email)
+    existing_user = (await session.execute(user_stmt)).scalar_one_or_none()
+    if existing_user is not None and await is_org_member_async(session, existing_user.id, organization.id):
+        return None, "User is already a member"
+
+    await session.execute(
+        update(OrganizationInvitationDB)
+        .where(
+            OrganizationInvitationDB.organization_id == organization.id,
+            OrganizationInvitationDB.email == email,
+            OrganizationInvitationDB.status == "pending",
+        )
+        .values(status="expired")
+    )
+
+    invitation = OrganizationInvitationDB(
+        organization_id=organization.id,
+        email=email,
+        role_id=role.id,
+        token=secrets.token_urlsafe(48),
+        invited_by_id=invited_by_id,
+        status="pending",
+        expires_at=datetime.now(timezone.utc) + timedelta(days=expires_in_days),
+    )
+    session.add(invitation)
+    await session.commit()
+    await session.refresh(invitation)
+
+    await _audit_log_async(
+        session,
+        "invitation_created",
+        invited_by_id,
+        {
+            "organization_id": organization.id,
+            "email": email,
+            "role_code": role_code,
+            "invitation_id": invitation.id,
+        },
+    )
+
+    return invitation, None
 
 
 # ============================================================

@@ -129,6 +129,13 @@ class _NoApplicationAuthProvider(EnvSettingsProvider):
             return False
         if name == "TENXYTE_JWT_SECRET_KEY":
             return "test-secret-key-for-contract-suite"
+        # Group E (spec z_aud_3, task 11.2) — tests/integration/django/settings.py already sets
+        # TENXYTE_ORGANIZATIONS_ENABLED = True, so the Django side of the `api` fixture always had
+        # the org endpoints registered; the FastAPI side needs the same override or its org router
+        # never gets mounted (see org_context.py's module docstring on why that's a 404, not a
+        # feature-disabled JSON body).
+        if name == "TENXYTE_ORGANIZATIONS_ENABLED":
+            return True
         return super().get(name, default)
 
 
@@ -213,6 +220,23 @@ def _register_group_d_views():
     _register_django_view("/admin/users/", UserListView)
     _register_django_view("/admin/audit-logs/", AuditLogListView)
     _register_django_view("/dashboard/stats/", DashboardGlobalView)
+
+
+@pytest.fixture(autouse=True)
+def _register_group_e_views():
+    """Registers Django's Group E (Organizations) view functions (spec z_aud_3, task 11.2).
+
+    `create_organization`/`list_organizations`/`get_organization` are `@api_view`-decorated
+    *functions*, not `APIView` subclasses like every other group registered above — DRF's
+    `@api_view` wraps them in a dynamically generated class exposed as the function's own `.cls`
+    attribute, which is exactly the `APIView` subclass `DjangoContractClient` already expects (it
+    calls `view_cls.as_view()(request)`), so registering `.cls` here needs no change to the
+    shared client machinery."""
+    from tenxyte.views.organization_views import create_organization, get_organization, list_organizations
+
+    _register_django_view("/organizations/", create_organization.cls)
+    _register_django_view("/organizations/list/", list_organizations.cls)
+    _register_django_view("/organizations/detail/", get_organization.cls)
 
 
 async def register_and_login(api) -> tuple[str, str]:
