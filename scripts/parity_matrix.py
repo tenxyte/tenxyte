@@ -147,11 +147,30 @@ def _iter_routes(router, path_prefix: str = ""):
 def get_fastapi_routes(settings=None) -> dict[Endpoint, str]:
     """(method, normalized path) -> route/endpoint name, for every route the FastAPI_Adapter's
     router exposes — normalized by stripping its configured api_prefix, the same way Django's
-    routes are already prefix-free (tenxyte.urls has no prefix of its own)."""
-    from tenxyte.adapters.fastapi.app import create_tenxyte_router
-    from tenxyte.adapters.fastapi.settings import get_default_settings
+    routes are already prefix-free (tenxyte.urls has no prefix of its own).
 
-    resolved_settings = settings or get_default_settings()
+    Forces `organizations_enabled=True` when no `settings` override is given (spec z_aud_3, Wave
+    E, task 11.1) — Parity_Group E's router is conditionally registered, same as Django's own
+    `urlpatterns`, and `tests/integration/django/settings.py` already sets
+    `TENXYTE_ORGANIZATIONS_ENABLED = True` so `get_django_routes()` sees all 12 of its endpoints;
+    without the same override here, every one of them would report as an unmatched "pending" gap
+    regardless of how much of the group is actually built, since the *default* (env-resolved)
+    settings this script would otherwise use has the flag off."""
+    from tenxyte.adapters.fastapi.app import create_tenxyte_router
+    from tenxyte.core.env_provider import EnvSettingsProvider
+    from tenxyte.core.settings import Settings
+
+    if settings is not None:
+        resolved_settings = settings
+    else:
+
+        class _OrganizationsEnabledProvider(EnvSettingsProvider):
+            def get(self, name, default=None):
+                if name == "TENXYTE_ORGANIZATIONS_ENABLED":
+                    return True
+                return super().get(name, default)
+
+        resolved_settings = Settings(provider=_OrganizationsEnabledProvider())
     router = create_tenxyte_router(resolved_settings)
     prefix = resolved_settings.api_prefix
 

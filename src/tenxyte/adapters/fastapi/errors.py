@@ -5,6 +5,13 @@ Every error response — including ones FastAPI/Starlette produce natively (422 
 405, ...) — is normalized to `{"error": ..., "code": ..., "details": ...}` (`details` omitted
 when there is none), the same shape the Django_Adapter uses throughout its views. Registered via
 `register_exception_handlers(app)` in the App_Factory.
+
+`code` is itself omittable (`TenxyteAPIError(..., code=None)`) for the rare Django view whose real
+error responses genuinely never carry one — verified by reading the actual `return Response(...)`
+call sites, not assumed from `@extend_schema`/`OpenApiExample` docs that invent a `code` Django
+never emits (Parity_Group E's `organization_views.py`/`services/organization_service.py` errors
+are the first case of this in the port; see `org_service.py`'s module docstring). Every other
+Wave A-D error path does carry a real `code`, so this stays the exception, not a new default.
 """
 
 from __future__ import annotations
@@ -36,7 +43,7 @@ class TenxyteAPIError(Exception):
         self,
         message: str,
         *,
-        code: str,
+        code: str | None,
         status_code: int = status.HTTP_400_BAD_REQUEST,
         details: Any = None,
         extra: dict[str, Any] | None = None,
@@ -61,8 +68,12 @@ class AgentClearancePending(Exception):
         self.expires_at = expires_at
 
 
-def _canonical_body(error: str, code: str, details: Any = None, extra: dict[str, Any] | None = None) -> dict[str, Any]:
-    body: dict[str, Any] = {"error": error, "code": code}
+def _canonical_body(
+    error: str, code: str | None, details: Any = None, extra: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    body: dict[str, Any] = {"error": error}
+    if code is not None:
+        body["code"] = code
     if details is not None:
         body["details"] = details
     if extra:

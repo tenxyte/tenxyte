@@ -927,9 +927,95 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
   endpoints contre 11-12 pour chaque vague précédente).
 
 - [ ] 11. Vague de parité E — Organisations
-  - [ ] 11.1 Porter le groupe E
-    - `routers/orgs.py` : organizations/* (CRUD, tree, members, invitations), org-roles —
-      contexte `X-Org-Slug`, héritage de rôles, gating `ORGANIZATIONS_ENABLED`
+  - [ ] 11.1 Porter le groupe E (12 endpoints réels — pas 13 : `OrganizationInvitation` expose
+    `accept()`/`decline()` au niveau modèle mais aucune route HTTP Django ne les appelle, vérifié
+    dans `urls.py` — seul `invite_member` (création) est enregistré. Découpé en 4 chunks
+    committables séparément, même logique que la Vague D)
+    - **Chunk 1/4 fait — Fondations + CRUD organisation (5/12)** : `POST /organizations/`,
+      `GET /organizations/list/`, `GET /organizations/detail/`, `PATCH /organizations/update/`,
+      `DELETE /organizations/delete/`. **Contrat extrait** par recherche exhaustive de
+      `views/organization_views.py`, `services/organization_service.py` (`OrganizationService`,
+      lu intégralement), `serializers/organization_serializers.py` (lu intégralement),
+      `filters.py` (`apply_organization_filters`), `models/organization.py` (déjà lu avant ce
+      chunk), les décorateurs `require_org_*` et `OrganizationContextMiddleware` dans
+      `decorators.py`/`middleware.py` (déjà lus avant ce chunk), et vérifié par relecture directe
+      (pas seulement le rapport d'un agent de recherche) des points critiques : chaque
+      `return Response({"error": ...})` réel dans `organization_views.py`, le fichier complet de
+      `organization_service.py`, et le fichier complet des serializers.
+      **Trouvaille réelle majeure, vérifiée en lisant chaque site d'appel plutôt que supposée
+      depuis les `@extend_schema`/`OpenApiExample` (qui inventent un champ `code` que le code réel
+      n'émet jamais)** : les erreurs métier de `organization_views.py`/`organization_service.py`
+      sont **toujours** exactement `{"error": "<message>"}`, **sans** champ `code` — contrairement
+      à quasi toutes les autres erreurs Django déjà portées dans les Vagues A-D. `TenxyteAPIError`
+      (`errors.py`) **étendu** pour accepter `code=None` (omet la clé `code` du corps JSON) — un
+      changement chirurgical de l'infra d'erreurs partagée, sans régression sur les 227 tests
+      FastAPI existants (relancés après le changement, tous verts). À l'inverse, les erreurs de
+      *portail* (contexte manquant, non-membre, rôle/permission requis — dans
+      `decorators.py`/`middleware.py`, pas dans les vues) **ont bien** un `code`, parfois avec des
+      champs additionnels (`ORG_NOT_FOUND` a `slug`, `ORG_MEMBERSHIP_REQUIRED` a `organization`) —
+      les deux familles répliquées à l'identique, chacune avec sa vraie forme.
+      **Deux vérifications de rôle avec des règles d'héritage différentes pour la même paire
+      owner/admin, répliquées séparément plutôt qu'unifiées** : le décorateur `require_org_admin`
+      (le vrai portail devant la vue) vérifie admin `check_inheritance=True` OU owner
+      `check_inheritance=False` ; le service `update_organization` refait sa propre vérification
+      interne avec owner **et** admin tous deux `check_inheritance=True` (code mort en pratique
+      dans l'app réelle, puisque le décorateur — plus strict — a déjà tranché avant que le service
+      ne s'exécute) — répliqué dans `org_context.require_org_admin` (portail réel) et
+      `org_service.update_organization_async` (règle du service, redondante mais fidèle) tels
+      quels.
+      **`create_organization` n'a aucune vérification de permission sur `parent_id`** — vérifié en
+      lisant la vue : gatée uniquement par `@require_jwt`. N'importe quel utilisateur authentifié
+      connaissant l'ID d'une organisation (même sans aucune relation avec elle) peut y nicher une
+      nouvelle organisation et en devenir propriétaire, sous la seule réserve de la limite de
+      profondeur. Répliqué à l'identique et testé explicitement
+      (`test_create_child_organization_needs_no_relationship_to_parent`).
+      **Aucun rôle par défaut au-delà de `owner` n'est auto-seedé** — vérifié en grep-ant chaque
+      site d'appel `OrganizationRole.objects.create`/`get_or_create` du code Django réel : seuls
+      deux existent, tous deux dans `OrganizationService` — `create_organization` crée
+      paresseusement le rôle `owner` (`permissions=["org.*"]`) au premier usage,
+      `initialize_system_roles` (qui créerait aussi `admin`/`member`/`viewer`) n'est appelé par
+      **aucun** chemin applicatif (aucun signal, aucune management command, aucun hook
+      `AppConfig.ready()`) — seulement par les fixtures de test Django elles-mêmes. Répliqué à
+      l'identique : `org_service.initialize_system_roles_async` existe (symétrie test/seed) mais
+      n'est jamais appelée automatiquement.
+      **Nouvelles infrastructures** : `models_sa.py` — `OrganizationDB`/`OrganizationRoleDB`/
+      `OrganizationMembershipDB`/`OrganizationInvitationDB` (clés UUID string, cohérent avec
+      chaque table existante de ce port malgré les `AutoField` entiers de Django — divergence déjà
+      établie silencieusement partout ailleurs, pas nouvelle à cette vague) ; `org_service.py`
+      (nouveau, framework-agnostic même logique que `rbac_service.py` — hiérarchie/appartenance/
+      résolution de permission/CRUD, ~400 lignes) ; `org_context.py` (nouveau — dépendances
+      FastAPI `require_org_context`/`require_org_membership`/`require_org_role`/
+      `require_org_permission`/`require_org_owner`/`require_org_admin`, implémentées comme chaîne
+      de `Depends(...)` plutôt que middleware ASGI — même idiome que `require_jwt`/
+      `require_permission` de `security.py`, pas de nouvelle session DB à gérer hors du cycle de
+      vie par requête) ; `core/settings.py` — `organizations_enabled` ajoutée (les propriétés
+      `org_role_inheritance`/`org_max_depth`/`org_max_members` existaient déjà avant cette
+      session, découvertes en cours de route plutôt que dupliquées — `ruff` a immédiatement
+      signalé les doublons F811 quand je les avais réinventées par erreur).
+      **Gating `ORGANIZATIONS_ENABLED` répliqué au niveau routeur, pas au niveau réponse** : comme
+      Django (`if org_settings.ORGANIZATIONS_ENABLED: urlpatterns += [...]`, évalué une seule fois
+      au chargement d'`urls.py`), `app.py`'s `_build_router` n'inclut `orgs_router` que si
+      `settings.organizations_enabled` — une désactivation renvoie donc le 404 par défaut de
+      FastAPI sur `/organizations/*`, pas un corps JSON `ORG_FEATURE_DISABLED` (ce corps existe
+      dans `org_context.py` comme défense en profondeur inatteignable, exactement comme chez
+      Django, testé explicitement — `test_organizations_feature_disabled_by_default_404s`).
+      12 tests (`test_orgs_router.py`), aucun mock, base aiosqlite éphémère réelle — feature
+      désactivée par défaut → 404, création → propriétaire auto-assigné, slug auto-unique
+      (`acme`/`acme-1`), détail exige l'appartenance (403 avec `code`+`organization`), header
+      manquant (400 `ORG_CONTEXT_REQUIRED`), slug inconnu (404 `ORG_NOT_FOUND`+`slug`), mise à
+      jour par le propriétaire, mise à jour refusée pour un non-admin (403, toujours avec `code`
+      côté portail), suppression réservée au propriétaire, suppression bloquée par des enfants
+      (400 **sans** `code` — trouvaille validée), création d'enfant sans relation avec le parent,
+      liste limitée à l'appartenance réelle.
+      Suite Django `organization`/`middleware` relancée en isolation (247 passed) pour valider
+      la compréhension du comportement réel avant d'écrire le port — cohérent avec la pratique
+      établie de vérifier contre le code qui tourne, pas contre sa propre narration.
+      Suite FastAPI complète relancée après le changement de `TenxyteAPIError` : 227 passed,
+      aucune régression. Coverage FastAPI 90.60 % (juste au-dessus du seuil CI 90 % — attendu,
+      `org_service.py` contient des chemins de permission/héritage pas encore exercés avant les
+      chunks 2-4, qui les couvriront).
+      **Restant (chunks 2-4/4)** : hiérarchie (`tree`) + `org-roles/` (2) ; membres (liste/ajout/
+      modification de rôle/retrait, 4) ; invitations (`invite_member`, 1).
     - _Requirements: 4.1, 4.2, 4.4_
 
   - [ ] 11.2 Contract_Suite + matrice sur A–F

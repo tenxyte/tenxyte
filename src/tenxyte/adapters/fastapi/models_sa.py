@@ -18,7 +18,21 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Index, Integer, Numeric, String, Table, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Table,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from tenxyte.ports.repositories import MFAType, UserStatus
@@ -452,3 +466,98 @@ class LoginAttemptDB(Base):
     success: Mapped[bool] = mapped_column(Boolean, default=False)
     failure_reason: Mapped[str] = mapped_column(String(100), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class OrganizationDB(Base):
+    """Wave E (z_aud_3 task 11.1) — mirrors `tenxyte.models.organization.Organization`. Uses a
+    UUID string primary key like every other table in this file, diverging from Django's
+    integer `AutoField` — an established, already-silent convention across this whole port (every
+    `*DB` table here uses a UUID pk regardless of Django's own pk type), not new to this wave."""
+
+    __tablename__ = "tenxyte_organizations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    name: Mapped[str] = mapped_column(String(200))
+    slug: Mapped[str] = mapped_column(String(200), unique=True, index=True)
+    description: Mapped[str] = mapped_column(Text, default="")
+    parent_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tenxyte_organizations.id", ondelete="CASCADE"), nullable=True
+    )
+    org_metadata: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    max_members: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tenxyte_users.id", ondelete="SET NULL"), nullable=True
+    )
+
+    __table_args__ = (Index("ix_tenxyte_organizations_parent_active", "parent_id", "is_active"),)
+
+
+class OrganizationRoleDB(Base):
+    """Wave E (z_aud_3 task 11.1) — mirrors `tenxyte.models.organization.OrganizationRole`. Not
+    tenant-scoped (global table, like Django's) — `permissions` is a plain JSON list of codes,
+    checked with the same wildcard rule as Django's `has_permission()` (`"org.*"` matches every
+    `org.` permission, an exact `perm == permission_code` match otherwise)."""
+
+    __tablename__ = "tenxyte_organization_roles"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    code: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    description: Mapped[str] = mapped_column(Text, default="")
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    permissions: Mapped[list] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class OrganizationMembershipDB(Base):
+    """Wave E (z_aud_3 task 11.1) — mirrors `tenxyte.models.organization.OrganizationMembership`,
+    the user<->organization<->role relationship table."""
+
+    __tablename__ = "tenxyte_organization_memberships"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("tenxyte_users.id", ondelete="CASCADE"), index=True)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("tenxyte_organizations.id", ondelete="CASCADE"), index=True)
+    role_id: Mapped[str] = mapped_column(ForeignKey("tenxyte_organization_roles.id", ondelete="RESTRICT"))
+    status: Mapped[str] = mapped_column(String(20), default="active")
+    invited_by_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tenxyte_users.id", ondelete="SET NULL"), nullable=True
+    )
+    invited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "organization_id", name="uq_tenxyte_org_membership_user_org"),
+        Index("ix_tenxyte_org_membership_org_status", "organization_id", "status"),
+    )
+
+
+class OrganizationInvitationDB(Base):
+    """Wave E (z_aud_3 task 11.1) — mirrors `tenxyte.models.organization.OrganizationInvitation`.
+    No HTTP endpoint accepts/declines an invitation on the Django side either — only
+    `invite_member` (creation) is ever registered in `urls.py`, despite the model exposing
+    `accept()`/`decline()` methods — so this table's `status` never transitions past `pending` (or
+    the `expired` a duplicate invite causes) through any real request path on either adapter."""
+
+    __tablename__ = "tenxyte_organization_invitations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    organization_id: Mapped[str] = mapped_column(ForeignKey("tenxyte_organizations.id", ondelete="CASCADE"), index=True)
+    email: Mapped[str] = mapped_column(String(191))
+    role_id: Mapped[str] = mapped_column(ForeignKey("tenxyte_organization_roles.id", ondelete="CASCADE"))
+    token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    invited_by_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tenxyte_users.id", ondelete="SET NULL"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    __table_args__ = (Index("ix_tenxyte_org_invitations_org_status", "organization_id", "status"),)

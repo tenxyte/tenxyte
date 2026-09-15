@@ -238,3 +238,28 @@ class BanUserRequest(BaseModel):
 class LockUserRequest(BaseModel):
     duration_minutes: int = Field(default=30, ge=1, le=43200)
     reason: str = Field(default="", max_length=500)
+
+
+class OrganizationCreateRequest(BaseModel):
+    """`parent_id` is a UUID string here, not the `IntegerField` Django's
+    `CreateOrganizationSerializer` uses — this port's `OrganizationDB.id` is a UUID string like
+    every other table (see `models_sa.py`'s `OrganizationDB` docstring), so the FK it references
+    is one too."""
+
+    name: str = Field(max_length=200)
+    slug: str = ""
+    description: str = ""
+    parent_id: str | None = None
+    metadata: dict = Field(default_factory=dict)
+    max_members: int = Field(default=0, ge=0)
+
+
+class OrganizationUpdateRequest(BaseModel):
+    """Only `name`/`description`/`metadata`/`max_members` — matches
+    `UpdateOrganizationSerializer` exactly (no `slug`/`parent_id`/`is_active`, see
+    `org_service.py`'s module docstring)."""
+
+    name: str | None = Field(default=None, max_length=200)
+    description: str | None = None
+    metadata: dict | None = None
+    max_members: int | None = Field(default=None, ge=0)

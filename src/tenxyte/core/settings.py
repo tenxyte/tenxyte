@@ -516,6 +516,24 @@ class Settings:
         explicitly request it — used by `require_agent_clearance` (task 9.2)."""
         return self._get("AIRS_CONFIRMATION_REQUIRED", [])
 
+    # ============================================================
+    # Organizations feature-flag (spec z_aud_3, Wave E) — org_role_inheritance/org_max_depth/
+    # org_max_members already existed above (see "Organization Settings" section); this is the
+    # one org setting that section didn't have yet.
+    # ============================================================
+
+    @property
+    def organizations_enabled(self) -> bool:
+        """Whether the Organizations feature (Parity_Group E) is enabled — mirrors
+        `org_settings.ORGANIZATIONS_ENABLED` (default `False`). Read once at app-factory time
+        (`app.py`'s `_build_router`), not per-request — same as Django, whose org URLs are only
+        ever registered into `urlpatterns` if this was `True` when `urls.py` first loaded, so a
+        disabled deployment 404s on `/organizations/*` rather than returning a JSON
+        `ORG_FEATURE_DISABLED` body (that body only exists for the case Django's own decorators
+        defend against defensively: the setting flipping after urlconf load, which can't actually
+        happen within one running process)."""
+        return self._get("ORGANIZATIONS_ENABLED", False)
+
 
 # Global settings instance (will be initialized by framework adapters)
 _settings: Settings | None = None

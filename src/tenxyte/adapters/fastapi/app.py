@@ -20,6 +20,7 @@ from tenxyte.adapters.fastapi.routers.auth import router as auth_router
 from tenxyte.adapters.fastapi.routers.dashboard import router as dashboard_router
 from tenxyte.adapters.fastapi.routers.login_otp import router as login_otp_router
 from tenxyte.adapters.fastapi.routers.magic_link import router as magic_link_router
+from tenxyte.adapters.fastapi.routers.orgs import router as orgs_router
 from tenxyte.adapters.fastapi.routers.otp import router as otp_router
 from tenxyte.adapters.fastapi.routers.password import router as password_router
 from tenxyte.adapters.fastapi.routers.rbac import router as rbac_router
@@ -38,9 +39,10 @@ def _build_router(settings: Settings) -> APIRouter:
     Requirement 4) — Wave A (`routers/auth.py`), Wave B (`routers/password.py`), Wave C's
     OTP-verification, 2FA-enrollment, magic-link, and passwordless-login-OTP routers
     (`routers/otp.py`, `routers/twofa.py`, `routers/magic_link.py`, `routers/login_otp.py`),
-    Wave F's AIRS router (`routers/airs.py`), and Wave D's full set of routers
+    Wave F's AIRS router (`routers/airs.py`), Wave D's full set of routers
     (`routers/rbac.py`, `routers/applications.py`, `routers/admin_users.py`,
-    `routers/admin_security.py`, `routers/dashboard.py`) — Wave D is now complete.
+    `routers/admin_security.py`, `routers/dashboard.py` — Wave D is complete), and Wave E's
+    organizations router (`routers/orgs.py`, conditionally registered — see below).
     """
     router = APIRouter(prefix=settings.api_prefix)
 
@@ -63,6 +65,15 @@ def _build_router(settings: Settings) -> APIRouter:
     router.include_router(admin_users_router)
     router.include_router(admin_security_router)
     router.include_router(dashboard_router)
+
+    # Wave E (z_aud_3 task 11.1) — mirrors Django's own conditionally-registered `urlpatterns`
+    # block exactly (`if org_settings.ORGANIZATIONS_ENABLED: urlpatterns += [...]`, evaluated once
+    # at urls.py load time): a disabled deployment never registers these paths at all, so it 404s
+    # on `/organizations/*`/`/org-roles/` rather than returning a JSON `ORG_FEATURE_DISABLED` body
+    # — see `org_context.py`'s module docstring.
+    if settings.organizations_enabled:
+        router.include_router(orgs_router)
+
     return router
 
 
