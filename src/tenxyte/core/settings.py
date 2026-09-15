@@ -552,6 +552,17 @@ class Settings:
         return self._get("SOCIAL_FACEBOOK_SCOPES", "email,public_profile")
 
     # ============================================================
+    # GDPR Settings (spec z_aud_3, Wave G chunk 3) — mirrors the one setting
+    # `AccountDeletionService` actually reads (`getattr(settings,
+    # "TENXYTE_ACCOUNT_DELETION_GRACE_PERIOD_DAYS", 30)`).
+    # ============================================================
+
+    @property
+    def account_deletion_grace_period_days(self) -> int:
+        """Days between a confirmed deletion request and account soft-deletion."""
+        return self._get("ACCOUNT_DELETION_GRACE_PERIOD_DAYS", 30)
+
+    # ============================================================
     # AIRS Settings (spec z_aud_3, Wave F) — mirrors tenxyte.conf.airs's defaults exactly.
     # ============================================================
 

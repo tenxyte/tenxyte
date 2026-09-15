@@ -15,7 +15,7 @@
 | DELETE | `/users/{user_id}/roles/` | UserRolesView | D | ✅ D |
 | DELETE | `/webauthn/credentials/{credential_id}/` | WebAuthnCredentialDeleteView | G | ✅ G |
 | GET | `/2fa/status/` | TwoFactorStatusView | C | ✅ C |
-| GET | `/account-deletion-status/` | account_deletion_status | G | 🔜 G |
+| GET | `/account-deletion-status/` | account_deletion_status | G | ✅ G |
 | GET | `/admin/audit-logs/` | AuditLogListView | D | ✅ D |
 | GET | `/admin/audit-logs/{log_id}/` | AuditLogDetailView | D | ✅ D |
 | GET | `/admin/blacklisted-tokens/` | BlacklistedTokenListView | D | ✅ D |
@@ -81,9 +81,9 @@
 | POST | `/ai/tokens/{pk}/suspend/` | AgentTokenSuspendView | F | ✅ F |
 | POST | `/applications/` | ApplicationListView | D | ✅ D |
 | POST | `/applications/{app_id}/regenerate/` | ApplicationRegenerateView | D | ✅ D |
-| POST | `/cancel-account-deletion/` | cancel_account_deletion | G | 🔜 G |
-| POST | `/confirm-account-deletion/` | confirm_account_deletion | G | 🔜 G |
-| POST | `/export-user-data/` | export_user_data | G | 🔜 G |
+| POST | `/cancel-account-deletion/` | cancel_account_deletion | G | ✅ G |
+| POST | `/confirm-account-deletion/` | confirm_account_deletion | G | ✅ G |
+| POST | `/export-user-data/` | export_user_data | G | ✅ G |
 | POST | `/login/email/` | LoginEmailView | A | ✅ A |
 | POST | `/login/otp/request/` | LoginOTPRequestView | C | ✅ C |
 | POST | `/login/otp/verify/` | LoginOTPVerifyView | C | ✅ C |
@@ -105,7 +105,7 @@
 | POST | `/permissions/` | PermissionListView | D | ✅ D |
 | POST | `/refresh/` | RefreshTokenView | A | ✅ A |
 | POST | `/register/` | RegisterView | A | ✅ A |
-| POST | `/request-account-deletion/` | request_account_deletion | G | 🔜 G |
+| POST | `/request-account-deletion/` | request_account_deletion | G | ✅ G |
 | POST | `/roles/` | RoleListView | D | ✅ D |
 | POST | `/roles/{role_id}/permissions/` | RolePermissionsView | D | ✅ D |
 | POST | `/social/{provider}/` | SocialAuthView | G | ✅ G |

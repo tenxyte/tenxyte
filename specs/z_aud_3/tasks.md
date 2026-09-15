@@ -1332,6 +1332,90 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       (`check_async_purity.py`) : OK, aucun pattern bloquant.
       **Restant (chunks 3-4/4)** : GDPR user (5 : demande de suppression, confirmation,
       annulation, statut, export) ; GDPR admin (4).
+    - **Chunk 3/4 fait — GDPR user (5/17)** : `POST request-account-deletion/`,
+      `POST confirm-account-deletion/`, `POST cancel-account-deletion/`,
+      `GET account-deletion-status/`, `POST export-user-data/`. **Contrat extrait** par lecture
+      intégrale de `views/account_deletion_views.py`, `services/account_deletion_service.py`,
+      `services/reauth_service.py`, et `models/gdpr.py::AccountDeletionRequest` — Django n'a
+      jamais extrait cette logique vers Core.
+      **Deux vrais bugs Django jamais découverts jusqu'ici, trouvés en portant, corrigés plutôt
+      que répliqués — chacun confirmé empiriquement en appelant la vraie vue Django directement
+      contre une vraie base de test, pas seulement en lisant le code** :
+      1. `export_user_data` itère `request.user.get_all_permissions()` comme si chaque élément
+         était un objet `Permission` (`perm.code`/`perm.name`/`perm.created_at`). Or
+         `get_all_permissions()` renvoie `list(self._get_effective_permission_codes())`, et cette
+         dernière renvoie un `set` de **chaînes** de code (`models/auth.py`, lu directement).
+         N'importe quel utilisateur ayant au moins une permission effective — donc pratiquement
+         tout utilisateur réel, un rôle par défaut accordant des permissions — plante cette ligne
+         avec un `AttributeError` non rattrapé (`'str' object has no attribute 'code'`), rattrapé
+         seulement par le `except Exception` global de la vue, qui renvoie un 500 générique.
+         Confirmé empiriquement (script pytest jetable contre la vraie base Django, sans mock).
+         La propre suite de tests Django **contourne** déjà ce plantage plutôt que de l'exercer
+         réellement : `test_account_deletion.py::TestExportUserDataView::test_export_data_success`
+         fait `patch.object(user.__class__, "get_all_permissions", return_value=[])`. Corrigé ici
+         en résolvant les codes effectifs vers de vraies lignes `PermissionDB` au lieu de traiter
+         chaque chaîne comme si c'était déjà un objet.
+      2. La porte 2FA de `request_deletion` appelle
+         `otp_service.verify_otp(user, otp_code, otp_type="login_2fa")` sur `OTPService` — mais
+         cette classe ne définit jamais que `verify_login_otp`/`verify_email_otp`/
+         `verify_phone_otp`/`verify_password_reset_otp` ; aucune méthode `verify_otp` n'existe.
+         Cet appel est **hors** du `try/except` de `request_deletion`, donc rien ne le rattrape :
+         tout utilisateur avec 2FA activé qui appelle `request-account-deletion/` obtient un
+         `AttributeError` non rattrapé, quel que soit le `otp_code` envoyé — une suppression de
+         compte impossible pour tout utilisateur 2FA, confirmé empiriquement de la même façon.
+         Corrigé en implémentant une vraie porte 2FA fonctionnelle : le même appel
+         `TOTPService.verify_2fa_async` que le flux de connexion de `routers/auth.py` utilise déjà
+         (vraie vérification TOTP contre `UserDB.mfa_secret`, via `SQLAlchemyTOTPStorage`) —
+         testé explicitement (code manquant, code invalide, puis un vrai code TOTP `pyotp` valide
+         qui réussit).
+      **Une troisième vraie trouvaille, répliquée à l'identique plutôt que corrigée** (aucun
+      plantage, aucun impact sécurité — juste un champ toujours vide, même catégorie que les
+      curiosités préservées de la vague WebAuthn) : `export_user_data`'s `"login_attempts"` et
+      `"applications"` sont **toujours** `[]` dans le vrai export Django, quelles que soient les
+      données réelles — gardés par `hasattr(request.user, "login_attempts"/"applications")`, qui
+      ne peut jamais être vrai puisque ni `LoginAttempt` ni `Application` n'ont de clé étrangère
+      vers `User` (vérifié dans `models/operational.py`/`models/application.py`). Répliqué à
+      l'identique : aucune requête vers `LoginAttemptDB`/`ApplicationDB` dans l'export ici non
+      plus — câbler des relations que Django lui-même n'a jamais câblées serait une régression de
+      parité, pas une correction (même raisonnement que la lacune `PasswordHistory` déjà
+      documentée dans `routers/password.py`).
+      **Réauth reste mot-de-passe uniquement** (le `reauth_otp_code`/Requirement 6.4 reste non
+      implémenté), même précédent que `routers/password.py`/`routers/twofa.py`. **`otp_code`
+      signifie deux choses différentes selon l'endpoint, exactement comme en Django** : sur
+      `request-account-deletion/`, c'est la vraie porte 2FA (bug #2 corrigé) ; sur
+      `cancel-account-deletion/`/`export-user-data/`, c'est l'alternative de réauth au mot de
+      passe (non implémentée).
+      **Formes de réponse réelles, vérifiées contre chaque `return Response(...)`, pas les docs
+      `@extend_schema`** (qui inventent des champs — `DELETION_ALREADY_PENDING`/423,
+      `TOKEN_EXPIRED`/410, `deletion_confirmed`, `account_reactivated`, etc. — qu'aucun code réel
+      ne produit jamais) : chaque échec réel est `{"error": <message>}` avec 400 et **sans**
+      `code`, sauf la pré-vérification `REAUTH_REQUIRED` et l'échec de réauth d'
+      `export-user-data/` (qui porte le `error_code` réel de `ReauthService.verify()`). Aucun
+      rejet de demande en double n'existe (`create_request` annule silencieusement toute demande
+      active et en crée une nouvelle — même raisonnement que la trouvaille `INVITATION_EXISTS` de
+      la Vague E) ; aucune expiration de token de confirmation n'existe non plus (aucune
+      vérification de 24h nulle part malgré la doc) — un token invalide/réutilisé tombe toujours
+      sur la même erreur générique 400.
+      **`dashboard/gdpr/` et le sous-objet `gdpr` de `dashboard/stats/` câblés sur de vraies
+      données** maintenant que `AccountDeletionRequestDB` existe (`dashboard_service.py` avait
+      documenté dès la Vague D que ces deux fonctions recevraient de vraies requêtes une fois le
+      Groupe G expédié) — deux formes réellement différentes dans Django lui-même
+      (`StatsService.get_gdpr_stats()` vs `StatsService._gdpr_summary()`), pas une incohérence de
+      port.
+      11 tests (`test_gdpr_router.py`) — auth requise, `REAUTH_REQUIRED` sans preuve d'identité,
+      mauvais mot de passe sans `code`, succès créant/remplaçant une demande active (pas de
+      `DELETION_ALREADY_PENDING`), 2FA requis et vérifié avec un vrai code TOTP `pyotp` (la
+      trouvaille #2, testée pas seulement documentée), confirmation démarrant la période de grâce
+      puis token déjà utilisé rejeté en 400 (pas 404/410), token inconnu en 400, annulation
+      nécessitant réauth et une demande active, export avec une vraie permission assignée sans
+      plantage (la trouvaille #1, testée pas seulement documentée), échec de réauth d'export
+      portant un `code`, log d'audit `data_exported` réellement écrit et reflété par
+      `dashboard/gdpr/`.
+      `parity_matrix --groups=A,B,C,D,E,F` : 110/114 endpoints Django portés au total (5
+      nouveaux) — Groupes A/B/C/D/E/F toujours verts. Suite FastAPI unitaire complète relancée :
+      272 passed, aucune régression. Couverture FastAPI complète : seuil 90 % atteint. Vérification
+      de pureté async (`check_async_purity.py`) : OK.
+      **Restant (chunk 4/4)** : GDPR admin (4 : liste/détail/traitement/traitement-des-expirées).
     - _Requirements: 4.1, 4.2, 4.4_
 
   - [ ] 12.2 Contract_Suite + matrice COMPLÈTE (tous groupes)

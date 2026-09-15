@@ -13,17 +13,20 @@ dashboard endpoints are inherently low-frequency/low-volume (an admin console, n
 path) — so this module fetches the relevant rows and aggregates them in Python instead. Simpler,
 fully portable, and easy to verify against `StatsService`'s exact output shape.
 
-**Two of Django's five sub-stats can't be faithfully backed by real data yet, documented rather
+**One of Django's five sub-stats can't be faithfully backed by real data yet, documented rather
 than faked with a backing table that doesn't belong to this task**:
 - `dashboard/organizations/` always returns `{"enabled": False}` — the exact shape Django itself
   returns when `org_settings.ORGANIZATIONS_ENABLED` is off. The Reference_Stack has no
   organizations concept at all yet (Parity_Group E, not yet ported), so "disabled" is simply true
   today, not a placeholder.
-- `dashboard/gdpr/` (and the `gdpr` sub-object of `dashboard/stats/`) returns the correctly-shaped
-  *zero-value* response `StatsService` would produce against an empty `AccountDeletionRequest`
-  table, computed without a backing table — Group G (GDPR deletion requests) hasn't shipped, and
-  standing up a table now, in a Group D task, ahead of Group G's own schema design would be
-  scope creep this chunk doesn't need. Once Group G lands, these two functions get real queries.
+
+**`dashboard/gdpr/` and the `gdpr` sub-object of `dashboard/stats/` now query real data** (spec
+z_aud_3, Wave G chunk 3, once `AccountDeletionRequestDB` landed) — `get_gdpr_stats_async` mirrors
+`StatsService.get_gdpr_stats()`'s `{"deletion_requests": {...}, "data_exports": {...}}` shape,
+and `get_global_stats_async`'s `"gdpr"` sub-key mirrors the separate, more compact
+`StatsService._gdpr_summary()` (`{"pending", "confirmed", "expiring_7d"}`) — two genuinely
+different shapes in Django itself, not a port inconsistency (see each function's own docstring
+below).
 """
 
 from __future__ import annotations
@@ -35,6 +38,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tenxyte.adapters.fastapi.models_sa import (
+    AccountDeletionRequestDB,
     ApplicationDB,
     AuditLogDB,
     BlacklistedTokenDB,
@@ -121,7 +125,29 @@ async def _security_summary_async(session: AsyncSession) -> dict:
     return {"blacklisted_tokens": active_blacklisted, "suspicious_activity_24h": suspicious_24h}
 
 
-_GDPR_ZERO_SUMMARY = {"pending": 0, "confirmed": 0, "expiring_7d": 0}
+async def _gdpr_summary_async(session: AsyncSession) -> dict:
+    """Mirrors `StatsService._gdpr_summary()` — the compact shape embedded in
+    `dashboard/stats/`'s `"gdpr"` key, distinct from `get_gdpr_stats_async`'s own, larger shape
+    (see module docstring)."""
+    now = datetime.now(timezone.utc)
+    week_ahead = now + timedelta(days=7)
+
+    pending = await session.scalar(
+        select(func.count()).select_from(AccountDeletionRequestDB).where(AccountDeletionRequestDB.status == "pending")
+    )
+    confirmed = await session.scalar(
+        select(func.count()).select_from(AccountDeletionRequestDB).where(AccountDeletionRequestDB.status == "confirmed")
+    )
+    expiring_7d = await session.scalar(
+        select(func.count())
+        .select_from(AccountDeletionRequestDB)
+        .where(
+            AccountDeletionRequestDB.status == "confirmed",
+            AccountDeletionRequestDB.grace_period_ends_at <= week_ahead,
+            AccountDeletionRequestDB.grace_period_ends_at > now,
+        )
+    )
+    return {"pending": pending or 0, "confirmed": confirmed or 0, "expiring_7d": expiring_7d or 0}
 
 
 async def get_global_stats_async(session: AsyncSession) -> dict:
@@ -131,7 +157,7 @@ async def get_global_stats_async(session: AsyncSession) -> dict:
         "auth": await _auth_summary_async(session),
         "applications": await _application_stats_async(session),
         "security": await _security_summary_async(session),
-        "gdpr": dict(_GDPR_ZERO_SUMMARY),
+        "gdpr": await _gdpr_summary_async(session),
     }
 
 
@@ -303,11 +329,42 @@ async def _2fa_rate_async(session: AsyncSession) -> float:
 
 
 async def get_gdpr_stats_async(session: AsyncSession) -> dict:
-    """GET /dashboard/gdpr/ — the zero-value shape `StatsService.get_gdpr_stats` would produce
-    against an empty `AccountDeletionRequest` table."""
+    """GET /dashboard/gdpr/ — mirrors `StatsService.get_gdpr_stats()` exactly."""
+    now = datetime.now(timezone.utc)
+    today = _day_start(now)
+    month_ago = today - timedelta(days=30)
+    week_ahead = now + timedelta(days=7)
+
+    rows = (await session.execute(select(AccountDeletionRequestDB.status))).scalars().all()
+    by_status = dict(Counter(rows))
+
+    expiring_7d = await session.scalar(
+        select(func.count())
+        .select_from(AccountDeletionRequestDB)
+        .where(
+            AccountDeletionRequestDB.status == "confirmed",
+            AccountDeletionRequestDB.grace_period_ends_at <= week_ahead,
+            AccountDeletionRequestDB.grace_period_ends_at > now,
+        )
+    )
+    exports_today = await session.scalar(
+        select(func.count())
+        .select_from(AuditLogDB)
+        .where(AuditLogDB.action == "data_exported", AuditLogDB.created_at >= today)
+    )
+    exports_this_month = await session.scalar(
+        select(func.count())
+        .select_from(AuditLogDB)
+        .where(AuditLogDB.action == "data_exported", AuditLogDB.created_at >= month_ago)
+    )
+
     return {
-        "deletion_requests": {"total": 0, "by_status": {}, "grace_period_expiring_7d": 0},
-        "data_exports": {"total_today": 0, "total_this_month": 0},
+        "deletion_requests": {
+            "total": sum(by_status.values()),
+            "by_status": by_status,
+            "grace_period_expiring_7d": expiring_7d or 0,
+        },
+        "data_exports": {"total_today": exports_today or 0, "total_this_month": exports_this_month or 0},
     }
 
 

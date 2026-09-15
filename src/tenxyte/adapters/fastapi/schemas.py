@@ -318,3 +318,42 @@ class SocialAuthRequest(BaseModel):
     id_token: str = ""
     user: dict | None = None
     device_info: str = ""
+
+
+class RequestAccountDeletionRequest(BaseModel):
+    """`otp_code` gates a real 2FA check here (spec z_aud_3, Wave G chunk 3/4) — unlike
+    `password/change/`'s `otp_code`, which is genuinely unimplemented reauth (see
+    `routers/password.py`'s module docstring), this one verifies a live TOTP code the same way
+    login does (`gdpr_service.py`'s module docstring documents why — Django's own equivalent gate
+    crashes with `AttributeError` for every 2FA-enabled user, a bug this port fixes rather than
+    replicates). `reauth_otp_code` (Login_OTP_Code-based reauth) stays unimplemented, same as
+    every other Sensitive_Password_Action in this port — a request with only `reauth_otp_code`
+    and no `password` gets `REAUTH_REQUIRED`."""
+
+    password: str = ""
+    reauth_otp_code: str = ""
+    otp_code: str = ""
+    reason: str = ""
+
+
+class ConfirmAccountDeletionRequest(BaseModel):
+    token: str
+
+
+class CancelAccountDeletionRequest(BaseModel):
+    """`otp_code` here is `reauth_otp_code`-equivalent reauth (not the 2FA gate) — Django's
+    `cancel_deletion` only ever calls `ReauthService.verify`, never the 2FA/OTPService branch
+    `request_deletion` does. Stays unimplemented, same reasoning as `password/change/`."""
+
+    password: str = ""
+    otp_code: str = ""
+
+
+class ExportUserDataRequest(BaseModel):
+    password: str = ""
+    otp_code: str = ""
+
+
+class ProcessDeletionRequest(BaseModel):
+    confirmation: str = ""
+    admin_notes: str = Field(default="", max_length=1000)

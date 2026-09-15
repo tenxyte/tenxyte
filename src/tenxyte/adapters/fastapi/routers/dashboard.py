@@ -3,9 +3,10 @@ Parity_Group D — Dashboard (spec z_aud_3, Wave D chunk 5/5, task 10.1): dashbo
 dashboard/auth, dashboard/security, dashboard/gdpr, dashboard/organizations — the last 5 of Group
 D's 46 endpoints, closing out Wave D. Contract extracted from `views/dashboard_views.py` (all 5
 require `dashboard.view`, verified by reading the Django views directly) and
-`services/stats_service.py`. See `dashboard_service.py`'s module docstring for why
-`dashboard/gdpr/`/`dashboard/organizations/` return real-shaped but currently-zero/disabled
-responses rather than querying tables that belong to not-yet-ported Parity_Groups (G, E).
+`services/stats_service.py`. `dashboard/gdpr/` now queries real data (Wave G chunk 3 wired it up
+once `AccountDeletionRequestDB` landed); `dashboard/organizations/` still returns Django's own
+real `{"enabled": False}` shape, since the Reference_Stack has no organizations concept disabled
+by default either — see `dashboard_service.py`'s module docstring for both.
 """
 
 from __future__ import annotations

@@ -18,6 +18,7 @@ from tenxyte.adapters.fastapi.routers.airs import router as airs_router
 from tenxyte.adapters.fastapi.routers.applications import router as applications_router
 from tenxyte.adapters.fastapi.routers.auth import router as auth_router
 from tenxyte.adapters.fastapi.routers.dashboard import router as dashboard_router
+from tenxyte.adapters.fastapi.routers.gdpr import router as gdpr_router
 from tenxyte.adapters.fastapi.routers.login_otp import router as login_otp_router
 from tenxyte.adapters.fastapi.routers.magic_link import router as magic_link_router
 from tenxyte.adapters.fastapi.routers.orgs import router as orgs_router
@@ -75,6 +76,9 @@ def _build_router(settings: Settings) -> APIRouter:
     # Django's urls.py; per-provider enablement is gated at the service-call level via
     # `settings.social_providers` (see social_auth_service.py's module docstring).
     router.include_router(social_router)
+    # Wave G chunk 3/4 (z_aud_3 task 12.1) — GDPR user endpoints, unconditionally registered too
+    # (Django's urls.py never gates these behind a feature flag).
+    router.include_router(gdpr_router)
 
     # Wave E (z_aud_3 task 11.1) — mirrors Django's own conditionally-registered `urlpatterns`
     # block exactly (`if org_settings.ORGANIZATIONS_ENABLED: urlpatterns += [...]`, evaluated once

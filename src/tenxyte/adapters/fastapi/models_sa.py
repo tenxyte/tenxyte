@@ -626,3 +626,30 @@ class SocialConnectionDB(Base):
     __table_args__ = (
         UniqueConstraint("provider", "provider_user_id", name="uq_tenxyte_social_connection_provider_user"),
     )
+
+
+class AccountDeletionRequestDB(Base):
+    """Wave G chunk 3/4 (z_aud_3 task 12.1) — mirrors `tenxyte.models.gdpr.AccountDeletionRequest`.
+    `status` stays a plain indexed string (`pending`/`confirmation_sent`/`confirmed`/`completed`/
+    `cancelled`), matching every other status-like column in this port (`RoleDB.code`,
+    `OrganizationMembershipDB.role_code`, etc.) rather than a SQLAlchemy `Enum` — no CHECK
+    constraint is added in Django's own migration either, just a `choices=` kwarg DRF/Django only
+    enforce at the serializer layer."""
+
+    __tablename__ = "tenxyte_account_deletion_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("tenxyte_users.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    confirmation_token: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    requested_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    grace_period_ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[str] = mapped_column(Text, default="")
+    reason: Mapped[str] = mapped_column(Text, default="")
+    admin_notes: Mapped[str] = mapped_column(Text, default="")
+    processed_by_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tenxyte_users.id", ondelete="SET NULL"), nullable=True
+    )
