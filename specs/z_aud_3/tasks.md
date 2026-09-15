@@ -1506,15 +1506,66 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       dernière fois — toutes vertes (voir le récapitulatif du commit de clôture).
     - **Validates: Requirements 4.1, 4.5, 5.1**
 
-- [ ] 13. Checkpoint - Ensure all tests pass
+- [x] 13. Checkpoint - Ensure all tests pass
   - Parité complète sous toutes les gates ; ask the user if questions arise.
+  - **Fait (2026-09-15)** — à la clôture de la Vague G/tâche 12.2 : `parity_matrix
+    --groups=A,B,C,D,E,F,G` 114/114 (100 %, 0 exclu) ; suite FastAPI unitaire 281 passed ;
+    couverture FastAPI 91,08 % (seuil 90 %) ; `check_async_purity.py` OK ; Contract_Suite complète
+    68 passed (tous groupes A-G) ; suite de régression Django complète 2238 passed, 5 skipped,
+    aucun échec. Toutes les gates vertes simultanément — checkpoint validé, aucune question
+    bloquante à remonter à l'utilisateur à ce stade.
 
 - [ ] 14. Fixtures de contrat pour le SDK JS
-  - [ ] 14.1 Export OpenAPI des deux adapters + check de drift
+  - [x] 14.1 Export OpenAPI des deux adapters + check de drift
     - `scripts/export_openapi.py` → `openapi/tenxyte-django.json` + `tenxyte-fastapi.json` ;
       job CI `openapi-drift` comparant les endpoints partagés
     - **Property 12: Les exports OpenAPI décrivent le même contrat**
     - **Validates: Requirements 6.6**
+    - **Fait.** Les deux exports utilisent des chemins sans préfixe (`/register/`, pas
+      `/api/v1/register/`) — même normalisation que `parity_matrix.py`, reflétant ce qu'est
+      réellement le contrat de chaque adaptateur : `tenxyte.urls.urlpatterns` est agnostique au
+      préfixe par conception (un projet consommateur l'`include()` où il veut — vérifié en lisant
+      `tests/integration/django/urls.py`, qui le monte sous `{api_prefix}/auth/`, un choix de
+      montage du *harnais de test*, pas un fait sur la bibliothèque), et `create_tenxyte_router()`
+      se nomme lui-même "a mountable router" pour la même raison. Le schéma Django est généré
+      directement depuis `tenxyte.urls.urlpatterns` (`SchemaGenerator(patterns=...)`), pas depuis
+      l'urlconf racine du projet de test — utiliser cette dernière aurait figé le choix de montage
+      du harnais dans un document censé être l'export *canonique* du contrat de la bibliothèque.
+      **Mesure réelle et scoping avec l'utilisateur** : une comparaison chemins+méthodes+codes de
+      statut sans tolérance échoue sur 85 des 114 endpoints portés (74 %) — mesuré, pas estimé.
+      Vérifié que ce n'est PAS 85 vrais bugs comportementaux : deux causes structurelles, pas un
+      défaut par endpoint — (1) le générateur de schéma FastAPI déclare automatiquement `422`
+      (sa propre erreur de validation Pydantic native) pour toute route avec un corps de requête,
+      alors qu'`errors.py`'s `_handle_validation_error` réécrit ça en `400` à l'exécution réelle
+      (parité avec Django, déjà documentée dans le docstring de `errors.py`) — le générateur
+      OpenAPI de FastAPI ne peut pas savoir que ce handler réécrit la réponse ; (2) chaque chemin
+      d'erreur levé via `TenxyteAPIError` (l'immense majorité des réponses non-2xx de ce port) est
+      invisible au générateur de schéma FastAPI sans un `responses={}` explicite sur la route —
+      qu'aucune des ~114 routes ne déclare encore. Question posée explicitement à l'utilisateur
+      (avec les vrais chiffres) sur la façon d'appliquer la comparaison des codes de statut :
+      choix retenu — fichier d'exceptions maintenant (`openapi_drift_exceptions.toml`, même
+      discipline que `parity_exclusions.toml` : chaque entrée exige une `reason` non vide),
+      généré une fois depuis le vrai diff mesuré (mode `--bootstrap-exceptions`, pas exécuté en
+      CI), plutôt que de retrofitter `responses={}` sur ~114 routes (hors scope, un chantier dédié)
+      ou d'abandonner la comparaison des codes de statut. La CI échoue seulement sur une dérive
+      NOUVELLE non déjà listée — fermer une exception (en ajoutant vraiment un `responses={}`
+      correct, ou en corrigeant une doc Django fausse) est un vrai progrès incrémental vers la
+      Property 12, pas une exclusion-comme-réponse permanente à la Property 1.
+      **Corrigé au passage** : `tests/test_parity_matrix.py::TestMainCLI::
+      test_groups_all_fails_when_nothing_ported` s'appuyait sur l'état réel de l'app pour prouver
+      "le gate échoue quand rien n'est porté" — devenu silencieusement faux le jour où la parité a
+      atteint 100 % (le test serait passé en assertant l'inverse de son propre nom). Corrigé pour
+      forcer le vide via `monkeypatch.setattr(parity_matrix, "get_fastapi_routes", dict)`, robuste
+      indépendamment de l'état réel futur de l'app.
+      Nouveaux tests réels (pas de mocks) : `tests/test_export_openapi.py` (14 tests — génération
+      réelle des deux schémas avec chemins sans préfixe, extraction de codes de statut, calcul de
+      dérive, parsing du fichier d'exceptions, CLI `main()` complet) + le test corrigé de
+      `test_parity_matrix.py`. Job CI `openapi-drift` (nouveau) : installe, lance ces tests, exporte
+      les deux schémas, applique le gate, publie les deux JSON en artefact CI.
+      Vérification : `export_openapi.py --check-drift` → `OK: every drift (85) is accounted for`.
+      `parity_matrix --groups=A,B,C,D,E,F,G` toujours 114/114. Suite FastAPI unitaire, couverture
+      FastAPI, `check_async_purity.py`, Contract_Suite complète (68 passed) et suite de régression
+      Django complète toutes relancées après ce chunk — voir le récapitulatif du commit.
 
   - [ ] 14.2 Backend démo docker pour la CI JS
     - `examples/js-contract-backend/` : compose FastAPI + seed déterministe, consommé par les

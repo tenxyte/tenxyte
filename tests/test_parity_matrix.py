@@ -160,7 +160,12 @@ class TestMainCLI:
         assert parity_matrix.main([]) == 0
 
     def test_groups_all_fails_when_nothing_ported(self, tmp_path, monkeypatch):
+        """Forces the gap via `get_fastapi_routes` rather than relying on the app's actual
+        current parity level — the real app reached 100% parity (Wave G, spec z_aud_3 task
+        12.1/12.2), so this test would otherwise silently start asserting the opposite of its own
+        name the moment parity was complete, rather than proving what it claims to prove."""
         self._isolate_docs(tmp_path, monkeypatch)
+        monkeypatch.setattr(parity_matrix, "get_fastapi_routes", dict)
         assert parity_matrix.main(["--groups=all"]) == 1
 
     def test_writes_both_language_docs_by_default(self, tmp_path, monkeypatch):

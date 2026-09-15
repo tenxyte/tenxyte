@@ -322,6 +322,47 @@ jobs:
           python scripts/parity_matrix.py --groups=A,B,C,D,E,F,G
 
   # ===========================================================================
+  # Contract_Fixtures — OpenAPI export + drift check (spec z_aud_3, Requirement 6.6, task 14.1,
+  # Property 12). See scripts/export_openapi.py's own module docstring for why the drift gate is
+  # scoped to path/method/status-code comparison against openapi_drift_exceptions.toml rather
+  # than full response-body schema equality.
+  # ===========================================================================
+  openapi-drift:
+    name: OpenAPI export + drift
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[django,fastapi,dev]"
+
+      - name: Run scripts/export_openapi.py + scripts/parity_matrix.py unit tests
+        env:
+          DJANGO_SETTINGS_MODULE: tests.integration.django.settings
+        run: |
+          pytest tests/test_export_openapi.py tests/test_parity_matrix.py --no-cov -q
+
+      - name: Export both adapters' OpenAPI documents and check drift
+        env:
+          DJANGO_SETTINGS_MODULE: tests.integration.django.settings
+        run: |
+          python scripts/export_openapi.py --check-drift
+
+      - name: Upload OpenAPI exports
+        uses: actions/upload-artifact@v7
+        with:
+          name: openapi-exports
+          path: openapi/
+
+  # ===========================================================================
   # AIRS Conformance Suite (spec z_aud_2, task 4.4) — the spec/airs/AIRS-1.0.md ↔ implementation
   # lock: runs the black-box HTTP suite (spec/airs/conformance/) against a real ephemeral Tenxyte
   # instance, all Conformance Levels enabled, then proves it discriminates by running it against
