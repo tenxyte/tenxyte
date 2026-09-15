@@ -78,6 +78,27 @@ def test_property_9_malformed_json_is_canonical(client):
     _assert_canonical_shape(response.json())
 
 
+def test_property_9_wrong_content_type_is_canonical_not_a_500(client):
+    """Real bug found via a user's own manual testing (not just read, reproduced directly): a
+    client sending valid JSON *bytes* but the wrong `Content-Type` (PowerShell's `curl` alias —
+    really `Invoke-WebRequest` — does exactly this by default) makes Pydantic's
+    `RequestValidationError.errors()` echo the raw `bytes` payload back in its `"input"` field.
+    `_handle_validation_error` used to pass that straight into `JSONResponse`, whose `render()`
+    uses the stdlib's `json.dumps()` — which cannot serialize `bytes` — crashing the handler
+    itself and turning an intended clean 400 into an unhandled 500. Fixed by running
+    `exc.errors()` through `jsonable_encoder` first."""
+    response = client.post(
+        "/echo",
+        content=b'{"email": "x@example.com", "age": 30}',
+        headers={"Content-Type": "text/plain"},
+    )
+    assert response.status_code == 400
+    body = response.json()
+    _assert_canonical_shape(body)
+    assert body["code"] == "VALIDATION_ERROR"
+    assert isinstance(body["details"][0]["input"], str)  # not raw bytes — jsonable_encoder ran
+
+
 def test_property_9_unknown_route_404_is_canonical(client):
     response = client.get("/does-not-exist")
     assert response.status_code == 404

@@ -22,6 +22,7 @@ from typing import Any
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from fastapi import FastAPI, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -89,10 +90,22 @@ async def _handle_tenxyte_error(request: Request, exc: TenxyteAPIError) -> JSONR
 
 async def _handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
     """422 (FastAPI/Pydantic's native validation failure) -> canonical 400, per design.md's error
-    table — parity with the Django_Adapter's `{"error": "Validation error", "details": ...}`."""
+    table — parity with the Django_Adapter's `{"error": "Validation error", "details": ...}`.
+
+    **`exc.errors()` is run through `jsonable_encoder` before it reaches `JSONResponse`** — a
+    real, previously-undiscovered bug found via a user's own manual testing, reproduced directly
+    (not just read): `exc.errors()`'s `"input"` field echoes back the raw value Pydantic actually
+    received, which for a body that never parsed as JSON to begin with (e.g. a client sending the
+    wrong `Content-Type`, as PowerShell's `curl` alias — really `Invoke-WebRequest` — does by
+    default) is the literal raw `bytes` payload. `JSONResponse.render()` uses the stdlib's
+    `json.dumps()`, which cannot serialize `bytes` — so this handler itself crashed with
+    `TypeError: Object of type bytes is not JSON serializable`, turning an intended clean 400
+    `VALIDATION_ERROR` into an unhandled 500 `INTERNAL_ERROR` instead. `jsonable_encoder` (already
+    a FastAPI dependency, no new import) safely converts `bytes` and any other non-JSON-native
+    value `exc.errors()` might carry to a JSON-safe representation."""
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
-        content=_canonical_body("Validation error", "VALIDATION_ERROR", details=exc.errors()),
+        content=_canonical_body("Validation error", "VALIDATION_ERROR", details=jsonable_encoder(exc.errors())),
     )
 
 
