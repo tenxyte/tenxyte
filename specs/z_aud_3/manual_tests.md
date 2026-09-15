@@ -12,31 +12,66 @@ Un test manuel est **PASS** uniquement si toutes ses étapes de vérification so
 ## MT-1 — Quickstart FastAPI chronométré (« 5 minutes au premier appel »)
 
 **Couvre :** Requirements 3.1, 3.2, 3.3, 7.1 · **Tâches :** 2.1, 2.2, 16.1
-**Prérequis :** machine vierge du projet (ou venv neuf), Python 3.10+, chronomètre.
+**Prérequis :** venv neuf, Python 3.10+, chronomètre.
 **Règle d'or :** suivre `docs/en/fastapi_quickstart.md` **mot à mot, sans aucune connaissance
 externe** — le test valide la doc autant que le code.
+
+> **⚠️ Tant que cette branche n'est pas publiée sur PyPI** (dernier release réel : `v0.9.6.4.2`,
+> un paquet antérieur à tout ce chantier — vérifié via les tags git et un vrai `pip install`
+> pendant l'exécution de ce test le 2026-09-15, qui installe Django/DRF/drf-spectacular en
+> dépendances de `[fastapi]` et ne contient pas `create_tenxyte_app` du tout), l'étape 1 ne peut
+> **pas** être une « machine vierge » pointant sur le vrai PyPI — installer depuis les sources
+> locales de cette branche à la place (`pip install -e "<chemin-vers-le-repo>[fastapi]"`). Ne
+> pas retirer cette note avant un vrai `git tag`/release incluant ce travail — c'est un vrai
+> `FAIL` de doc, pas une astuce d'environnement de test.
 
 ### Procédure
 
 1. Démarrer le chronomètre. Dérouler le quickstart tel qu'écrit :
    ```bash
    python -m venv /tmp/vx-fapi && source /tmp/vx-fapi/bin/activate
-   pip install "tenxyte[fastapi]"          # SANS Django — vérifier: pip freeze | grep -i django → vide
+   pip install -e "<chemin-vers-le-repo>[fastapi]"   # voir l'avertissement PyPI ci-dessus
+                                                       # vérifier : pip freeze | grep -i django → vide
    # créer main.py selon la doc (create_tenxyte_app)
+   # créer un fichier .env avec TENXYTE_JWT_SECRET_KEY (voir la doc — chargé automatiquement,
+   # pas besoin de --env-file ni de variable d'environnement OS)
    uvicorn main:app --reload
    ```
-2. Premier cycle API selon la doc (credentials d'application inclus) :
+2. Créer une Application pour obtenir de vrais identifiants (`X-Access-Key`/`X-Access-Secret` —
+   l'auth applicative est active par défaut, la doc fournit un script `create_application.py`
+   prêt à l'emploi) :
    ```bash
-   curl -X POST .../register/  -H "X-Access-Key: ..." -d '{...}'
-   curl -X POST .../login/email/ ...
-   curl .../me/ -H "Authorization: Bearer <access_token>"
+   python create_application.py
    ```
-3. Arrêter le chronomètre au premier `GET /me/` réussi.
-4. Vérifier : Swagger accessible (`/docs`), erreurs au format `{error, code, details}` (tester un
-   login faux), aucun `NotImplementedError` rencontré.
+3. Premier cycle API selon la doc (credentials d'application inclus) :
+   ```bash
+   curl -X POST .../register/  -H "X-Access-Key: ..." -H "X-Access-Secret: ..." -d '{...}'
+   curl -X POST .../login/email/ -H "X-Access-Key: ..." -H "X-Access-Secret: ..." ...
+   curl .../me/ -H "X-Access-Key: ..." -H "X-Access-Secret: ..." -H "Authorization: Bearer <access_token>"
+   ```
+4. Arrêter le chronomètre au premier `GET /me/` réussi.
+5. Vérifier : Swagger accessible **sans** identifiants d'application à l'URL préfixée
+   `{base_url}/api/v1/docs/` (avec le slash final — c'est la vraie URL que `create_tenxyte_app()`
+   monte ; `/docs` nu à la racine n'existe pas et renvoie 401), erreurs au format
+   `{error, code, details}` (tester un login faux), aucun `NotImplementedError` rencontré.
 
 ✅ Attendu : cycle complet ≤ **5 minutes** sans sortir de la doc ; Django absent de
-l'environnement ; toute étape ambiguë de la doc = FAIL de la doc (corriger puis re-tester).
+l'environnement (une fois installé depuis les sources locales de cette branche) ; toute étape
+ambiguë de la doc = FAIL de la doc (corriger puis re-tester).
+
+**Historique de correction (2026-09-15)** : la première exécution réelle de ce test a échoué à
+plusieurs reprises avant de réussir — chaque échec corrigé dans le code ou la doc, pas contourné
+dans le test :
+- `pip install "tenxyte[fastapi]"` installait un vieux paquet PyPI (Django inclus,
+  `create_tenxyte_app` absent) → étape 1 corrigée ci-dessus, install locale de la branche.
+- La création d'une Application était absente de la procédure alors que l'étape suivante exigeait
+  déjà `X-Access-Key`/`X-Access-Secret` — impossible à suivre « mot à mot » → étape 2 ajoutée.
+- `TENXYTE_JWT_SECRET_KEY` fixée via `$env:`/`export` disparaissait à chaque nouveau terminal →
+  fonctionnalité `.env` ajoutée au Core (`Adapter_Custom > OS env > .env > preset > default`,
+  `python-dotenv` maintenant dépendance Core) et recommandée en premier dans la doc et ici.
+- `/docs` (Swagger natif de FastAPI) restait 401 même sans aucune bonne raison documentée — bug
+  réel dans `create_tenxyte_app()` (aucun `docs_url` explicite, donc hors du chemin exempté par
+  défaut) corrigé dans `app.py` ; étape 5 corrigée avec la vraie URL.
 
 ---
 
@@ -185,6 +220,7 @@ Captures d'écran archivées en preuve.
 
 | ID | Intitulé | Date | Exécutant | Environnement | Résultat | Notes / lien preuve |
 |----|----------|------|-----------|---------------|----------|---------------------|
+| MT-1 | Quickstart FastAPI chronométré (run de découverte) | 2026-09-15 | utilisateur | Windows, PowerShell, Python 3.14 | ❌ FAIL (doc corrigée) | Non chronométré, run itératif — 3 blocages réels trouvés et corrigés (PyPI périmé, création d'Application manquante, `/docs` gated) : voir « Historique de correction » ci-dessus. Un run propre et chronométré reste à faire pour PASS officiel. |
 | MT-1 | Quickstart FastAPI chronométré | — | — | — | ⬜ À exécuter | temps mesuré : — |
 | MT-2 | Parcours Postman croisés (2.1–2.7) | — | — | — | ⬜ À exécuter | |
 | MT-3 | Tenue en charge async + contre-épreuve | — | — | — | ⬜ À exécuter | p95/p99 : — |

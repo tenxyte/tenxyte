@@ -1701,6 +1701,21 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
   - [ ] 17.2 Dérouler la campagne de tests manuels
     - Exécuter `manual_tests.md` MT-1 à MT-7 et compléter le registre
     - _Requirements: 7.1, 6.3, 6.4_
+    - **En cours.** MT-1 (2026-09-15) : premier run réel (non chronométré) par l'utilisateur —
+      3 vrais blocages trouvés et corrigés (pas contournés) pendant l'exécution : le paquet
+      publié sur PyPI (`v0.9.6.4.2`) ne contient pas ce chantier et installe Django par erreur
+      pour `[fastapi]` ; la doc omettait la création d'une Application alors que les étapes
+      suivantes exigeaient déjà `X-Access-Key`/`X-Access-Secret` ; `/docs` restait bloqué par
+      l'auth applicative même sans identifiants (bug réel dans `create_tenxyte_app()`, corrigé —
+      voir le commit `docs+fix: rewrite FastAPI quickstart...`). `manual_tests.md`'s MT-1 corrigé
+      en conséquence (avertissement PyPI, étape de création d'Application, URL `/docs`
+      corrigée) — voir son propre « Historique de correction ». Une discussion pendant ce même
+      run a aussi mené à la fonctionnalité de priorité de réglages unifiée
+      (`Adapter_Custom > OS env > .env > preset > default`, commit
+      `feat(settings): unified priority chain...`), hors périmètre direct de z_aud_3 mais motivée
+      directement par cette exécution manuelle. **Reste à faire** : un run MT-1 propre et
+      chronométré (le run du 2026-09-15 était un run de découverte, pas la preuve officielle) ;
+      MT-2 à MT-7 pas encore exécutés.
 
 - [ ] 18. Checkpoint final - Ensure all tests pass
   - Toutes gates vertes (parité, contrat, couverture, pureté, conformité, drift), registre manuel
