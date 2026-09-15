@@ -319,7 +319,7 @@ jobs:
           # this was a pre-existing gap: without this, the step raises ImproperlyConfigured.
           DJANGO_SETTINGS_MODULE: tests.integration.django.settings
         run: |
-          python scripts/parity_matrix.py --groups=A,B,C,D,E,F
+          python scripts/parity_matrix.py --groups=A,B,C,D,E,F,G
 
   # ===========================================================================
   # AIRS Conformance Suite (spec z_aud_2, task 4.4) — the spec/airs/AIRS-1.0.md ↔ implementation

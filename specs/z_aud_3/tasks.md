@@ -1167,7 +1167,7 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
   membres, invitations) — même logique que les vagues D et précédentes.
 
 - [ ] 12. Vague de parité G — WebAuthn, Social, GDPR
-  - [ ] 12.1 Porter le groupe G (17 endpoints : webauthn/* 6, social/* 2, GDPR user 5, GDPR admin
+  - [x] 12.1 Porter le groupe G (17 endpoints : webauthn/* 6, social/* 2, GDPR user 5, GDPR admin
     4 — découpé en chunks committables séparément par sous-système, même logique que les vagues
     précédentes. Fichiers séparés par sous-système — `routers/webauthn.py`/`routers/social.py`/
     `routers/gdpr.py` — plutôt que le `routers/webauthn_social.py` unique prévu initialement,
@@ -1416,6 +1416,58 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       272 passed, aucune régression. Couverture FastAPI complète : seuil 90 % atteint. Vérification
       de pureté async (`check_async_purity.py`) : OK.
       **Restant (chunk 4/4)** : GDPR admin (4 : liste/détail/traitement/traitement-des-expirées).
+    - **Chunk 4/4 fait — GDPR admin (4/17), clôt la Vague G** :
+      `GET admin/deletion-requests/`, `GET admin/deletion-requests/{id}/`,
+      `POST admin/deletion-requests/{id}/process/`,
+      `POST admin/deletion-requests/process-expired/`. **Contrat extrait** par lecture intégrale
+      de `views/gdpr_admin_views.py` et `serializers/gdpr_admin_serializers.py`.
+      **Deux permissions différentes, pas une seule** — vérifié en lisant le décorateur
+      `@require_permission(...)` de chaque vue directement, pas supposé uniforme comme s'est
+      avéré être le cas pour les 7 endpoints admin-security de la Vague D chunk 4 : liste/détail
+      exigent `gdpr.admin`, traitement/traitement-des-expirées exigent `gdpr.process` — un vrai
+      découpage lecture/écriture délibéré, testé explicitement (un admin n'ayant que `gdpr.admin`
+      reçoit un 403 sur `process/`).
+      **Champs réels du sérialiseur, vérifiés contre `Meta.fields` directement, pas les docs
+      `@extend_schema`** (qui prétendent à tort que `user_agent` fait partie de la réponse liste —
+      il n'y est jamais, `Meta.fields` l'omet entièrement) : `id`, `user`, `user_email`, `status`,
+      `requested_at`, `confirmed_at`, `grace_period_ends_at`, `completed_at`, `ip_address`,
+      `reason`, `admin_notes`, `processed_by`, `processed_by_email`, `is_grace_period_expired`.
+      **`?grace_period_expiring=true` est un vrai paramètre documenté qui ne fait absolument
+      rien** — jamais lu nulle part dans la vraie logique de filtre de la vue. Accepté et
+      silencieusement ignoré ici aussi.
+      **Tri répliqué comme la propre vérification littérale d'appartenance à un ensemble de
+      Django, pas via le helper partagé `pagination.apply_ordering`** — même raisonnement que la
+      trouvaille de tri de la Vague D chunk 4 (`BlacklistedTokenListView`/`RefreshTokenListView`) :
+      la vraie vue fait `if ordering in allowed_fields: queryset = queryset.order_by(ordering)`,
+      où `allowed_fields` ne contient que 6 valeurs exactes — pas de tri multi-champ séparé par
+      virgules, pas de `user__email` malgré que la doc le liste comme valeur valide — une valeur
+      non reconnue retombe silencieusement sur le tri par défaut du modèle (`-requested_at`).
+      Testé explicitement (`?ordering=user__email` n'a aucun effet).
+      **Réponse de succès réelle de `ProcessDeletionView` avec un champ supplémentaire non
+      documenté** — `"request": DeletionRequestSerializer(deletion_request).data` — en plus des 6
+      champs documentés (`message`, `deletion_completed`, `processed_at`, `data_anonymized`,
+      `audit_log_id`, `user_notified`). Répliqué à l'identique et testé explicitement.
+      **`ProcessExpiredDeletionsView`'s réponse réelle est juste `{"message", "processed",
+      "failed"}`** — pas les `processed_count`/`failed_count`/`skipped_count`/`processing_time`/
+      `details` des docs.
+      **`execute_deletion` réutilise `admin_user_service.soft_delete_async`** — le même chemin
+      d'anonymisation léger déjà porté à la Vague D chunk 3 pour la suppression admin
+      d'utilisateur ; Django appelle `self.user.soft_delete()`, la même méthode modèle.
+      9 tests (`test_gdpr_admin_router.py`) — permission requise pour la liste, champs réels sans
+      `user_agent`, filtres par statut et par utilisateur, tri non reconnu retombant sur
+      `-requested_at`, détail introuvable en 404 avec `code`, `gdpr.process` distinct de
+      `gdpr.admin` (403 pour un admin liste-seule), statut/texte de confirmation exacts requis,
+      succès anonymisant réellement l'utilisateur (email réécrit `deleted_*`) et incluant le
+      champ `request` non documenté, traitement des expirées ne touchant que les demandes dont la
+      période de grâce est vraiment passée.
+      `parity_matrix --groups=A,B,C,D,E,F,G` : **114/114 endpoints Django portés — 100 %,
+      groupe G inclus pour la première fois et vert**. Suite FastAPI unitaire complète relancée
+      après tous les changements : 281 passed, aucune régression. Couverture FastAPI complète :
+      91,08 % (seuil 90 % requis). Vérification de pureté async (`check_async_purity.py`) : OK.
+      Suite de régression Django complète : 2238 passed, 5 skipped, aucun échec.
+      `.github/workflows/ci.yml`'s gate `contract-parity` mis à jour (`--groups=A,B,C,D,E,F,G`)
+      maintenant que le groupe G est expédié en entier.
+      **Vague G clôturée — les 17/17 endpoints du Groupe G sont portés.**
     - _Requirements: 4.1, 4.2, 4.4_
 
   - [ ] 12.2 Contract_Suite + matrice COMPLÈTE (tous groupes)

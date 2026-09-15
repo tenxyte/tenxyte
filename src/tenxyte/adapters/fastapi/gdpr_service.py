@@ -1,10 +1,13 @@
 """
-Parity_Group G chunk 3/4 (spec z_aud_3, task 12.1) — GDPR user endpoints: `request-account-
+Parity_Group G chunks 3-4/4 (spec z_aud_3, task 12.1) — GDPR user endpoints: `request-account-
 deletion/`, `confirm-account-deletion/`, `cancel-account-deletion/`, `account-deletion-status/`,
-`export-user-data/` (5 of Group G's 17 endpoints, 15/17 cumulative once this chunk ships). Contract
-extracted from `views/account_deletion_views.py`, `services/account_deletion_service.py`,
-`services/reauth_service.py`, and `models/gdpr.py::AccountDeletionRequest`, each read in full —
-Django never extracted any of this to Core.
+`export-user-data/` (chunk 3, 5 endpoints); GDPR admin: `admin/deletion-requests/*` (chunk 4, 4
+endpoints — see the `# GDPR admin` section further down this file for its own contract notes).
+9 of Group G's 17 endpoints total, 17/17 cumulative once chunk 4 ships. Contract extracted from
+`views/account_deletion_views.py`, `services/account_deletion_service.py`,
+`services/reauth_service.py`, `models/gdpr.py::AccountDeletionRequest`, `views/gdpr_admin_views.py`,
+and `serializers/gdpr_admin_serializers.py`, each read in full — Django never extracted any of
+this to Core.
 
 **Two real, previously-undiscovered Django bugs found while porting, fixed rather than
 replicated — each confirmed empirically by calling the real view function directly against a live
@@ -124,7 +127,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tenxyte.adapters.fastapi import rbac_service
@@ -497,3 +500,224 @@ async def export_user_data_async(session: AsyncSession, user: User, *, ip_addres
     )
 
     return data
+
+
+# ============================================================
+# GDPR admin (Wave G chunk 4/4, z_aud_3 task 12.1) — admin/deletion-requests/*. Contract
+# extracted from `views/gdpr_admin_views.py` and `serializers/gdpr_admin_serializers.py`, both
+# read in full.
+#
+# **Two different permissions, not one** — verified by reading each view's own
+# `@require_permission(...)` decorator directly, not assumed uniform the way Wave D chunk 4's
+# admin-security endpoints turned out to be: `DeletionRequestListView`/`DeletionRequestDetailView`
+# require `gdpr.admin`; `ProcessDeletionView`/`ProcessExpiredDeletionsView` require `gdpr.process`
+# — a real, deliberate read/write permission split (see `routers/gdpr_admin.py`).
+#
+# **`DeletionRequestSerializer`'s real fields, verified against `Meta.fields` directly, not the
+# `@extend_schema` docs** (which claim `user_agent` is in the list response — it never is; the
+# serializer's own `Meta.fields` list omits it entirely): `id`, `user`, `user_email`, `status`,
+# `requested_at`, `confirmed_at`, `grace_period_ends_at`, `completed_at`, `ip_address`, `reason`,
+# `admin_notes`, `processed_by`, `processed_by_email`, `is_grace_period_expired`.
+#
+# **`?grace_period_expiring=true` is a real, documented query param that does absolutely
+# nothing** — `DeletionRequestListView.get` never reads it anywhere in its real filter logic.
+# Accepted and silently ignored here too, same as every other never-implemented documented
+# feature already found in this port (`?ordering=user__email` below is the same story).
+#
+# **Ordering replicated as Django's own literal set-membership check, not through the shared
+# `pagination.apply_ordering` helper** — same reasoning as Wave D chunk 4's
+# `BlacklistedTokenListView`/`RefreshTokenListView` finding: the real view does
+# `if ordering in allowed_fields: queryset = queryset.order_by(ordering)`, where `allowed_fields`
+# is exactly `{"requested_at", "-requested_at", "confirmed_at", "-confirmed_at",
+# "grace_period_ends_at", "-grace_period_ends_at"}` — no comma-separated multi-field support, no
+# `user__email`/`-user__email` despite the docs listing it as a valid `ordering` value, and an
+# unrecognized value silently falls back to the model's own default ordering (`-requested_at`)
+# rather than raising or being explicitly re-applied.
+#
+# **`ProcessDeletionView`'s real success response includes an undocumented extra field** —
+# `"request": DeletionRequestSerializer(deletion_request).data` — alongside the 6 documented
+# fields (`message`, `deletion_completed`, `processed_at`, `data_anonymized`, `audit_log_id`,
+# `user_notified`). Replicated exactly (verified by reading the real `return Response({...})`
+# call, not the `@extend_schema` docs, which omit it).
+#
+# **`ProcessExpiredDeletionsView`'s real response is just `{"message", "processed", "failed"}`**
+# — not the docs' `processed_count`/`failed_count`/`skipped_count`/`processing_time`/`details`.
+#
+# **`execute_deletion` reuses `admin_user_service.soft_delete_async`** — the same lighter
+# anonymization path (email rewritten, name cleared, `is_deleted`/`deleted_at` set) Wave D chunk 3
+# already ported for the admin-user-management soft-delete action; Django's own
+# `AccountDeletionRequest.execute_deletion` calls `self.user.soft_delete()`, the identical model
+# method.
+# ============================================================
+
+_ORDERING_ALLOWED = {
+    "requested_at",
+    "-requested_at",
+    "confirmed_at",
+    "-confirmed_at",
+    "grace_period_ends_at",
+    "-grace_period_ends_at",
+}
+
+
+async def _user_email(session: AsyncSession, user_id: str | None) -> str | None:
+    if not user_id:
+        return None
+    row = await session.get(UserDB, user_id)
+    return row.email if row else None
+
+
+async def serialize_deletion_request_async(session: AsyncSession, req: AccountDeletionRequestDB) -> dict:
+    return {
+        "id": req.id,
+        "user": req.user_id,
+        "user_email": await _user_email(session, req.user_id),
+        "status": req.status,
+        "requested_at": req.requested_at.isoformat(),
+        "confirmed_at": req.confirmed_at.isoformat() if req.confirmed_at else None,
+        "grace_period_ends_at": req.grace_period_ends_at.isoformat() if req.grace_period_ends_at else None,
+        "completed_at": req.completed_at.isoformat() if req.completed_at else None,
+        "ip_address": req.ip_address,
+        "reason": req.reason,
+        "admin_notes": req.admin_notes,
+        "processed_by": req.processed_by_id,
+        "processed_by_email": await _user_email(session, req.processed_by_id),
+        "is_grace_period_expired": bool(
+            req.grace_period_ends_at
+            and req.grace_period_ends_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc)
+        ),
+    }
+
+
+async def list_deletion_requests_async(
+    session: AsyncSession,
+    *,
+    user_id: str | None,
+    status: str | None,
+    date_from: str | None,
+    date_to: str | None,
+    ordering: str,
+    page: int,
+    page_size: int,
+) -> tuple[list[AccountDeletionRequestDB], int]:
+    stmt = select(AccountDeletionRequestDB)
+    count_stmt = select(func.count(AccountDeletionRequestDB.id))
+
+    if user_id:
+        stmt = stmt.where(AccountDeletionRequestDB.user_id == user_id)
+        count_stmt = count_stmt.where(AccountDeletionRequestDB.user_id == user_id)
+    if status:
+        stmt = stmt.where(AccountDeletionRequestDB.status == status)
+        count_stmt = count_stmt.where(AccountDeletionRequestDB.status == status)
+    if date_from:
+        stmt = stmt.where(func.date(AccountDeletionRequestDB.requested_at) >= date_from)
+        count_stmt = count_stmt.where(func.date(AccountDeletionRequestDB.requested_at) >= date_from)
+    if date_to:
+        stmt = stmt.where(func.date(AccountDeletionRequestDB.requested_at) <= date_to)
+        count_stmt = count_stmt.where(func.date(AccountDeletionRequestDB.requested_at) <= date_to)
+
+    if ordering in _ORDERING_ALLOWED:
+        column = getattr(AccountDeletionRequestDB, ordering.lstrip("-"))
+        stmt = stmt.order_by(column.desc() if ordering.startswith("-") else column.asc())
+    else:
+        stmt = stmt.order_by(AccountDeletionRequestDB.requested_at.desc())
+
+    total = (await session.execute(count_stmt)).scalar_one()
+    stmt = stmt.offset((page - 1) * page_size).limit(page_size)
+    rows = list((await session.execute(stmt)).scalars().all())
+    return rows, total
+
+
+async def get_deletion_request_async(session: AsyncSession, request_id: str) -> AccountDeletionRequestDB | None:
+    return await session.get(AccountDeletionRequestDB, request_id)
+
+
+async def process_deletion_async(
+    session: AsyncSession,
+    deletion_request: AccountDeletionRequestDB,
+    *,
+    confirmation: str,
+    admin_notes: str,
+    admin_id: str,
+) -> tuple[bool, dict[str, Any] | None, str, str | None]:
+    """Mirrors `ProcessDeletionView.post`. Returns `(success, data, error, error_code)`."""
+    from tenxyte.adapters.fastapi.admin_user_service import soft_delete_async
+
+    if deletion_request.status != "confirmed":
+        return (
+            False,
+            None,
+            f'Cannot process request with status "{deletion_request.status}". Only confirmed requests can be processed.',
+            "REQUEST_NOT_CONFIRMED",
+        )
+
+    if confirmation != "PERMANENTLY DELETE":
+        return False, None, "Explicit confirmation required", "CONFIRMATION_REQUIRED"
+
+    if admin_notes:
+        deletion_request.admin_notes = admin_notes
+        await session.commit()
+
+    user_row = await session.get(UserDB, deletion_request.user_id)
+    if user_row is None:
+        return False, None, "Failed to process deletion", "PROCESSING_FAILED"
+
+    await soft_delete_async(session, user_row)
+
+    deletion_request.status = "completed"
+    deletion_request.completed_at = datetime.now(timezone.utc)
+    deletion_request.processed_by_id = admin_id
+    await session.commit()
+    await session.refresh(deletion_request)
+
+    await _audit_log_async(
+        session,
+        "deletion_request_executed_admin",
+        deletion_request.user_id,
+        None,
+        {"request_id": deletion_request.id, "admin_id": admin_id},
+    )
+
+    return (
+        True,
+        {
+            "message": "Account deletion processed successfully",
+            "deletion_completed": True,
+            "processed_at": deletion_request.completed_at.isoformat(),
+            "data_anonymized": True,
+            "audit_log_id": deletion_request.id,
+            "user_notified": True,
+            "request": await serialize_deletion_request_async(session, deletion_request),
+        },
+        "",
+        None,
+    )
+
+
+async def process_expired_deletions_async(session: AsyncSession, *, admin_id: str) -> dict[str, Any]:
+    """Mirrors `ProcessExpiredDeletionsView.post` — processes every `confirmed` request whose
+    grace period has passed."""
+    from tenxyte.adapters.fastapi.admin_user_service import soft_delete_async
+
+    now = datetime.now(timezone.utc)
+    stmt = select(AccountDeletionRequestDB).where(
+        AccountDeletionRequestDB.status == "confirmed", AccountDeletionRequestDB.grace_period_ends_at < now
+    )
+    expired = list((await session.execute(stmt)).scalars().all())
+
+    processed = 0
+    failed = 0
+    for req in expired:
+        user_row = await session.get(UserDB, req.user_id)
+        if user_row is None:
+            failed += 1
+            continue
+        await soft_delete_async(session, user_row)
+        req.status = "completed"
+        req.completed_at = now
+        req.processed_by_id = admin_id
+        await session.commit()
+        processed += 1
+        await _audit_log_async(session, "deletion_request_processed", req.user_id, None, {"request_id": req.id})
+
+    return {"message": f"{processed} deletion(s) processed, {failed} failed", "processed": processed, "failed": failed}

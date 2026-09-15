@@ -19,8 +19,8 @@
 | GET | `/admin/audit-logs/` | AuditLogListView | D | ✅ D |
 | GET | `/admin/audit-logs/{log_id}/` | AuditLogDetailView | D | ✅ D |
 | GET | `/admin/blacklisted-tokens/` | BlacklistedTokenListView | D | ✅ D |
-| GET | `/admin/deletion-requests/` | DeletionRequestListView | G | 🔜 G |
-| GET | `/admin/deletion-requests/{request_id}/` | DeletionRequestDetailView | G | 🔜 G |
+| GET | `/admin/deletion-requests/` | DeletionRequestListView | G | ✅ G |
+| GET | `/admin/deletion-requests/{request_id}/` | DeletionRequestDetailView | G | ✅ G |
 | GET | `/admin/login-attempts/` | LoginAttemptListView | D | ✅ D |
 | GET | `/admin/refresh-tokens/` | RefreshTokenListView | D | ✅ D |
 | GET | `/admin/users/` | UserListView | D | ✅ D |
@@ -64,8 +64,8 @@
 | POST | `/2fa/disable/` | TwoFactorDisableView | C | ✅ C |
 | POST | `/2fa/setup/` | TwoFactorSetupView | C | ✅ C |
 | POST | `/admin/blacklisted-tokens/cleanup/` | BlacklistedTokenCleanupView | D | ✅ D |
-| POST | `/admin/deletion-requests/process-expired/` | ProcessExpiredDeletionsView | G | 🔜 G |
-| POST | `/admin/deletion-requests/{request_id}/process/` | ProcessDeletionView | G | 🔜 G |
+| POST | `/admin/deletion-requests/process-expired/` | ProcessExpiredDeletionsView | G | ✅ G |
+| POST | `/admin/deletion-requests/{request_id}/process/` | ProcessDeletionView | G | ✅ G |
 | POST | `/admin/refresh-tokens/{token_id}/revoke/` | RefreshTokenRevokeView | D | ✅ D |
 | POST | `/admin/users/{user_id}/ban/` | UserBanView | D | ✅ D |
 | POST | `/admin/users/{user_id}/lock/` | UserLockView | D | ✅ D |
