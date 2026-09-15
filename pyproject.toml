@@ -70,6 +70,11 @@ dependencies = [
     "requests>=2.32",
     "pydantic>=2.12",
     "email-validator>=2.0",
+    # Unified settings priority (Adapter_Custom > OS env > .env > preset > default, both
+    # adapters) — see core/env_provider.py's module docstring. A Core dependency, not an
+    # adapter extra: both conf/base.py (Django) and env_provider.py (FastAPI's default
+    # provider) read a `.env` file as a fallback beneath real OS environment variables.
+    "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]

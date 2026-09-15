@@ -23,8 +23,26 @@
 - [Organizations (B2B)](#organizations-b2b) (8)
 - [Swappable Models](#swappable-models) (4)
 
-All Tenxyte settings are prefixed with `TENXYTE_` and have sensible defaults.
-Override them in your Django `settings.py`. The Django adapter's `DjangoSettingsProvider` automatically reads these values and feeds them to the framework-agnostic Core — no additional configuration is required.
+All Tenxyte settings are prefixed with `TENXYTE_` and have sensible defaults. The setting
+**names** are identical across both adapters (the same list on this page applies whether you're
+using Django or FastAPI) — only *how* you set them differs, per adapter.
+
+---
+
+## Settings Priority
+
+Both adapters resolve every `TENXYTE_*` setting through the same four-tier chain:
+
+**`Adapter_Custom` > OS environment variable > `.env` file > preset > default**
+
+1. **`Adapter_Custom`** — the adapter's own primary configuration source, checked first:
+   - **Django**: a variable in your project's `settings.py` (e.g. `TENXYTE_JWT_SECRET_KEY = "..."`). `DjangoSettingsProvider`/`BaseSettingsMixin` read this automatically — no extra configuration needed.
+   - **FastAPI**: an explicit `SettingsProvider` subclass you pass yourself (`Settings(provider=MyProvider())`) — only relevant if you're not using the default `EnvSettingsProvider`.
+2. **OS environment variable** — a real environment variable, e.g. `export TENXYTE_JWT_SECRET_KEY="..."` (or `$env:TENXYTE_JWT_SECRET_KEY = "..."` on PowerShell). This is the *only* mechanism the FastAPI quickstart uses — FastAPI has no `settings.py` equivalent, so this tier is effectively its `Adapter_Custom` in practice. Setting a bare OS variable does **not** automatically configure Django — set it in `settings.py` instead, unless your own `settings.py` explicitly reads it (e.g. `TENXYTE_JWT_SECRET_KEY = os.environ["TENXYTE_JWT_SECRET_KEY"]`, a common Django pattern but not automatic).
+3. **`.env` file** — a `.env` file in your project's working directory, loaded automatically via `python-dotenv` (a Core dependency on both adapters). Real OS environment variables always win over a `.env` value — a `.env` accidentally left in a Docker image can never silently shadow a real deployment secret.
+4. **Preset / default** — `TENXYTE_SHORTCUT_SECURE_MODE`'s preset values, then each setting's own hard-coded default (documented per-setting below).
+
+**Gotcha**: an OS environment variable (`export`/`$env:`) only lasts for the shell session it was set in — reopening a terminal or starting a fresh shell loses it. If you restart a process and a setting suddenly reverts to its default, this is almost always why; a `.env` file survives across sessions and is usually the better choice for anything beyond a one-off override.
 
 ---
 

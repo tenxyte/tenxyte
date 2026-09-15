@@ -4,6 +4,17 @@ Environment Variable Settings Provider for Tenxyte Core.
 This module provides a SettingsProvider that reads from environment variables.
 Useful for containerized deployments, 12-factor apps, or when you want to
 configure Tenxyte without a framework-specific settings file.
+
+**Unified settings priority (both adapters)**: `Adapter_Custom > OS env > .env > preset >
+default`. `Adapter_Custom` is whatever the adapter's own primary source is — a Django project's
+`settings.py` (`conf/base.py`'s `BaseSettingsMixin`, `adapters/django/settings_provider.py`'s
+`DjangoSettingsProvider`) or an explicit `SettingsProvider` subclass overriding `.get()` on the
+FastAPI side. `OS env > .env` is this module's own job: real environment variables always win
+over a `.env` file (`python-dotenv`'s `override=False`), so a `.env` committed to a repo or left
+in a Docker image can never silently shadow a real deployment secret. `ensure_dotenv_loaded()`
+and `get_env_or_dotenv()` are the shared primitives both Django-side resolution paths import to
+get the same `OS env > .env` tier `EnvSettingsProvider` itself already had — see each call site's
+own docstring for exactly where that tier sits in its chain.
 """
 
 import os
@@ -13,6 +24,54 @@ if TYPE_CHECKING:
     from tenxyte.core.settings import Settings
 
 from tenxyte.core.settings import SettingsProvider
+
+_dotenv_loaded = False
+
+
+def ensure_dotenv_loaded(dotenv_path: str | None = None, encoding: str = "utf-8") -> None:
+    """Loads a `.env` file into `os.environ` — real OS environment variables already set are
+    never overwritten (`python-dotenv`'s own `override=False`), so this is always safe to call
+    before reading `os.environ` directly.
+
+    **`usecwd=True` for the default (auto-discovered) case** — verified directly, not assumed:
+    `python-dotenv`'s own `find_dotenv()` defaults to `usecwd=False`, which walks up from the
+    *calling file's* location (`frame.f_code.co_filename`), not the process's current working
+    directory. Left at that default, a real deployment would search upward from wherever
+    `tenxyte` itself is installed (e.g. inside `site-packages/`), never from the project the app
+    actually runs in — the wrong search entirely for a library. `usecwd=True` searches from
+    `os.getcwd()` instead, matching where a real app is actually launched from (`uvicorn
+    main:app` run from the project root, a container's `WORKDIR`, etc.).
+
+    Idempotent for the default (auto-discovered) case: repeating that filesystem walk on every
+    settings lookup would be wasteful, so it only actually runs once per process for
+    `dotenv_path=None`. An explicit `dotenv_path` always loads (a caller asking for a *specific*
+    file has opted out of the auto-discovery default and presumably wants it honored every time,
+    e.g. tests pointing at a fixture file)."""
+    global _dotenv_loaded
+    if dotenv_path is None and _dotenv_loaded:
+        return
+    from dotenv import find_dotenv, load_dotenv
+
+    # load_dotenv() itself has no usecwd kwarg — find_dotenv(usecwd=True) resolves the real path
+    # first (empty string if none found, which load_dotenv() treats as "nothing to load", the
+    # same no-op as an explicit missing path).
+    resolved_path = dotenv_path if dotenv_path is not None else find_dotenv(usecwd=True)
+    load_dotenv(dotenv_path=resolved_path, encoding=encoding, override=False)
+    if dotenv_path is None:
+        _dotenv_loaded = True
+
+
+def get_env_or_dotenv(name: str, default: Any = None) -> Any:
+    """The shared `OS env > .env` tier — `name` must already carry the `TENXYTE_` prefix (or
+    whatever prefix the caller uses; this function doesn't add one). Returns `default` (never
+    raises) if the variable isn't set anywhere. Used directly by `EnvSettingsProvider.get()`
+    below, and by both Django-side resolution paths (`conf/base.py`,
+    `adapters/django/settings_provider.py`) as their own new middle tier, so a bare OS
+    environment variable or `.env` entry works identically regardless of which adapter reads it."""
+    ensure_dotenv_loaded()
+    if name not in os.environ:
+        return default
+    return EnvSettingsProvider._convert_type(name, os.environ[name])
 
 
 class EnvSettingsProvider(SettingsProvider):
@@ -39,7 +98,9 @@ class EnvSettingsProvider(SettingsProvider):
     Features:
         - Automatic TENXYTE_ prefix
         - Type conversion (int, bool, float, list)
-        - Support for .env files via python-dotenv (optional)
+        - `.env` file support via python-dotenv (a Core dependency, always available) — auto-
+          discovered from the current working directory by default; real OS environment
+          variables always take priority over a `.env` value (see module docstring)
         - Fallback to unprefixed names for common variables (DEBUG, etc.)
     """
 
@@ -89,23 +150,18 @@ class EnvSettingsProvider(SettingsProvider):
         """
         Initialize the environment settings provider.
 
+        `.env` loading is automatic and unconditional (`ensure_dotenv_loaded`, module-level) —
+        `python-dotenv` is a Core dependency, not an optional extra, so there's no "not installed"
+        case to guard against any more. `dotenv_path`/`dotenv_encoding` stay for the case a caller
+        wants a *specific* file instead of the default auto-discovered `.env` (e.g. tests).
+
         Args:
             prefix: Prefix for environment variable names (default: TENXYTE_)
-            dotenv_path: Path to .env file to load (optional)
+            dotenv_path: Path to .env file to load (optional — default auto-discovers `.env`)
             dotenv_encoding: Encoding for .env file (default: utf-8)
         """
         self.prefix = prefix
-
-        # Load .env file if python-dotenv is available and path provided
-        if dotenv_path:
-            try:
-                from dotenv import load_dotenv
-
-                load_dotenv(dotenv_path=dotenv_path, encoding=dotenv_encoding)
-            except ImportError:
-                raise ImportError(
-                    "python-dotenv is required to load .env files. " "Install with: pip install python-dotenv"
-                )
+        ensure_dotenv_loaded(dotenv_path=dotenv_path, encoding=dotenv_encoding)
 
     def get(self, name: str, default: Any = None) -> Any:
         """
@@ -137,19 +193,22 @@ class EnvSettingsProvider(SettingsProvider):
 
         return default
 
-    def _convert_type(self, name: str, value: str) -> Any:
-        """Convert string value to appropriate type based on setting name."""
-        if name in self.BOOLEAN_SETTINGS:
-            return self._parse_bool(value)
+    @staticmethod
+    def _convert_type(name: str, value: str) -> Any:
+        """Convert string value to appropriate type based on setting name. `@staticmethod` (not
+        just convention — no instance state involved) so `get_env_or_dotenv()` can call it
+        without constructing a throwaway `EnvSettingsProvider`."""
+        if name in EnvSettingsProvider.BOOLEAN_SETTINGS:
+            return EnvSettingsProvider._parse_bool(value)
 
-        if name in self.INTEGER_SETTINGS:
+        if name in EnvSettingsProvider.INTEGER_SETTINGS:
             try:
                 return int(value)
             except ValueError:
                 return value
 
-        if name in self.LIST_SETTINGS:
-            return self._parse_list(value)
+        if name in EnvSettingsProvider.LIST_SETTINGS:
+            return EnvSettingsProvider._parse_list(value)
 
         return value
 

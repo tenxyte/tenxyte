@@ -23,12 +23,31 @@
 - [Organisations (B2B)](#organizations-b2b) (8)
 - [Modèles Interchangeables (Swappable Models)](#swappable-models) (4)
 
-Tous les paramètres de Tenxyte sont préfixés par `TENXYTE_` et possèdent des valeurs par défaut raisonnables.
-Surchargez-les dans le fichier `settings.py` de votre projet Django. Le `DjangoSettingsProvider` de l'adaptateur Django lit automatiquement ces valeurs et les transmet au Core agnostique — aucune configuration supplémentaire n'est requise.
+Tous les paramètres de Tenxyte sont préfixés par `TENXYTE_` et possèdent des valeurs par défaut
+raisonnables. Les **noms** de paramètres sont identiques sur les deux adaptateurs (la même liste
+sur cette page s'applique que vous utilisiez Django ou FastAPI) — seule la façon de les
+*renseigner* diffère selon l'adaptateur.
 
 ---
 
 ## Priorité des Paramètres
+
+Les deux adaptateurs résolvent chaque paramètre `TENXYTE_*` via la même chaîne à quatre niveaux :
+
+**`Adapter_Custom` > variable d'environnement OS > fichier `.env` > préréglage > défaut**
+
+1. **`Adapter_Custom`** — la source de configuration principale propre à l'adaptateur, vérifiée en premier :
+   - **Django** : une variable dans le `settings.py` de votre projet (ex. `TENXYTE_JWT_SECRET_KEY = "..."`). `DjangoSettingsProvider`/`BaseSettingsMixin` la lisent automatiquement — aucune configuration supplémentaire requise.
+   - **FastAPI** : un `SettingsProvider` personnalisé que vous passez vous-même (`Settings(provider=MonProvider())`) — pertinent uniquement si vous n'utilisez pas le `EnvSettingsProvider` par défaut.
+2. **Variable d'environnement OS** — une vraie variable d'environnement, ex. `export TENXYTE_JWT_SECRET_KEY="..."` (ou `$env:TENXYTE_JWT_SECRET_KEY = "..."` sous PowerShell). C'est le **seul** mécanisme que le quickstart FastAPI utilise — FastAPI n'a pas d'équivalent `settings.py`, donc ce niveau est en pratique son `Adapter_Custom`. Définir une variable OS nue ne configure **pas** automatiquement Django — définissez-la plutôt dans `settings.py`, sauf si votre propre `settings.py` la lit explicitement (ex. `TENXYTE_JWT_SECRET_KEY = os.environ["TENXYTE_JWT_SECRET_KEY"]`, un motif Django courant mais pas automatique).
+3. **Fichier `.env`** — un fichier `.env` dans le répertoire de travail de votre projet, chargé automatiquement via `python-dotenv` (une dépendance Core sur les deux adaptateurs). Une vraie variable d'environnement OS gagne toujours face à une valeur `.env` — un `.env` oublié dans une image Docker ne peut jamais écraser silencieusement un vrai secret de production.
+4. **Préréglage / défaut** — les valeurs du préréglage `TENXYTE_SHORTCUT_SECURE_MODE`, puis la valeur par défaut codée en dur de chaque paramètre (documentée plus bas pour chacun).
+
+**Piège courant** : une variable d'environnement OS (`export`/`$env:`) ne dure que le temps de la session shell où elle a été définie — rouvrir un terminal ou démarrer un nouveau shell la fait disparaître. Si vous redémarrez un processus et qu'un paramètre revient soudainement à sa valeur par défaut, c'est presque toujours la raison ; un fichier `.env` survit entre les sessions et est généralement le meilleur choix au-delà d'une surcharge ponctuelle.
+
+---
+
+## Shortcut Secure Mode
 
 `TENXYTE_SHORTCUT_SECURE_MODE` applique une combinaison prédéfinie de paramètres de sécurité en une seule ligne. Les paramètres individuels ont toujours la priorité sur le préréglage.
 

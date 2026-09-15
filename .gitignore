@@ -111,3 +111,4 @@ benchmarks/airs/results_*.json
 # Suite's own ephemeral instances above.
 js-contract-backend.db
 
+manual_tests

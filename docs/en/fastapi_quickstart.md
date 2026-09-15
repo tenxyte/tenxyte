@@ -48,15 +48,25 @@ routes), backed by a real SQLAlchemy async ORM layer (the **Reference_Stack**) w
 created automatically on startup — no `NotImplementedError` anywhere, no dependency you have to
 supply yourself first.
 
-Settings are read from `TENXYTE_*` environment variables by default (via `EnvSettingsProvider`,
-the same resolution Django's adapter uses — see [Settings Reference](settings.md)). The one
-setting you must provide is the JWT signing secret:
+Settings are read from `TENXYTE_*` environment variables by default (via `EnvSettingsProvider`
+— see [Settings Reference](settings.md) for the full `Adapter_Custom > OS env > .env > preset >
+default` priority both adapters share). The one setting you must provide is the JWT signing
+secret. A `.env` file in this directory is the easiest way — it's loaded automatically, no flag
+needed:
+
+```bash
+# .env
+TENXYTE_JWT_SECRET_KEY=change-me-to-a-real-secret-at-least-32-characters-long
+```
+
+A real OS environment variable works too (and always wins over `.env` if both are set), but only
+for the shell session it was set in — reopening a terminal loses it, which is the most common
+reason a "working" setup suddenly complains the secret is missing again:
 
 ```bash
 export TENXYTE_JWT_SECRET_KEY="change-me-to-a-real-secret-at-least-32-characters-long"
+# PowerShell: $env:TENXYTE_JWT_SECRET_KEY = "..."
 ```
-
-(On Windows PowerShell: `$env:TENXYTE_JWT_SECRET_KEY = "..."`.)
 
 ## 3. Run it
 

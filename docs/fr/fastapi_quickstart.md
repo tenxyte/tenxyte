@@ -51,14 +51,25 @@ SQLAlchemy async (le **Reference_Stack**) dont les tables sont créées automati
 — aucun `NotImplementedError` nulle part, aucune dépendance à fournir vous-même au préalable.
 
 Les réglages sont lus depuis les variables d'environnement `TENXYTE_*` par défaut (via
-`EnvSettingsProvider`, la même résolution que l'adaptateur Django utilise — voir [Référence des
-réglages](settings.md)). Le seul réglage que vous devez fournir est le secret de signature JWT :
+`EnvSettingsProvider` — voir [Référence des réglages](settings.md) pour la chaîne de priorité
+complète `Adapter_Custom > OS env > .env > préréglage > défaut` partagée par les deux
+adaptateurs). Le seul réglage que vous devez fournir est le secret de signature JWT. Un fichier
+`.env` dans ce répertoire est le plus simple — chargé automatiquement, aucun flag requis :
+
+```bash
+# .env
+TENXYTE_JWT_SECRET_KEY=a-changer-pour-un-vrai-secret-d-au-moins-32-caracteres
+```
+
+Une vraie variable d'environnement OS fonctionne aussi (et gagne toujours face au `.env` si les
+deux sont définis), mais seulement pour la session shell où elle a été définie — rouvrir un
+terminal la fait disparaître, la raison la plus fréquente pour laquelle une configuration qui
+« marchait » se plaint soudain que le secret manque :
 
 ```bash
 export TENXYTE_JWT_SECRET_KEY="a-changer-pour-un-vrai-secret-d-au-moins-32-caracteres"
+# PowerShell : $env:TENXYTE_JWT_SECRET_KEY = "..."
 ```
-
-(Sous PowerShell Windows : `$env:TENXYTE_JWT_SECRET_KEY = "..."`.)
 
 ## 3. La lancer
 

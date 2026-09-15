@@ -42,8 +42,33 @@ _LEGACY_0_9_DEPENDENCIES = frozenset(
     }
 )
 
+# Additions to the base `dependencies` set made *after* the 0.9->1.0 migration Property 12
+# freezes — a genuinely new Core need, not a migration artifact, so it's excluded from the
+# 0.9.6.4 equivalence check below rather than expanding `_LEGACY_0_9_DEPENDENCIES` (which the
+# module docstring already says "intentionally never changes" — it's a historical snapshot, not
+# a moving target).
+_POST_1_0_CORE_ADDITIONS = frozenset(
+    {
+        # Unified settings priority (Adapter_Custom > OS env > .env > preset > default, both
+        # adapters) — see core/env_provider.py's module docstring. 0.9.6.4 never had a `.env`
+        # tier at all, so there's no legacy equivalent to reconcile against.
+        "python-dotenv",
+    }
+)
+
 _CORE_ONLY_PACKAGE_NAMES = frozenset(
-    {"PyJWT", "bcrypt", "pyotp", "qrcode", "cryptography", "Pillow", "requests", "pydantic", "email-validator"}
+    {
+        "PyJWT",
+        "bcrypt",
+        "pyotp",
+        "qrcode",
+        "cryptography",
+        "Pillow",
+        "requests",
+        "pydantic",
+        "email-validator",
+    }
+    | _POST_1_0_CORE_ADDITIONS
 )
 
 _DJANGO_PACKAGE_NAMES = frozenset(
@@ -95,16 +120,21 @@ def test_property_12_dependency_set_equivalence(pyproject_data):
     """Feature: z_aud_1, Property 12: Équivalence des ensembles de dépendances.
 
     deps(1.0) ∪ extras[django](1.0) == deps(0.9.6.4) — same packages, same version constraints —
-    guaranteeing `pip install tenxyte[django]` reproduces today's default install exactly.
+    guaranteeing `pip install tenxyte[django]` reproduces today's default install exactly, MODULO
+    genuinely new Core dependencies added after the 0.9->1.0 migration (`_POST_1_0_CORE_ADDITIONS`
+    — a new feature needing a new package is not the same thing as the migration silently
+    dropping or duplicating one, which is what this property actually guards against).
     """
     deps = pyproject_data["project"]["dependencies"]
     django_extra = pyproject_data["project"]["optional-dependencies"]["django"]
 
     union = {_normalize(d) for d in deps} | {_normalize(d) for d in django_extra}
+    union -= {_normalize(d) for d in deps if _package_name(d) in _POST_1_0_CORE_ADDITIONS}
     legacy = {_normalize(d) for d in _LEGACY_0_9_DEPENDENCIES}
 
     assert union == legacy, (
-        f"dependencies ∪ extras[django] must equal the 0.9.6.4 dependency set.\n"
+        f"dependencies ∪ extras[django] (minus documented post-1.0 additions) must equal the "
+        f"0.9.6.4 dependency set.\n"
         f"Missing from union: {sorted(legacy - union)}\n"
         f"Extra in union (not in legacy): {sorted(union - legacy)}"
     )
