@@ -196,6 +196,25 @@ def _register_group_f_views():
     _register_django_view("/ai/.well-known/airs/", AIRSDiscoveryView)
 
 
+@pytest.fixture(autouse=True)
+def _register_group_d_views():
+    """Registers one representative Django Group D view class per chunk (spec z_aud_3, task
+    10.2) — the full 46-endpoint surface isn't covered here, see `test_group_d_shapes.py`'s
+    module docstring for why (same fixture limitation already documented in
+    `_register_group_f_views`'s caller)."""
+    from tenxyte.views.application_views import ApplicationListView
+    from tenxyte.views.dashboard_views import DashboardGlobalView
+    from tenxyte.views.rbac_views import PermissionListView
+    from tenxyte.views.security_views import AuditLogListView
+    from tenxyte.views.user_views import UserListView
+
+    _register_django_view("/permissions/", PermissionListView)
+    _register_django_view("/applications/", ApplicationListView)
+    _register_django_view("/admin/users/", UserListView)
+    _register_django_view("/admin/audit-logs/", AuditLogListView)
+    _register_django_view("/dashboard/stats/", DashboardGlobalView)
+
+
 async def register_and_login(api) -> tuple[str, str]:
     """Shared helper (spec z_aud_3, task 7.3): register a fresh account and log in, returning
     `(access_token, email)` — identical on both backends since Group A's `/register/`/

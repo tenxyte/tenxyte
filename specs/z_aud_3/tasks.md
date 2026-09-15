@@ -658,8 +658,8 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
   passed, 5 skipped, aucune régression à chaque commit de la vague), `ruff`/`black` propres sur
   `src/`.
 
-- [ ] 10. Vague de parité D — RBAC, applications, admin
-  - [ ] 10.1 Porter le groupe D (46 endpoints — la plus grosse vague du plan, largement plus
+- [x] 10. Vague de parité D — RBAC, applications, admin
+  - [x] 10.1 Porter le groupe D (46 endpoints — la plus grosse vague du plan, largement plus
     grande que les précédentes ; découpée en chunks committables séparément plutôt qu'en un seul
     gros commit, même logique que les vagues précédentes)
     - **Chunk 1/5 fait — RBAC core (19/46)** : `permissions/*` (5), `roles/*` (5),
@@ -848,10 +848,83 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       relancée, aucune régression.
       **Restant (chunk 5/5)** : `dashboard/*` (5 — agrégations en lecture seule sur tout ce qui
       précède).
+    - **Chunk 5/5 fait — Dashboard (5/46, 46/46 cumulé — Groupe D complet)** : `dashboard/stats/`
+      (global), `dashboard/auth/`, `dashboard/security/`, `dashboard/gdpr/`,
+      `dashboard/organizations/`. **Contrat extrait** de `views/dashboard_views.py` (les 5
+      exigent tous `dashboard.view`, vérifié en lisant le code) et `services/stats_service.py`
+      (`StatsService`).
+      **Agrégation faite en Python, pas en `FILTER`/`GROUP BY` SQL** : `StatsService` s'appuie sur
+      `Count(..., filter=Q(...))` (agrégats conditionnels Django) et `.values().annotate()`
+      (GROUP BY). L'équivalent SQLAlchemy le plus proche (`func.count().filter(...)`) compile vers
+      une clause SQL `FILTER` pas portable de façon fiable entre versions de sqlite ; les
+      endpoints dashboard sont par nature basse fréquence (une console admin, pas un chemin API
+      chaud), donc ce chunk récupère les lignes concernées et agrège en Python — plus simple,
+      portable, et facile à vérifier contre la forme de sortie exacte de `StatsService`.
+      **Deux des cinq sous-statistiques ne peuvent pas être adossées à de vraies données
+      aujourd'hui, documenté plutôt que simulé avec une table qui n'appartient pas à cette
+      tâche** :
+      - `dashboard/organizations/` renvoie toujours `{"enabled": False}` — exactement la forme que
+        Django renvoie quand `org_settings.ORGANIZATIONS_ENABLED` est désactivé. Le
+        Reference_Stack n'a aucune notion d'organisation pour l'instant (Groupe E, pas encore
+        porté), donc « désactivé » est simplement vrai aujourd'hui, pas un bouchon.
+      - `dashboard/gdpr/` (et le sous-objet `gdpr` de `dashboard/stats/`) renvoie la forme à
+        valeurs *zéro* correctement structurée que `StatsService` produirait contre une table
+        `AccountDeletionRequest` vide, calculée sans table de support — le Groupe G (demandes de
+        suppression RGPD) n'a pas encore été porté, et créer une table maintenant, dans une tâche
+        du Groupe D, en avance sur la conception de schéma propre au Groupe G, serait du
+        sur-périmètre dont ce chunk n'a pas besoin.
+      `dashboard_service.py` (nouveau, framework-agnostic même logique que les autres services de
+      la vague) ; `routers/dashboard.py` (nouveau, 5 endpoints, tous gatés par
+      `require_permission("dashboard.view")`).
+      5 tests (`test_dashboard_router.py`), aucun mock, base aiosqlite éphémère réelle — stats
+      globales reflétant de vraies données (utilisateurs verrouillés/bannis, forme `gdpr` figée),
+      stats auth (répartition succès/échec, groupement par méthode via `AuditLog.details`, top
+      raisons d'échec, graphique quotidien), stats sécurité (tokens blacklistés réels via un vrai
+      logout, comptes verrouillés/bannis, taux d'adoption 2FA), formes documentées gdpr/
+      organizations exactes, refus générique de permission.
+      `parity_matrix --groups=A,B,C,D,F` : **85/114 endpoints Django portés au total (5
+      nouveaux) — Groupe D désormais complet (46/46) et vert aux côtés de A/B/C/F** ; coverage
+      FastAPI 92.22 % (seuil CI 90 %, 215 tests) ; suite Django complète relancée, aucune
+      régression.
     - _Requirements: 4.1, 4.2, 4.5_
 
-  - [ ] 10.2 Contract_Suite + matrice sur A–D (+F) ; exclusions justifiées le cas échéant
+  - [x] 10.2 Contract_Suite + matrice sur A–D (+F) ; exclusions justifiées le cas échéant
+    - `tests/contract/test_group_d_shapes.py` (nouveau) : un endpoint représentatif par chunk
+      (`/permissions/`, `/applications/`, `/admin/users/`, `/admin/audit-logs/`,
+      `/dashboard/stats/`) — 20 tests (5 endpoints × 2 assertions × 2 adapters).
+      **Portée volontairement plus étroite que les Groupes A-C, même raison déjà documentée dans
+      `test_group_f_shapes.py`** : chacun des 46 endpoints du Groupe D exige une permission RBAC
+      précise, et prouver la forme de la réponse *en cas de succès* (permission accordée) sur les
+      deux backends demanderait un Delegating User qui détient réellement la permission des deux
+      côtés — vraie RBAC Django (rôles/octrois directs) contre le bypass `is_superuser` seul du
+      `require_permission` du Reference_Stack — et la fixture `api` n'a toujours aucun moyen
+      partagé de promouvoir un `register_and_login()` vers cet état.
+      **Ce qui EST prouvable identiquement sans cette promotion, et c'est précisément ce que ce
+      fichier prouve** : le portail auth/permission lui-même produit la même forme canonique sur
+      les deux adaptateurs — token manquant → `{"error": "Authorization header required", "code":
+      "AUTH_REQUIRED"}` (401, vérifié identique via `decorators.require_jwt` côté Django et
+      `security.require_jwt()` côté FastAPI) ; appelant authentifié mais sans la permission →
+      `{"error": "Permission denied.", "code": "PERMISSION_REQUIRED"}` (403, message générique
+      non-verbeux, vérifié identique via `decorators._get_permission_denied_response` côté Django
+      — même comportement `VERBOSE_ERRORS=False` par défaut déjà répliqué dans tous les
+      `*_service.py` de la vague). Le comportement complet du Groupe D (listes, filtres, CRUD)
+      reste couvert par la suite dédiée de chaque chunk (`test_rbac_router.py`,
+      `test_applications_router.py`, `test_admin_users_router.py`,
+      `test_admin_security_router.py`, `test_dashboard_router.py`) — ce fichier prouve seulement
+      que les deux adaptateurs s'accordent sur le portail, pas une deuxième fois la logique interne
+      de chaque chunk.
+      `conftest.py` étendu avec `_register_group_d_views` (une classe de vue Django par chunk).
+      Suite contract complète relancée : 50 passed (20 nouveaux + 30 existants), aucune
+      régression. `parity_matrix --groups=A,B,C,D,F` toujours vert (85/114).
     - _Requirements: 4.5, 5.1, 5.2_
+
+- [x] Checkpoint Vague D : `parity_matrix --groups=A,B,C,D,F` (85/114, Groupe D 46/46), Contract_Suite
+  étendue (50 passed), coverage FastAPI 92.22 % (seuil CI 90 %, 215 tests), suite Django complète
+  (2238 passed, 5 skipped, aucune régression à chaque commit des 5 chunks), `ruff`/`black` propres
+  sur `src/`. Vague D fermée en 5 chunks committables séparément (RBAC core, applications, admin
+  users, admin security, dashboard) plutôt qu'en un seul gros commit — même logique que les vagues
+  précédentes, nécessaire ici vu que le Groupe D est, de loin, la plus grosse vague du plan (46
+  endpoints contre 11-12 pour chaque vague précédente).
 
 - [ ] 11. Vague de parité E — Organisations
   - [ ] 11.1 Porter le groupe E

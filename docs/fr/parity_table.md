@@ -31,11 +31,11 @@
 | GET | `/ai/tokens/{pk}/` | AgentTokenDetailView | F | ✅ F |
 | GET | `/applications/` | ApplicationListView | D | ✅ D |
 | GET | `/applications/{app_id}/` | ApplicationDetailView | D | ✅ D |
-| GET | `/dashboard/auth/` | DashboardAuthView | D | 🔜 D |
-| GET | `/dashboard/gdpr/` | DashboardGDPRView | D | 🔜 D |
-| GET | `/dashboard/organizations/` | DashboardOrganizationsView | D | 🔜 D |
-| GET | `/dashboard/security/` | DashboardSecurityView | D | 🔜 D |
-| GET | `/dashboard/stats/` | DashboardGlobalView | D | 🔜 D |
+| GET | `/dashboard/auth/` | DashboardAuthView | D | ✅ D |
+| GET | `/dashboard/gdpr/` | DashboardGDPRView | D | ✅ D |
+| GET | `/dashboard/organizations/` | DashboardOrganizationsView | D | ✅ D |
+| GET | `/dashboard/security/` | DashboardSecurityView | D | ✅ D |
+| GET | `/dashboard/stats/` | DashboardGlobalView | D | ✅ D |
 | GET | `/magic-link/verify/` | MagicLinkVerifyView | C | ✅ C |
 | GET | `/me/` | MeView | A | ✅ A |
 | GET | `/me/roles/` | MyRolesView | A | ✅ A |
