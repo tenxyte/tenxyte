@@ -152,7 +152,11 @@ jobs:
       - name: Install FastAPI adapter dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[fastapi,dev]"
+          # webauthn (spec z_aud_3, Wave G, task 12.1): unlike the Django adapter's own test
+          # suite (which mocks the library out entirely, so django-tests never installs it),
+          # this adapter's WebAuthn tests call the real py_webauthn crypto functions — no mocks,
+          # consistent with every other test suite in this port.
+          pip install -e ".[fastapi,webauthn,dev]"
 
       - name: Run FastAPI adapter tests
         run: |
@@ -309,8 +313,13 @@ jobs:
           pytest tests/contract/ -q
 
       - name: Run the Parity_Matrix (gated on shipped groups only)
+        env:
+          # get_django_routes() calls django.setup() directly (not via pytest, which already
+          # resolves this from pyproject.toml's [tool.pytest.ini_options] for the step above) —
+          # this was a pre-existing gap: without this, the step raises ImproperlyConfigured.
+          DJANGO_SETTINGS_MODULE: tests.integration.django.settings
         run: |
-          python scripts/parity_matrix.py --groups=A
+          python scripts/parity_matrix.py --groups=A,B,C,D,E,F
 
   # ===========================================================================
   # AIRS Conformance Suite (spec z_aud_2, task 4.4) — the spec/airs/AIRS-1.0.md ↔ implementation

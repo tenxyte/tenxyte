@@ -438,8 +438,12 @@ class Settings:
 
     @property
     def webauthn_enabled(self) -> bool:
-        """Whether WebAuthn is enabled."""
-        return self._get("WEBAUTHN_ENABLED", True)
+        """Whether WebAuthn is enabled — mirrors `conf.social`'s own `WEBAUTHN_ENABLED` (default
+        `False`, opt-in — it needs the `webauthn` extra installed). Fixed from a stale `True`
+        default here (spec z_aud_3, Wave G, task 12.1): this property predates any real consumer
+        on either adapter — Django's own conf module has always defaulted it off, so `True` here
+        was a pre-existing mismatch nothing had surfaced yet, not a deliberate divergence."""
+        return self._get("WEBAUTHN_ENABLED", False)
 
     @property
     def webauthn_rp_id(self) -> str:

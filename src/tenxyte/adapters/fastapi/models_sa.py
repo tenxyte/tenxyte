@@ -561,3 +561,42 @@ class OrganizationInvitationDB(Base):
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     __table_args__ = (Index("ix_tenxyte_org_invitations_org_status", "organization_id", "status"),)
+
+
+class WebAuthnCredentialDB(Base):
+    """Wave G (z_aud_3 task 12.1) — mirrors `tenxyte.models.webauthn.WebAuthnCredential`.
+    `credential_id` and `public_key` are stored as base64url/base64 text respectively — both are
+    arbitrary binary FIDO2 data, so a safe text encoding is used for storage (`credential_id`
+    specifically as base64url, matching the string representation the browser's WebAuthn API
+    itself sends in `credential.id`/`credential.rawId`-derived JSON, since lookups compare
+    directly against that same client-supplied string — see `webauthn_service.py`)."""
+
+    __tablename__ = "tenxyte_webauthn_credentials"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("tenxyte_users.id", ondelete="CASCADE"), index=True)
+    credential_id: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    public_key: Mapped[str] = mapped_column(Text)
+    sign_count: Mapped[int] = mapped_column(Integer, default=0)
+    device_name: Mapped[str] = mapped_column(String(100), default="")
+    aaguid: Mapped[str] = mapped_column(String(36), default="")
+    transports: Mapped[list] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class WebAuthnChallengeDB(Base):
+    """Wave G (z_aud_3 task 12.1) — mirrors `tenxyte.models.webauthn.WebAuthnChallenge`.
+    `user_id` is nullable — an authentication challenge with no target user supports the
+    discoverable/usernameless (resident-key) flow, matching `WebAuthnService.begin_authentication`
+    exactly (`user_id: str | None = None`)."""
+
+    __tablename__ = "tenxyte_webauthn_challenges"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("tenxyte_users.id", ondelete="CASCADE"), nullable=True)
+    challenge: Mapped[str] = mapped_column(String(191), unique=True, index=True)
+    operation: Mapped[str] = mapped_column(String(16))
+    is_used: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)

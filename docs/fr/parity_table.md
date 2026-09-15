@@ -13,7 +13,7 @@
 | DELETE | `/roles/{role_id}/permissions/` | RolePermissionsView | D | ✅ D |
 | DELETE | `/users/{user_id}/permissions/` | UserDirectPermissionsView | D | ✅ D |
 | DELETE | `/users/{user_id}/roles/` | UserRolesView | D | ✅ D |
-| DELETE | `/webauthn/credentials/{credential_id}/` | WebAuthnCredentialDeleteView | G | 🔜 G |
+| DELETE | `/webauthn/credentials/{credential_id}/` | WebAuthnCredentialDeleteView | G | ✅ G |
 | GET | `/2fa/status/` | TwoFactorStatusView | C | ✅ C |
 | GET | `/account-deletion-status/` | account_deletion_status | G | 🔜 G |
 | GET | `/admin/audit-logs/` | AuditLogListView | D | ✅ D |
@@ -53,7 +53,7 @@
 | GET | `/social/{provider}/callback/` | SocialAuthCallbackView | G | 🔜 G |
 | GET | `/users/{user_id}/permissions/` | UserDirectPermissionsView | D | ✅ D |
 | GET | `/users/{user_id}/roles/` | UserRolesView | D | ✅ D |
-| GET | `/webauthn/credentials/` | WebAuthnCredentialListView | G | 🔜 G |
+| GET | `/webauthn/credentials/` | WebAuthnCredentialListView | G | ✅ G |
 | PATCH | `/admin/users/{user_id}/` | UserDetailView | D | ✅ D |
 | PATCH | `/applications/{app_id}/` | ApplicationDetailView | D | ✅ D |
 | PATCH | `/me/` | MeView | A | ✅ A |
@@ -111,10 +111,10 @@
 | POST | `/social/{provider}/` | SocialAuthView | G | 🔜 G |
 | POST | `/users/{user_id}/permissions/` | UserDirectPermissionsView | D | ✅ D |
 | POST | `/users/{user_id}/roles/` | UserRolesView | D | ✅ D |
-| POST | `/webauthn/authenticate/begin/` | WebAuthnAuthenticateBeginView | G | 🔜 G |
-| POST | `/webauthn/authenticate/complete/` | WebAuthnAuthenticateCompleteView | G | 🔜 G |
-| POST | `/webauthn/register/begin/` | WebAuthnRegisterBeginView | G | 🔜 G |
-| POST | `/webauthn/register/complete/` | WebAuthnRegisterCompleteView | G | 🔜 G |
+| POST | `/webauthn/authenticate/begin/` | WebAuthnAuthenticateBeginView | G | ✅ G |
+| POST | `/webauthn/authenticate/complete/` | WebAuthnAuthenticateCompleteView | G | ✅ G |
+| POST | `/webauthn/register/begin/` | WebAuthnRegisterBeginView | G | ✅ G |
+| POST | `/webauthn/register/complete/` | WebAuthnRegisterCompleteView | G | ✅ G |
 | PUT | `/applications/{app_id}/` | ApplicationDetailView | D | ✅ D |
 | PUT | `/permissions/{permission_id}/` | PermissionDetailView | D | ✅ D |
 | PUT | `/roles/{role_id}/` | RoleDetailView | D | ✅ D |

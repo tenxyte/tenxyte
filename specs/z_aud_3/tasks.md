@@ -1167,9 +1167,109 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
   membres, invitations) — même logique que les vagues D et précédentes.
 
 - [ ] 12. Vague de parité G — WebAuthn, Social, GDPR
-  - [ ] 12.1 Porter le groupe G
-    - `routers/webauthn_social.py` : webauthn/* (6), social/<provider>/ (+ callback, Apple
-      z_aud_1 inclus), GDPR user (deletion request/confirm/cancel/status, export) et admin
+  - [ ] 12.1 Porter le groupe G (17 endpoints : webauthn/* 6, social/* 2, GDPR user 5, GDPR admin
+    4 — découpé en chunks committables séparément par sous-système, même logique que les vagues
+    précédentes. Fichiers séparés par sous-système — `routers/webauthn.py`/`routers/social.py`/
+    `routers/gdpr.py` — plutôt que le `routers/webauthn_social.py` unique prévu initialement,
+    cohérent avec le découpage fin déjà utilisé pour les vagues D/E)
+    - **Chunk 1/4 fait — WebAuthn/Passkeys (6/17)** : `POST webauthn/register/begin`,
+      `POST webauthn/register/complete`, `POST webauthn/authenticate/begin`,
+      `POST webauthn/authenticate/complete`, `GET webauthn/credentials/`,
+      `DELETE webauthn/credentials/{id}/`. **Contrat extrait** par recherche exhaustive de
+      `views/webauthn_views.py` (chaque site d'appel `return Response(...)` réel, pas les blocs
+      `@extend_schema`/`OpenApiExample` — plusieurs divergent du code réel, détaillé ci-dessous),
+      `adapters/django/webauthn_storage.py`, `models/webauthn.py`, `conf/social.py` (réglages
+      `WEBAUTHN_*`), et `core/webauthn_service.py` (déjà lu intégralement avant ce chunk).
+      **Contrairement à la plupart des cas « Core l'a déjà », pas de simple câblage** : le service
+      Core `WebAuthnService` existe et est vraiment framework-agnostic, mais ses Protocols de
+      dépôt (`WebAuthnCredentialRepository`/`WebAuthnChallengeRepository`) sont **synchrones** par
+      conception (leurs miroirs `Async*` existent mais ne sont « pas encore consommés » par le
+      service, dixit son propre docstring). Faire le pont vers la session SQLAlchemy async de cet
+      adaptateur aurait exigé soit un second accès DB synchrone parallèle, soit envelopper chaque
+      lecture credential/challenge dans `asyncio.to_thread`. À la place : `webauthn_service.py`
+      (nouveau, async-natif) appelle directement les mêmes fonctions `webauthn` (py_webauthn) que
+      Core appelle, avec de vrais dépôts async — vérifié ligne à ligne contre les appels réels de
+      `core/webauthn_service.py` pour garantir une sémantique de challenge/vérification identique.
+      **Deux vrais bugs Django trouvés en portant, corrigés plutôt que répliqués — documentés, pas
+      divergés en silence** :
+      1. `WebAuthnAuthenticateCompleteView.post` appelle `jwt_service.generate_access_token(...)`
+         (qui renvoie un tuple à 3 éléments `(token, jti, expires_at)`) **sans le déballer** — la
+         vraie réponse JSON Django a donc `"access"` réglé sur un tableau à 3 éléments
+         `[token, jti, iso-datetime]`, pas une chaîne JWT normale. Le même bug existe à l'identique
+         dans `magic_link_views.py:320` (déjà corrigé sans note spécifique lors du chunk 7.1,
+         puisque je ne l'avais pas remarqué à l'époque — je l'avais simplement déballé sans
+         réaliser que Django, lui, ne le fait pas). Corrigé ici aussi, pour la même raison : un
+         jeton en tableau rendrait la connexion par passkey non fonctionnelle pour un vrai client.
+      2. `generate_refresh_token()` (`core/jwt_service.py`) fait littéralement
+         `return str(uuid.uuid4())` — aucune écriture en base, jamais. Le refresh token que Django
+         renvoie après une connexion WebAuthn (ou magic-link) ne peut donc jamais être racheté via
+         `/refresh/`, puisqu'aucune ligne ne correspond nulle part. Cet adaptateur utilise
+         `refresh_tokens.issue_refresh_token` (l'émission réelle et persistée du Reference_Stack,
+         déjà utilisée par `auth.py`/`magic_link.py`) à la place — testé explicitement (le
+         refresh token obtenu après une authentification WebAuthn réussie fonctionne vraiment
+         contre `/refresh/`).
+      **Comportements préservés à l'identique malgré leur apparence de bug, car sans coût
+      fonctionnel à les garder** :
+      - `list_credentials`/`delete_credential` n'ont **aucune** garde `webauthn_enabled` dans
+        Core (seuls begin/complete de chaque flux la vérifient) — répliqué à l'identique et testé
+        explicitement (`test_credentials_list_and_delete_work_even_when_webauthn_disabled`).
+      - Aucun rejet de `credential_id` en double n'existe nulle part dans le code Django réel —
+        uniquement la contrainte `unique=True` en base, avec un `IntegrityError` non rattrapé qui
+        remonte en 500 générique. Pas davantage rattrapé ici : une violation de contrainte UNIQUE
+        SQLAlchemy à `session.commit()` atteint de la même façon le handler 500 générique de cet
+        adaptateur — même forme d'échec, atteinte de la même façon (une omission, pas un
+        try/except).
+      - `WEBAUTHN_CHALLENGE_EXPIRY_SECONDS` est un vrai réglage Django que `begin_registration`/
+        `begin_authentication` ne lisent en réalité jamais — les deux codent en dur
+        `expiry_seconds=300`. Codé en dur ici aussi, pour la même raison (aucune propriété de
+        réglage ajoutée pour une valeur que rien ne consommerait).
+      **`webauthn_enabled` corrigé d'un défaut `True` erroné vers `False`** dans
+      `core/settings.py` — cette propriété préexistait cette session (dans le module partagé
+      `Settings`, utilisé par les deux adaptateurs) mais n'avait jamais eu de vrai consommateur
+      côté FastAPI avant ce chunk ; son défaut divergeait silencieusement de celui de Django
+      (`conf.social.WEBAUTHN_ENABLED` vaut `False` par défaut) — un défaut pré-existant jamais
+      remarqué avant que ce chunk ne s'en serve réellement, pas une divergence délibérée.
+      **Encodage `credential_id`/`public_key`** : FIDO2 renvoie des données binaires arbitraires ;
+      `credential_id` est stocké en base64url (correspondant exactement à la représentation
+      string que l'API WebAuthn du navigateur envoie elle-même dans `credential.id`/`rawId`, donc
+      les recherches à l'authentification comparent directement la même représentation) via
+      `webauthn.helpers.bytes_to_base64url`/`base64url_to_bytes` ; `public_key` en base64 simple
+      (jamais recomparée à une chaîne fournie par le client, donc n'importe quel encodage binaire-
+      texte sûr convient).
+      **`webauthn/*` enregistrées sans condition** (contrairement aux Organisations) — Django
+      enregistre aussi `webauthn/*` sans condition dans `urls.py`, `WEBAUTHN_ENABLED` n'étant
+      vérifié qu'au niveau de chaque appel de service.
+      **Tests avec une vraie crypto FIDO2, aucun mock** : `_webauthn_authenticator.py` (nouveau,
+      `tests/integration/fastapi/unit/`) implémente un « authentificateur virtuel » minimal mais
+      réel — génération de clé P-256 ECDSA réelle, encodage CBOR réel de l'`authenticatorData`/
+      `attestationObject`, signatures ECDSA réelles — pour que `test_webauthn_router.py` exerce
+      les vraies fonctions de vérification `webauthn` (py_webauthn) de bout en bout, cohérent
+      avec la politique « aucun mock » de tout ce port, étendue ici jusqu'à la crypto elle-même.
+      8 tests (`test_webauthn_router.py`) — désactivé par défaut → 400 sans auth requise,
+      `register/begin` exige l'authentification, **aller-retour complet réel** (enregistrement
+      d'une passkey avec un authentificateur réel, authentification avec elle, obtention d'une
+      vraie paire de jetons fonctionnelle, rachat réel du refresh token contre `/refresh/` —
+      vérifie explicitement que `access` est une chaîne JWT normale, pas le tableau bugué),
+      identifiant de credential inconnu rejeté, champ `credential` manquant, challenge ne
+      correspondant pas à l'utilisateur rejeté, suppression de credential scopée au propriétaire,
+      liste/suppression fonctionnelles même WebAuthn désactivé (la trouvaille, testée pas
+      seulement documentée).
+      **Dépendance `webauthn>=2.7.0` installée** dans l'environnement de dev (`env/`) — absente
+      auparavant, confirmée par la recherche préalable au chunk. `.github/workflows/ci.yml`'s job
+      `fastapi-tests` corrigé pour l'installer (`[fastapi,webauthn,dev]`) — la suite Django ne
+      l'installe jamais (ses propres tests mockent `_get_webauthn()` en entier), mais cette suite
+      FastAPI teste la vraie bibliothèque, donc en a réellement besoin en CI.
+      **Corrigé au passage, hors scope direct mais découvert en touchant le même fichier** : le
+      job CI `contract-parity` avait un gate `parity_matrix --groups=A` resté figé depuis la Vague
+      B (jamais mis à jour), et son étape Parity_Matrix n'avait jamais `DJANGO_SETTINGS_MODULE`
+      dans son environnement — reproduit en local (`ImproperlyConfigured`), donc probablement en
+      échec silencieux en CI depuis un moment. Les deux corrigés (`--groups=A,B,C,D,E,F` + la
+      variable d'environnement).
+      `parity_matrix --groups=A,B,C,D,E,F` : 103/114 endpoints Django portés au total (6
+      nouveaux) — Groupes A/B/C/D/E/F toujours verts. Suite FastAPI complète relancée après tous
+      les changements : 250 passed, aucune régression.
+      **Restant (chunks 2-4/4)** : social auth (2, + callback Apple z_aud_1) ; GDPR user (5) ;
+      GDPR admin (4).
     - _Requirements: 4.1, 4.2, 4.4_
 
   - [ ] 12.2 Contract_Suite + matrice COMPLÈTE (tous groupes)

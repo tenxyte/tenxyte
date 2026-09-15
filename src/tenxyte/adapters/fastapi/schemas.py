@@ -281,3 +281,24 @@ class OrganizationInviteMemberRequest(BaseModel):
     email: EmailStr
     role_code: str = Field(max_length=50)
     expires_in_days: int = Field(default=7, ge=1, le=30)
+
+
+class WebAuthnRegisterCompleteRequest(BaseModel):
+    """`credential` stays an untyped `dict` — same convention as `AgentTokenCreateRequest`'s
+    `circuit_breaker`/`dead_mans_switch` — since it's the raw `PublicKeyCredential` JSON the
+    browser's WebAuthn API produces, whose exact shape `py_webauthn`'s own parser validates, not
+    this adapter."""
+
+    credential: dict = Field(default_factory=dict)
+    device_name: str = ""
+    challenge_id: str = ""
+
+
+class WebAuthnAuthenticateBeginRequest(BaseModel):
+    email: str = ""
+
+
+class WebAuthnAuthenticateCompleteRequest(BaseModel):
+    credential: dict = Field(default_factory=dict)
+    challenge_id: str = ""
+    device_info: str = ""
