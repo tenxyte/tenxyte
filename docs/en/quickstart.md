@@ -102,6 +102,14 @@ python manage.py createsuperuser
 
 Follow the prompts to set your email and password. This account is created with `is_staff=True` and `is_superuser=True`, granting you full access to all endpoints, including the built-in `http://localhost:8000/admin/` interface.
 
+`python -m tenxyte.adapters.django.createsuperuser` runs the exact same, unmodified Django command
+(`DJANGO_SETTINGS_MODULE` auto-discovered the same way as step 3's quickstart) — the Django
+counterpart of `python -m tenxyte.adapters.fastapi.createsuperuser`'s invocation style:
+
+```bash
+python -m tenxyte.adapters.django.createsuperuser
+```
+
 ## ✅ Ready!
 
 In `DEBUG=True` mode (zero-config), the `development` preset is automatically activated:
