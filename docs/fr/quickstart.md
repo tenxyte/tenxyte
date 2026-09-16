@@ -81,6 +81,15 @@ exécute exactement la même commande — l'équivalent côté Django du style d
 `python -m tenxyte.adapters.fastapi.quickstart` — et accepte les trois mêmes options :
 
 ```bash
+python -m tenxyte.adapters.django.quickstart
+```
+
+Pas besoin de `DJANGO_SETTINGS_MODULE=...` devant, lancé depuis la racine de votre projet : il est
+auto-détecté, dans l'ordre, depuis une variable d'environnement OS déjà définie, un fichier `.env`,
+ou le `manage.py` de votre projet (analysé, jamais exécuté). Ne le définissez explicitement que si
+rien de tout ça ne s'applique :
+
+```bash
 DJANGO_SETTINGS_MODULE=monprojet.settings python -m tenxyte.adapters.django.quickstart
 ```
 

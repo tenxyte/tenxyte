@@ -9,7 +9,18 @@ from unittest.mock import patch
 
 import pytest
 
-from tenxyte.adapters.django.quickstart import main
+import tenxyte.core.env_provider as env_provider_module
+from tenxyte.adapters.django.quickstart import _discover_settings_module, main
+
+
+@pytest.fixture(autouse=True)
+def _reset_dotenv_loaded_flag():
+    """`ensure_dotenv_loaded()`'s once-per-process cache would otherwise leak between tests that
+    each expect their own tmp_path's `.env` (or lack thereof) to be re-scanned — same convention
+    as tests/core/test_core_env_provider.py's own fixture."""
+    env_provider_module._dotenv_loaded = False
+    yield
+    env_provider_module._dotenv_loaded = False
 
 
 @pytest.mark.django_db(transaction=True)
@@ -57,10 +68,48 @@ class TestQuickstartEntrypoint:
         assert Application.objects.filter(name="Default App").count() == 1
 
 
-def test_main_exits_with_clear_error_when_settings_module_unset(monkeypatch):
-    # Only the early os.environ check is under test here -- Django itself is already configured
-    # in-process for this test session regardless, so popping the var doesn't disturb other tests.
+def test_main_exits_with_clear_error_when_settings_module_unset(monkeypatch, tmp_path):
+    # Only the early discovery/os.environ check is under test here -- Django itself is already
+    # configured in-process for this test session regardless, so popping the var doesn't disturb
+    # other tests. chdir into an empty tmp_path so no manage.py/.env from elsewhere is found.
     monkeypatch.delenv("DJANGO_SETTINGS_MODULE", raising=False)
+    monkeypatch.chdir(tmp_path)
     with patch.object(sys, "argv", ["quickstart"]), pytest.raises(SystemExit) as exc_info:
         main()
     assert exc_info.value.code == 1
+
+
+class TestDiscoverSettingsModule:
+    def test_os_environ_wins_when_already_set(self, monkeypatch, tmp_path):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setenv("DJANGO_SETTINGS_MODULE", "explicit.settings")
+        assert _discover_settings_module() == "explicit.settings"
+
+    def test_falls_back_to_dotenv_file(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("DJANGO_SETTINGS_MODULE", raising=False)
+        (tmp_path / ".env").write_text("DJANGO_SETTINGS_MODULE=dotenv.settings\n")
+        monkeypatch.chdir(tmp_path)
+        assert _discover_settings_module() == "dotenv.settings"
+
+    def test_falls_back_to_manage_py_in_cwd(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("DJANGO_SETTINGS_MODULE", raising=False)
+        (tmp_path / "manage.py").write_text(
+            "import os\n" "def main():\n" "    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')\n"
+        )
+        monkeypatch.chdir(tmp_path)
+        assert _discover_settings_module() == "myproject.settings"
+
+    def test_os_environ_wins_over_manage_py(self, monkeypatch, tmp_path):
+        (tmp_path / "manage.py").write_text(
+            "import os\n"
+            "def main():\n"
+            "    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'from_manage_py.settings')\n"
+        )
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setenv("DJANGO_SETTINGS_MODULE", "explicit.settings")
+        assert _discover_settings_module() == "explicit.settings"
+
+    def test_returns_none_when_nothing_found(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("DJANGO_SETTINGS_MODULE", raising=False)
+        monkeypatch.chdir(tmp_path)
+        assert _discover_settings_module() is None

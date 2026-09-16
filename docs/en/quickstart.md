@@ -81,6 +81,14 @@ command — the Django counterpart of `python -m tenxyte.adapters.fastapi.quicks
 style — and takes the same three flags:
 
 ```bash
+python -m tenxyte.adapters.django.quickstart
+```
+
+No `DJANGO_SETTINGS_MODULE=...` needed in front of it when run from your project's root: it's
+auto-discovered, in order, from an already-set OS environment variable, a `.env` file, or your
+project's own `manage.py` (parsed, not executed). Only set it explicitly if none of those apply:
+
+```bash
 DJANGO_SETTINGS_MODULE=myproject.settings python -m tenxyte.adapters.django.quickstart
 ```
 
