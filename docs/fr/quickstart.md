@@ -74,6 +74,16 @@ Cette commande unique exécute :
 | `--no-app` | Ignorer la création de l'Application par défaut |
 | `--app-name "Mon App"` | Nom personnalisé pour l'Application par défaut |
 
+`python manage.py tenxyte_quickstart` est la façon idiomatique de lancer ceci pour un vrai projet
+Django (vous avez déjà un `manage.py`). Si vous comparez/testez les deux adaptateurs côte à côte,
+ou que vous n'avez pas de `manage.py` sous la main, `python -m tenxyte.adapters.django.quickstart`
+exécute exactement la même commande — l'équivalent côté Django du style d'invocation de
+`python -m tenxyte.adapters.fastapi.quickstart` — et accepte les trois mêmes options :
+
+```bash
+DJANGO_SETTINGS_MODULE=monprojet.settings python -m tenxyte.adapters.django.quickstart
+```
+
 ## 4. Créer un Compte Administrateur
 
 Certaines fonctionnalités et vues (comme le panneau d'administration Django ou la configuration RBAC) nécessitent un compte administrateur. Vous pouvez créer votre super-utilisateur initial à l'aide de la commande standard de Django :
