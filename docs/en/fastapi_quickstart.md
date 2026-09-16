@@ -10,6 +10,7 @@ minutes, using the built-in **App_Factory** — no manual service wiring require
 - [3. Run it](#3-run-it)
 - [4. Bootstrap (RBAC seed + API credentials)](#4-bootstrap-rbac-seed--api-credentials)
 - [5. Your first API call](#5-your-first-api-call)
+- [6. Create an Admin Account](#6-create-an-admin-account)
 - [Next steps](#next-steps)
 - [Production considerations](#production-considerations)
 
@@ -164,6 +165,28 @@ That's the full loop: install, create the app, run it, get a real access token, 
 endpoint. Everything else — 2FA, magic links, passkeys, social login, organizations, RBAC, GDPR,
 AIRS agent delegation — is the same `create_tenxyte_app()`, already wired; see the
 [parity table](parity_table.md) for the complete endpoint list.
+
+## 6. Create an Admin Account
+
+`register/` never sets `is_superuser`/`is_staff` — a public registration endpoint shouldn't be
+able to. For an account with full admin access (needed for the same things it's needed for on the
+Django adapter — RBAC configuration, admin routes), use the dedicated command instead — the
+FastAPI counterpart of `python manage.py createsuperuser` /
+`python -m tenxyte.adapters.django.createsuperuser`:
+
+```bash
+python -m tenxyte.adapters.fastapi.createsuperuser
+```
+
+Prompts for an email and password (hidden input, typed twice to confirm), against the same
+database `create_tenxyte_app()` uses by default. For scripting/CI, skip the prompts:
+
+```bash
+python -m tenxyte.adapters.fastapi.createsuperuser --email admin@example.com --password "..." --noinput
+```
+
+`--database-url` overrides the target database, same convention as
+[the quickstart bootstrap command](#4-bootstrap-rbac-seed--api-credentials).
 
 ## Next steps
 

@@ -10,6 +10,7 @@ minutes, grâce à l'**App_Factory** intégrée — aucun câblage manuel de ser
 - [3. La lancer](#3-la-lancer)
 - [4. Bootstrap (seed RBAC + identifiants API)](#4-bootstrap-seed-rbac--identifiants-api)
 - [5. Votre premier appel API](#5-votre-premier-appel-api)
+- [6. Créer un Compte Administrateur](#6-creer-un-compte-administrateur)
 - [Étapes suivantes](#etapes-suivantes)
 - [Considérations pour la production](#considerations-pour-la-production)
 
@@ -171,6 +172,29 @@ C'est la boucle complète : installer, créer l'application, la lancer, obtenir 
 d'accès, appeler un endpoint protégé. Tout le reste — 2FA, liens magiques, passkeys, connexion
 sociale, organisations, RBAC, RGPD, délégation d'agent AIRS — c'est le même `create_tenxyte_app()`,
 déjà câblé ; voir la [table de parité](parity_table.md) pour la liste complète des endpoints.
+
+## 6. Créer un Compte Administrateur
+
+`register/` ne définit jamais `is_superuser`/`is_staff` — un endpoint d'inscription public ne
+devrait pas pouvoir le faire. Pour un compte avec accès admin complet (nécessaire pour les mêmes
+choses que côté Django — configuration RBAC, routes admin), utilisez la commande dédiée à la
+place — l'équivalent côté FastAPI de `python manage.py createsuperuser` /
+`python -m tenxyte.adapters.django.createsuperuser` :
+
+```bash
+python -m tenxyte.adapters.fastapi.createsuperuser
+```
+
+Demande un e-mail et un mot de passe (saisie masquée, tapé deux fois pour confirmation), contre la
+même base de données que `create_tenxyte_app()` utilise par défaut. Pour le scripting/CI, sans les
+invites :
+
+```bash
+python -m tenxyte.adapters.fastapi.createsuperuser --email admin@example.com --password "..." --noinput
+```
+
+`--database-url` permet de cibler une autre base, même convention que
+[la commande de bootstrap du quickstart](#4-bootstrap-seed-rbac--identifiants-api).
 
 ## Étapes suivantes
 
