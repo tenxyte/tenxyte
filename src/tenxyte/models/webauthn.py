@@ -42,7 +42,7 @@ class WebAuthnCredential(models.Model):
     last_used_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        db_table = "webauthn_credentials"
+        db_table = "tenxyte_webauthn_credentials"
 
     def __str__(self):
         return f"{self.user} — {self.device_name or self.credential_id[:16]}"
@@ -82,7 +82,7 @@ class WebAuthnChallenge(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "webauthn_challenges"
+        db_table = "tenxyte_webauthn_challenges"
 
     @classmethod
     def generate(cls, operation: str, user=None, expiry_seconds: int = 300):

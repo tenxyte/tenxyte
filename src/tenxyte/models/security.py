@@ -43,7 +43,7 @@ class BlacklistedToken(models.Model):
     reason = models.CharField(max_length=100, blank=True)  # logout, password_change, security, etc.
 
     class Meta:
-        db_table = "blacklisted_tokens"
+        db_table = "tenxyte_blacklisted_tokens"
 
     def __str__(self):
         return f"Blacklisted: {self.token_jti[:20]}..."
@@ -164,7 +164,7 @@ class AuditLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
-        db_table = "audit_logs"
+        db_table = "tenxyte_audit_logs"
         ordering: ClassVar[list] = ["-created_at"]
 
     def __str__(self):
@@ -264,7 +264,7 @@ class PasswordHistory(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "password_history"
+        db_table = "tenxyte_password_history"
         ordering: ClassVar[list] = ["-created_at"]
 
     @classmethod

@@ -48,7 +48,7 @@ class OTPCode(models.Model):
     max_attempts = models.IntegerField(default=3)
 
     class Meta:
-        db_table = "otp_codes"
+        db_table = "tenxyte_otp_codes"
 
     @staticmethod
     def _hash_code(code: str) -> str:
@@ -137,7 +137,7 @@ class RefreshToken(models.Model):
     last_used_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "refresh_tokens"
+        db_table = "tenxyte_refresh_tokens"
 
     @staticmethod
     def _hash_token(raw_token: str) -> str:
@@ -218,7 +218,7 @@ class LoginAttempt(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "login_attempts"
+        db_table = "tenxyte_login_attempts"
 
     @classmethod
     def record(

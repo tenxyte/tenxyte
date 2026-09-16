@@ -18,7 +18,13 @@ _MIGRATIONS_DIR = Path(__file__).resolve().parents[4] / "src" / "tenxyte" / "mig
 # 0019_rename_users_edit_permission (specs/z_aud_0000) is a data-only migration (RunPython
 # renaming a Permission row's `code`, no AddField/CreateModel/AlterField) — it does not affect
 # the schema this property actually guards, so the count below was bumped to include it.
-EXPECTED_MIGRATION_COUNT = 26
+#
+# 0020_rename_tables_tenxyte_prefix (specs/z_aud_3) is a genuine, deliberate exception to this
+# phase-1-scoped property: every Django table gets a `tenxyte_` prefix to match the FastAPI
+# adapter's own naming convention (AlterModelTable/RenameIndex only — no field/model added or
+# removed, existing data preserved via `ALTER TABLE ... RENAME TO`). z_aud_1's own "zero schema
+# change" guarantee is about that phase's scope, not a permanent freeze on the whole schema.
+EXPECTED_MIGRATION_COUNT = 27
 
 
 def test_migration_count_unchanged():
