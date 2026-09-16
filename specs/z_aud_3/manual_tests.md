@@ -87,6 +87,25 @@ la foulée, deux vrais manques ont été trouvés et corrigés :
   défaut), étape 2 ci-dessus corrigée pour l'utiliser au lieu du script `create_application.py`
   fait main.
 
+En poursuivant l'uniformisation, l'utilisateur a demandé que l'adaptateur Django suive le même
+principe de seeding que FastAPI et que `python -m tenxyte.adapters.fastapi.quickstart` ait un
+équivalent Django symétrique. Trois corrections supplémentaires :
+- `DEFAULT_PERMISSIONS`/`DEFAULT_ROLES` étaient dupliquées littéralement entre `tenxyte_seed.py`
+  (Django) et `quickstart.py` (FastAPI) → extraites dans `tenxyte.core.rbac_defaults`, source
+  unique importée par les deux.
+- `seed_rbac()` (FastAPI) sautait silencieusement tout rôle/permission déjà existant — cassait le
+  chemin de mise à jour (une permission ajoutée à un rôle dans une version ultérieure de Tenxyte
+  n'atteignait jamais une installation existante) → réécrit pour re-synchroniser à chaque run,
+  comme `tenxyte_seed.py` le fait déjà côté Django (`__all__` résolu dynamiquement sur toutes les
+  permissions présentes en base, pas une liste figée).
+- `python -m tenxyte.adapters.django.quickstart` ajouté (fin wrapper autour de
+  `call_command("tenxyte_quickstart", ...)`), symétrique à l'entrée FastAPI. En le testant
+  directement, un vrai bug préexistant est apparu : `tenxyte_quickstart.py` utilisait des emojis
+  (🚀, ✅, ⚠) et des caractères de dessin de boîte (║╔╗╚╝) dans sa sortie console, qui plantent
+  (`UnicodeEncodeError`) dès que stdout n'est pas un vrai terminal UTF-8 — reproductible sur
+  Windows avec l'encodage console par défaut (cp1252). Cassait `python manage.py tenxyte_quickstart`
+  aussi, pas seulement le nouveau wrapper → remplacés par de l'ASCII pur.
+
 ---
 
 ## MT-2 — Parcours Postman croisés (parité vécue)

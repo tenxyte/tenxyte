@@ -1713,9 +1713,23 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       run a aussi mené à la fonctionnalité de priorité de réglages unifiée
       (`Adapter_Custom > OS env > .env > preset > default`, commit
       `feat(settings): unified priority chain...`), hors périmètre direct de z_aud_3 mais motivée
-      directement par cette exécution manuelle. **Reste à faire** : un run MT-1 propre et
-      chronométré (le run du 2026-09-15 était un run de découverte, pas la preuve officielle) ;
-      MT-2 à MT-7 pas encore exécutés.
+      directement par cette exécution manuelle. Poursuite le 2026-09-16 : observation utilisateur
+      (deux captures de listing SQLite Django vs FastAPI) a mené à préfixer les 19 tables Django
+      par `tenxyte_` (migration `0020_rename_tables_tenxyte_prefix.py`) et à ajouter l'équivalent
+      FastAPI de `tenxyte_quickstart` (`python -m tenxyte.adapters.fastapi.quickstart`, commits
+      `feat(django): prefix every Tenxyte table...` et `feat(fastapi): add quickstart script...`).
+      Demande de suivi de l'utilisateur (uniformiser le seeding et l'invocation entre les deux
+      adaptateurs) a mené à : extraire `DEFAULT_PERMISSIONS`/`DEFAULT_ROLES` dans
+      `tenxyte.core.rbac_defaults` (source unique partagée), faire converger `seed_rbac()`
+      (FastAPI) vers le comportement de re-synchronisation réel de `tenxyte_seed.py` (Django), et
+      ajouter `python -m tenxyte.adapters.django.quickstart` — ce qui a aussi révélé et corrigé un
+      vrai bug préexistant (emojis/caractères de dessin de boîte dans `tenxyte_quickstart.py`
+      provoquant un `UnicodeEncodeError` hors terminal UTF-8, ex. Windows/cp1252), commits
+      `refactor(rbac): share DEFAULT_PERMISSIONS/DEFAULT_ROLES...` et `feat(django): add python -m
+      tenxyte.adapters.django.quickstart...`. Voir `manual_tests.md`'s MT-1 « Historique de
+      correction » pour le détail. **Reste à faire** : un run MT-1 propre et chronométré (le run du
+      2026-09-15 était un run de découverte, pas la preuve officielle) ; MT-2 à MT-7 pas encore
+      exécutés.
 
 - [ ] 18. Checkpoint final - Ensure all tests pass
   - Toutes gates vertes (parité, contrat, couverture, pureté, conformité, drift), registre manuel
