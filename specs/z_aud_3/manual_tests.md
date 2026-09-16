@@ -37,11 +37,10 @@ externe** — le test valide la doc autant que le code.
    # pas besoin de --env-file ni de variable d'environnement OS)
    uvicorn main:app --reload
    ```
-2. Créer une Application pour obtenir de vrais identifiants (`X-Access-Key`/`X-Access-Secret` —
-   l'auth applicative est active par défaut, la doc fournit un script `create_application.py`
-   prêt à l'emploi) :
+2. Bootstrap — seed RBAC + Application par défaut (l'auth applicative est active par défaut, il
+   faut de vrais identifiants `X-Access-Key`/`X-Access-Secret` pour l'étape 3) :
    ```bash
-   python create_application.py
+   python -m tenxyte.adapters.fastapi.quickstart
    ```
 3. Premier cycle API selon la doc (credentials d'application inclus) :
    ```bash
@@ -72,6 +71,21 @@ dans le test :
 - `/docs` (Swagger natif de FastAPI) restait 401 même sans aucune bonne raison documentée — bug
   réel dans `create_tenxyte_app()` (aucun `docs_url` explicite, donc hors du chemin exempté par
   défaut) corrigé dans `app.py` ; étape 5 corrigée avec la vraie URL.
+
+**Historique de correction (2026-09-16)** : en testant manuellement le `register/`, l'utilisateur
+a observé un `201 "Registration successful"` systématique et s'est demandé si SQLite recréait
+l'utilisateur à chaque appel — en fait un comportement voulu (anti-énumération, Property 3) : un
+email déjà pris renvoie un faux `User` de même forme sans rien persister (`routers/auth.py`). Dans
+la foulée, deux vrais manques ont été trouvés et corrigés :
+- Les tables de l'adaptateur Django n'étaient pas préfixées `tenxyte_` (contrairement à
+  l'adaptateur FastAPI) → 19 tables + leurs tables de jointure M2M implicites renommées
+  (migration `0020_rename_tables_tenxyte_prefix.py`).
+- Il n'existait **aucun équivalent FastAPI** de `python manage.py tenxyte_quickstart` : les tables
+  `RoleDB`/`PermissionDB` existaient (Wave D) mais rien ne les peuplait, et la création
+  d'Application n'était qu'un script à écrire soi-même → `python -m
+  tenxyte.adapters.fastapi.quickstart` ajouté (idempotent : schéma + seed RBAC + Application par
+  défaut), étape 2 ci-dessus corrigée pour l'utiliser au lieu du script `create_application.py`
+  fait main.
 
 ---
 

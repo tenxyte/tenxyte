@@ -8,7 +8,7 @@ minutes, grâce à l'**App_Factory** intégrée — aucun câblage manuel de ser
 - [1. Installation](#1-installation)
 - [2. Créer l'application](#2-creer-lapplication)
 - [3. La lancer](#3-la-lancer)
-- [4. Créer une Application (identifiants API)](#4-creer-une-application-identifiants-api)
+- [4. Bootstrap (seed RBAC + identifiants API)](#4-bootstrap-seed-rbac--identifiants-api)
 - [5. Votre premier appel API](#5-votre-premier-appel-api)
 - [Étapes suivantes](#etapes-suivantes)
 - [Considérations pour la production](#considerations-pour-la-production)
@@ -82,43 +82,50 @@ même préfixe API que tous les autres endpoints, pas le `/docs` racine par déf
 même, donc exempte de l'authentification applicative (étape 4) de la même façon que la convention
 de documentation de Django elle-même.
 
-## 4. Créer une Application (identifiants API)
+## 4. Bootstrap (seed RBAC + identifiants API)
 
-L'authentification au niveau application (`X-Access-Key`/`X-Access-Secret`) est **activée par
-défaut** (`TENXYTE_APPLICATION_AUTH_ENABLED=true`), comme le propre défaut de l'adaptateur Django
-— chaque requête vers un chemin non exempté a besoin de ces deux en-têtes. Créez une application
-une seule fois, en amont :
-
-```python
-# create_application.py — à exécuter une fois contre la base de votre app en cours d'exécution
-import asyncio
-
-from tenxyte.adapters.fastapi import db
-from tenxyte.adapters.fastapi.application_auth import create_application
-
-
-async def main():
-    engine = db.create_engine()  # même fichier SQLite par défaut que main.py vient de créer
-    session_factory = db.create_session_factory(engine)
-    async with session_factory() as session:
-        app, raw_secret = await create_application(session, name="Mon App")
-        print(f"X-Access-Key: {app.access_key}")
-        print(f"X-Access-Secret: {raw_secret}")  # affiché une seule fois — à conserver maintenant
-    await engine.dispose()
-
-
-asyncio.run(main())
-```
+`python -m tenxyte.adapters.fastapi.quickstart` est l'équivalent côté FastAPI de la commande
+`python manage.py tenxyte_quickstart` de l'adaptateur Django — une seule commande idempotente qui
+crée le schéma, seed les rôles/permissions par défaut (`viewer`/`editor`/`admin`/`super_admin`,
+mêmes codes et hiérarchie que ceux seedés par l'adaptateur Django), et crée une Application par
+défaut :
 
 ```bash
-python create_application.py
+python -m tenxyte.adapters.fastapi.quickstart
 ```
 
-Exécutez ceci *après* qu'`uvicorn` ait démarré au moins une fois (pour que les tables existent).
-Pour du développement local uniquement, vous pouvez sauter complètement cette étape en réglant
-`TENXYTE_APPLICATION_AUTH_ENABLED=false` à la place — chaque fixture de test de la propre suite de
-tests de ce repo fait exactement ça. Gardez-la activée si vous voulez exercer la vraie forme de
-requête par défaut.
+```
+Tenxyte Quickstart (FastAPI)
+
+Step 1/3: Creating schema...
+  Schema ready
+Step 2/3: Seeding roles & permissions...
+  47 permissions created, 4 roles created
+Step 3/3: Creating default Application...
+
+  ======================================================
+  SAVE THESE CREDENTIALS -- shown only once!
+  ------------------------------------------------------
+  Access Key:    <votre access key>
+  Access Secret: <votre access secret>
+  ------------------------------------------------------
+  ...
+```
+
+Le secret est haché en bcrypt dans la base de données et **ne peut plus être récupéré ensuite** —
+copiez-le maintenant. L'authentification au niveau application (`X-Access-Key`/`X-Access-Secret`)
+est **activée par défaut** (`TENXYTE_APPLICATION_AUTH_ENABLED=true`), comme le propre défaut de
+l'adaptateur Django — chaque requête vers un chemin non exempté a besoin de ces deux en-têtes.
+
+Options utiles : `--database-url` (même fichier SQLite par défaut que `create_tenxyte_app()`),
+`--no-seed` (sauter le seed RBAC), `--no-app` (sauter la création de l'Application), `--app-name`
+(défaut : `"Default App"`). Relancer la commande est sans risque — les rôles, permissions et
+Applications existants (identifiés par nom) sont laissés intacts, rien n'est dupliqué.
+
+Pour du développement local uniquement, vous pouvez sauter complètement la création de
+l'Application en réglant `TENXYTE_APPLICATION_AUTH_ENABLED=false` à la place — chaque fixture de
+test de la propre suite de tests de ce repo fait exactement ça. Gardez-la activée si vous voulez
+exercer la vraie forme de requête par défaut.
 
 ## 5. Votre premier appel API
 

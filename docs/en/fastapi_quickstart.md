@@ -8,7 +8,7 @@ minutes, using the built-in **App_Factory** — no manual service wiring require
 - [1. Install](#1-install)
 - [2. Create the app](#2-create-the-app)
 - [3. Run it](#3-run-it)
-- [4. Create an application (API credentials)](#4-create-an-application-api-credentials)
+- [4. Bootstrap (RBAC seed + API credentials)](#4-bootstrap-rbac-seed--api-credentials)
 - [5. Your first API call](#5-your-first-api-call)
 - [Next steps](#next-steps)
 - [Production considerations](#production-considerations)
@@ -78,39 +78,46 @@ Interactive API docs (Swagger UI) are at `http://localhost:8000/api/v1/docs/` �
 API prefix as every other endpoint, not FastAPI's own root-level `/docs` default, so it's exempt
 from application-level authentication (step 4) the same way Django's own docs convention is.
 
-## 4. Create an application (API credentials)
+## 4. Bootstrap (RBAC seed + API credentials)
 
-Application-level authentication (`X-Access-Key`/`X-Access-Secret`) is **on by default**
-(`TENXYTE_APPLICATION_AUTH_ENABLED=true`), matching the Django adapter's own default — every
-request to a non-exempt path needs these two headers. Create one application once, up front:
-
-```python
-# create_application.py — run this once against your running app's database
-import asyncio
-
-from tenxyte.adapters.fastapi import db
-from tenxyte.adapters.fastapi.application_auth import create_application
-
-
-async def main():
-    engine = db.create_engine()  # same default SQLite file main.py's app just created
-    session_factory = db.create_session_factory(engine)
-    async with session_factory() as session:
-        app, raw_secret = await create_application(session, name="My App")
-        print(f"X-Access-Key: {app.access_key}")
-        print(f"X-Access-Secret: {raw_secret}")  # shown once — store it now
-    await engine.dispose()
-
-
-asyncio.run(main())
-```
+`python -m tenxyte.adapters.fastapi.quickstart` is the FastAPI counterpart of the Django adapter's
+`python manage.py tenxyte_quickstart` — one idempotent command that creates the schema, seeds the
+default roles/permissions (`viewer`/`editor`/`admin`/`super_admin`, the same codes and hierarchy
+the Django adapter seeds), and creates a default Application:
 
 ```bash
-python create_application.py
+python -m tenxyte.adapters.fastapi.quickstart
 ```
 
-Run this *after* `uvicorn` has started at least once (so the database tables exist). For local
-development only, you can skip this step entirely by setting
+```
+Tenxyte Quickstart (FastAPI)
+
+Step 1/3: Creating schema...
+  Schema ready
+Step 2/3: Seeding roles & permissions...
+  47 permissions created, 4 roles created
+Step 3/3: Creating default Application...
+
+  ======================================================
+  SAVE THESE CREDENTIALS -- shown only once!
+  ------------------------------------------------------
+  Access Key:    <your access key>
+  Access Secret: <your access secret>
+  ------------------------------------------------------
+  ...
+```
+
+The secret is bcrypt-hashed in the database and **cannot be retrieved later** — copy it now.
+Application-level authentication (`X-Access-Key`/`X-Access-Secret`) is **on by default**
+(`TENXYTE_APPLICATION_AUTH_ENABLED=true`), matching the Django adapter's own default — every
+request to a non-exempt path needs these two headers.
+
+Useful flags: `--database-url` (defaults to the same SQLite file `create_tenxyte_app()` uses),
+`--no-seed` (skip RBAC seeding), `--no-app` (skip Application creation), `--app-name` (default:
+`"Default App"`). Re-running the command is safe — existing roles, permissions, and Applications
+(matched by name) are left untouched, nothing is duplicated.
+
+For local development only, you can skip Application creation entirely by setting
 `TENXYTE_APPLICATION_AUTH_ENABLED=false` instead — every test fixture in this repo's own test
 suite does exactly that. Keep it enabled if you want to exercise the real, default request shape.
 
