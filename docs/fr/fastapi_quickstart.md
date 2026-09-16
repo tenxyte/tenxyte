@@ -100,7 +100,8 @@ Tenxyte Quickstart (FastAPI)
 Step 1/3: Creating schema...
   Schema ready
 Step 2/3: Seeding roles & permissions...
-  47 permissions created, 4 roles created
+  Permissions: 47 created, 0 updated
+  Roles: 4 created, 0 updated
 Step 3/3: Creating default Application...
 
   ======================================================
@@ -119,8 +120,12 @@ l'adaptateur Django — chaque requête vers un chemin non exempté a besoin de 
 
 Options utiles : `--database-url` (même fichier SQLite par défaut que `create_tenxyte_app()`),
 `--no-seed` (sauter le seed RBAC), `--no-app` (sauter la création de l'Application), `--app-name`
-(défaut : `"Default App"`). Relancer la commande est sans risque — les rôles, permissions et
-Applications existants (identifiés par nom) sont laissés intacts, rien n'est dupliqué.
+(défaut : `"Default App"`). Relancer la commande est sans risque : les Applications sont
+identifiées par nom et jamais dupliquées, et relancer le seed **re-synchronise** l'ensemble des
+permissions de chaque rôle par défaut (une permission ajoutée dans une version ultérieure de
+Tenxyte atteint donc une installation existante à la prochaine exécution) plutôt que de sauter les
+rôles/permissions déjà existants — même comportement que la commande `tenxyte_seed` de
+l'adaptateur Django.
 
 Pour du développement local uniquement, vous pouvez sauter complètement la création de
 l'Application en réglant `TENXYTE_APPLICATION_AUTH_ENABLED=false` à la place — chaque fixture de

@@ -35,9 +35,11 @@ async def _fresh_session_factory():
 async def test_seed_rbac_creates_all_default_permissions_and_roles():
     engine, session_factory = await _fresh_session_factory()
     async with session_factory() as session:
-        permissions_created, roles_created = await seed_rbac(session)
-        assert permissions_created == len(DEFAULT_PERMISSIONS)
-        assert roles_created == len(DEFAULT_ROLES)
+        result = await seed_rbac(session)
+        assert result.permissions_created == len(DEFAULT_PERMISSIONS)
+        assert result.permissions_updated == 0
+        assert result.roles_created == len(DEFAULT_ROLES)
+        assert result.roles_updated == 0
 
         total_permissions = (await session.execute(select(func.count(PermissionDB.id)))).scalar_one()
         total_roles = (await session.execute(select(func.count(RoleDB.id)))).scalar_one()
@@ -47,12 +49,68 @@ async def test_seed_rbac_creates_all_default_permissions_and_roles():
 
 
 @pytest.mark.anyio
-async def test_seed_rbac_is_idempotent():
+async def test_seed_rbac_is_idempotent_when_nothing_changed():
     engine, session_factory = await _fresh_session_factory()
     async with session_factory() as session:
         await seed_rbac(session)
-        permissions_created, roles_created = await seed_rbac(session)
-        assert (permissions_created, roles_created) == (0, 0)
+        result = await seed_rbac(session)
+        assert result == (0, 0, 0, 0)
+    await engine.dispose()
+
+
+@pytest.mark.anyio
+async def test_seed_rbac_resyncs_a_manually_edited_permission_name():
+    # Real-world scenario: someone edits a built-in permission's name directly in the database (or
+    # via the admin), then re-runs the quickstart/seed expecting it to pick up a Tenxyte upgrade.
+    # Re-syncing here mirrors tenxyte_seed.py's own behavior (see quickstart.py's module
+    # docstring) -- this is deliberately not a "skip if exists" seed.
+    engine, session_factory = await _fresh_session_factory()
+    async with session_factory() as session:
+        await seed_rbac(session)
+        perm = (await session.execute(select(PermissionDB).where(PermissionDB.code == "content.view"))).scalar_one()
+        perm.name = "Renamed By Hand"
+        await session.commit()
+
+        result = await seed_rbac(session)
+        assert result.permissions_updated == 1
+        assert result.permissions_created == 0
+
+        refreshed = (
+            await session.execute(select(PermissionDB).where(PermissionDB.code == "content.view"))
+        ).scalar_one()
+        assert refreshed.name == "View Content"
+    await engine.dispose()
+
+
+@pytest.mark.anyio
+async def test_seed_rbac_grants_a_later_added_permission_to_super_admin_on_resync():
+    # "__all__" resolves dynamically against every permission that exists at seed time, not a
+    # fixed snapshot of DEFAULT_PERMISSIONS -- so a permission created after the first seed run
+    # (whether by a later Tenxyte version or a project's own custom permission) reaches
+    # `super_admin` the next time the quickstart/seed is re-run.
+    engine, session_factory = await _fresh_session_factory()
+    async with session_factory() as session:
+        await seed_rbac(session)
+
+        custom = PermissionDB(code="custom.feature", name="Custom Feature", description="")
+        session.add(custom)
+        await session.commit()
+        await session.refresh(custom)
+
+        await seed_rbac(session)
+
+        role = (await session.execute(select(RoleDB).where(RoleDB.code == "super_admin"))).scalar_one()
+        assigned = (
+            await session.execute(
+                select(func.count())
+                .select_from(role_permissions_table)
+                .where(
+                    role_permissions_table.c.role_id == role.id,
+                    role_permissions_table.c.permission_id == custom.id,
+                )
+            )
+        ).scalar_one()
+        assert assigned == 1
     await engine.dispose()
 
 
