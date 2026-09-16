@@ -1726,7 +1726,16 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       vrai bug préexistant (emojis/caractères de dessin de boîte dans `tenxyte_quickstart.py`
       provoquant un `UnicodeEncodeError` hors terminal UTF-8, ex. Windows/cp1252), commits
       `refactor(rbac): share DEFAULT_PERMISSIONS/DEFAULT_ROLES...` et `feat(django): add python -m
-      tenxyte.adapters.django.quickstart...`. Voir `manual_tests.md`'s MT-1 « Historique de
+      tenxyte.adapters.django.quickstart...`. Toujours le 2026-09-16 : auto-découverte de
+      `DJANGO_SETTINGS_MODULE` ajoutée (`_settings_discovery.py` : OS env > `.env` > `manage.py`
+      du cwd) pour éliminer l'étape manuelle demandée par l'utilisateur (commit `feat(django):
+      auto-discover DJANGO_SETTINGS_MODULE...`), puis `python -m
+      tenxyte.adapters.django.createsuperuser` et `python -m
+      tenxyte.adapters.fastapi.createsuperuser` ajoutés en symétrie (le second sans équivalent
+      préexistant côté FastAPI — anticipé par le prérequis « seed identique : application + admin »
+      de MT-2 mais jamais construit), commits `feat(django): add python -m
+      tenxyte.adapters.django.createsuperuser...` et `feat(fastapi): add python -m
+      tenxyte.adapters.fastapi.createsuperuser...`. Voir `manual_tests.md`'s MT-1 « Historique de
       correction » pour le détail. **Reste à faire** : un run MT-1 propre et chronométré (le run du
       2026-09-15 était un run de découverte, pas la preuve officielle) ; MT-2 à MT-7 pas encore
       exécutés.

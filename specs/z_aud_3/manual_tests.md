@@ -106,6 +106,26 @@ principe de seeding que FastAPI et que `python -m tenxyte.adapters.fastapi.quick
   Windows avec l'encodage console par défaut (cp1252). Cassait `python manage.py tenxyte_quickstart`
   aussi, pas seulement le nouveau wrapper → remplacés par de l'ASCII pur.
 
+En testant `python -m tenxyte.adapters.django.quickstart` sans base réelle sous la main,
+l'utilisateur a dû fixer `$env:DJANGO_SETTINGS_MODULE` à la main avant chaque appel — étape jugée
+à éliminer. Auto-détection ajoutée (`_settings_discovery.py`, ordre : OS env > `.env` >
+`manage.py` du répertoire courant, parsé jamais exécuté), donc plus besoin de la fixer
+explicitement pour le cas courant (lancé depuis la racine d'un vrai projet).
+
+L'utilisateur a ensuite demandé le même traitement pour `python manage.py createsuperuser`
+(symétrie complète avec les deux commandes `quickstart`), ce qui a aussi comblé un vrai manque
+côté FastAPI — anticipé par le prérequis de MT-2 ci-dessous (« seed identique : application +
+admin ») mais jamais construit :
+- `python -m tenxyte.adapters.django.createsuperuser` ajouté (fin wrapper, `DJANGO_SETTINGS_MODULE`
+  auto-détecté comme le quickstart ; `createsuperuser` lui-même n'est pas du code Tenxyte, il vient
+  de `django.contrib.auth` et fonctionne déjà tel quel avec le `User` custom de Tenxyte).
+- `python -m tenxyte.adapters.fastapi.createsuperuser` ajouté — aucun équivalent n'existait avant
+  (`register/` ne positionne jamais `is_superuser`/`is_staff`) : prompts interactifs (saisie
+  masquée, confirmation) ou `--email`/`--password`/`--noinput` pour le scripting. Vérifié
+  bout-en-bout avec un vrai login : le superuser créé déclenche bien le flux de bootstrap 2FA admin
+  existant (`2fa_setup_only`), preuve qu'il est reconnu comme un vrai superuser par tout le système,
+  pas juste un champ en base.
+
 ---
 
 ## MT-2 — Parcours Postman croisés (parité vécue)
