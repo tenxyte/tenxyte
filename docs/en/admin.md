@@ -35,6 +35,9 @@ Superusers are typically created via the command line. This is almost always the
 python manage.py createsuperuser
 ```
 
+On the FastAPI adapter, use `python -m tenxyte.adapters.fastapi.createsuperuser` instead — see the
+[FastAPI Quickstart](fastapi_quickstart.md#6-create-an-admin-account) for details.
+
 Prompt example:
 ```
 Email address: admin@example.com
