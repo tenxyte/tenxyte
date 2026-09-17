@@ -977,14 +977,17 @@ Refresh the access token.
 ---
 
 ### `POST /logout/`
-Logout (revokes refresh token + blacklists access token).
+Logout (revokes refresh token if provided, and/or blacklists the access token from the
+`Authorization` header if provided). At least one of the two is required — a client holding only
+an access token (e.g. the short-lived `2fa_setup_only` bootstrap token, which never issues a
+refresh token) can still log out by sending just the header.
 
 **Request:**
 ```json
 { "refresh_token": "eyJ..." }
 ```
 
-**Headers (optional):**
+**Headers (required if `refresh_token` is omitted):**
 ```
 Authorization: Bearer <access_token>
 ```
@@ -996,10 +999,10 @@ Authorization: Bearer <access_token>
 { "message": "Logged out successfully" }
 ```
 
-**Response `400` (Missing refresh token):**
+**Response `400` (Neither refresh_token nor Authorization header provided):**
 ```json
 {
-  "error": "refresh_token is required",
+  "error": "refresh_token or an Authorization header is required",
   "code": "MISSING_REFRESH_TOKEN"
 }
 ```

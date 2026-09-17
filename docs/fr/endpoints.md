@@ -980,14 +980,17 @@ Rafraîchir le jeton d'accès.
 ---
 
 ### `POST /logout/`
-Déconnexion (révoque le jeton de rafraîchissement + met le jeton d'accès sur liste noire).
+Déconnexion (révoque le jeton de rafraîchissement s'il est fourni, et/ou met le jeton d'accès de
+l'en-tête `Authorization` sur liste noire s'il est fourni). Au moins l'un des deux est requis — un
+client qui ne détient qu'un jeton d'accès (par exemple le jeton bootstrap `2fa_setup_only`, qui
+n'émet jamais de jeton de rafraîchissement) peut se déconnecter en n'envoyant que l'en-tête.
 
 **Requête :**
 ```json
 { "refresh_token": "eyJ..." }
 ```
 
-**En-têtes (optionnels) :**
+**En-têtes (requis si `refresh_token` est omis) :**
 ```
 Authorization: Bearer <access_token>
 ```
@@ -999,10 +1002,10 @@ Authorization: Bearer <access_token>
 
 > **Mode cookie :** Lorsque `TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED=True`, le serveur efface également le cookie du jeton de rafraîchissement via `Set-Cookie` avec `max-age=0`.
 
-**Réponse `400` (Jeton de rafraîchissement manquant) :**
+**Réponse `400` (Ni refresh_token ni en-tête Authorization fournis) :**
 ```json
 {
-  "error": "refresh_token is required",
+  "error": "refresh_token or an Authorization header is required",
   "code": "MISSING_REFRESH_TOKEN"
 }
 ```

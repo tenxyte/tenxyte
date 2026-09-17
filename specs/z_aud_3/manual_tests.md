@@ -126,6 +126,27 @@ admin ») mais jamais construit :
   existant (`2fa_setup_only`), preuve qu'il est reconnu comme un vrai superuser par tout le système,
   pas juste un champ en base.
 
+En se connectant pour de vrai à travers une application cliente avec ce superuser fraîchement créé
+(donc sans 2FA configurée), l'utilisateur a reçu le token bootstrap `2fa_setup_only` et a demandé
+pourquoi son client ne pouvait pas se déconnecter avec. Vérifié contre le vrai code Django avant
+toute correction (source de vérité) :
+- Élargir le scope à `GET /2fa/status/` et `POST /logout/all/` aurait été une régression de
+  sécurité, pas un correctif — ni l'un ni l'autre n'autorise `2fa_setup_only` dans Django, et c'est
+  voulu (le token bootstrap de 15 minutes doit rester minimal).
+- Le vrai bug était que `POST /logout/` exigeait `refresh_token` de façon inconditionnelle — que
+  le bootstrap n'émet jamais — alors que blacklister l'access token seul (via l'en-tête
+  `Authorization`) est une opération bien définie en soi. Corrigé dans les deux adaptateurs :
+  `refresh_token` n'est requis que si aucun des deux (lui ou l'en-tête) n'est fourni.
+- En écrivant un test réel (non mocké) pour vérifier ce correctif côté Django, un bug plus grave
+  et déjà présent est apparu : `LogoutView`/`LogoutAllView` appelaient
+  `jwt_service.blacklist_token(jti=..., expires_at=...)` — mauvaise méthode (la vraie signature
+  prend le token brut en argument positionnel, pas `jti`/`expires_at`), levant systématiquement
+  une `TypeError` avalée silencieusement par un `except Exception`. **Les access tokens n'ont
+  jamais été réellement blacklistés au logout côté Django** — le test existant qui aurait dû le
+  détecter mockait cette même méthode buguée et ne vérifiait que « appelée », restant vert tout du
+  long. Corrigé (`blacklist_token_by_jti` au lieu de `blacklist_token`, sur les 3 sites concernés),
+  tests réécrits pour vérifier l'état réel du token après logout plutôt qu'un appel mocké.
+
 ---
 
 ## MT-2 — Parcours Postman croisés (parité vécue)

@@ -1735,8 +1735,21 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       préexistant côté FastAPI — anticipé par le prérequis « seed identique : application + admin »
       de MT-2 mais jamais construit), commits `feat(django): add python -m
       tenxyte.adapters.django.createsuperuser...` et `feat(fastapi): add python -m
-      tenxyte.adapters.fastapi.createsuperuser...`. Voir `manual_tests.md`'s MT-1 « Historique de
-      correction » pour le détail. **Reste à faire** : un run MT-1 propre et chronométré (le run du
+      tenxyte.adapters.fastapi.createsuperuser...`. Le 2026-09-17 : en se connectant pour de vrai
+      via ce superuser (donc sans 2FA, token bootstrap `2fa_setup_only`), l'utilisateur n'a pas pu
+      se déconnecter depuis un vrai client. Après vérification contre le vrai code Django (élargir
+      le scope de `2fa_setup_only` à `/2fa/status/`/`/logout/all/` aurait été une régression de
+      sécurité, pas un correctif) : `refresh_token` n'est plus exigé de façon inconditionnelle par
+      `POST /logout/` dans les deux adaptateurs (commits `fix(django): access tokens were never
+      actually blacklisted on logout...` et `fix(fastapi): POST /logout/ no longer requires
+      refresh_token unconditionally...`). Le test réel écrit pour vérifier ce correctif côté
+      Django a révélé un bug plus grave et déjà présent : `LogoutView`/`LogoutAllView` appelaient
+      `jwt_service.blacklist_token(jti=..., expires_at=...)`, mauvaise méthode (la vraie signature
+      prend le token brut en positionnel), levant une `TypeError` avalée silencieusement — les
+      access tokens n'étaient **jamais** réellement blacklistés au logout, masqué par un test
+      existant qui mockait cette même méthode buguée. Corrigé (`blacklist_token_by_jti`) sur les 3
+      sites concernés. Voir `manual_tests.md`'s MT-1 « Historique de correction » pour le détail.
+      **Reste à faire** : un run MT-1 propre et chronométré (le run du
       2026-09-15 était un run de découverte, pas la preuve officielle) ; MT-2 à MT-7 pas encore
       exécutés.
 

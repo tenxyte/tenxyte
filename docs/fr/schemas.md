@@ -142,7 +142,7 @@ Renvoyée pour toutes les réponses `4xx` et `5xx`.
 | `SESSION_LIMIT_EXCEEDED` | 403 | Trop de sessions simultanées |
 | `DEVICE_LIMIT_EXCEEDED` | 403 | Trop d'appareils enregistrés |
 | `RATE_LIMITED` | 429 | Trop de requêtes |
-| `MISSING_REFRESH_TOKEN` | 400 | Pas de jeton de rafraîchissement dans le corps ou le cookie |
+| `MISSING_REFRESH_TOKEN` | 400 | `/refresh/` : pas de jeton de rafraîchissement dans le corps ou le cookie. `/logout/` : ni jeton de rafraîchissement, ni en-tête `Authorization` |
 | `INVALID_REDIRECT_URI` | 400 | redirect_uri non autorisé dans la liste blanche de l'application |
 | `ADMIN_2FA_SETUP_REQUIRED` | 403 | L'administrateur doit activer la 2FA avant de se connecter |
 | `INVALID_2FA_CODE` | 401 | Code TOTP ou code de secours invalide |

@@ -142,7 +142,7 @@ Returned on all `4xx` and `5xx` responses.
 | `SESSION_LIMIT_EXCEEDED` | 403 | Too many concurrent sessions |
 | `DEVICE_LIMIT_EXCEEDED` | 403 | Too many registered devices |
 | `RATE_LIMITED` | 429 | Too many requests |
-| `MISSING_REFRESH_TOKEN` | 400 | No refresh token in body or cookie |
+| `MISSING_REFRESH_TOKEN` | 400 | `/refresh/`: no refresh token in body or cookie. `/logout/`: neither a refresh token nor an `Authorization` header |
 | `INVALID_REDIRECT_URI` | 400 | redirect_uri not in application whitelist |
 | `ADMIN_2FA_SETUP_REQUIRED` | 403 | Admin must enable 2FA before login |
 | `INVALID_2FA_CODE` | 401 | Wrong TOTP or backup code |
