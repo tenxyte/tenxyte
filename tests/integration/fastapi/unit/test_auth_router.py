@@ -510,6 +510,33 @@ async def test_logout_missing_token():
 
 
 @pytest.mark.anyio
+async def test_logout_succeeds_with_only_access_token_no_refresh_token():
+    """A client holding only an access token (no refresh token at all -- e.g. the
+    2fa_setup_only bootstrap token issued to an admin with no 2FA configured yet, which never
+    issues a refresh token) must still be able to log out by blacklisting that access token
+    alone -- parity with the Django_Adapter's LogoutView fix. Previously this always 400'd,
+    since refresh_token was unconditionally required regardless of an access token being
+    present."""
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        await _create_user(app, email="bootstrap-logout@example.com")
+        async with await _client(app) as client:
+            login = await client.post(
+                "/api/v1/login/email/",
+                json={"email": "bootstrap-logout@example.com", "password": "correct-horse-battery-staple"},
+            )
+            access_token = login.json()["access_token"]
+
+            response = await client.post(
+                "/api/v1/logout/", json={}, headers={"Authorization": f"Bearer {access_token}"}
+            )
+            assert response.status_code == 200
+
+            me = await client.get("/api/v1/me/", headers={"Authorization": f"Bearer {access_token}"})
+    assert me.status_code == 401
+
+
+@pytest.mark.anyio
 async def test_logout_all_revokes_every_session():
     app = _build_app()
     async with app.router.lifespan_context(app):

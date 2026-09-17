@@ -388,14 +388,24 @@ async def logout(
     settings: Settings = Depends(get_settings),  # noqa: B008
     jwt_service: JWTService = Depends(get_jwt_service),  # noqa: B008
 ):
-    if not body.refresh_token:
-        raise TenxyteAPIError("refresh_token is required", code="MISSING_REFRESH_TOKEN", status_code=400)
-
-    await revoke_refresh_token(session, body.refresh_token)
-
     auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        access_token = auth_header[7:]
+    access_token = auth_header[7:] if auth_header.startswith("Bearer ") else None
+
+    # A refresh_token used to be mandatory here, unconditionally — but a client holding only an
+    # access token (no refresh token at all, e.g. the short-lived 2fa_setup_only bootstrap token
+    # issued to an admin with no 2FA configured yet, which never issues one) had no way to log
+    # out at all, even though blacklisting just the access token below is a perfectly well-defined
+    # operation on its own (parity fix with the Django_Adapter's LogoutView). Only reject when
+    # there is truly nothing to act on.
+    if not body.refresh_token and not access_token:
+        raise TenxyteAPIError(
+            "refresh_token or an Authorization header is required", code="MISSING_REFRESH_TOKEN", status_code=400
+        )
+
+    if body.refresh_token:
+        await revoke_refresh_token(session, body.refresh_token)
+
+    if access_token:
         await jwt_service.blacklist_token_async(access_token, reason="logout")
         await admin_security_service.record_blacklisted_token_async(session, jwt_service, access_token, reason="logout")
 
