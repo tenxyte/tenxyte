@@ -7517,11 +7517,11 @@
     },
     "/logout/": {
       "post": {
-        "description": "R\u00e9voque le refresh token fourni pour d\u00e9connecter l'utilisateur. Si un access token est fourni dans l'en-t\u00eate Authorization, il est \u00e9galement blacklist\u00e9 pour une d\u00e9connexion imm\u00e9diate.",
+        "description": "R\u00e9voque le refresh token fourni (si pr\u00e9sent) pour d\u00e9connecter l'utilisateur. Si un access token est fourni dans l'en-t\u00eate Authorization, il est \u00e9galement blacklist\u00e9 pour une d\u00e9connexion imm\u00e9diate. Au moins l'un des deux doit \u00eatre fourni.",
         "operationId": "logout_create",
         "parameters": [
           {
-            "description": "Bearer token pour blacklistage imm\u00e9diat (optionnel)",
+            "description": "Bearer token pour blacklistage imm\u00e9diat (requis si refresh_token est absent)",
             "in": "header",
             "name": "Authorization",
             "schema": {
