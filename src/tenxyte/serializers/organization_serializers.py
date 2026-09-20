@@ -135,7 +135,7 @@ class CreateOrganizationSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=200)
     slug = serializers.SlugField(max_length=200, required=False, allow_blank=True)
     description = serializers.CharField(required=False, allow_blank=True)
-    parent_id = serializers.IntegerField(required=False, allow_null=True)
+    parent_id = serializers.CharField(required=False, allow_null=True)
     metadata = serializers.JSONField(required=False)
     max_members = serializers.IntegerField(required=False, default=0, min_value=0)
 
@@ -152,7 +152,7 @@ class UpdateOrganizationSerializer(serializers.Serializer):
 class AddMemberSerializer(serializers.Serializer):
     """Serializer for adding a member to an organization."""
 
-    user_id = serializers.IntegerField()
+    user_id = serializers.CharField()
     role_code = serializers.CharField(max_length=50)
 
 

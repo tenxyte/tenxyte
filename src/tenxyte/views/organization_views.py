@@ -5,6 +5,7 @@ All endpoints require X-Access-Key/X-Access-Secret (Application auth).
 Org-specific endpoints require X-Org-Slug header.
 """
 
+from django.core.exceptions import ValidationError
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiExample, OpenApiParameter, extend_schema, inline_serializer
 from rest_framework import serializers, status
@@ -700,7 +701,7 @@ def add_member(request: Request) -> Response:
 
     try:
         user_to_add = User.objects.get(id=serializer.validated_data["user_id"])
-    except User.DoesNotExist:
+    except (User.DoesNotExist, ValidationError):
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
     service = OrganizationService()
@@ -781,7 +782,7 @@ def add_member(request: Request) -> Response:
 @require_jwt
 @require_org_context
 @require_org_permission("org.members.manage")
-def update_member_role(request: Request, user_id: int) -> Response:
+def update_member_role(request: Request, user_id: str) -> Response:
     serializer = UpdateMemberRoleSerializer(data=request.data)
 
     if not serializer.is_valid():
@@ -789,7 +790,7 @@ def update_member_role(request: Request, user_id: int) -> Response:
 
     try:
         user_to_update = User.objects.get(id=user_id)
-    except User.DoesNotExist:
+    except (User.DoesNotExist, ValidationError):
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
     service = OrganizationService()
@@ -866,10 +867,10 @@ def update_member_role(request: Request, user_id: int) -> Response:
 @require_jwt
 @require_org_context
 @require_org_permission("org.members.remove")
-def remove_member(request: Request, user_id: int) -> Response:
+def remove_member(request: Request, user_id: str) -> Response:
     try:
         user_to_remove = User.objects.get(id=user_id)
-    except User.DoesNotExist:
+    except (User.DoesNotExist, ValidationError):
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
     service = OrganizationService()

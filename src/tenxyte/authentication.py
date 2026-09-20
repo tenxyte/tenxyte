@@ -2,6 +2,7 @@
 Classes d'authentification DRF pour JWT.
 """
 
+from django.core.exceptions import ValidationError
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
@@ -40,10 +41,13 @@ class JWTAuthentication(BaseAuthentication):
         if application and str(application.id) != payload.app_id:
             raise AuthenticationFailed("Token ne correspond pas à l'application")
 
-        # Récupérer l'utilisateur
+        # Récupérer l'utilisateur — ValidationError couvre un user_id malformé (ex. un token
+        # forgé, ou un ancien token pré-migration UUID dont le claim est encore un entier) : un
+        # ID qui ne correspond à aucun utilisateur réel doit échouer proprement (401), pas planter
+        # en 500 (trouvé via une vraie régression après le passage des PK à UUID).
         try:
             user = User.objects.get(id=payload.user_id)
-        except User.DoesNotExist:
+        except (User.DoesNotExist, ValidationError):
             raise AuthenticationFailed("Utilisateur non trouvé")
 
         if not user.is_active:

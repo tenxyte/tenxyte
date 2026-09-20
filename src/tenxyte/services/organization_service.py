@@ -45,7 +45,7 @@ class OrganizationService:
         created_by,
         slug: str | None = None,
         description: str = "",
-        parent_id: int | None = None,
+        parent_id: str | None = None,
         metadata: dict | None = None,
         max_members: int = 0,
     ) -> tuple[bool, Any | None, str]:

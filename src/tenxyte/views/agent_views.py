@@ -1,6 +1,6 @@
 from typing import ClassVar
 
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import JsonResponse
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
@@ -269,7 +269,7 @@ class AgentTokenDetailView(APIView):
     def get(self, request, pk):
         try:
             t = AgentToken.objects.get(pk=pk, triggered_by=request.user)
-        except AgentToken.DoesNotExist:
+        except (AgentToken.DoesNotExist, ValidationError):
             return JsonResponse({"error": "Not found"}, status=404)
 
         return JsonResponse(
@@ -305,7 +305,7 @@ class AgentTokenRevokeView(APIView):
     def post(self, request, pk):
         try:
             t = AgentToken.objects.get(pk=pk, triggered_by=request.user)
-        except AgentToken.DoesNotExist:
+        except (AgentToken.DoesNotExist, ValidationError):
             return JsonResponse({"error": "Not found"}, status=404)
 
         AgentTokenService().revoke(t, revoked_by=request.user)
@@ -332,7 +332,7 @@ class AgentTokenSuspendView(APIView):
     def post(self, request, pk):
         try:
             t = AgentToken.objects.get(pk=pk, triggered_by=request.user)
-        except AgentToken.DoesNotExist:
+        except (AgentToken.DoesNotExist, ValidationError):
             return JsonResponse({"error": "Not found"}, status=404)
 
         AgentTokenService().suspend(t, reason=AgentToken.SuspendedReason.MANUAL)
