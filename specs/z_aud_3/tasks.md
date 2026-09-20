@@ -1748,10 +1748,20 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       prend le token brut en positionnel), levant une `TypeError` avalée silencieusement — les
       access tokens n'étaient **jamais** réellement blacklistés au logout, masqué par un test
       existant qui mockait cette même méthode buguée. Corrigé (`blacklist_token_by_jti`) sur les 3
-      sites concernés. Voir `manual_tests.md`'s MT-1 « Historique de correction » pour le détail.
-      **Reste à faire** : un run MT-1 propre et chronométré (le run du
-      2026-09-15 était un run de découverte, pas la preuve officielle) ; MT-2 à MT-7 pas encore
-      exécutés.
+      sites concernés. Le 2026-09-20 : deux signalements distincts de l'utilisateur pendant ce
+      même testing manuel — (1) 2FA restant `disabled` après confirmation, non résolu, en attente
+      des réponses JSON exactes du client pour identifier la vraie cause (le mécanisme lui-même a
+      été vérifié correct des deux côtés par reproduction réelle) ; (2) incohérence des clés
+      primaires (UUID FastAPI vs entiers Django) — résolu, Django converge vers UUID (choix
+      explicite de l'utilisateur malgré le risque de compatibilité ascendante), migrations 0021 +
+      0022, plusieurs vrais bugs trouvés et corrigés en cours de route (régression d'ordre de route
+      dans `urls.py`, deux serializers qui auraient rejeté tout UUID réel, plusieurs lookups sans
+      `ValidationError` catch), commits `feat(django): migrate primary keys from BigAutoField to
+      UUID...`, `fix(django): URL routing, serializers, and exception handling for UUID PKs...`,
+      `docs: add Primary Key Migration entry to MIGRATION_GUIDE.md...`. Voir `manual_tests.md`'s
+      MT-1 « Historique de correction » pour le détail. **Reste à faire** : un run MT-1 propre et
+      chronométré (le run du 2026-09-15 était un run de découverte, pas la preuve officielle) ;
+      MT-2 à MT-7 pas encore exécutés ; le signalement 2FA du 2026-09-20 reste ouvert.
 
 - [ ] 18. Checkpoint final - Ensure all tests pass
   - Toutes gates vertes (parité, contrat, couverture, pureté, conformité, drift), registre manuel

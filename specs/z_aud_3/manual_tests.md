@@ -147,6 +147,33 @@ toute correction (source de vérité) :
   long. Corrigé (`blacklist_token_by_jti` au lieu de `blacklist_token`, sur les 3 sites concernés),
   tests réécrits pour vérifier l'état réel du token après logout plutôt qu'un appel mocké.
 
+Deux signalements distincts de l'utilisateur le 2026-09-20 :
+- **2FA (non résolu, en attente de détails)** : `is_2fa_enabled` resterait à `false` après avoir
+  configuré la 2FA, donc le login avec `totp_code` ne renverrait toujours que le token bootstrap
+  `2fa_setup_only`. Reproduit bout-en-bout sur Django ET FastAPI avec un code TOTP réellement
+  frais : le mécanisme fonctionne correctement dans les deux cas (`is_2fa_enabled` se persiste,
+  login avec un code valide renvoie un token complet). Deux causes plausibles identifiées mais pas
+  confirmées : (a) collision de fenêtre TOTP (réutiliser le même code entre confirm et le login
+  suivant est rejeté à raison par l'anti-rejeu — comportement normal, pas un bug) ; (b) un bug réel
+  trouvé en creusant, `TOTPService.setup_2fa()` ne vérifie jamais l'existence d'un secret déjà en
+  attente — un second appel à `/2fa/setup/` écrase silencieusement le premier secret, invalidant le
+  QR code déjà scanné. L'utilisateur a confirmé un seul appel à `/2fa/setup/`, éliminant la piste
+  (b) pour son cas précis. En attente des réponses JSON exactes de `/2fa/setup/`, `/2fa/confirm/`
+  et du login suivant pour identifier la vraie cause.
+- **Incohérence des clés primaires (résolu)** : FastAPI utilise des UUID partout, Django des
+  entiers auto-incrémentés — l'utilisateur a demandé de converger vers un seul schéma. Décision :
+  Django → UUID (comme FastAPI), malgré le risque de compatibilité ascendante plus élevé que
+  l'inverse (accepté explicitement par l'utilisateur), pour la propriété de sécurité que les
+  entiers séquentiels n'ont pas (non-énumérabilité). Migration 0021 (PK) + 0022 (suivi :
+  `AuditLog.details` plantait sur un UUID sans `DjangoJSONEncoder`), plus une régression d'ordre de
+  route que j'ai moi-même introduite (`<str:pk>` avale un segment littéral que `<int:pk>` ne
+  pouvait jamais matcher), deux vrais bugs de validation (`AddMemberSerializer`/
+  `CreateOrganizationSerializer` en `IntegerField` auraient rejeté tout UUID réel), et plusieurs
+  lookups qui ne rattrapaient que `DoesNotExist` sans `ValidationError` (un ID malformé aurait fait
+  planter en 500). Tout trouvé et corrigé via la régression Django complète et des reproductions
+  réelles, pas par inspection seule. Voir `docs/en+fr/MIGRATION_GUIDE.md` pour le détail communiqué
+  aux utilisateurs (breaking change, pas de migration de données automatisée).
+
 ---
 
 ## MT-2 — Parcours Postman croisés (parité vécue)
