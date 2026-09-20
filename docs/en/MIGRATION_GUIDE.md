@@ -6,6 +6,7 @@ This guide helps you migrate from common Django authentication libraries to Tenx
 ## Table of Contents
 
 - [Migrating from Tenxyte v0.9.x to v1.0.0 (Packaging Inversion)](#migrating-from-tenxyte-v09x-to-v100-packaging-inversion)
+- [Migrating from Tenxyte v0.9.x to v1.0.0 (Primary Key Migration)](#migrating-from-tenxyte-v09x-to-v100-primary-key-migration)
 - [Migrating from Tenxyte v0.9.x to v0.9.3 (Core Re-architecture)](#migrating-from-tenxyte-v09x-to-v093-core-re-architecture)
 - [Migrating from `djangorestframework-simplejwt`](#migrating-from-djangorestframework-simplejwt)
   - [Settings Mapping](#settings-mapping)
@@ -27,9 +28,10 @@ This guide helps you migrate from common Django authentication libraries to Tenx
 
 ## Migrating from Tenxyte v0.9.x to v1.0.0 (Packaging Inversion)
 
-**This is the only behavior change 1.0.0 introduces for existing users — everything else is
-additive.** See the [Stability Contract](stability.md) for the full policy this release
-establishes going forward.
+**This section covers the packaging change only** — 1.0.0 introduces one other breaking change,
+the [Primary Key Migration](#migrating-from-tenxyte-v09x-to-v100-primary-key-migration) below;
+everything else is additive. See the [Stability Contract](stability.md) for the full policy this
+release establishes going forward.
 
 ### What changed
 
@@ -102,6 +104,50 @@ pytest                          # your existing test suite should be green
 
 If anything behaves differently after upgrading to `tenxyte[django]>=1.0` beyond the install
 command itself, that is a bug — please [open an issue](https://github.com/tenxyte/tenxyte/issues).
+
+---
+
+## Migrating from Tenxyte v0.9.x to v1.0.0 (Primary Key Migration)
+
+**Breaking change — MAJOR version only.** See the [Stability Contract](stability.md) for the
+policy this falls under.
+
+### What changed
+
+The Django adapter's primary keys changed from sequential integers to UUIDs, matching what the
+FastAPI adapter's Reference_Stack has always used (`generate_uuid` throughout `models_sa.py`) —
+the two were inconsistent, and a sequential integer PK is also weaker from a security standpoint:
+an attacker can trivially enumerate `/admin/users/1/`, `/2/`, `/3/`... against a predictable ID,
+while a UUID PK can't be walked this way.
+
+| | Before (≤ 0.9.x) | Since 1.0.0 |
+|---|---|---|
+| Django model PK type | `BigAutoField` (1, 2, 3, ...) | `UUIDField` (`uuid4`) |
+| ID shape in API responses | `"user": 42` | `"user": "3fa85f64-5717-4562-b3fc-2c963f66afa6"` |
+
+### What you need to do
+
+**There is no automated data-preserving migration for this change.** If you have an existing
+installation with real data, start from a fresh database — the migration copies existing integer
+IDs into the new UUID-typed column unchanged rather than generating real UUIDs for them, which
+would leave your data in a broken, inconsistent state if applied against a populated database.
+This is the same treatment already given to an equally disruptive 1.0.0 change (see "All existing
+JWT tokens are invalidated" in the [Breaking Changes Checklist](#breaking-changes-checklist)
+below) — not something this release attempts to migrate around.
+
+If you're starting a brand-new project, or don't have production data on this branch yet, this
+requires no action beyond a normal `python manage.py migrate`.
+
+### Verifying your upgrade
+
+```bash
+python manage.py migrate
+python manage.py shell -c "from tenxyte.models import get_user_model; import uuid; u = get_user_model().objects.first(); print(type(u.id) is uuid.UUID if u else 'no users yet')"
+pytest
+```
+
+If anything behaves differently after this migration beyond the ID shape itself, that is a bug —
+please [open an issue](https://github.com/tenxyte/tenxyte/issues).
 
 ---
 
@@ -337,6 +383,9 @@ Authorization: Bearer <access_token>
 ## Breaking Changes Checklist
 
 - [ ] `AUTH_USER_MODEL` changed to `tenxyte.User`
+- [ ] Django model primary keys changed from sequential integers to UUIDs (1.0.0) — existing
+      installations must start from a fresh database, see [Primary Key
+      Migration](#migrating-from-tenxyte-v09x-to-v100-primary-key-migration)
 - [ ] All existing JWT tokens are invalidated
 - [ ] Password hashes may need to be reset if migrating from PBKDF2
 - [ ] Endpoint URLs have changed (see mapping tables above)

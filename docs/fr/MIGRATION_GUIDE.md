@@ -5,6 +5,7 @@ Ce guide vous aide à migrer des bibliothèques d'authentification Django couran
 ## Table des Matières
 
 - [Migration de Tenxyte v0.9.x vers v1.0.0 (Inversion du Packaging)](#migration-de-tenxyte-v09x-vers-v100-inversion-du-packaging)
+- [Migration de Tenxyte v0.9.x vers v1.0.0 (Migration des Clés Primaires)](#migration-de-tenxyte-v09x-vers-v100-migration-des-cles-primaires)
 - [Migration de Tenxyte v0.9.x vers v0.9.3 (Réarchitecture du Cœur)](#migration-de-tenxyte-v09x-vers-v093-rearchitecture-du-coeur)
 - [Migration depuis `djangorestframework-simplejwt`](#migration-depuis-djangorestframework-simplejwt)
   - [Correspondance des Paramètres](#correspondance-des-parametres)
@@ -26,9 +27,11 @@ Ce guide vous aide à migrer des bibliothèques d'authentification Django couran
 
 ## Migration de Tenxyte v0.9.x vers v1.0.0 (Inversion du Packaging)
 
-**C'est le seul changement de comportement que la 1.0.0 introduit pour les utilisateurs
-existants — tout le reste est additif.** Voir le [Contrat de stabilité](stability.md) pour la
-politique complète établie par cette version pour la suite.
+**Cette section couvre uniquement le changement de packaging** — la 1.0.0 introduit un autre
+changement majeur, la [Migration des Clés
+Primaires](#migration-de-tenxyte-v09x-vers-v100-migration-des-cles-primaires) ci-dessous ; tout le
+reste est additif. Voir le [Contrat de stabilité](stability.md) pour la politique complète établie
+par cette version pour la suite.
 
 ### Ce qui a changé
 
@@ -104,6 +107,52 @@ pytest                          # votre suite de tests existante doit être vert
 Si quoi que ce soit se comporte différemment après la mise à jour vers `tenxyte[django]>=1.0`
 au-delà de la commande d'installation elle-même, c'est un bug — merci d'[ouvrir un
 ticket](https://github.com/tenxyte/tenxyte/issues).
+
+---
+
+## Migration de Tenxyte v0.9.x vers v1.0.0 (Migration des Clés Primaires)
+
+**Changement majeur — version MAJOR uniquement.** Voir le [Contrat de stabilité](stability.md)
+pour la politique concernée.
+
+### Ce qui a changé
+
+Les clés primaires de l'adaptateur Django sont passées d'entiers séquentiels à des UUID,
+correspondant à ce que le Reference_Stack de l'adaptateur FastAPI utilise déjà partout
+(`generate_uuid` dans tout `models_sa.py`) — les deux étaient incohérents, et une PK entière
+séquentielle est aussi plus faible du point de vue sécurité : un attaquant peut trivialement
+énumérer `/admin/users/1/`, `/2/`, `/3/`... contre un ID prévisible, alors qu'une PK UUID ne peut
+pas être parcourue de cette façon.
+
+| | Avant (≤ 0.9.x) | Depuis 1.0.0 |
+|---|---|---|
+| Type de PK des modèles Django | `BigAutoField` (1, 2, 3, ...) | `UUIDField` (`uuid4`) |
+| Forme de l'ID dans les réponses API | `"user": 42` | `"user": "3fa85f64-5717-4562-b3fc-2c963f66afa6"` |
+
+### Ce que vous devez faire
+
+**Il n'existe pas de migration automatisée préservant les données pour ce changement.** Si vous
+avez une installation existante avec de vraies données, repartez d'une base fraîche — la migration
+copie les ID entiers existants tels quels dans la nouvelle colonne typée UUID au lieu de générer
+de vrais UUID pour eux, ce qui laisserait vos données dans un état incohérent si appliqué contre
+une base peuplée. C'est le même traitement déjà réservé à un changement 1.0.0 tout aussi
+disruptif (voir « Tous les jetons JWT existants sont invalidés » dans la [Liste de Contrôle des
+Changements Majeurs](#liste-de-controle-des-changements-majeurs) ci-dessous) — pas quelque chose
+que cette version tente de migrer automatiquement.
+
+Si vous démarrez un tout nouveau projet, ou n'avez pas encore de données de production sur cette
+branche, cela ne nécessite aucune action au-delà d'un `python manage.py migrate` normal.
+
+### Vérifier votre mise à jour
+
+```bash
+python manage.py migrate
+python manage.py shell -c "from tenxyte.models import get_user_model; import uuid; u = get_user_model().objects.first(); print(type(u.id) is uuid.UUID if u else 'no users yet')"
+pytest
+```
+
+Si quoi que ce soit se comporte différemment après cette migration au-delà de la forme de l'ID
+elle-même, c'est un bug — merci d'[ouvrir un ticket](https://github.com/tenxyte/tenxyte/issues).
 
 ---
 
@@ -339,6 +388,9 @@ Authorization: Bearer <access_token>
 ## Liste de Contrôle des Changements Majeurs
 
 - [ ] `AUTH_USER_MODEL` remplacé par `tenxyte.User`
+- [ ] Les clés primaires des modèles Django sont passées d'entiers séquentiels à des UUID
+      (1.0.0) — les installations existantes doivent repartir d'une base fraîche, voir [Migration
+      des Clés Primaires](#migration-de-tenxyte-v09x-vers-v100-migration-des-cles-primaires)
 - [ ] Tous les jetons JWT existants sont invalidés
 - [ ] Les hachages de mots de passe peuvent nécessiter une réinitialisation si vous migrez depuis PBKDF2
 - [ ] Les URLs des points de terminaison ont changé (voir les tableaux de correspondance ci-dessus)
