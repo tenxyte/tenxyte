@@ -24,7 +24,13 @@ _MIGRATIONS_DIR = Path(__file__).resolve().parents[4] / "src" / "tenxyte" / "mig
 # adapter's own naming convention (AlterModelTable/RenameIndex only — no field/model added or
 # removed, existing data preserved via `ALTER TABLE ... RENAME TO`). z_aud_1's own "zero schema
 # change" guarantee is about that phase's scope, not a permanent freeze on the whole schema.
-EXPECTED_MIGRATION_COUNT = 27
+#
+# 0021_uuid_primary_keys and 0022_auditlog_details_djangojsonencoder (specs/z_aud_3) are the same
+# kind of deliberate, documented exception: every Django model's PK moved from BigAutoField to
+# UUIDField to match the FastAPI adapter's own convention (user request, not data-preserving for
+# an existing installation — see MIGRATION_GUIDE.md), plus the follow-up fix required to keep
+# `AuditLog.details` able to serialize a UUID value.
+EXPECTED_MIGRATION_COUNT = 29
 
 
 def test_migration_count_unchanged():

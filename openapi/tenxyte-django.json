@@ -676,8 +676,9 @@
             "$ref": "#/components/schemas/ActionEnum"
           },
           "application": {
+            "format": "uuid",
             "nullable": true,
-            "type": "integer"
+            "type": "string"
           },
           "application_name": {
             "readOnly": true,
@@ -698,8 +699,9 @@
             "type": "string"
           },
           "user": {
+            "format": "uuid",
             "nullable": true,
-            "type": "integer"
+            "type": "string"
           },
           "user_agent": {
             "maxLength": 500,
@@ -760,8 +762,9 @@
             "type": "string"
           },
           "user": {
+            "format": "uuid",
             "nullable": true,
-            "type": "integer"
+            "type": "string"
           },
           "user_email": {
             "readOnly": true,
@@ -892,8 +895,9 @@
             "type": "string"
           },
           "processed_by": {
+            "format": "uuid",
             "nullable": true,
-            "type": "integer"
+            "type": "string"
           },
           "processed_by_email": {
             "readOnly": true,
@@ -912,7 +916,8 @@
             "$ref": "#/components/schemas/StatusEnum"
           },
           "user": {
-            "type": "integer"
+            "format": "uuid",
+            "type": "string"
           },
           "user_email": {
             "readOnly": true,
@@ -990,8 +995,9 @@
         "description": "Serializer for login attempt records.",
         "properties": {
           "application": {
+            "format": "uuid",
             "nullable": true,
-            "type": "integer"
+            "type": "string"
           },
           "created_at": {
             "format": "date-time",
@@ -1834,8 +1840,9 @@
         "description": "Serializer for refresh tokens (admin view, token value hidden).",
         "properties": {
           "application": {
+            "format": "uuid",
             "nullable": true,
-            "type": "integer"
+            "type": "string"
           },
           "application_name": {
             "readOnly": true,
@@ -1875,7 +1882,8 @@
             "type": "string"
           },
           "user": {
-            "type": "integer"
+            "format": "uuid",
+            "type": "string"
           },
           "user_email": {
             "readOnly": true,

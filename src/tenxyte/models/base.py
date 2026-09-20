@@ -6,6 +6,9 @@ Contains:
 - get_user_model, get_role_model, get_permission_model, get_application_model: Swappable model helpers
 """
 
+import functools
+import uuid
+
 from django.conf import settings
 from django.db import models
 
@@ -14,6 +17,16 @@ from django.db import models
 # On vérifie le moteur DB configuré, pas juste la disponibilité du package,
 # pour éviter d'utiliser ObjectIdAutoField sur SQLite/PG/MySQL quand
 # django-mongodb-backend est installé.
+#
+# On SQL backends, every concrete model calls this as `AutoFieldClass(primary_key=True)` — a
+# `functools.partial(models.UUIDField, default=uuid.uuid4, editable=False)` is a drop-in
+# replacement for that call shape: once called with `primary_key=True`, the result is exactly
+# Django's own documented UUID-PK pattern. This makes every Django ID UUID-shaped, matching the
+# FastAPI_Adapter's Reference_Stack (`generate_uuid` default throughout `models_sa.py`) — a
+# real cross-adapter inconsistency (sequential integer IDs on Django, UUIDs on FastAPI) the user
+# asked to resolve in favor of UUID everywhere, for the non-enumerable-ID security property a
+# sequential integer PK doesn't have (breaking change, MAJOR version only — see stability.md and
+# the v0.9.x -> v1.0.0 entry in MIGRATION_GUIDE.md).
 def _get_auto_field_class():
     try:
         db_engine = settings.DATABASES.get("default", {}).get("ENGINE", "")
@@ -26,7 +39,7 @@ def _get_auto_field_class():
             return ObjectIdAutoField
         except ImportError:
             pass
-    return models.BigAutoField
+    return functools.partial(models.UUIDField, default=uuid.uuid4, editable=False)
 
 
 AutoFieldClass = _get_auto_field_class()
