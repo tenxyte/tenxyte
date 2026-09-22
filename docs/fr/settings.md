@@ -206,14 +206,28 @@ TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED = True
 TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=true
 ```
 
-**Provisionnement d'un utilisateur avec changement forcé (API admin) :**
-```http
-PATCH /api/v1/auth/admin/users/<id>/   # Django — notez le préfixe /auth/
-PATCH /api/v1/admin/users/<id>/        # FastAPI — pas de préfixe /auth/ par défaut
-Authorization: Bearer <jeton_admin>
+**Provisionnement d'un utilisateur avec changement forcé — deux moyens, sur les deux adaptateurs :**
 
-{ "must_change_password": true }
-```
+1. Dès l'inscription (un seul appel, aucun jeton admin nécessaire — `must_change_password` est un
+   champ optionnel du corps de la requête d'inscription elle-même) :
+   ```http
+   POST /api/v1/auth/register/   # Django — notez le préfixe /auth/
+   POST /api/v1/register/        # FastAPI — pas de préfixe /auth/ par défaut
+
+   { "email": "user@example.com", "password": "...", "must_change_password": true }
+   ```
+   Combiner ce champ avec `"login": true` dans le même appel passe quand même par le même gating
+   qu'une connexion normale — le jeton renvoyé est bien le jeton restreint `password_change_only`,
+   pas un jeton full-scope, ce raccourci ne permet donc pas de contourner la restriction.
+
+2. Sur un compte existant (API admin) :
+   ```http
+   PATCH /api/v1/auth/admin/users/<id>/   # Django — notez le préfixe /auth/
+   PATCH /api/v1/admin/users/<id>/        # FastAPI — pas de préfixe /auth/ par défaut
+   Authorization: Bearer <jeton_admin>
+
+   { "must_change_password": true }
+   ```
 
 **Champ du modèle User ajouté par cette fonctionnalité :**
 

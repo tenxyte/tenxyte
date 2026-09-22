@@ -160,11 +160,19 @@ Enregistrer un nouvel utilisateur.
   "first_name": "Jean",
   "last_name": "Dupont",
   "login": false,
+  "must_change_password": false,
   "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
 `email` ou `phone_country_code` + `phone_number` est requis.
 `login` : Si vrai, renvoie des jetons JWT pour une connexion immédiate.
+`must_change_password` : Si vrai, le compte est créé avec `must_change_password=true` — le
+prochain login émettra un jeton restreint `password_change_only` au lieu d'un jeton full-scope,
+tant que `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True` (voir
+[Force Password Change on First Login](#force-password-change-on-first-login)). Une alternative
+en un seul appel à l'inscription suivie d'un appel à l'endpoint admin `PATCH`. Combiner ce champ
+avec `login: true` renvoie quand même un jeton restreint, pas un jeton full-scope — l'émission
+immédiate du jeton passe par le même gating qu'une connexion normale.
 `device_info` : Informations optionnelles sur l'empreinte numérique de l'appareil (device fingerprinting).
 
 **Réponse `201` :**
@@ -213,6 +221,15 @@ Si `login: true` dans la requête, inclut également :
   "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop"
+}
+```
+
+Si `login: true` ET `must_change_password: true` dans la requête (et que la fonctionnalité est
+activée), l'`access_token` est restreint à la place, et la réponse porte en plus :
+```json
+{
+  "token_scope": "password_change_only",
+  "must_change_password": true
 }
 ```
 
@@ -5141,7 +5158,13 @@ Cette fonctionnalité force un utilisateur à définir ou changer son mot de pas
 
 ### Flux
 
-**1. L'admin provisionne le compte :**
+**1. Provisionner le compte** — soit dès l'inscription en un seul appel :
+```http
+POST /api/v1/auth/register/
+
+{ "email": "user@example.com", "password": "TempPass123!", "must_change_password": true }
+```
+soit sur un compte existant via l'API admin :
 ```http
 PATCH /api/v1/auth/admin/users/<id>/
 Authorization: Bearer <jeton_admin>

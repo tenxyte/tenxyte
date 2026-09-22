@@ -205,14 +205,28 @@ TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED = True
 TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=true
 ```
 
-**Provisioning a user with forced password change (admin API):**
-```http
-PATCH /api/v1/auth/admin/users/<id>/   # Django — note the /auth/ prefix
-PATCH /api/v1/admin/users/<id>/        # FastAPI — no /auth/ prefix by default
-Authorization: Bearer <admin_token>
+**Provisioning a user with forced password change — two ways, both adapters:**
 
-{ "must_change_password": true }
-```
+1. At registration time (one call, no admin token needed — `must_change_password` is an optional
+   field on the register request body itself):
+   ```http
+   POST /api/v1/auth/register/   # Django — note the /auth/ prefix
+   POST /api/v1/register/        # FastAPI — no /auth/ prefix by default
+
+   { "email": "user@example.com", "password": "...", "must_change_password": true }
+   ```
+   Combining this with `"login": true` in the same request still goes through the same gating as a
+   normal login — the token returned is the restricted `password_change_only` one, not a full-scope
+   token, so this shortcut can't be used to bypass the restriction.
+
+2. On an existing account (admin API):
+   ```http
+   PATCH /api/v1/auth/admin/users/<id>/   # Django — note the /auth/ prefix
+   PATCH /api/v1/admin/users/<id>/        # FastAPI — no /auth/ prefix by default
+   Authorization: Bearer <admin_token>
+
+   { "must_change_password": true }
+   ```
 
 **User model field added by this feature:**
 
