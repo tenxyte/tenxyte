@@ -188,21 +188,28 @@ Voir [`POST /login/otp/request/`](endpoints.md#post-loginotprequest) et [`POST /
 
 ## Changement de Mot de Passe Forcé à la Première Connexion
 
-Force un utilisateur provisionné à définir ou changer son mot de passe avant d'accéder à quoi que ce soit d'autre. Lorsque cette fonctionnalité est activée et qu'un compte a `must_change_password=True`, les endpoints de connexion émettent un jeton d'accès à portée restreinte (`scope: "password_change_only"`) au lieu d'un jeton pleine portée. Tous les endpoints protégés sauf `/password/change/`, `/password/set-initial/` et `/logout/` retournent `403 INSUFFICIENT_SCOPE` jusqu'au changement de mot de passe.
+Force un utilisateur provisionné à définir ou changer son mot de passe avant d'accéder à quoi que ce soit d'autre. Lorsque cette fonctionnalité est activée et qu'un compte a `must_change_password=True`, les endpoints de connexion émettent un jeton d'accès à portée restreinte (`scope: "password_change_only"`) au lieu d'un jeton pleine portée. Tous les endpoints protégés sauf `/password/change/`, `/password/set-initial/` et `/logout/` retournent `403 INSUFFICIENT_SCOPE` jusqu'au changement de mot de passe. **Implémenté à l'identique sur les deux adaptateurs** — le `resolve_forced_password_change_scope` de l'adaptateur Django (`views/auth_views.py`) et celui de l'adaptateur FastAPI (`routers/auth.py`) sont deux implémentations indépendantes du même comportement (`must_change_password` ne fait pas partie du `User` Core agnostique du framework, donc la logique d'aucun des deux adaptateurs ne vit dans `tenxyte.core`).
 
 | Paramètre | Défaut | Description |
 |---|---|---|
 | `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED` | `False` | Active l'émission et l'enforcement du jeton à portée restreinte. **Désactivé par défaut** — aucune restriction de jeton n'est appliquée tant que ce paramètre n'est pas `True`. Le flag `must_change_password` est toujours stocké et lisible indépendamment de ce paramètre. |
 
-**Configuration minimale :**
+**Configuration minimale (Django) :**
 ```python
 # settings.py
 TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED = True
 ```
 
+**Configuration minimale (FastAPI)** — même variable d'environnement `TENXYTE_*`, aucun `settings.py` à modifier (voir [Priorité des Paramètres](#priorite-des-parametres)) :
+```bash
+# .env
+TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=true
+```
+
 **Provisionnement d'un utilisateur avec changement forcé (API admin) :**
 ```http
-PATCH /api/v1/auth/admin/users/<id>/
+PATCH /api/v1/auth/admin/users/<id>/   # Django — notez le préfixe /auth/
+PATCH /api/v1/admin/users/<id>/        # FastAPI — pas de préfixe /auth/ par défaut
 Authorization: Bearer <jeton_admin>
 
 { "must_change_password": true }

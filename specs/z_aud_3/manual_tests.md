@@ -174,6 +174,24 @@ Deux signalements distincts de l'utilisateur le 2026-09-20 :
   réelles, pas par inspection seule. Voir `docs/en+fr/MIGRATION_GUIDE.md` pour le détail communiqué
   aux utilisateurs (breaking change, pas de migration de données automatisée).
 
+En préparant le test manuel du scénario « 2.3 » (compte `must_change_password=true` → token
+`password_change_only`, `403 INSUFFICIENT_SCOPE` sur `/2fa/status/`, upgrade full-scope après
+`/password/change/`), l'utilisateur a demandé comment créer un tel compte. Vérification du code
+réel (pas de la doc) : la fonctionnalité `force_password_change_on_first_login` était **entièrement
+implémentée côté Django** (spec dédiée, toutes tâches faites) mais **totalement absente côté
+FastAPI**, malgré des indices trompeurs — `UserDB.must_change_password` existait déjà (posé pour
+l'endpoint admin `PATCH /admin/users/<id>/`), mais `routers/auth.py`/`routers/login_otp.py`
+codaient en dur `"must_change_password": False` dans les réponses de login, et
+`routers/password.py` documentait explicitement la branche d'upgrade comme « dead code today ».
+Portage complet demandé et livré (commit `feat(fastapi): implement force_password_change_on_first
+_login`) : réglage ajouté à `core/settings.py` (partagé, contrairement à Django qui a son propre
+`conf/auth.py`), `resolve_forced_password_change_scope` répliqué dans `routers/auth.py` et câblé
+dans les 4 points d'émission (login email/phone/OTP + refresh), levée du flag et upgrade full-scope
+ajoutés à `routers/password.py` (réutilise `admin_user_service.update_user_async`, déjà utilisé
+côté écriture par l'endpoint admin). Vérifié bout-en-bout par reproduction réelle : le scénario
+2.3 complet fonctionne exactement comme décrit, la précédence 2FA-bootstrap est respectée, et le
+« no-op » quand la feature est désactivée est confirmé. 11 tests réels (no-mock) ajoutés.
+
 ---
 
 ## MT-2 — Parcours Postman croisés (parité vécue)

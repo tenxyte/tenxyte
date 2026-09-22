@@ -1758,10 +1758,24 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       dans `urls.py`, deux serializers qui auraient rejeté tout UUID réel, plusieurs lookups sans
       `ValidationError` catch), commits `feat(django): migrate primary keys from BigAutoField to
       UUID...`, `fix(django): URL routing, serializers, and exception handling for UUID PKs...`,
-      `docs: add Primary Key Migration entry to MIGRATION_GUIDE.md...`. Voir `manual_tests.md`'s
-      MT-1 « Historique de correction » pour le détail. **Reste à faire** : un run MT-1 propre et
-      chronométré (le run du 2026-09-15 était un run de découverte, pas la preuve officielle) ;
-      MT-2 à MT-7 pas encore exécutés ; le signalement 2FA du 2026-09-20 reste ouvert.
+      `docs: add Primary Key Migration entry to MIGRATION_GUIDE.md...`. Le 2026-09-21 : préparation
+      du test manuel du scénario 2.3 (`must_change_password`) a révélé que la fonctionnalité
+      `force_password_change_on_first_login` (spec dédiée, Django-only par construction) était
+      totalement absente côté FastAPI — `UserDB.must_change_password` existait déjà (posé pour
+      l'endpoint admin) mais jamais lu au login, `routers/password.py` documentait explicitement la
+      branche d'upgrade comme dead code. Portée complètement sur demande explicite de l'utilisateur
+      (« Implémente complètement la fonctionnalité du côté de l'adapter FastApi ») :
+      `resolve_forced_password_change_scope` répliqué dans `routers/auth.py`, câblé dans
+      login email/phone/OTP + refresh, levée du flag et upgrade full-scope dans
+      `routers/password.py`, réglage ajouté à `core/settings.py` (partagé par les deux
+      adaptateurs). Vérifié par reproduction réelle bout-en-bout (scénario 2.3 complet, précédence
+      2FA-bootstrap, no-op si désactivé) + 11 tests no-mock ; régression complète verte
+      (Django 2261/5, FastAPI 308 à 90.96%, contract 68/68). Voir `manual_tests.md`'s MT-1
+      « Historique de correction » et `specs/force_password_change_on_first_login/tasks.md`'s
+      addendum pour le détail. **Reste à faire** : un run MT-1 propre et chronométré (le run du
+      2026-09-15 était un run de découverte, pas la preuve officielle) ; MT-2 à MT-7 pas encore
+      exécutés ; le signalement 2FA du 2026-09-20 reste ouvert (le scénario 2.3, lui, est résolu et
+      testé).
 
 - [ ] 18. Checkpoint final - Ensure all tests pass
   - Toutes gates vertes (parité, contrat, couverture, pureté, conformité, drift), registre manuel

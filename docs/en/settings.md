@@ -187,21 +187,28 @@ See [`POST /login/otp/request/`](endpoints.md#post-loginotprequest) and [`POST /
 
 ## Force Password Change on First Login
 
-Forces a provisioned user to set or change their password before accessing anything else. When enabled and a user account has `must_change_password=True`, login endpoints issue a restricted-scope access token (`scope: "password_change_only"`) instead of a full-scope token. All protected endpoints except `/password/change/`, `/password/set-initial/`, and `/logout/` return `403 INSUFFICIENT_SCOPE` until the password is changed.
+Forces a provisioned user to set or change their password before accessing anything else. When enabled and a user account has `must_change_password=True`, login endpoints issue a restricted-scope access token (`scope: "password_change_only"`) instead of a full-scope token. All protected endpoints except `/password/change/`, `/password/set-initial/`, and `/logout/` return `403 INSUFFICIENT_SCOPE` until the password is changed. **Implemented identically on both adapters** — the Django adapter's `resolve_forced_password_change_scope` (`views/auth_views.py`) and the FastAPI adapter's `resolve_forced_password_change_scope` (`routers/auth.py`) are independent implementations of the same behavior (`must_change_password` isn't part of the framework-agnostic Core `User`, so neither adapter's logic lives in `tenxyte.core`).
 
 | Setting | Default | Description |
 |---|---|---|
 | `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED` | `False` | Enable the restricted-scope token issuance and enforcement. **Disabled by default** — no token restriction is applied until this is `True`. The `must_change_password` flag is always stored and readable regardless of this setting. |
 
-**Minimal setup:**
+**Minimal setup (Django):**
 ```python
 # settings.py
 TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED = True
 ```
 
+**Minimal setup (FastAPI)** — same `TENXYTE_*` environment variable, no `settings.py` to edit (see [Settings Priority](#settings-priority)):
+```bash
+# .env
+TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=true
+```
+
 **Provisioning a user with forced password change (admin API):**
 ```http
-PATCH /api/v1/auth/admin/users/<id>/
+PATCH /api/v1/auth/admin/users/<id>/   # Django — note the /auth/ prefix
+PATCH /api/v1/admin/users/<id>/        # FastAPI — no /auth/ prefix by default
 Authorization: Bearer <admin_token>
 
 { "must_change_password": true }
