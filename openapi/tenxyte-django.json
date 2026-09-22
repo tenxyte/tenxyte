@@ -1942,6 +1942,11 @@
             "description": "Si True, l'utilisateur est connect\u00e9 imm\u00e9diatement apr\u00e8s l'inscription (tokens JWT retourn\u00e9s)",
             "type": "boolean"
           },
+          "must_change_password": {
+            "default": false,
+            "description": "Si True, le compte est cr\u00e9\u00e9 avec must_change_password=True (feature: force_password_change_on_first_login) : le prochain login \u00e9mettra un token restreint password_change_only au lieu d'un token full-scope, tant que TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED est activ\u00e9 c\u00f4t\u00e9 serveur.",
+            "type": "boolean"
+          },
           "password": {
             "minLength": 8,
             "type": "string",

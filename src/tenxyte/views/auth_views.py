@@ -321,6 +321,7 @@ class RegisterView(APIView):
             )
 
         login_after = serializer.validated_data.pop("login", False)
+        must_change_password = serializer.validated_data.pop("must_change_password", False)
         device_info = serializer.validated_data.pop("device_info", "") or build_device_info_from_user_agent(
             request.META.get("HTTP_USER_AGENT", "")
         )
@@ -379,13 +380,18 @@ class RegisterView(APIView):
 
             return Response({"error": error, "code": "REGISTRATION_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Generate and send OTPs for verification (using legacy OTPService for now)
         # Convert Core user to Django user for legacy compatibility
         from ..models import get_user_model
 
         UserModel = get_user_model()
+        django_user = UserModel.objects.get(id=user.id)
+
+        if must_change_password:
+            django_user.must_change_password = True
+            django_user.save(update_fields=["must_change_password"])
+
+        # Generate and send OTPs for verification (using legacy OTPService for now)
         try:
-            django_user = UserModel.objects.get(id=user.id)
             otp_service = get_otp_service()
 
             if django_user.email:
@@ -431,6 +437,22 @@ class RegisterView(APIView):
                     "refresh_expires_in": get_core_settings().jwt_refresh_token_lifetime,
                 }
             )
+
+            # Force password change gating (feature: force_password_change_on_first_login).
+            # A caller could otherwise set must_change_password=True at registration and
+            # request login=True in the same call to walk away with a full-scope token,
+            # bypassing the restriction entirely — must be checked here too, not just on
+            # the regular login endpoints.
+            _forced_scope = resolve_forced_password_change_scope(django_user)
+            if _forced_scope == "password_change_only":
+                restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+                    user_id=user.id,
+                    application_id=app_id,
+                    extra_claims={"scope": "password_change_only"},
+                )
+                response_data["access_token"] = restricted_token
+                response_data["token_scope"] = "password_change_only"
+                response_data["must_change_password"] = True
 
         return Response(response_data, status=status.HTTP_201_CREATED)
 

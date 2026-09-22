@@ -17,13 +17,20 @@ from pydantic import BaseModel, EmailStr, Field
 class RegisterRequest(BaseModel):
     """Email-only for now — phone registration is deferred (see routers/auth.py's module
     docstring), so `email` is required here rather than optional-with-a-phone-alternative like
-    the Django serializer's `validate()` cross-field rule."""
+    the Django serializer's `validate()` cross-field rule.
+
+    `must_change_password`: if True, the account is created with must_change_password=True
+    (feature: force_password_change_on_first_login) — the next login issues a restricted
+    password_change_only token instead of a full-scope one, as long as
+    TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED is on server-side. Mirrors the Django
+    RegisterSerializer's own must_change_password field."""
 
     email: EmailStr
     password: str = Field(min_length=8)
     first_name: str = ""
     last_name: str = ""
     login: bool = False
+    must_change_password: bool = False
 
 
 class LoginEmailRequest(BaseModel):

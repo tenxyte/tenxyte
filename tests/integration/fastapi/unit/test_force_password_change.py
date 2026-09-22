@@ -9,6 +9,11 @@ and real signed tokens (no mocks).
 Django makes), so tests that need to set/read it go through the raw `UserDB` row directly, exactly
 as `routers/auth.py`'s `resolve_forced_password_change_scope` and `routers/password.py`'s
 flag-clearing logic do.
+
+Also covers `POST /register/`'s own `must_change_password` request-body flag (added on user
+request as a one-call shortcut over register-then-admin-PATCH), including the
+register+login=True-in-one-call gating edge case — see the tests right before
+`test_login_otp_verify_also_issues_restricted_token`.
 """
 
 import uuid
@@ -353,6 +358,114 @@ async def test_failed_change_password_does_not_clear_flag_or_issue_token():
         assert change_resp.json()["code"] == "INVALID_PASSWORD"
 
         assert await _must_change_password_flag(app, user.id) is True
+
+
+# ---------------------------------------------------------------------------
+# `must_change_password` settable directly at registration time (POST /register/) — a shortcut
+# over the two-step register-then-admin-PATCH flow, added on user request.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_register_with_must_change_password_sets_flag():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        async with await _client(app) as client:
+            register_resp = await client.post(
+                "/api/v1/register/",
+                json={
+                    "email": "provisioned@example.com",
+                    "password": "TempPass123!",
+                    "must_change_password": True,
+                },
+            )
+            assert register_resp.status_code == 201
+            user_id = register_resp.json()["user"]["id"]
+
+            login = await client.post(
+                "/api/v1/login/email/", json={"email": "provisioned@example.com", "password": "TempPass123!"}
+            )
+            assert login.status_code == 200
+            body = login.json()
+            assert body["token_scope"] == "password_change_only"
+            assert body["must_change_password"] is True
+        assert await _must_change_password_flag(app, user_id) is True
+
+
+@pytest.mark.anyio
+async def test_register_without_must_change_password_is_default_false():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        async with await _client(app) as client:
+            register_resp = await client.post(
+                "/api/v1/register/", json={"email": "plain@example.com", "password": "TempPass123!"}
+            )
+            assert register_resp.status_code == 201
+        assert await _must_change_password_flag(app, register_resp.json()["user"]["id"]) is False
+
+
+@pytest.mark.anyio
+async def test_register_with_must_change_password_and_login_gets_restricted_token_immediately():
+    """A caller combining must_change_password=True with login=True in the same call must not be
+    able to walk away with a full-scope token — the immediate token issuance has to go through the
+    same gating as a normal login, not the plain `generate_new_token_pair` shortcut."""
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        async with await _client(app) as client:
+            register_resp = await client.post(
+                "/api/v1/register/",
+                json={
+                    "email": "immediate@example.com",
+                    "password": "TempPass123!",
+                    "must_change_password": True,
+                    "login": True,
+                },
+            )
+    assert register_resp.status_code == 201
+    body = register_resp.json()
+    assert body["token_scope"] == "password_change_only"
+    assert body["must_change_password"] is True
+    assert body["access_token"]
+    assert body["refresh_token"]
+
+
+@pytest.mark.anyio
+async def test_register_with_must_change_password_false_and_login_gets_full_scope_token():
+    app = _build_app()
+    async with app.router.lifespan_context(app):
+        async with await _client(app) as client:
+            register_resp = await client.post(
+                "/api/v1/register/",
+                json={"email": "normal-login@example.com", "password": "TempPass123!", "login": True},
+            )
+    assert register_resp.status_code == 201
+    body = register_resp.json()
+    assert "token_scope" not in body
+    assert body["access_token"]
+
+
+@pytest.mark.anyio
+async def test_register_with_must_change_password_true_is_noop_when_feature_disabled():
+    app = _build_app(provider=_DisabledProvider())
+    async with app.router.lifespan_context(app):
+        async with await _client(app) as client:
+            register_resp = await client.post(
+                "/api/v1/register/",
+                json={
+                    "email": "disabled-provision@example.com",
+                    "password": "TempPass123!",
+                    "must_change_password": True,
+                    "login": True,
+                },
+            )
+            user_id = register_resp.json()["user"]["id"]
+            assert register_resp.status_code == 201
+            body = register_resp.json()
+            # ...but has no effect on token issuance while the feature flag itself is off.
+            assert "token_scope" not in body
+            assert body["access_token"]
+        # The flag is still persisted on the row (it's just an unconditional column write)...
+        assert await _must_change_password_flag(app, user_id) is True
 
 
 # ---------------------------------------------------------------------------

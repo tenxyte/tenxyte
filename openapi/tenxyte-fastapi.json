@@ -952,7 +952,7 @@
         "type": "object"
       },
       "RegisterRequest": {
-        "description": "Email-only for now \u2014 phone registration is deferred (see routers/auth.py's module\ndocstring), so `email` is required here rather than optional-with-a-phone-alternative like\nthe Django serializer's `validate()` cross-field rule.",
+        "description": "Email-only for now \u2014 phone registration is deferred (see routers/auth.py's module\ndocstring), so `email` is required here rather than optional-with-a-phone-alternative like\nthe Django serializer's `validate()` cross-field rule.\n\n`must_change_password`: if True, the account is created with must_change_password=True\n(feature: force_password_change_on_first_login) \u2014 the next login issues a restricted\npassword_change_only token instead of a full-scope one, as long as\nTENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED is on server-side. Mirrors the Django\nRegisterSerializer's own must_change_password field.",
         "properties": {
           "email": {
             "format": "email",
@@ -972,6 +972,11 @@
           "login": {
             "default": false,
             "title": "Login",
+            "type": "boolean"
+          },
+          "must_change_password": {
+            "default": false,
+            "title": "Must Change Password",
             "type": "boolean"
           },
           "password": {

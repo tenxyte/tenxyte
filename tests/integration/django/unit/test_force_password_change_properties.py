@@ -16,7 +16,7 @@ from hypothesis import given, settings as hyp_settings, HealthCheck, strategies 
 from rest_framework.test import APIRequestFactory
 
 from tenxyte.models import Application, User
-from tenxyte.views.auth_views import LoginEmailView, LoginPhoneView, RefreshTokenView
+from tenxyte.views.auth_views import LoginEmailView, LoginPhoneView, RefreshTokenView, RegisterView
 from tenxyte.views.password_views import ChangePasswordView, SetInitialPasswordView
 from tenxyte.views.twofa_views import TwoFactorStatusView
 
@@ -765,6 +765,96 @@ class TestProvisioningAuthorization:
         assert resp.status_code == 403
         target.refresh_from_db()
         assert target.must_change_password is False
+
+
+# ---------------------------------------------------------------------------
+# Provisionnement via /register/ lui-meme — raccourci one-call sur le flux
+# create-puis-admin-PATCH ci-dessus, ajoute sur demande utilisateur. N'est pas l'une
+# des 16 properties du design doc d'origine, mais reutilise exactement les memes
+# mecanismes que Property 2 (provisioning) / Property 3 (token restreint) / Property 6
+# (precedence 2FA bootstrap).
+# ---------------------------------------------------------------------------
+
+@pytest.mark.django_db
+class TestRegisterEndpointProvisioning:
+    """Feature: force_password_change_on_first_login - RegisterSerializer.must_change_password"""
+
+    def test_register_with_must_change_password_sets_flag(self):
+        nonce = secrets.token_hex(4)
+        app = _make_app(f"RegProv1-{nonce}")
+        email = f"reg-prov-{nonce}@example.com"
+        resp = _post(RegisterView, "/api/v1/auth/register/",
+                     {"email": email, "password": _P, "must_change_password": True}, app)
+        assert resp.status_code == 201
+        user = User.objects.get(email=email)
+        assert user.must_change_password is True
+
+    def test_register_without_flag_defaults_false(self):
+        nonce = secrets.token_hex(4)
+        app = _make_app(f"RegProv2-{nonce}")
+        email = f"reg-noflag-{nonce}@example.com"
+        resp = _post(RegisterView, "/api/v1/auth/register/", {"email": email, "password": _P}, app)
+        assert resp.status_code == 201
+        user = User.objects.get(email=email)
+        assert user.must_change_password is False
+
+    @override_settings(TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True)
+    def test_registered_account_gets_restricted_token_on_next_login(self):
+        nonce = secrets.token_hex(4)
+        app = _make_app(f"RegProv3-{nonce}")
+        email = f"reg-nextlogin-{nonce}@example.com"
+        resp = _post(RegisterView, "/api/v1/auth/register/",
+                     {"email": email, "password": _P, "must_change_password": True}, app)
+        assert resp.status_code == 201
+        user = User.objects.get(email=email)
+        login_resp = _login_email(app, user)
+        data = _payload(login_resp)
+        assert login_resp.status_code == 200
+        assert data.get("token_scope") == FORCED_SCOPE
+        assert data.get("must_change_password") is True
+
+    @override_settings(TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True)
+    def test_register_with_must_change_password_and_login_gets_restricted_token_immediately(self):
+        """A caller combining must_change_password=True with login=True in the same call must not
+        walk away with a full-scope token — the immediate token issuance has to go through the
+        same gating as a normal login."""
+        nonce = secrets.token_hex(4)
+        app = _make_app(f"RegProv4-{nonce}")
+        email = f"reg-immediate-{nonce}@example.com"
+        resp = _post(RegisterView, "/api/v1/auth/register/",
+                     {"email": email, "password": _P, "must_change_password": True, "login": True}, app)
+        data = _payload(resp)
+        assert resp.status_code == 201
+        assert data.get("token_scope") == FORCED_SCOPE
+        assert data.get("must_change_password") is True
+        assert "access_token" in data
+        assert "refresh_token" in data
+
+    @override_settings(TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True)
+    def test_register_with_login_and_no_must_change_password_gets_full_scope_token(self):
+        nonce = secrets.token_hex(4)
+        app = _make_app(f"RegProv5-{nonce}")
+        email = f"reg-fullscope-{nonce}@example.com"
+        resp = _post(RegisterView, "/api/v1/auth/register/",
+                     {"email": email, "password": _P, "login": True}, app)
+        data = _payload(resp)
+        assert resp.status_code == 201
+        assert "token_scope" not in data
+        assert "access_token" in data
+
+    def test_register_with_must_change_password_true_is_noop_when_feature_disabled(self):
+        # Feature flag left at its real default (off).
+        nonce = secrets.token_hex(4)
+        app = _make_app(f"RegProv6-{nonce}")
+        email = f"reg-disabled-{nonce}@example.com"
+        resp = _post(RegisterView, "/api/v1/auth/register/",
+                     {"email": email, "password": _P, "must_change_password": True, "login": True}, app)
+        data = _payload(resp)
+        assert resp.status_code == 201
+        assert "token_scope" not in data
+        # The flag is still persisted on the row (it's just an unconditional model write)...
+        user = User.objects.get(email=email)
+        assert user.must_change_password is True
 
 
 # ---------------------------------------------------------------------------

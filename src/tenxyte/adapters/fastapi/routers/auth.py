@@ -30,6 +30,16 @@ unchanged. `must_change_password` isn't part of the framework-agnostic Core `Use
 (same architectural choice Django makes — nothing is added to `tenxyte.core`/`tenxyte.ports`), so
 `resolve_forced_password_change_scope` reads the raw `UserDB` row directly, not `AuthContext.user`.
 
+`register/` also accepts an optional `must_change_password` flag on the request body itself
+(mirrors `RegisterSerializer`'s own field on the Django side) — a shortcut for provisioning a
+must-change-password test account in one call instead of registering then calling the admin PATCH
+endpoint. Reuses `admin_user_service.update_user_async`, the same write path the admin PATCH
+endpoint and `routers/password.py`'s flag-clear logic already use. Setting this on its own has no
+effect unless the feature flag above is also on. When combined with `login=True` in the same
+request, the immediately-issued token is gated through `resolve_forced_password_change_scope` too
+— otherwise a caller could register with `must_change_password=True` and `login=True` together and
+walk away with a full-scope token, defeating the whole point of the flag.
+
 `me/roles/` now returns real data (Wave D, task 10.1, closed the RBAC gap this endpoint used to
 document — see `rbac_service.py`).
 
@@ -51,7 +61,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
-from tenxyte.adapters.fastapi import admin_security_service
+from tenxyte.adapters.fastapi import admin_security_service, admin_user_service
 from tenxyte.adapters.fastapi.auth_lookup import SQLAlchemyEmailPasswordLookup, SQLAlchemyPhonePasswordLookup
 from tenxyte.adapters.fastapi.deps import (
     get_cache_service,
@@ -188,6 +198,11 @@ async def register(
     )
     created = await user_repo.create(new_user)
 
+    user_db: UserDB | None = None
+    if body.must_change_password:
+        user_db = await session.get(UserDB, created.id)
+        await admin_user_service.update_user_async(session, user_db, {"must_change_password": True})
+
     response_data: dict = {
         "message": "Registration successful",
         "user": _serialize_user(created),
@@ -209,6 +224,21 @@ async def register(
                 "refresh_expires_in": settings.jwt_refresh_token_lifetime,
             }
         )
+
+        # Force password change gating (feature: force_password_change_on_first_login). A caller
+        # could otherwise set must_change_password=True at registration and request login=True in
+        # the same call to walk away with a full-scope token, bypassing the restriction entirely —
+        # must be checked here too, not just on the regular login/refresh endpoints.
+        if user_db is None:
+            user_db = await session.get(UserDB, created.id)
+        forced_scope = resolve_forced_password_change_scope(settings, user_db)
+        if forced_scope == "password_change_only":
+            restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+                user_id=created.id, application_id=app_id, extra_claims={"scope": "password_change_only"}
+            )
+            response_data["access_token"] = restricted_token
+            response_data["token_scope"] = "password_change_only"
+            response_data["must_change_password"] = True
 
     return response_data
 
