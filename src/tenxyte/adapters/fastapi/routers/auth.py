@@ -16,16 +16,19 @@ Deliberately out of scope for this pass (documented rather than silently skipped
 
 - **Phone *registration*** — `RegisterRequest` stays email-only; Django's `RegisterSerializer`
   accepts email-or-phone via a cross-field `validate()` rule this port doesn't replicate yet.
-- **`must_change_password` / `password_change_only` scope** — this flag lives only on Django's
-  `User` model (`DJANGO_ONLY_FIELDS = {"must_change_password"}` in the admin view), is not part
-  of the framework-agnostic Core `User` port dataclass, and the feature it drives
-  (`FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED`) defaults OFF in Django itself. It's also the
-  subject of its own separate spec (`specs/force_password_change_on_first_login/`) that hasn't
-  been executed. `logout/all/`'s `require_jwt(allowed_scopes=["password_change_only"])` keeps the
-  same allow-list entry as Django for structural parity, even though nothing here currently issues
-  such a token.
 - **`RefreshTokenDB` admin listing** — Group D's endpoints (`admin/refresh-tokens/*`), not
   needed for Wave A's own contract.
+
+`must_change_password` / `password_change_only` scope (spec `force_password_change_on_first_login`,
+fully implemented here, mirroring the Django_Adapter's own `views/auth_views.py`): `login_email`,
+`login_phone`, and `refresh_token_view` each call `resolve_forced_password_change_scope` after the
+existing `2fa_setup_only` bootstrap check (which keeps precedence, unchanged) — if
+`TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED` is on and the user's `must_change_password`
+is `True`, the access token issued carries `scope="password_change_only"` and the response's
+`must_change_password` field flips to `true`, otherwise the existing full-scope response is
+unchanged. `must_change_password` isn't part of the framework-agnostic Core `User` port dataclass
+(same architectural choice Django makes — nothing is added to `tenxyte.core`/`tenxyte.ports`), so
+`resolve_forced_password_change_scope` reads the raw `UserDB` row directly, not `AuthContext.user`.
 
 `me/roles/` now returns real data (Wave D, task 10.1, closed the RBAC gap this endpoint used to
 document — see `rbac_service.py`).
@@ -60,6 +63,7 @@ from tenxyte.adapters.fastapi.deps import (
 from tenxyte.adapters.fastapi.errors import TenxyteAPIError
 from tenxyte.adapters.fastapi.login_response import clear_refresh_cookie as _clear_refresh_cookie
 from tenxyte.adapters.fastapi.login_response import finalize_login_response as _finalize_login_response
+from tenxyte.adapters.fastapi.models_sa import UserDB
 from tenxyte.adapters.fastapi.refresh_tokens import issue_refresh_token as _issue_refresh_token
 from tenxyte.adapters.fastapi.refresh_tokens import (
     redeem_refresh_token,
@@ -106,6 +110,21 @@ _PHONE_LOGIN_ERROR_MESSAGES = {
 def _resolved_application_id(request: Request) -> str:
     application = getattr(request.state, "application", None)
     return str(application.id) if application is not None else "default"
+
+
+def resolve_forced_password_change_scope(settings: Settings, user_db: UserDB | None) -> str | None:
+    """Mirrors the Django_Adapter's `resolve_forced_password_change_scope`
+    (`views/auth_views.py`) exactly — returns `"password_change_only"` if the forced-password
+    -change gating applies to this user, else `None` (full-scope token, unchanged behavior). Only
+    has an effect when `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED` is on AND the user
+    has `must_change_password=True`. Takes the raw `UserDB` row rather than the Core `User` port
+    dataclass — `must_change_password` isn't part of `ports.User`, same architectural choice
+    Django makes (see this module's own docstring)."""
+    if not settings.force_password_change_on_first_login_enabled:
+        return None
+    if user_db is not None and user_db.must_change_password:
+        return "password_change_only"
+    return None
 
 
 @router.post("/register/", status_code=201)
@@ -283,6 +302,20 @@ async def _login(
         "device_id": None,
         "must_change_password": False,
     }
+
+    # Force password change gating (feature: force_password_change_on_first_login). Precedence:
+    # the 2fa_setup_only admin bootstrap is already returned earlier in this function,
+    # unconditionally ahead of this check — mirrors auth_views.py's own precedence rule exactly.
+    user_db = await session.get(UserDB, user.id)
+    forced_scope = resolve_forced_password_change_scope(settings, user_db)
+    if forced_scope == "password_change_only":
+        restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+            user_id=user.id, application_id=app_id, extra_claims={"scope": "password_change_only"}
+        )
+        data["access_token"] = restricted_token
+        data["token_scope"] = "password_change_only"
+        data["must_change_password"] = True
+
     return _finalize_login_response(data, settings)
 
 
@@ -377,6 +410,20 @@ async def refresh_token_view(
     }
     if user is not None:
         data["user"] = _serialize_user(user)
+
+    # Force password change gating on refresh (feature: force_password_change_on_first_login) —
+    # a Restricted_Password_Token must never be upgraded to full-scope by refreshing alone,
+    # mirrors auth_views.py's RefreshTokenView.
+    user_db = await session.get(UserDB, row.user_id)
+    forced_scope = resolve_forced_password_change_scope(settings, user_db)
+    if forced_scope == "password_change_only":
+        restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+            user_id=row.user_id, application_id=app_id, extra_claims={"scope": "password_change_only"}
+        )
+        data["access_token"] = restricted_token
+        data["token_scope"] = "password_change_only"
+        data["must_change_password"] = True
+
     return _finalize_login_response(data, settings)
 
 

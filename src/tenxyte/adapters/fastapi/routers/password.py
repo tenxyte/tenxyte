@@ -12,12 +12,21 @@ more than this endpoint's own scope warrants. A request with only `otp_code` and
 `current_password` gets `REAUTH_REQUIRED`, same as Django's "neither provided" case — an honest
 signal, not a silent accept.
 
-Also out of scope, matching the Django_Adapter's own actual behavior (not a gap — porting these
+Also out of scope, matching the Django_Adapter's own actual behavior (not a gap — porting it
 would be a parity BREAK, not a fix): password-history/reuse checking (Django defines a
-`PasswordHistory` model but never calls it — `PASSWORD_REUSED` is documented but unreachable) and
-the `must_change_password`/scope-upgrade branch on a successful change/reset (dead code today: the
-feature that would ever issue a `password_change_only` token defaults off — see routers/auth.py's
-module docstring).
+`PasswordHistory` model but never calls it — `PASSWORD_REUSED` is documented but unreachable).
+
+`change_password`/`set_initial_password` DO implement the `must_change_password`/scope-upgrade
+branch (feature `force_password_change_on_first_login`, mirroring `password_views.py`'s
+`ChangePasswordView`/`SetInitialPasswordView` exactly): on success, if the user's raw `must_change_
+password` flag is set, it's cleared and — only if the request was made with a `Restricted_Password_
+Token` (`auth.scope == "password_change_only"`) — a fresh full-scope token pair is issued in the
+response, same "clear flag, upgrade only if the caller actually needed it" pattern
+`routers/twofa.py`'s `twofa_confirm` already uses for the `2fa_setup_only` bootstrap. `auth.user`
+(the Core `User` port dataclass from `AuthContext`) has no `must_change_password` field — same
+architectural choice Django makes — so both views re-fetch the raw `UserDB` row via `session.get`
+and reuse `admin_user_service.update_user_async` to persist the clear, the same helper the admin
+`PATCH /admin/users/<id>/` endpoint already uses to *set* the flag.
 
 Password-strength validation (`password_strength.py`) and the breach check (`breach_check.py`) are
 each a framework-agnostic *reimplementation*, not a reuse of `tenxyte.validators`/
@@ -40,10 +49,12 @@ import logging
 import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Request, Response
 from tenxyte.adapters.fastapi import breach_check, otp_service, password_strength
-from tenxyte.adapters.fastapi.deps import get_db_session, get_settings
+from tenxyte.adapters.fastapi.admin_user_service import update_user_async
+from tenxyte.adapters.fastapi.deps import get_db_session, get_jwt_service, get_settings
 from tenxyte.adapters.fastapi.errors import TenxyteAPIError
+from tenxyte.adapters.fastapi.models_sa import UserDB
 from tenxyte.adapters.fastapi.refresh_tokens import revoke_all_for_user
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
 from tenxyte.adapters.fastapi.schemas import (
@@ -54,11 +65,17 @@ from tenxyte.adapters.fastapi.schemas import (
     SetInitialPasswordRequest,
 )
 from tenxyte.adapters.fastapi.security import AuthContext, require_jwt
+from tenxyte.core.jwt_service import JWTService
 from tenxyte.core.settings import Settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _resolved_application_id(request: Request) -> str:
+    application = getattr(request.state, "application", None)
+    return str(application.id) if application is not None else "default"
 
 
 def _raise_if_weak(new_password: str, settings: Settings) -> None:
@@ -96,8 +113,10 @@ async def password_requirements_view(settings: Settings = Depends(get_settings))
 @router.post("/password/change/")
 async def change_password(
     body: ChangePasswordRequest,
+    request: Request,
     session: AsyncSession = Depends(get_db_session),  # noqa: B008
     settings: Settings = Depends(get_settings),  # noqa: B008
+    jwt_service: JWTService = Depends(get_jwt_service),  # noqa: B008
     auth: AuthContext = Depends(require_jwt(allowed_scopes=["password_change_only"])),  # noqa: B008
 ):
     user = auth.user
@@ -140,11 +159,28 @@ async def change_password(
     # ChangePasswordView, which only revokes refresh tokens, not the token the request used.
     sessions_revoked = await revoke_all_for_user(session, user.id)
 
-    return {
+    response_data = {
         "message": "Password changed successfully",
         "password_strength": strength_result.strength,
         "sessions_revoked": sessions_revoked,
     }
+
+    # Force password change: clear the flag and issue a full-scope token pair
+    # (feature: force_password_change_on_first_login) — mirrors ChangePasswordView.
+    user_db = await session.get(UserDB, user.id)
+    if user_db is not None and user_db.must_change_password:
+        await update_user_async(session, user_db, {"must_change_password": False})
+        # Upgrade to full-scope only if the caller actually needed to (i.e. presented a
+        # Restricted_Password_Token), exactly as TwoFactorConfirmView does after the 2FA bootstrap.
+        if auth.scope == "password_change_only":
+            app_id = _resolved_application_id(request)
+            token_pair = jwt_service.generate_new_token_pair(user_id=user.id, application_id=app_id)
+            response_data["access_token"] = token_pair.access_token
+            response_data["refresh_token"] = token_pair.refresh_token
+            response_data["token_type"] = "Bearer"
+            response_data["expires_in"] = token_pair.expires_in
+
+    return response_data
 
 
 async def _lookup_by_email_or_phone(
@@ -235,8 +271,10 @@ async def password_reset_confirm(
 @router.post("/password/set-initial/")
 async def set_initial_password(
     body: SetInitialPasswordRequest,
+    request: Request,
     session: AsyncSession = Depends(get_db_session),  # noqa: B008
     settings: Settings = Depends(get_settings),  # noqa: B008
+    jwt_service: JWTService = Depends(get_jwt_service),  # noqa: B008
     auth: AuthContext = Depends(require_jwt(allowed_scopes=["password_change_only"])),  # noqa: B008
 ):
     user = auth.user
@@ -263,4 +301,19 @@ async def set_initial_password(
     user.password_hash = hashed.decode("utf-8")
     await user_repo.update(user)
 
-    return {"message": "Password set successfully"}
+    response_data = {"message": "Password set successfully"}
+
+    # Force password change: clear the flag and issue a full-scope token pair
+    # (feature: force_password_change_on_first_login) — mirrors SetInitialPasswordView.
+    user_db = await session.get(UserDB, user.id)
+    if user_db is not None and user_db.must_change_password:
+        await update_user_async(session, user_db, {"must_change_password": False})
+        if auth.scope == "password_change_only":
+            app_id = _resolved_application_id(request)
+            token_pair = jwt_service.generate_new_token_pair(user_id=user.id, application_id=app_id)
+            response_data["access_token"] = token_pair.access_token
+            response_data["refresh_token"] = token_pair.refresh_token
+            response_data["token_type"] = "Bearer"
+            response_data["expires_in"] = token_pair.expires_in
+
+    return response_data

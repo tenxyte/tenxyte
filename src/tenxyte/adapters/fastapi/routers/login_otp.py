@@ -16,11 +16,12 @@ real-account branch, using non-exploitable substitute values (`uuid4()`, a local
 `expires_at`) — no code is ever generated or sent on that path.
 
 Deliberately out of scope, matching the same already-documented decisions Wave A's
-`routers/auth.py` made for `LoginPhoneView` itself (see that module's docstring):
-`must_change_password`/`password_change_only` scope-upgrade (Core `User` has no such field; the
-Django feature that would drive it defaults off) and real RBAC. The `2fa_setup_only` admin
-bootstrap and normal per-login TOTP verification ARE fully implemented here, identically to
-`routers/auth.py`'s `_login()`.
+`routers/auth.py` made for `LoginPhoneView` itself (see that module's docstring): real RBAC. The
+`2fa_setup_only` admin bootstrap, normal per-login TOTP verification, and the
+`must_change_password`/`password_change_only` scope-upgrade (feature
+`force_password_change_on_first_login`) ARE fully implemented here, identically to
+`routers/auth.py`'s `_login()` — `resolve_forced_password_change_scope` is imported from
+`.auth` rather than duplicated, since it's a pure function with no router-local state.
 
 **Verified, pre-existing Django finding (not a porting bug, not "fixed" here — see
 `test_verify_unknown_account_and_wrong_code_both_401_otp_invalid`):** `verify/`'s anti-enumeration
@@ -65,9 +66,11 @@ from tenxyte.adapters.fastapi.deps import (
 )
 from tenxyte.adapters.fastapi.errors import TenxyteAPIError
 from tenxyte.adapters.fastapi.login_response import finalize_login_response as _finalize_login_response
+from tenxyte.adapters.fastapi.models_sa import UserDB
 from tenxyte.adapters.fastapi.otp_service import generate_otp, verify_otp
 from tenxyte.adapters.fastapi.refresh_tokens import issue_refresh_token as _issue_refresh_token
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
+from tenxyte.adapters.fastapi.routers.auth import resolve_forced_password_change_scope
 from tenxyte.adapters.fastapi.schemas import LoginOTPRequestRequest, LoginOTPVerifyRequest
 from tenxyte.adapters.fastapi.serialization import serialize_user
 from tenxyte.adapters.fastapi.throttling import _get_client_ip
@@ -251,4 +254,18 @@ async def login_otp_verify(
         "device_id": None,
         "must_change_password": False,
     }
+
+    # Force password change gating (feature: force_password_change_on_first_login). Precedence:
+    # the 2fa_setup_only admin bootstrap is already returned earlier, unconditionally ahead of
+    # this check — mirrors auth_views.py's own precedence rule exactly.
+    user_db = await session.get(UserDB, user.id)
+    forced_scope = resolve_forced_password_change_scope(settings, user_db)
+    if forced_scope == "password_change_only":
+        restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+            user_id=user.id, application_id=app_id, extra_claims={"scope": "password_change_only"}
+        )
+        data["access_token"] = restricted_token
+        data["token_scope"] = "password_change_only"
+        data["must_change_password"] = True
+
     return _finalize_login_response(data, settings)

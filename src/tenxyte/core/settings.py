@@ -466,6 +466,18 @@ class Settings:
         return self._get("MAGIC_LINK_EXPIRY_MINUTES", 15)
 
     # ============================================================
+    # Force Password Change Settings (feature: force_password_change_on_first_login)
+    # ============================================================
+
+    @property
+    def force_password_change_on_first_login_enabled(self) -> bool:
+        """Whether a `must_change_password=True` account gets a restricted
+        `password_change_only`-scoped token at login/refresh instead of a full-scope one —
+        mirrors `conf.auth.AuthSettingsMixin`'s own `FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED`
+        (default `False`, opt-in — additive, same as the Django_Adapter's own default)."""
+        return self._get("FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED", False)
+
+    # ============================================================
     # Social Auth Settings (spec z_aud_3, Wave G, task 12.1) — mirrors tenxyte.conf.social's
     # defaults exactly (the client id/secret/key properties mirror Django's own `getattr(settings,
     # "X", "")` pattern — a plain deployment secret, not a `conf`-namespaced setting there either).
