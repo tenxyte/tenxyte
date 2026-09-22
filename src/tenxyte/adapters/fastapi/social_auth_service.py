@@ -36,6 +36,15 @@ provider marked that email verified, AND (b) `social_auto_merge_accounts` is `Tr
 `False`) — otherwise refused outright, asking the caller to log in with email/password first. Both
 checks are refusals with no silent fallback, in that order, matching the real service exactly.
 
+**`must_change_password` / `password_change_only` scope (spec `force_password_change_on_first_login`)**:
+`resolve_forced_password_change_scope` is called right before returning, on every successful
+authenticate (new account or existing) — this path previously issued a full-scope token
+unconditionally, bypassing the gating entirely, which meant an account provisioned with
+`must_change_password=True` specifically to force setting a real password after a social signup
+(so the user isn't permanently locked to that provider) had no effect if the user simply logged in
+via social auth instead of a password endpoint. Fixed alongside the same gap on the magic-link
+`verify/` path (`routers/magic_link.py`).
+
 **Response shape genuinely differs between the two endpoints, not a port inconsistency**:
 `POST social/<provider>/` strips `device_summary` from the response (`data.pop("device_summary",
 None)` in the real view) and adds `message`; `GET social/<provider>/callback/` keeps
@@ -556,23 +565,37 @@ async def authenticate_async(
 
     device_summary = get_device_summary(device_info) if device_info else None
 
-    return (
-        {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "device_summary": device_summary,
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "is_email_verified": user.email_verified,
-                "is_phone_verified": user.phone_verified,
-                "is_2fa_enabled": user.mfa_type.value != "none",
-                "roles": await rbac_service.get_all_role_codes_async(session, user.id),
-                "permissions": await rbac_service.effective_permission_codes_async(session, user.id),
-            },
-            "is_new_user": is_new_user,
+    response_data = {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "device_summary": device_summary,
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "is_email_verified": user.email_verified,
+            "is_phone_verified": user.phone_verified,
+            "is_2fa_enabled": user.mfa_type.value != "none",
+            "roles": await rbac_service.get_all_role_codes_async(session, user.id),
+            "permissions": await rbac_service.effective_permission_codes_async(session, user.id),
         },
-        None,
-    )
+        "is_new_user": is_new_user,
+    }
+
+    # Force password change gating (feature: force_password_change_on_first_login). Social login
+    # previously bypassed this entirely — an account provisioned with must_change_password=True
+    # (e.g. to force setting a real password after a social signup, so the user isn't permanently
+    # locked to that provider) must be restricted here too, exactly like login_email/login_phone.
+    from tenxyte.adapters.fastapi.routers.auth import resolve_forced_password_change_scope
+
+    forced_scope = resolve_forced_password_change_scope(settings, user)
+    if forced_scope == "password_change_only":
+        restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+            user.id, application_id=app_id, extra_claims={"scope": "password_change_only"}
+        )
+        response_data["access_token"] = restricted_token
+        response_data["token_scope"] = "password_change_only"
+        response_data["must_change_password"] = True
+
+    return (response_data, None)

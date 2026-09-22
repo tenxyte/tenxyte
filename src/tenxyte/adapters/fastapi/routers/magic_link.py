@@ -20,6 +20,14 @@ where they look like inconsistencies:
 
 `Settings.magic_link_enabled` defaults `True` (unlike `login/otp`'s default-off
 `otp_login_enabled`) — matches `MagicLinkService.__init__`'s own `getattr(..., True)` default.
+
+**`must_change_password` / `password_change_only` scope (spec `force_password_change_on_first_login`)**:
+`verify/` previously issued a full-scope token unconditionally, bypassing the gating entirely —
+fixed to call `resolve_forced_password_change_scope` like every other login endpoint, so an
+account provisioned with `must_change_password=True` (e.g. to force setting a real password after
+logging in purely via magic link, so the user isn't permanently locked to email access) is
+actually restricted here too. Same gap fixed on the social-auth path
+(`social_auth_service.py`).
 """
 
 from __future__ import annotations
@@ -39,8 +47,10 @@ from tenxyte.adapters.fastapi.deps import (
 )
 from tenxyte.adapters.fastapi.errors import TenxyteAPIError
 from tenxyte.adapters.fastapi.magic_link_repo import SQLAlchemyMagicLinkRepository, SQLAlchemyUserLookup
+from tenxyte.adapters.fastapi.models_sa import UserDB
 from tenxyte.adapters.fastapi.refresh_tokens import issue_refresh_token as _issue_refresh_token
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
+from tenxyte.adapters.fastapi.routers.auth import resolve_forced_password_change_scope
 from tenxyte.adapters.fastapi.schemas import MagicLinkRequestRequest
 from tenxyte.adapters.fastapi.serialization import serialize_user
 from tenxyte.adapters.fastapi.throttling import _get_client_ip
@@ -147,6 +157,23 @@ async def magic_link_verify(
         "session_id": None,
         "device_id": None,
     }
+
+    # Force password change gating (feature: force_password_change_on_first_login). Magic-link
+    # login previously bypassed this entirely — an account provisioned with
+    # must_change_password=True (e.g. to force setting a real password after logging in purely via
+    # magic link, so the user isn't permanently locked to email access) must be restricted here
+    # too, exactly like login_email/login_phone.
+    if user is not None:
+        user_db = await session.get(UserDB, auth_result.user_id)
+        forced_scope = resolve_forced_password_change_scope(settings, user_db)
+        if forced_scope == "password_change_only":
+            restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+                auth_result.user_id, application_id=app_id, extra_claims={"scope": "password_change_only"}
+            )
+            response_data["access"] = restricted_token
+            response_data["token_scope"] = "password_change_only"
+            response_data["must_change_password"] = True
+
     response = JSONResponse(status_code=200, content=response_data)
     response.headers["Referrer-Policy"] = "no-referrer"
     return response

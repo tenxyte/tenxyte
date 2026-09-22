@@ -699,6 +699,34 @@ class TestSocialAuthService:
         assert success is True
         assert User.objects.filter(first_name="No").exists()
 
+    @override_settings(TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True)
+    def test_authenticate_forced_account_gets_restricted_token(self):
+        """Feature: force_password_change_on_first_login — social login previously bypassed this
+        entirely (no gating call anywhere on this path); an account provisioned with
+        must_change_password=True (e.g. to force setting a real password after a social signup,
+        so the user isn't permanently locked to that provider) must get the same restricted
+        password_change_only token a forced-change email/phone login gets."""
+        app = _app("SocialSvcForcedApp")
+        user = _user("forced_social@example.com")
+        user.must_change_password = True
+        user.save(update_fields=["must_change_password"])
+        SocialConnection.get_or_create_for_user(
+            user=user,
+            provider="google",
+            provider_user_id="google_forced",
+        )
+        service = SocialAuthService()
+        success, data, error = service.authenticate(
+            provider_name="google",
+            user_data={**GOOGLE_USER_DATA, "provider_user_id": "google_forced", "email": "forced_social@example.com"},
+            application=app,
+            ip_address="127.0.0.1",
+        )
+        assert success is True
+        assert data["token_scope"] == "password_change_only"
+        assert data["must_change_password"] is True
+        assert isinstance(data["access_token"], str)
+
     def test_authenticate_account_locked(self):
         from django.utils import timezone
         import datetime

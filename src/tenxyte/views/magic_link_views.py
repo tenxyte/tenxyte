@@ -25,6 +25,7 @@ from tenxyte.core import JWTService, MagicLinkService, Settings
 from ..decorators import get_client_ip
 from ..device_info import build_device_info_from_user_agent
 from ..throttles import MagicLinkRequestThrottle, MagicLinkVerifyThrottle
+from .auth_views import resolve_forced_password_change_scope
 
 # Global Core services (lazy initialization)
 _core_user_repo = None
@@ -317,7 +318,11 @@ class MagicLinkVerifyView(APIView):
         # Generate JWT tokens via Core service
         jwt_service = get_core_jwt_service()
         app_id = str(request.application.id) if hasattr(request, "application") and request.application else "default"
-        access_token = jwt_service.generate_access_token(auth_result.user_id, application_id=app_id)
+        # `generate_access_token` returns (token, jti, expires_at) — the tuple was previously
+        # assigned to `access_token` unpacked, so the response's "access" field silently shipped
+        # a 3-element array instead of the token string. Caught while wiring the force-password
+        # -change gating below, which needs the real token string to conditionally swap it out.
+        access_token, _jti, _expires_at = jwt_service.generate_access_token(auth_result.user_id, application_id=app_id)
         refresh_token = jwt_service.generate_refresh_token(
             auth_result.user_id, application_id=app_id, device_info=device_info
         )
@@ -331,6 +336,7 @@ class MagicLinkVerifyView(APIView):
             user = User.objects.get(id=auth_result.user_id)
             user_data = UserSerializer(user).data
         except User.DoesNotExist:
+            user = None
             user_data = {"id": auth_result.user_id}
 
         response_data = {
@@ -341,6 +347,21 @@ class MagicLinkVerifyView(APIView):
             "session_id": auth_result.session_id if hasattr(auth_result, "session_id") else None,
             "device_id": auth_result.device_id if hasattr(auth_result, "device_id") else None,
         }
+
+        # Force password change gating (feature: force_password_change_on_first_login). Magic-link
+        # login previously bypassed this entirely — an account provisioned with
+        # must_change_password=True (e.g. to force setting a real password after logging in purely
+        # via magic link, so the user isn't permanently locked to email access) must be restricted
+        # here too, exactly like the password/OTP login views.
+        if user is not None:
+            forced_scope = resolve_forced_password_change_scope(user)
+            if forced_scope == "password_change_only":
+                restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+                    auth_result.user_id, application_id=app_id, extra_claims={"scope": "password_change_only"}
+                )
+                response_data["access"] = restricted_token
+                response_data["token_scope"] = "password_change_only"
+                response_data["must_change_password"] = True
 
         response = Response(response_data)
         response["Referrer-Policy"] = "no-referrer"

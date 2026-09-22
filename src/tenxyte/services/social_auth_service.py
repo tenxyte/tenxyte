@@ -657,24 +657,45 @@ class SocialAuthService:
             refresh_token_str=refresh_token.raw_token,  # valeur brute, jamais persistée
         )
 
+        response_data = {
+            "access_token": token_pair.access_token,
+            "refresh_token": token_pair.refresh_token,
+            "device_summary": get_device_summary(device_info) if device_info else None,
+            "user": {
+                "id": str(user.id),
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "is_email_verified": user.is_email_verified,
+                "is_phone_verified": getattr(user, "is_phone_verified", False),
+                "is_2fa_enabled": getattr(user, "is_2fa_enabled", False),
+                "roles": user.get_all_roles(),
+                "permissions": user.get_all_permissions(),
+            },
+            "is_new_user": is_new_user,
+        }
+
+        # Force password change gating (feature: force_password_change_on_first_login). Social
+        # login previously bypassed this entirely — an account provisioned with
+        # must_change_password=True (e.g. to force setting a real password after a social signup,
+        # so the user isn't permanently locked to that provider) must be restricted here too,
+        # exactly like the password/OTP login views. Local import: resolve_forced_password_change
+        # _scope lives in views/auth_views.py, which itself imports from this module's package.
+        from ..views.auth_views import resolve_forced_password_change_scope
+
+        forced_scope = resolve_forced_password_change_scope(user)
+        if forced_scope == "password_change_only":
+            restricted_token, _jti, _expires_at = self.jwt_service.generate_access_token(
+                user_id=str(user.id),
+                application_id=str(application.id),
+                extra_claims={"scope": "password_change_only"},
+            )
+            response_data["access_token"] = restricted_token
+            response_data["token_scope"] = "password_change_only"
+            response_data["must_change_password"] = True
+
         return (
             True,
-            {
-                "access_token": token_pair.access_token,
-                "refresh_token": token_pair.refresh_token,
-                "device_summary": get_device_summary(device_info) if device_info else None,
-                "user": {
-                    "id": str(user.id),
-                    "email": user.email,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                    "is_email_verified": user.is_email_verified,
-                    "is_phone_verified": getattr(user, "is_phone_verified", False),
-                    "is_2fa_enabled": getattr(user, "is_2fa_enabled", False),
-                    "roles": user.get_all_roles(),
-                    "permissions": user.get_all_permissions(),
-                },
-                "is_new_user": is_new_user,
-            },
+            response_data,
             "",
         )

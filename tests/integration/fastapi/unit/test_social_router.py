@@ -55,8 +55,21 @@ class _SocialAuthProvider(EnvSettingsProvider):
         return super().get(name, default)
 
 
-def _build_app():
-    settings = Settings(provider=_SocialAuthProvider())
+class _ForcedPasswordChangeProvider(_SocialAuthProvider):
+    """Feature: force_password_change_on_first_login, enabled, plus auto-merge so a social login
+    with a verified email can link to an existing (pre-provisioned) account for the gating test
+    below."""
+
+    def get(self, name, default=None):
+        if name == "TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED":
+            return True
+        if name == "TENXYTE_SOCIAL_AUTO_MERGE_ACCOUNTS":
+            return True
+        return super().get(name, default)
+
+
+def _build_app(provider=None):
+    settings = Settings(provider=provider or _SocialAuthProvider())
     return create_tenxyte_app(settings=settings, database_url=_fresh_sqlite_url())
 
 
@@ -285,3 +298,37 @@ async def test_callback_endpoint_keeps_device_summary_and_has_no_message(fake_pr
     assert "device_summary" in body
     assert "message" not in body
     assert body["provider"] == "google"
+
+
+@pytest.mark.anyio
+async def test_forced_account_gets_restricted_token_via_social_fusion(fake_provider):
+    """Feature: force_password_change_on_first_login — social login previously bypassed this
+    entirely (no gating call anywhere on this path); an account provisioned with
+    must_change_password=True (e.g. to force setting a real password after a social signup, so the
+    user isn't locked to that provider) must get the same restricted password_change_only token a
+    forced-change email/phone login gets, even when reached by linking to an existing account via
+    verified-email fusion."""
+    app = _build_app(provider=_ForcedPasswordChangeProvider())
+    async with app.router.lifespan_context(app):
+        user_id = await _create_user(app, email="forced-social@example.com")
+        session_factory = app.state.tenxyte_session_factory
+        async with session_factory() as session:
+            from tenxyte.adapters.fastapi.models_sa import UserDB
+
+            db_user = await session.get(UserDB, user_id)
+            db_user.must_change_password = True
+            await session.commit()
+
+        fake_provider.userinfo_responses["google"] = {
+            "sub": "google-forced-user",
+            "email": "forced-social@example.com",
+            "email_verified": True,
+        }
+        async with await _client(app) as client:
+            response = await client.post("/api/v1/social/google/", json={"access_token": "t"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["access_token"]
+    assert body["token_scope"] == "password_change_only"
+    assert body["must_change_password"] is True

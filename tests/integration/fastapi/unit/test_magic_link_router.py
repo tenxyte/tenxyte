@@ -11,6 +11,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from tenxyte.adapters.fastapi.app import create_tenxyte_app
+from tenxyte.adapters.fastapi.models_sa import UserDB
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
 from tenxyte.core.env_provider import EnvSettingsProvider
 from tenxyte.core.settings import Settings
@@ -30,8 +31,21 @@ class _TestProvider(EnvSettingsProvider):
         return super().get(name, default)
 
 
-def _build_app():
-    settings = Settings(provider=_TestProvider())
+class _ForcedPasswordChangeProvider(EnvSettingsProvider):
+    """Feature: force_password_change_on_first_login, enabled — for the gating test below."""
+
+    def get(self, name, default=None):
+        if name == "TENXYTE_APPLICATION_AUTH_ENABLED":
+            return False
+        if name == "TENXYTE_JWT_SECRET_KEY":
+            return "test-secret-key-for-magic-link-forced-tests"
+        if name == "TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED":
+            return True
+        return super().get(name, default)
+
+
+def _build_app(provider=None):
+    settings = Settings(provider=provider or _TestProvider())
     return create_tenxyte_app(settings=settings, database_url=_fresh_sqlite_url())
 
 
@@ -200,3 +214,29 @@ async def test_verify_issued_refresh_token_can_be_redeemed():
 
     assert refresh_response.status_code == 200
     assert refresh_response.json()["access_token"]
+
+
+@pytest.mark.anyio
+async def test_verify_forced_account_gets_restricted_token():
+    """Feature: force_password_change_on_first_login — magic-link login previously bypassed this
+    entirely (no gating call anywhere on this path); an account provisioned with
+    must_change_password=True must now get the same restricted password_change_only token a
+    forced-change email/phone login gets."""
+    app = _build_app(provider=_ForcedPasswordChangeProvider())
+    async with app.router.lifespan_context(app):
+        user = await _create_user(app, email="forced-magic@example.com")
+        session_factory = app.state.tenxyte_session_factory
+        async with session_factory() as session:
+            db_user = await session.get(UserDB, user.id)
+            db_user.must_change_password = True
+            await session.commit()
+
+        async with await _client(app) as client:
+            raw_token = await _request_and_get_raw_token(app, client, "forced-magic@example.com")
+            verify_resp = await client.get("/api/v1/magic-link/verify/", params={"token": raw_token})
+
+    assert verify_resp.status_code == 200
+    body = verify_resp.json()
+    assert body["access"]
+    assert body["token_scope"] == "password_change_only"
+    assert body["must_change_password"] is True
