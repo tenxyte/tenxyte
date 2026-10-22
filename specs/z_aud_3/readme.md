@@ -43,9 +43,12 @@ couverture ≥ 90 % sur l'adapter FastAPI, et composants UI headless puis stylé
 5. **Preuve de parité** — matrice de parité automatique (diff routes Django ↔ routes FastAPI avec
    liste d'exclusions explicite), suite de tests de contrat **partagée** exécutée contre les deux
    adapters, seuil de couverture ≥ 90 % appliqué à `adapters/fastapi` en CI.
-6. **SDK JS : composants UI headless puis stylés** — `@tenxyte/ui-headless` (logique + a11y,
-   zéro CSS) puis `@tenxyte/ui` (couche stylée thémable) couvrant les parcours clés (SignIn,
-   SignUp, OTPInput, TwoFactorSetup, PasskeyButton, ForcedPasswordChange, OrgSwitcher).
+6. **SDK JS : réalignement du contrat, puis composants UI headless et stylés** — d'abord
+   `@tenxyte/core` remis sur le Wire_Contract (13 méthodes visant des routes inexistantes,
+   17 routes du contrat inatteignables, `apple` non typable, `must_change_password` absent —
+   mesuré le 2026-09-22, cf. D9) ; ensuite `@tenxyte/ui-headless` (logique + a11y, zéro CSS)
+   puis `@tenxyte/ui` (couche stylée thémable) couvrant les parcours clés (SignIn, SignUp,
+   OTPInput, TwoFactorSetup, PasskeyButton, ForcedPasswordChange, OrgSwitcher).
    Implémentation dans le monorepo JS existant ; ce repo fournit le backend de contrat
    (export OpenAPI + backend démo docker) consommé par la CI JS.
 7. **Documentation** — `fastapi_quickstart.md` réécrit en zéro-config réel, tableau de parité
@@ -56,8 +59,13 @@ couverture ≥ 90 % sur l'adapter FastAPI, et composants UI headless puis stylé
 - Adapters au-delà de FastAPI (Java, Node, PHP — mentionnés dans le README) → backlog.
 - Réécriture async de l'adapter Django (l'ORM Django reste sync ; le pont existant suffit).
 - Mode OIDC Provider / SAML / SCIM → Phase 4.
-- Composants UI Vue/Svelte stylés (headless d'abord, React stylé ensuite ; autres frameworks
-  au backlog).
+- Composants UI Vue/Svelte (headless d'abord, React stylé ensuite ; autres frameworks au
+  backlog). À dire franchement : `@tenxyte/vue` 0.5.5 est publié au même rang que
+  `@tenxyte/react` dans le monorepo et son README, et cette phase ne lui livre **aucun**
+  composant — un utilisateur Vue reste à égalité avec aujourd'hui.
+- Tests des bindings `@tenxyte/react` / `@tenxyte/vue` eux-mêmes : les deux paquets n'ont
+  aujourd'hui aucun test (la CI JS n'y fait que `typecheck` + `build`). Cette phase crée
+  l'infrastructure de test pour les paquets UI, pas rétroactivement pour les bindings.
 - Toute modification du contrat filaire existant — la parité copie le contrat Django, elle ne le
   renégocie pas.
 
@@ -84,6 +92,8 @@ couverture ≥ 90 % sur l'adapter FastAPI, et composants UI headless puis stylé
 | D5 | **Interdiction d'I/O sync dans les handlers FastAPI**, vérifiée par un check AST automatisé (liste de motifs interdits : appels repo sync, `requests.`, `time.sleep`) | Le blocage de l'event loop est le bug n°1 des adapters async ; on le rend impossible à merger |
 | D6 | **Les composants UI vivent dans le monorepo JS existant** (`@tenxyte/*`) ; ce repo Python livre le contrat (export OpenAPI versionné + backend démo docker) que la CI JS consomme | Un seul endroit pour le code JS ; le contrat croisé empêche la dérive entre SDK et backend |
 | D7 | **Headless d'abord, stylé ensuite** : `@tenxyte/ui-headless` (hooks + composants sans style, ARIA complet) est une dépendance de `@tenxyte/ui` (thème par défaut + tokens CSS) | Réutilisabilité maximale (design systems clients) et testabilité a11y indépendante du visuel |
+| D9 | **Le SDK JS est réaligné sur le Wire_Contract avant toute ligne d'UI** (tâche 15.0 bloque 15.1/15.2), et un gate de conformité des chemins contre l'export OpenAPI est ajouté à la CI JS | Les composants headless orchestrent `@tenxyte/core` : construire sur un SDK qui vise des routes inexistantes donnerait des composants verts en tests et cassés en production. Les 14 fichiers de tests JS mockent le client HTTP et assertent l'URL que le module vient de produire — auto-référentiels, donc aveugles à la dérive ; c'est ainsi qu'elle s'est installée |
+| D10 | **Un seul oracle de contrat, deux backends démo** : `examples/js-contract-backend/` (FastAPI, seed déterministe) gate la CI JS ; `tenxyte-js/examples/server-django/` (Django+MongoDB+Celery, préexistant) reste la vitrine d'intégration | Découvert au réalignement : un backend démo existait déjà côté JS. Ne pas le supprimer (il démontre l'intégration réelle), ne pas le promouvoir oracle (seed non déterministe, mauvaise pile), et l'écrire dans les deux README pour qu'aucun troisième ne soit fabriqué |
 | D8 | Les groupes de parité sont livrés dans l'ordre **A → B → C → F → D → E → G** | A–C = cœur d'usage FastAPI ; F (AIRS) avancé car c'est le différenciateur stratégique (Phase 2) ; G en dernier car WebAuthn/Social ont le plus de dépendances externes |
 
 ## Definition of Done de la phase
@@ -94,8 +104,28 @@ couverture ≥ 90 % sur l'adapter FastAPI, et composants UI headless puis stylé
 - [ ] Check AST anti-blocage vert (aucune I/O sync dans les handlers).
 - [ ] API sync existante inchangée (snapshot) ; suite Django complète verte sans modification.
 - [ ] `pip install tenxyte[fastapi]` (sans Django) → app démarrable + parcours auth complet en < 5 min (MT-1 chronométré).
-- [ ] `@tenxyte/ui-headless` publié avec les 7 composants du périmètre, tests a11y verts (axe).
-- [ ] `@tenxyte/ui` publié (thème par défaut), revue visuelle MT-6 consignée.
+- [x] `@tenxyte/core` ≥ 0.10.0 publié : zéro appel vers une route inexistante (gate de conformité
+      chemins ↔ `openapi/tenxyte-django.json` vert en CI JS), `apple` typable,
+      `must_change_password` exposé, note de migration `b2b` publiée.
+      **Fait** (`packages/core/package.json` à 0.10.0 dans `tenxyte-js`, vérifié empiriquement —
+      voir tâche 15.0 dans `tasks.md`).
+- [x] `@tenxyte/ui-headless` publié avec les 7 composants du périmètre, tests a11y verts (axe).
+      **Remplacé, pas publié tel quel** — voir tâche 15 (note de substitution) dans `tasks.md` :
+      Registry shadcn (`tenxyte-js/packages/registry/`) + Bindings (`packages/react/`,
+      `packages/vue/`) à la place de deux packages npm séparés, décision D3 de
+      `tenxyte-js/specs/02-console-runtime`. a11y réelle vérifiée (`a11y-wired.spec.ts` contre le
+      vrai Contract_Backend, pas seulement un mock).
+- [x] `@tenxyte/ui` publié (thème par défaut), revue visuelle MT-6 consignée.
+      **Remplacé, pas publié tel quel** — même substitution que la ligne précédente ; thème par
+      défaut clair/sombre livré dans `packages/registry/styles/theme.css`. L'intention de MT-6
+      (revue visuelle, thèmes, tokens, AA) est reprise, sous une numérotation différente, par
+      `tenxyte-js/specs/02-console-runtime/manual_tests.md` : MT-1 couvre le restylage
+      (`--color-primary`, rayon, propagation sans `!important`) et MT-3 couvre l'accessibilité
+      réelle (clavier/lecteur d'écran, y compris les états d'erreur réels — `403`, compte
+      verrouillé, repli WebAuthn). Ces deux MT restent **à exécuter** (tâche 7.3 de ce fichier,
+      campagne manuelle `[MT-1..MT-4]`) — non substitués par la suite automatisée `a11y-wired.
+      spec.ts` de cette session, qui vérifie la structure DOM/contraste mais pas la perception
+      réelle au lecteur d'écran ni le jugement visuel humain sur le restylage.
 - [ ] `fastapi_quickstart.md` réécrit et validé par MT-1 ; tableau de parité publié dans la doc.
 
 ## Suivi

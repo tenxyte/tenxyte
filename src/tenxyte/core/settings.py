@@ -456,6 +456,15 @@ class Settings:
         return self._get("WEBAUTHN_RP_NAME", "Tenxyte")
 
     @property
+    def webauthn_rp_origin(self) -> str | None:
+        """Explicit override for the expected WebAuthn origin (e.g. `http://localhost:5180` for a
+        dev server on a non-standard port). `py_webauthn` compares `clientDataJSON.origin` for
+        strict equality, so the default `rp_id`-derived origin (`http://localhost` / `https://
+        {rp_id}`, no port) only works when the frontend is actually served from that exact origin.
+        `None` (default) keeps the derived behavior unchanged."""
+        return self._get("WEBAUTHN_RP_ORIGIN", None)
+
+    @property
     def magic_link_enabled(self) -> bool:
         """Whether Magic Link authentication is enabled."""
         return self._get("MAGIC_LINK_ENABLED", True)

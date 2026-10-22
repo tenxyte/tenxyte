@@ -16,8 +16,11 @@ even though the storage mechanism differs.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 import bcrypt
 
+from tenxyte.adapters.fastapi.models_sa import UserDB
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
 from tenxyte.core.cache_service import CacheService
 from tenxyte.core.settings import Settings
@@ -45,7 +48,24 @@ class _BasePasswordLookup:
         self.settings = settings
 
     async def is_account_locked_async(self, user_id: str) -> bool:
-        return await self.cache_service.exists_async(_locked_key(user_id))
+        """Mirrors `DjangoUserRepository.is_account_locked()` exactly — that one checks the cache
+        key FIRST, then falls back to `UserDB.is_locked`/`locked_until` (the administrative lock
+        set by `POST /admin/users/{id}/lock/`). This adapter was missing that fallback entirely
+        (found empirically: an admin-locked user could still log in fine against this backend,
+        confirmed by comparing against the Django view's real behavior, not assumed) — the cache
+        key only ever covers the AUTOMATIC failed-attempts lockout (`record_failed_login_async`
+        below), never the administrative one. Queries `UserDB` directly via the repository's own
+        session rather than through `get_by_id()` — the agnostic `User` port dataclass
+        (`ports/repositories.py`) has no `is_locked`/`locked_until` fields at all."""
+        if await self.cache_service.exists_async(_locked_key(user_id)):
+            return True
+        db_user = await self.user_repo.session.get(UserDB, user_id)
+        if db_user is None or not db_user.is_locked or not db_user.locked_until:
+            return False
+        locked_until = db_user.locked_until
+        if locked_until.tzinfo is None:
+            locked_until = locked_until.replace(tzinfo=timezone.utc)
+        return locked_until > datetime.now(timezone.utc)
 
     async def check_password_async(self, user_id: str, password: str) -> bool:
         user = await self.user_repo.get_by_id(user_id)

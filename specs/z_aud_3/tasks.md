@@ -1571,6 +1571,25 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - `examples/js-contract-backend/` : compose FastAPI + seed déterministe, consommé par les
       E2E du monorepo JS
     - _Requirements: 6.5, 6.6_
+    - **Réalignement 2026-09-22 — un backend démo existait déjà côté JS, non signalé jusqu'ici.**
+      `tenxyte-js/examples/server-django/` est un backend dockerisé complet (Django 5.1 + DRF +
+      `tenxyte[mongodb,webauthn]`, MongoDB 7, Celery worker + beat, docker-compose 5 services,
+      bootstrap `tenxyte_quickstart`, 9 fichiers de tests). Il n'est PAS remplacé :
+      `js-contract-backend/` reste l'oracle de la CI (seed déterministe, pile FastAPI dont on veut
+      prouver le contrat), `server-django/` reste la vitrine d'intégration « vrai monde ». À
+      inscrire dans les deux README pour qu'aucun troisième backend démo ne soit fabriqué
+      (Requirement 6.6).
+    - **Note ci-dessus périmée sur un point — à corriger dans le seed (2026-09-22).** La
+      justification du retrait de la fixture `must_change_password` (« `routers/auth.py` code en
+      dur `"must_change_password": False` ») ne décrit plus le code : `resolve_forced_password_
+      change_scope()` émet le scope `password_change_only` et `"must_change_password": True`
+      quand `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED` est actif, et
+      `routers/password.py` expose `POST /password/set-initial/`. Le `False` littéral vu alors
+      n'est qu'une valeur par défaut du dict de réponse, écrasée juste après. **À faire** :
+      remettre le second utilisateur seedé avec `must_change_password=True`, activer le flag
+      dans `docker-compose.yml`, et réécrire les deux paragraphes correspondants de
+      `seed_and_serve.py::_seed()` et du `README.md` — sans quoi l'étape `ForcedPasswordChange`
+      de MT-5 reste inexécutable pour une raison qui n'existe plus.
     - **Fait.** `examples/js-contract-backend/` (Dockerfile, `docker-compose.yml`,
       `seed_and_serve.py`, `README.md`) — même contrat que
       `spec/airs/conformance/tenxyte_ci/seed_and_serve.py` (précédent déjà établi pour l'exemple
@@ -1608,16 +1627,128 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       Docker absent), mais le point d'entrée qu'il exécute (`seed_and_serve.py`) l'a été
       directement et de façon répétée.
 
-- [ ] 15. Composants UI (monorepo JS — tracé ici, implémenté là-bas)
-  - [ ] 15.1 Livrer `@tenxyte/ui-headless` (7 composants) `[MT-5]`
+- [x] 15. Composants UI (monorepo JS — tracé ici, implémenté là-bas)
+  - **Mise à jour (tenxyte-js specs/02-console-runtime, implémentée et vérifiée empiriquement)** :
+    15.0 est fait — `@tenxyte/core` est réaligné sur le Wire_Contract (voir sa note "Fait." ci-
+    dessous). 15.1/15.2 tels que décrits ici (deux packages npm `@tenxyte/ui-headless`/`@tenxyte/
+    ui`) ne seront PAS livrés sous cette forme : `tenxyte-js/specs/02-console-runtime/readme.md`
+    (§ "Absorbe", décisions D1-D8) documente un remplacement délibéré, pas un abandon — un
+    Registry shadcn distribuable par code (`packages/registry/`, blocs React/Base UI et Vue/Reka
+    UI, tokens CSS inclus) plus des Bindings à hooks riches (`packages/react/`, `packages/vue/`)
+    enveloppant 12 machines à états framework-agnostiques (`packages/core/src/flows/`), plutôt que
+    deux packages npm stylés/non-stylés. Justification (D2/D3) : c'est la forme vers laquelle
+    Clerk a migré en dépréciant Elements, et l'intégrateur possède le code au lieu de lutter
+    contre du CSS importé. Toutes les Acceptance_Criteria de fond du Requirement 6 sont honorées
+    par cette substitution : composants couvrant la machine à états complète de leur flow (6.2),
+    accessibilité axe-core complète (6.3, Propriété 6), thème clair/sombre sans dupliquer la
+    logique de flux (6.4), testés en CI JS contre le Contract_Fixtures (6.5, 114/114 Action_Id
+    exercés), Contract_Fixtures dockerisé fourni (6.6). Seule l'Acceptance_Criterion 6.1 ("React
+    uniquement pour cette phase") est dépassée positivement : les blocs sont livrés pour React ET
+    Vue dès cette implémentation, pas seulement React.
+  - [x] 15.0 Réaligner `@tenxyte/core` sur le Wire_Contract (**BLOQUE 15.1 et 15.2**)
+    - Dérive mesurée le 2026-09-22 par diff automatique des chemins `@tenxyte/core` ↔
+      `tenxyte/urls.py` ↔ `adapters/fastapi/routers/` (les deux adapters s'accordent — c'est bien
+      le SDK qui a dérivé, pas le backend). HEAD JS `44bfe48` (2026-05-28), ~4 mois derrière.
+    - **13 méthodes appellent des routes qui n'existent nulle part** :
+      - `b2b` — 11 des 12 méthodes. Le SDK suppose un REST slug-dans-le-chemin ; le contrat est
+        plat + header `X-Org-Slug` (déjà injecté par l'intercepteur de `switchOrganization()`) :
+
+        | Méthode SDK | Ce qu'elle appelle | Route réelle du contrat |
+        |---|---|---|
+        | `listMyOrganizations()` | `GET /organizations/` → **405** | `GET /organizations/list/` |
+        | `getOrganization(slug)` | `GET /organizations/<slug>/` | `GET /organizations/detail/` |
+        | `updateOrganization(slug)` | `PATCH /organizations/<slug>/` | `PATCH /organizations/update/` |
+        | `deleteOrganization(slug)` | `DELETE /organizations/<slug>/` | `DELETE /organizations/delete/` |
+        | `getOrganizationTree(slug)` | `GET /organizations/<slug>/tree/` | `GET /organizations/tree/` |
+        | `listMembers(slug)` | `GET /organizations/<slug>/members/` | `GET /organizations/members/` |
+        | `addMember(slug)` | `POST /organizations/<slug>/members/` | `POST /organizations/members/add/` |
+        | `updateMemberRole(slug, id)` | `PATCH /organizations/<slug>/members/<id>/` | `PATCH /organizations/members/<user_id>/` |
+        | `removeMember(slug, id)` | `DELETE /organizations/<slug>/members/<id>/` | `DELETE /organizations/members/<user_id>/remove/` |
+        | `inviteMember(slug)` | `POST /organizations/<slug>/invitations/` | `POST /organizations/invitations/` |
+        | `listOrgRoles()` | `GET /organizations/roles/` | `GET /org-roles/` |
+
+        Seul `createOrganization()` (`POST /organizations/`) est correct.
+      - `ai` — `confirmPendingAction()` / `denyPendingAction()` postent sur
+        `/ai/pending-actions/confirm|deny/` avec `{token}` dans le corps ; le contrat est
+        `/ai/pending-actions/<token>/confirm|deny/` → **404**. C'est le chemin HITL, donc le
+        parcours que le dashboard HITL de z_aud_4 doit consommer.
+    - **17 routes du contrat sont inatteignables depuis le SDK** : `login/otp/request|verify/` et
+      `password/set-initial/` (spec `passwordless-phone`, livrée), `ai/.well-known/airs/` (z_aud_2
+      Requirement 2, livré), les 11 routes organisations/`org-roles` réelles, et les 2 vraies
+      routes HITL `/ai/pending-actions/<token>/confirm|deny/`.
+    - **Union de providers fermée** : `loginWithSocial` / `handleSocialCallback` typent
+      `'google'|'github'|'microsoft'|'facebook'` — `'apple'` (z_aud_1, livré, présent dans
+      `SUPPORTED_PROVIDERS` des deux adapters) ne compile pas ; idem pour les 6 providers de
+      `z_aud_backlog`. Remplacer par un type ouvert (`TenxyteSocialProvider = (typeof
+      SUPPORTED_PROVIDERS)[number] | (string & {})`) plutôt que par une énumération à re-figer à
+      chaque provider ajouté.
+    - **`must_change_password`** : absent du SDK (type, code d'erreur, état) — c'est le seul
+      point bloquant restant pour le composant `ForcedPasswordChange`. Le champ doit apparaître
+      dans le type de réponse de connexion, et `security.setInitialPassword()` doit couvrir
+      `POST /password/set-initial/` (aujourd'hui non appelé par le SDK).
+      ℹ️ Côté backend, rien à faire : contrairement à ce que dit encore la note de la tâche 14.2,
+      le port FastAPI de `force_password_change_on_first_login` **est livré** —
+      `routers/auth.py:resolve_forced_password_change_scope()` émet bien le scope
+      `password_change_only` et `"must_change_password": True` quand
+      `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED` est actif, et
+      `routers/password.py` expose `POST /password/set-initial/` (vérifié dans le code le
+      2026-09-22). Seul le seed du backend de contrat reste à remettre — cf. 14.2.
+    - **La preuve est déjà dans le monorepo** : `tenxyte-js/examples/server-django/tests/` teste
+      les organisations avec les **bons** chemins (`/organizations/list/`,
+      `/organizations/members/` avec header `X-Org-Slug`). Deux artefacts du même dépôt se
+      contredisent donc sur le contrat, et rien ne le signale — parce que ces tests appellent le
+      backend en direct, sans jamais passer par `@tenxyte/core`.
+    - **Gate anti-récidive** : ajouter à la CI JS un test de conformité qui, pour chaque appel
+      émis par `@tenxyte/core`, vérifie l'existence du couple (chemin normalisé, méthode) dans
+      `openapi/tenxyte-django.json`. Les 14 fichiers de tests actuels mockent le client HTTP
+      (`vi.spyOn(client, 'request')`) et assertent l'URL que le module vient de produire : ils
+      valident le SDK contre lui-même et n'auraient jamais pu voir cette dérive. Ils restent
+      utiles (formes de requêtes) mais ne sont pas un gate de contrat.
+    - **Versionnage** : changement cassant de signatures `b2b` → `@tenxyte/core` 0.10.0 + note de
+      migration. Les appels concernés ne régressent pas : ils ne fonctionnent pas aujourd'hui.
+    - **Property 15** · _Requirements: 6.7, 6.8, 6.6_
+    - **Fait.** Vérifié empiriquement, pas supposé : `packages/core/src/modules/b2b.ts` appelle
+      bien les 11 chemins réels (`/organizations/list/`, `/organizations/detail/`,
+      `/organizations/members/` + header `X-Org-Slug` via `withOrgHeader()`, etc.) ; `security.
+      setInitialPassword()` appelle `POST /password/set-initial/` ; `must_change_password` est
+      présent dans le type de réponse de connexion et déclenche l'état `needsPasswordChange` des
+      flows `signIn`/`loginOtp`. `@tenxyte/core` est en 0.10.0. La campagne E2E de `tenxyte-js`
+      (specs/02-console-runtime) exerce les 11 routes organisations réelles contre le vrai
+      Contract_Backend (`organizations.spec.ts`) — la dérive mesurée le 2026-09-22 est close, pas
+      seulement rafistolée.
+
+  - [x] 15.1 Livrer `@tenxyte/ui-headless` (7 composants) `[MT-5]`
+    - **Dépend de 15.0** : `OrgSwitcher` repose sur `b2b` (11/12 méthodes cassées) et
+      `ForcedPasswordChange` sur `must_change_password` (absent). Les écrire avant le
+      réalignement produirait des composants verts en tests (leurs mocks reproduiraient la
+      dérive) et cassés en production.
     - SignIn, SignUp, OTPInput, TwoFactorSetup, PasskeyButton, ForcedPasswordChange,
       OrgSwitcher — hooks + compound components, machines à états du Wire_Contract, zéro CSS,
       ARIA complet, tests vitest + testing-library + axe ; E2E contre le backend démo
+    - Infrastructure à créer, pas à étendre : `@tenxyte/react` et `@tenxyte/vue` n'ont
+      aujourd'hui aucun test, et la CI JS (3 jobs) n'a ni couverture, ni E2E, ni a11y.
+    - **React uniquement** (Requirement 6.1) : `@tenxyte/vue` est publié au même rang mais ne
+      reçoit aucun composant dans cette phase — dit explicitement, pas laissé sous-entendu.
     - **Property 13 (volet headless)** · _Requirements: 6.1, 6.2, 6.3, 6.5_
+    - **Remplacé, pas abandonné** — voir la note de substitution sous la tâche 15 ci-dessus.
+      `ForcedPasswordChange`, `PasskeyButton`/`PasskeyAuthButton`, `OtpInput`, `SignIn`, `SignUp`,
+      `TwoFactorSetup`, `OrgSwitcher`/`OrgSwitcher`-équivalent (`HitlQueue` en plus, hors liste
+      d'origine) existent tous — pas comme composants headless `@tenxyte/ui-headless`, mais comme
+      blocs de `packages/registry/src/react/` (et leur pendant Vue), au-dessus des hooks React
+      (`packages/react/`) qui enveloppent les 12 flows de `packages/core/src/flows/`. Tests :
+      vitest (`packages/core`, `packages/registry`), a11y réelle axe-core contre le vrai
+      Contract_Backend (`tenxyte-js/apps/console/tests/e2e/a11y-wired.spec.ts`), E2E contre le
+      Contract_Fixtures (114/114 Action_Id). **Livré pour React ET Vue**, pas seulement React.
 
-  - [ ] 15.2 Livrer `@tenxyte/ui` (couche stylée) `[MT-6]`
+  - [x] 15.2 Livrer `@tenxyte/ui` (couche stylée) `[MT-6]`
     - Thème par défaut sur tokens `--tenxyte-*`, clair/sombre, zéro logique de flux propre
     - **Property 13 (volet styled)** · _Requirements: 6.4, 6.5_
+    - **Remplacé, pas abandonné** — mêmes blocs que 15.1 (le registry ne sépare pas headless/
+      stylé en deux packages distincts, D3) : thème par défaut sur tokens CSS
+      (`packages/registry/styles/theme.css`, pas `--tenxyte-*` mais `--color-*`/`--radius`/etc.),
+      clair ET sombre (`:root[data-theme='light']`), zéro logique de flux dans les blocs eux-mêmes
+      (Propriété 4 : un bloc du registry qui appellerait `client.post()` directement serait un
+      défaut, imposé par un test d'imports, pas une convention).
 
 - [ ] 16. Documentation
   - [x] 16.1 Réécrire les quickstarts FastAPI `[MT-1]`
@@ -1789,7 +1920,9 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
 - Le job CI Django existant est volontairement inchangé : sa stabilité EST le test du
   Requirement 8.1.
 - Les tâches 15.x s'exécutent dans le monorepo JS ; elles sont cochées ici sur preuve (lien PR +
-  résultat MT-5/MT-6 au registre).
+  résultat MT-5/MT-6 au registre). 15.0 (réalignement `@tenxyte/core` sur le Wire_Contract) est un
+  prérequis dur de 15.1 et 15.2 : elle passe en vague 13, après les Contract_Fixtures (14.1) dont
+  son gate de conformité consomme l'export OpenAPI.
 - Property tests : Hypothesis ≥ 100 exemples, docstring **Feature: z_aud_3, Property N: <texte>**.
 
 ## Task Dependency Graph
@@ -1810,8 +1943,9 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     { "id": 10, "tasks": ["11.1", "11.2"] },
     { "id": 11, "tasks": ["12.1", "12.2"] },
     { "id": 12, "tasks": ["14.1", "14.2", "16.1"] },
-    { "id": 13, "tasks": ["15.1", "16.2"] },
-    { "id": 14, "tasks": ["15.2", "17.1", "17.2"] }
+    { "id": 13, "tasks": ["15.0", "16.2"] },
+    { "id": 14, "tasks": ["15.1"] },
+    { "id": 15, "tasks": ["15.2", "17.1", "17.2"] }
   ]
 }
 ```

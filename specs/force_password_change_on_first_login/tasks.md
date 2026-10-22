@@ -185,3 +185,26 @@ tâche pour le portage FastAPI.
   ]
 }
 ```
+
+## Couverture SDK JS (réalignement 2026-09-22)
+
+Deux constats mesurés sur le monorepo `tenxyte-js` et l'adapter FastAPI, qui conditionnent
+l'usage client de cette fonctionnalité :
+
+1. **`@tenxyte/core` ignore `must_change_password`** — le champ n'apparaît nulle part dans le SDK
+   (ni type, ni code d'erreur, ni état). Un client JS ne peut donc pas distinguer une connexion
+   nominale d'une connexion exigeant le changement de mot de passe, ni appeler
+   `POST /password/set-initial/` (non couvert par le SDK non plus).
+2. **Le port FastAPI, lui, est livré** — contrairement à ce qu'affirme encore la note de z_aud_3
+   tâche 14.2 (écrite sur un état antérieur du code),
+   `adapters/fastapi/routers/auth.py::resolve_forced_password_change_scope()` émet bien le scope
+   `password_change_only` et `"must_change_password": True` quand
+   `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED` est actif, et
+   `adapters/fastapi/routers/password.py` expose `POST /password/set-initial/` (vérifié dans le
+   code le 2026-09-22). Le `"must_change_password": False` littéral qu'on y lit est la valeur par
+   défaut du dict de réponse, écrasée juste après par le bloc de gating. La fonctionnalité est
+   donc à parité sur les deux adapters.
+
+Conséquence pour z_aud_3 : le composant `ForcedPasswordChange` du périmètre UI est bloqué par le
+seul point 1 (corrigé en **tâche 15.0**), plus la remise en place de la fixture seedée du backend
+de contrat (**tâche 14.2**) pour que l'étape correspondante de MT-5 soit exécutable.

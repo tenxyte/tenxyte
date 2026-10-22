@@ -34,8 +34,25 @@ par des invariants CI (Requirement 8.3 via revue + Property 3 ; Requirement 5.1 
 - **Contrat** : `endpoints.md` (EN/FR) validé en CI par `scripts/validate_endpoints.py` ;
   snapshots de forme (`test_endpoint_response_shape_snapshots.py`) ; spec canonique
   (`test_canonical_spec.py`) — matière première directe de la Contract_Suite.
-- **SDK JS** : `@tenxyte/core|react|vue` documentés (hooks/logique), monorepo externe, zéro
-  composant UI.
+- **SDK JS** (monorepo `tenxyte-js`, mesuré le 2026-09-22 — HEAD `44bfe48` du 2026-05-28) :
+  `@tenxyte/core` 0.9.5 (10 modules, 85 appels d'endpoints, 14 fichiers vitest / 140 `it()`),
+  `@tenxyte/react` et `@tenxyte/vue` 0.5.5 (Provider/plugin + 4 hooks/composables, **zéro test** —
+  la CI JS n'y fait que `typecheck` + `build`), zéro composant UI. Déjà présents : 5 exemples dont
+  `examples/server-django/` (backend démo dockerisé Django+MongoDB+Celery, 9 fichiers de tests).
+  CI JS : 3 jobs, ni couverture, ni E2E, ni a11y, aucun test contre un vrai backend.
+- **Dérive SDK ↔ Wire_Contract** (diff automatique chemins `@tenxyte/core` ↔ `tenxyte/urls.py` ↔
+  `adapters/fastapi/routers/`) : **13 méthodes du SDK visent des routes inexistantes sur les deux
+  adapters** — 11 des 12 méthodes de `b2b` (le SDK suppose un REST slug-dans-le-chemin là où le
+  contrat est plat + header `X-Org-Slug`, et `listMyOrganizations()` fait `GET /organizations/`
+  quand le backend n'y expose que `POST` → 405), plus `confirmPendingAction`/`denyPendingAction`
+  qui postent sur `/ai/pending-actions/confirm|deny/` avec le token dans le corps au lieu de
+  `/ai/pending-actions/<token>/confirm|deny/`. **17 routes du contrat** ne sont atteignables par
+  aucune méthode (`login/otp/*`, `password/set-initial/`, `ai/.well-known/airs/`, les 11 routes
+  organisations/`org-roles` réelles, et les 2 vraies routes HITL). L'union de providers est fermée sur
+  `'google'|'github'|'microsoft'|'facebook'` — `'apple'` (z_aud_1, livré) ne compile pas.
+  `must_change_password` est absent du SDK. Cause racine : les 14 fichiers de tests mockent le
+  client HTTP (`vi.spyOn(client, 'request')`) et assertent l'URL que le module vient de produire —
+  un test auto-référentiel ne peut pas voir une dérive de contrat.
 - **Packaging** (post-`z_aud_1`) : `[fastapi]` extra = fastapi, uvicorn, sqlalchemy,
   python-multipart, pydantic — à compléter (aiosqlite, asyncpg optionnel, alembic, throttling).
 
@@ -72,6 +89,7 @@ flowchart TB
     end
 
     subgraph JS["Monorepo JS externe"]
+        SDKFIX["@tenxyte/core RÉALIGNÉ<br/>13 méthodes corrigées + 17 routes<br/>PRÉREQUIS BLOQUANT"]
         HEADLESS["@tenxyte/ui-headless<br/>7 composants, 0 CSS, ARIA"]
         STYLED["@tenxyte/ui<br/>thème tokens CSS"]
     end
@@ -85,6 +103,8 @@ flowchart TB
     PM --> DJ & RTRS
     CS --> DJ & RTRS
     FIX --> DJ & RTRS
+    SDKFIX -->|conformité chemins CI JS| FIX
+    HEADLESS --> SDKFIX
     HEADLESS -->|E2E CI JS| FIX
     STYLED --> HEADLESS
 ```
@@ -206,6 +226,36 @@ interdit les motifs — appel d'attribut figurant dans la liste des méthodes de
 `requests.<verbe>`, `time.sleep`, `open(` hors bloc `to_thread` — et échoue avec fichier:ligne.
 Liste des motifs maintenue en tête du script, faux positifs contournables par un commentaire
 `# async-purity: ignore[raison]` (chaque usage revu).
+
+### Décision de conception : réaligner `@tenxyte/core` AVANT d'écrire les composants UI
+
+Les composants headless ne parlent jamais HTTP directement : ils orchestrent les méthodes de
+`@tenxyte/core` (D6/D7). Le SDK est donc leur socle, et ce socle diverge aujourd'hui du
+Wire_Contract sur 13 méthodes. Deux composants du périmètre en dépendent frontalement :
+
+| Composant | Ce qu'il appelle | État réel |
+|---|---|---|
+| `OrgSwitcher` | `b2b.listMyOrganizations()`, `b2b.getOrganization()`, `b2b.switchOrganization()` | `listMyOrganizations()` → **405** (`GET /organizations/` n'existe pas, seul `POST` y est monté), `getOrganization()` → **404** ; 11 méthodes `b2b` sur 12 sont dans ce cas |
+| `ForcedPasswordChange` | l'état `must_change_password: true` renvoyé au login, puis `POST /password/set-initial/` | Le champ **et** l'endpoint sont absents du SDK. Côté backend, rien ne manque : le port FastAPI est livré (`resolve_forced_password_change_scope()`, `routers/password.py`) — seul le seed du backend de contrat reste à remettre (tâche 14.2) |
+
+D'où la règle : **la tâche 15.0 (réalignement du SDK) précède 15.1**, et la Property 15 la garde
+fermée. Construire l'UI d'abord produirait des composants « verts » en tests (leurs mocks
+reproduiraient la dérive) et cassés en production — la dérive actuelle a été produite exactement
+comme ça.
+
+Le réalignement est un **changement cassant** de `@tenxyte/core` (signatures `b2b` : le `slug`
+passe du chemin au header `X-Org-Slug`, déjà injecté par l'intercepteur existant
+`switchOrganization()`). Il est donc livré en **0.10.0** avec une note de migration, plutôt que
+masqué en patch : les appels concernés ne peuvent pas « régresser », ils ne fonctionnent pas.
+
+### Décision de conception : un seul backend de contrat, deux backends démo
+
+`examples/js-contract-backend/` (ce repo, FastAPI, seed déterministe, ligne JSON de connexion sur
+stdout) est l'**oracle de la CI JS**. `tenxyte-js/examples/server-django/` (Django + MongoDB +
+Celery, docker-compose 5 services) reste la **vitrine d'intégration** : seed non déterministe, pile
+choisie pour la démonstration et non pour la preuve. Les deux README le disent explicitement, pour
+que la prochaine personne qui cherche « un backend pour tester le JS » n'en fabrique pas un
+troisième.
 
 ### Décision de conception : UI headless — la machine à états vient du contrat
 
@@ -341,6 +391,14 @@ imports de `@tenxyte/ui` montre que toute logique de flux provient de `ui-headle
 direct à `@tenxyte/core` pour les machines à états). *(Vérifié dans la CI du monorepo JS.)*
 
 **Validates: Requirements 6.1, 6.4**
+
+### Property 15: Les chemins du SDK JS existent dans le contrat
+
+Pour chaque appel HTTP émis par `@tenxyte/core` (chemin normalisé + méthode), il existe une entrée
+correspondante dans `openapi/tenxyte-django.json`. Vérifié par un gate de la CI du monorepo JS
+consommant l'export versionné — aucun mock n'intervient dans cette vérification.
+
+**Validates: Requirements 6.7, 6.6**
 
 ### Property 14: Non-régression Django totale
 

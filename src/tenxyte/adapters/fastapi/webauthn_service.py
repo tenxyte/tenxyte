@@ -83,8 +83,13 @@ def _get_webauthn():
         ) from exc
 
 
-def _origin(rp_id: str) -> str:
-    """Mirrors `WebAuthnService._get_origin()` exactly."""
+def _origin(settings: Any, rp_id: str) -> str:
+    """Mirrors `WebAuthnService._get_origin()` exactly, including its `webauthn_rp_origin`
+    override for frontends not served from the bare `rp_id`-derived origin (e.g. a dev server on
+    a non-standard port) — `py_webauthn` compares `clientDataJSON.origin` for strict equality."""
+    rp_origin = getattr(settings, "webauthn_rp_origin", None)
+    if rp_origin:
+        return rp_origin
     if rp_id == "localhost":
         return "http://localhost"
     return f"https://{rp_id}"
@@ -145,6 +150,18 @@ async def begin_registration_async(
                 webauthn.helpers.structs.PublicKeyCredentialDescriptor(id=webauthn.helpers.base64url_to_bytes(cid))
                 for cid in existing_ids
             ],
+            # `resident_key=PREFERRED` (not left unset): without this, no `authenticatorSelection`
+            # is ever sent and browsers/authenticators default to a NON-discoverable credential,
+            # which makes `/webauthn/authenticate/begin/`'s own usernameless (no-email) path —
+            # exactly what `/auth/passkey` (no email field) relies on — permanently unable to find
+            # any credential. Found while writing the first real E2E test for this ceremony (CDP
+            # virtual authenticator with `hasResidentKey: true` still produced a non-discoverable
+            # credential without this hint). `PREFERRED` (not `REQUIRED`) keeps non-resident-
+            # capable authenticators (e.g. older security keys) registrable for the password-change
+            # 2FA-equivalent use case, which doesn't need discoverability.
+            authenticator_selection=webauthn.helpers.structs.AuthenticatorSelectionCriteria(
+                resident_key=webauthn.helpers.structs.ResidentKeyRequirement.PREFERRED,
+            ),
         )
         return {"challenge_id": challenge.id, "options": webauthn.options_to_json(options)}, None
     except Exception:
@@ -180,7 +197,7 @@ async def complete_registration_async(
             credential=credential_data,
             expected_challenge=challenge.challenge.encode(),
             expected_rp_id=settings.webauthn_rp_id,
-            expected_origin=_origin(settings.webauthn_rp_id),
+            expected_origin=_origin(settings, settings.webauthn_rp_id),
         )
     except Exception as e:  # noqa: BLE001
         logger.warning("WebAuthn registration verification failed: %s", e)
@@ -289,7 +306,7 @@ async def complete_authentication_async(
             credential=credential_data,
             expected_challenge=challenge.challenge.encode(),
             expected_rp_id=settings.webauthn_rp_id,
-            expected_origin=_origin(settings.webauthn_rp_id),
+            expected_origin=_origin(settings, settings.webauthn_rp_id),
             credential_public_key=_b64_decode(stored_credential.public_key),
             credential_current_sign_count=stored_credential.sign_count,
         )

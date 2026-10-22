@@ -266,8 +266,20 @@ directions.
 ## MT-5 — `@tenxyte/ui-headless` dans une app React neuve
 
 **Couvre :** Requirements 6.1, 6.2, 6.3 · **Tâche :** 15.1
-**Prérequis :** backend démo (`examples/js-contract-backend/`) up ; Node 20+ ; packages headless
-publiés (TestNpm/npm ou `npm pack` local).
+**Prérequis :** **tâche 15.0 close** (sans elle, l'étape 3 `OrgSwitcher` échoue en 404/405 et
+l'étape 2 `must_change_password` est inatteignable — ce ne sont pas des défauts de composants
+mais la dérive SDK mesurée) ; backend démo (`examples/js-contract-backend/`) up ; Node 20+ ;
+`@tenxyte/core` ≥ 0.10.0 et packages headless publiés (TestNpm/npm ou `npm pack` local).
+
+> ⚠️ **Le backend de contrat doit être re-seedé avant MT-5.** Son seed ne contient pas
+> d'utilisateur `must_change_password=True` : la fixture avait été retirée en tâche 14.2 au motif
+> que `routers/auth.py` codait en dur `"must_change_password": False`. **Ce motif n'est plus
+> valide** — vérifié dans le code le 2026-09-22, `resolve_forced_password_change_scope()` émet
+> bien le scope `password_change_only` et `"must_change_password": True`, et
+> `POST /password/set-initial/` est exposé. Avant de dérouler l'étape 2, remettre l'utilisateur
+> seedé et activer `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED` dans le
+> `docker-compose.yml` du backend de contrat (action tracée en tâche 14.2). Ne pas marquer
+> l'étape PASS sur un backend dont le flag est éteint : il renverra `False` quoi qu'il arrive.
 
 ### Procédure
 
@@ -292,7 +304,8 @@ propre. Consigner les versions exactes des packages testés.
 ## MT-6 — `@tenxyte/ui` : revue visuelle et thèmes
 
 **Couvre :** Requirement 6.4 · **Tâche :** 15.2
-**Prérequis :** MT-5 PASS ; `@tenxyte/ui` publié.
+**Prérequis :** MT-5 PASS (y compris la résolution documentée de sa limite
+`must_change_password`) ; `@tenxyte/ui` publié.
 
 ### Procédure
 

@@ -35,10 +35,63 @@
     → Le chantier async = généraliser le pattern jwt_service aux ports
       et aux services restants, PAS une réécriture.
 
-  SDK JS :
-    * Docs présentes (docs/en/integration/javascript/: core, react, vue) ;
-      packages @tenxyte/core, @tenxyte/react, @tenxyte/vue dans le monorepo
-      JS externe. Aucun composant UI (hooks/logique seulement).
+  SDK JS (monorepo tenxyte-js — inventaire mesuré le 2026-09-22, HEAD
+  44bfe48 du 2026-05-28, soit ~4 mois derrière le repo Python) :
+    * @tenxyte/core 0.9.5 : 10 modules (auth, security, rbac, user, b2b, ai,
+      applications, admin, gdpr, dashboard), ~3 600 LOC src, 85 appels
+      d'endpoints, interceptors (auth, refresh silencieux, device_info,
+      retry, cookieMode), 3 storages, 14 fichiers de tests vitest / 140 it().
+    * @tenxyte/react 0.5.5 et @tenxyte/vue 0.5.5 : Provider/plugin + 4
+      hooks/composables (useAuth, useUser, useOrganization, useRbac).
+      ZÉRO test — la CI n'y fait que `typecheck` + `build`.
+    * Aucun composant UI : le constat de l'audit est CONFIRMÉ.
+    * Docs présentes côté Python (docs/en/integration/javascript/: core,
+      react, vue).
+    * Exemples déjà présents dans le monorepo : vanilla-ts (SPA de démo, 9
+      pages : login, register, dashboard, settings, admin, organizations,
+      applications, ai-assistant, oauth-callback), react, vue, node-express,
+      et server-django (backend démo dockerisé Django+MongoDB+Celery, 9
+      fichiers de tests pytest) — cf. § 7 pour l'impact sur le backend de contrat.
+    * CI JS : 3 jobs (core lint+test+build ; react build ; vue build).
+      Pas de couverture, pas d'E2E, pas d'a11y, aucun test contre un
+      vrai backend.
+
+  SDK JS — DÉRIVE DE CONTRAT MESURÉE (diff automatique des chemins
+  @tenxyte/core ↔ tenxyte/urls.py ↔ adapters/fastapi/routers/, 2026-09-22) :
+    * 13 méthodes du SDK appellent des routes qui n'existent sur AUCUN des
+      deux adapters :
+      - b2b : 11 méthodes sur 12. Le SDK suppose un REST slug-dans-le-chemin
+        (GET/PATCH/DELETE /organizations/<slug>/, .../members/,
+        .../members/<id>/, .../tree/, .../invitations/, /organizations/roles/)
+        alors que le contrat réel est plat + header X-Org-Slug
+        (/organizations/detail|update|delete|tree|members|members/add|
+        members/<id>|members/<id>/remove|invitations/, et /org-roles/).
+        listMyOrganizations() fait en plus GET /organizations/ → 405, le
+        backend n'y exposant que POST. Seul createOrganization() fonctionne.
+      - ai : confirmPendingAction / denyPendingAction postent sur
+        /ai/pending-actions/confirm|deny/ avec {token} dans le corps, alors
+        que le contrat est /ai/pending-actions/<token>/confirm|deny/ → 404.
+        C'est le chemin HITL — cœur du différenciateur AIRS (z_aud_2) et du
+        produit monétisable (dashboard HITL, z_aud_4).
+    * 17 routes du contrat ne sont atteignables par aucune méthode du SDK,
+      dont login/otp/request|verify/ et password/set-initial/ (spec
+      passwordless-phone, livrée), ai/.well-known/airs/ (z_aud_2 Req. 2,
+      livré), les 11 routes organisations/org-roles réelles et les 2 vraies
+      routes HITL /ai/pending-actions/<token>/confirm|deny/.
+    * loginWithSocial / handleSocialCallback typent le provider en union
+      fermée 'google'|'github'|'microsoft'|'facebook' : 'apple' (z_aud_1,
+      livré, présent dans SUPPORTED_PROVIDERS des deux adapters) ne compile
+      pas côté TypeScript — les 6 providers de z_aud_backlog non plus.
+    * must_change_password n'existe nulle part dans le SDK (ni type, ni code
+      d'erreur, ni état) — c'est pourtant le prérequis du composant
+      ForcedPasswordChange du périmètre UI.
+    * POURQUOI ça n'a pas été vu : les 14 fichiers de tests mockent le client
+      HTTP (`vi.spyOn(client, 'request')`) puis assertent la chaîne d'URL que
+      le module vient de produire. Un test qui vérifie que le SDK s'appelle
+      lui-même correctement ne peut structurellement pas détecter une dérive
+      de contrat. C'est exactement le trou que les Contract_Fixtures
+      (Requirements 6.5/6.6) sont censées fermer — ce qui en fait un
+      PRÉREQUIS des composants UI, pas une retombée.
 
 ---------------------------------------------------------------------------
 
@@ -137,15 +190,42 @@
     * Backend démo docker (examples/js-contract-backend/) consommé par la
       CI du monorepo JS pour ses tests E2E.
 
+    Deux backends démo, pas un : le monorepo JS a DÉJÀ examples/server-django/
+    (Django + MongoDB + Celery, docker-compose 5 services, seed via
+    tenxyte_quickstart, 10 fichiers pytest). Il reste la vitrine « vrai monde »
+    des exemples ; il n'est PAS le backend de contrat, car son seed n'est pas
+    déterministe et sa stack n'est pas celle dont on veut prouver le contrat.
+    Le backend de contrat de la CI JS reste examples/js-contract-backend/
+    (FastAPI, seed déterministe, ligne JSON de connexion sur stdout). À écrire
+    explicitement dans les deux README pour que personne n'en fabrique un
+    troisième.
+
     Côté monorepo JS (spécifié ici, implémenté là-bas) :
+    * PRÉREQUIS BLOQUANT — réaligner @tenxyte/core sur le Wire_Contract avant
+      d'écrire une seule ligne d'UI : 13 méthodes cassées (11/12 de b2b, 2 de
+      ai/HITL), 17 routes non couvertes, union de providers fermée excluant
+      'apple', must_change_password absent (détail § « DÉRIVE DE CONTRAT
+      MESURÉE » ci-dessus). OrgSwitcher est impossible sans la correction b2b ;
+      ForcedPasswordChange est impossible sans must_change_password. Livrer des
+      composants par-dessus un SDK qui ne parle pas au backend reviendrait à
+      empiler de l'UI sur un 404.
+    * Les tests par mock d'URL doivent être doublés — pas remplacés — par une
+      vérification de conformité des chemins contre l'export OpenAPI
+      (openapi/tenxyte-django.json), en CI JS. C'est le seul gate qui empêche
+      la dérive de se reformer.
     * @tenxyte/ui-headless : SignIn, SignUp, OTPInput, TwoFactorSetup,
       PasskeyButton, ForcedPasswordChange, OrgSwitcher — hooks + composants
       React sans style, ARIA complet, gestion des états (loading, erreurs
       par code, 2FA requis, must_change_password, HITL le cas échéant).
+      React seul : @tenxyte/vue existe et est publié au même rang, mais rien
+      dans cette phase ne lui livre d'équivalent — à dire explicitement plutôt
+      qu'à laisser croire (cf. Hors périmètre du readme).
     * @tenxyte/ui : couche stylée (tokens CSS custom properties, thème
       clair/sombre) au-dessus de ui-headless.
     * Tests : vitest + testing-library + axe-core (a11y) ; E2E Playwright
-      contre le backend démo.
+      contre le backend démo. À noter : @tenxyte/react et @tenxyte/vue n'ont
+      aujourd'hui AUCUN test et la CI JS n'a ni couverture ni E2E — cette
+      infrastructure est à créer, pas à étendre.
 
   8. Documentation
 

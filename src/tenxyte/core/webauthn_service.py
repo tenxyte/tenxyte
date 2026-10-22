@@ -211,9 +211,14 @@ class WebAuthnService:
         self.rp_id = getattr(settings, "webauthn_rp_id", "localhost")
         self.rp_name = getattr(settings, "webauthn_rp_name", "Tenxyte")
         self.enabled = getattr(settings, "webauthn_enabled", True)
+        self.rp_origin = getattr(settings, "webauthn_rp_origin", None)
 
     def _get_origin(self) -> str:
-        """Get origin URL for WebAuthn."""
+        """Get origin URL for WebAuthn. Honors an explicit `webauthn_rp_origin` override (needed
+        when the frontend isn't served from the bare `rp_id`-derived origin, e.g. a dev server on
+        a non-standard port)."""
+        if self.rp_origin:
+            return self.rp_origin
         if self.rp_id == "localhost":
             return "http://localhost"
         return f"https://{self.rp_id}"
@@ -263,6 +268,14 @@ class WebAuthnService:
                 user_display_name=display_name or email,
                 challenge=raw_challenge.encode(),
                 exclude_credentials=[webauthn.PublicKeyCredentialDescriptor(id=cid.encode()) for cid in existing_ids],
+                # See the FastAPI adapter's mirrored `begin_registration_async` for why this is
+                # needed: without it, no `authenticatorSelection` is sent and the credential ends
+                # up non-discoverable, which breaks any usernameless (no-email) authentication
+                # flow relying on it. `PREFERRED`, not `REQUIRED`, to keep non-resident-capable
+                # authenticators registrable.
+                authenticator_selection=webauthn.helpers.structs.AuthenticatorSelectionCriteria(
+                    resident_key=webauthn.helpers.structs.ResidentKeyRequirement.PREFERRED,
+                ),
             )
 
             return (

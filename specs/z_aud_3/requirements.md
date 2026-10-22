@@ -73,7 +73,12 @@ Tout est additif côté Django et côté API sync du Core.
   `TwoFactorSetup`, `PasskeyButton`, `ForcedPasswordChange`, `OrgSwitcher`.
 - **Contract_Fixtures** : les livrables de ce repo consommés par la CI JS — export OpenAPI
   versionné des deux adapters (`openapi/`) et backend démo docker
-  (`examples/js-contract-backend/`).
+  (`examples/js-contract-backend/`), seul oracle de la CI JS.
+- **Core_SDK** : le package npm `@tenxyte/core` (monorepo `tenxyte-js`) — client HTTP,
+  interceptors et 10 modules d'appel ; socle obligatoire du Headless_Package.
+- **SDK_Drift** : l'écart mesuré le 2026-09-22 entre les appels émis par le Core_SDK et le
+  Wire_Contract — 13 méthodes visant des routes inexistantes, 17 routes du contrat inatteignables,
+  union de providers fermée excluant `apple`, `must_change_password` absent.
 - **Core** : la couche framework-agnostic existante (`tenxyte.core` / `tenxyte.ports`).
 - **Existing_Public_Contract** : l'ensemble des endpoints, formats, réglages, migrations et
   comportements existants avant cette phase — incluant toutes les signatures sync du Core.
@@ -201,8 +206,10 @@ plus reconstruire les écrans d'auth à chaque projet.
 
 #### Acceptance Criteria
 
-1. THE Headless_Package SHALL provide the UI_Component_Set as unstyled React components and hooks
-   built on the existing `@tenxyte/core` SDK, emitting zero CSS.
+1. THE Headless_Package SHALL provide the UI_Component_Set as unstyled **React** components and
+   hooks built on the existing `@tenxyte/core` SDK, emitting zero CSS. Vue is explicitly out of
+   scope for this phase even though `@tenxyte/vue` is published at equal rank (see readme
+   § Hors périmètre) — no component of the UI_Component_Set is delivered for it here.
 2. EVERY component of the UI_Component_Set SHALL handle the full state machine of its flow as
    defined by the Wire_Contract: loading, field-level validation errors, error codes
    (`2FA_REQUIRED`, `ACCOUNT_LOCKED`, `OTP_INVALID`, `must_change_password: true`…), and success.
@@ -214,7 +221,20 @@ plus reconstruire les écrans d'auth à chaque projet.
    (E2E), so that a Wire_Contract change breaks the JS build visibly.
 6. THE repo SHALL provide the Contract_Fixtures: a versioned OpenAPI export of both adapters
    (with a CI check that both exports describe the same contract for shared endpoints) and a
-   dockerized demo backend for JS E2E tests.
+   dockerized demo backend for JS E2E tests. THE dockerized demo backend of the Contract_Fixtures
+   (`examples/js-contract-backend/`) SHALL be the single oracle of the JS CI; the pre-existing
+   `tenxyte-js/examples/server-django/` SHALL remain an integration showcase and SHALL be
+   documented as such in both READMEs.
+7. BEFORE any component of the UI_Component_Set is implemented, `@tenxyte/core` SHALL be realigned
+   on the Wire_Contract: every HTTP call it emits SHALL match an existing route of both adapters,
+   and a JS CI gate SHALL enforce this against the versioned OpenAPI export (Property 15). The
+   drift measured on 2026-09-22 — 13 methods targeting non-existent routes (11 of the 12 `b2b`
+   methods, plus `confirmPendingAction`/`denyPendingAction`), 17 contract routes unreachable from
+   the SDK, a social-provider union type excluding `apple`, and `must_change_password` absent —
+   SHALL be closed, since `OrgSwitcher` and `ForcedPasswordChange` are unimplementable without it.
+8. WHEN the realignment of acceptance criterion 7 changes a public signature of `@tenxyte/core`,
+   THEN it SHALL ship as a minor version bump (0.10.0) with a written migration note, rather than
+   as a silent patch.
 
 ### Requirement 7: Documentation
 

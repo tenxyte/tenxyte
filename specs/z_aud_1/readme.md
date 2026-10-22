@@ -86,6 +86,13 @@ Les faiblesses adressées par cette phase sont :
       (MT-5, droits owner PyPI requis).
 - [ ] Login Apple E2E validé manuellement (voir `manual_tests.md` §3, MT-3) — nécessite un compte
       Apple Developer réel ; logique unitairement + property-testée (mocks) côté code.
+- [ ] **Apple atteignable depuis le SDK JS** (résiduel découvert le 2026-09-22 en analysant le
+      monorepo `tenxyte-js`) : `apple` est bien dans `SUPPORTED_PROVIDERS` des deux adapters, mais
+      `@tenxyte/core` type `loginWithSocial` / `handleSocialCallback` sur l'union fermée
+      `'google'|'github'|'microsoft'|'facebook'` — un utilisateur TypeScript ne peut donc pas
+      appeler le provider livré par cette phase sans casser la compilation. Correctif tracé en
+      **z_aud_3 tâche 15.0** (type ouvert plutôt qu'énumération à re-figer à chaque provider) ;
+      rien à changer dans le paquet Python.
 - [x] `docs/en/stability.md` + `docs/fr/stability.md` publiés.
 - [x] Modèle de menaces + périmètre d'audit livrés dans `docs/security-audit/`.
 - [x] `pyproject.toml` : version `1.0.0`, classifieur `Development Status :: 5 - Production/Stable`.
