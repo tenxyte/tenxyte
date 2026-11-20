@@ -88,6 +88,22 @@ async def _handle_tenxyte_error(request: Request, exc: TenxyteAPIError) -> JSONR
     )
 
 
+_REQUEST_PARTS = frozenset({"body", "query", "path", "header", "cookie"})
+
+
+def _validation_details(errors: list[dict[str, Any]]) -> dict[str, list[str]]:
+    """Pydantic's error list -> the `{field: [messages]}` object DRF's `serializer.errors` gives the
+    Django_Adapter (and that `ERROR_RESPONSE_SCHEMA` documents: `details` is a string or an
+    object, never an array). Found in tenxyte-js MT-2 (2026-10-26): the raw list reached the SDK,
+    which keys field errors by name, so no field-level message ever reached a form. Errors not
+    tied to a field (malformed body) go under DRF's own `non_field_errors` key."""
+    details: dict[str, list[str]] = {}
+    for err in errors:
+        path = [str(part) for part in err.get("loc", ()) if part not in _REQUEST_PARTS]
+        details.setdefault(".".join(path) or "non_field_errors", []).append(str(err.get("msg", "")))
+    return details
+
+
 async def _handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
     """422 (FastAPI/Pydantic's native validation failure) -> canonical 400, per design.md's error
     table — parity with the Django_Adapter's `{"error": "Validation error", "details": ...}`.
@@ -105,7 +121,9 @@ async def _handle_validation_error(request: Request, exc: RequestValidationError
     value `exc.errors()` might carry to a JSON-safe representation."""
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
-        content=_canonical_body("Validation error", "VALIDATION_ERROR", details=jsonable_encoder(exc.errors())),
+        content=_canonical_body(
+            "Validation error", "VALIDATION_ERROR", details=_validation_details(jsonable_encoder(exc.errors()))
+        ),
     )
 
 

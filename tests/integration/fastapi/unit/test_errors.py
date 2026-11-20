@@ -96,7 +96,18 @@ def test_property_9_wrong_content_type_is_canonical_not_a_500(client):
     body = response.json()
     _assert_canonical_shape(body)
     assert body["code"] == "VALIDATION_ERROR"
-    assert isinstance(body["details"][0]["input"], str)  # not raw bytes — jsonable_encoder ran
+    # not raw bytes — jsonable_encoder ran, and details is DRF's {field: [messages]} object
+    assert all(isinstance(m, str) for msgs in body["details"].values() for m in msgs)
+
+
+def test_property_9_validation_details_are_keyed_by_field(client):
+    """`details` mirrors the Django_Adapter's `serializer.errors` (`{field: [messages]}`), not
+    Pydantic's raw list — the SDK maps field errors by name (tenxyte-js MT-2, 2026-10-26)."""
+    response = client.post("/echo", json={"email": "x@example.com", "age": "not-a-number"})
+    details = response.json()["details"]
+    assert isinstance(details, dict)
+    assert list(details) == ["age"]
+    assert all(isinstance(m, str) for m in details["age"])
 
 
 def test_property_9_unknown_route_404_is_canonical(client):
