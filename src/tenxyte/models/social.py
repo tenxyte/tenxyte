@@ -56,7 +56,7 @@ class SocialConnection(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = "social_connections"
+        db_table = "tenxyte_social_connections"
         unique_together: ClassVar[list] = [("provider", "provider_user_id")]
 
     def __str__(self):

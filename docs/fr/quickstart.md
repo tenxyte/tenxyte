@@ -17,7 +17,7 @@
 ## 1. Installation
 
 ```bash
-pip install tenxyte
+pip install tenxyte[django]
 ```
 
 ## 2. Configuration du fichier `settings.py`
@@ -74,6 +74,25 @@ Cette commande unique exécute :
 | `--no-app` | Ignorer la création de l'Application par défaut |
 | `--app-name "Mon App"` | Nom personnalisé pour l'Application par défaut |
 
+`python manage.py tenxyte_quickstart` est la façon idiomatique de lancer ceci pour un vrai projet
+Django (vous avez déjà un `manage.py`). Si vous comparez/testez les deux adaptateurs côte à côte,
+ou que vous n'avez pas de `manage.py` sous la main, `python -m tenxyte.adapters.django.quickstart`
+exécute exactement la même commande — l'équivalent côté Django du style d'invocation de
+`python -m tenxyte.adapters.fastapi.quickstart` — et accepte les trois mêmes options :
+
+```bash
+python -m tenxyte.adapters.django.quickstart
+```
+
+Pas besoin de `DJANGO_SETTINGS_MODULE=...` devant, lancé depuis la racine de votre projet : il est
+auto-détecté, dans l'ordre, depuis une variable d'environnement OS déjà définie, un fichier `.env`,
+ou le `manage.py` de votre projet (analysé, jamais exécuté). Ne le définissez explicitement que si
+rien de tout ça ne s'applique :
+
+```bash
+DJANGO_SETTINGS_MODULE=monprojet.settings python -m tenxyte.adapters.django.quickstart
+```
+
 ## 4. Créer un Compte Administrateur
 
 Certaines fonctionnalités et vues (comme le panneau d'administration Django ou la configuration RBAC) nécessitent un compte administrateur. Vous pouvez créer votre super-utilisateur initial à l'aide de la commande standard de Django :
@@ -83,6 +102,15 @@ python manage.py createsuperuser
 ```
 
 Suivez les instructions pour définir votre e-mail et votre mot de passe. Ce compte est créé avec `is_staff=True` et `is_superuser=True`, vous accordant un accès complet à tous les points de terminaison, y compris l'interface intégrée `http://localhost:8000/admin/`.
+
+`python -m tenxyte.adapters.django.createsuperuser` exécute exactement la même commande Django,
+inchangée (`DJANGO_SETTINGS_MODULE` auto-détecté de la même façon que le quickstart de l'étape 3)
+— l'équivalent côté Django du style d'invocation de
+`python -m tenxyte.adapters.fastapi.createsuperuser` :
+
+```bash
+python -m tenxyte.adapters.django.createsuperuser
+```
 
 ## ✅ Prêt !
 

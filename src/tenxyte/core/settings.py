@@ -303,11 +303,40 @@ class Settings:
         return self._get("BREACH_CHECK_ENABLED", True)
 
     @property
+    def breach_check_reject(self) -> bool:
+        """Whether a breach-check hit hard-rejects the password (True) or is only reported back
+        to the caller for it to decide (False) — used by the FastAPI_Adapter's password/change/
+        (spec z_aud_3, Wave B)."""
+        return self._get("BREACH_CHECK_REJECT", True)
+
+    @property
     def bcrypt_rounds(self) -> int:
         """Bcrypt cost factor for password hashing (also used for the dummy
         hash computed by AuthenticationService's timing-attack mitigation —
         must stay in sync with real password hashing cost)."""
         return self._get("BCRYPT_ROUNDS", 12)
+
+    @property
+    def otp_login_validity_minutes(self) -> int:
+        """Validity window for a passwordless-login OTP code (spec z_aud_3, Wave C) — the only
+        OTP expiry that's actually settings-driven in the Django_Adapter's own implementation;
+        email/phone-verification and password-reset OTP validity are hardcoded literals there
+        (15/10/15 minutes respectively) despite unused OTP_EMAIL_VALIDITY/OTP_PHONE_VALIDITY
+        settings existing — not replicated here since porting dead config would be pointless."""
+        return self._get("OTP_LOGIN_VALIDITY_MINUTES", 10)
+
+    @property
+    def otp_login_enabled(self) -> bool:
+        """Whether passwordless login via SMS OTP is enabled (spec z_aud_3, Wave C) — defaults
+        off, same as the Django_Adapter's `auth_settings.OTP_LOGIN_ENABLED`."""
+        return self._get("OTP_LOGIN_ENABLED", False)
+
+    @property
+    def otp_login_auto_register(self) -> bool:
+        """Whether `login/otp/request/` auto-creates a passwordless account for an unknown phone
+        number (spec z_aud_3, Wave C) — mirrors `auth_settings.OTP_LOGIN_AUTO_REGISTER` (default
+        on)."""
+        return self._get("OTP_LOGIN_AUTO_REGISTER", True)
 
     # ============================================================
     # 2FA Settings
@@ -409,8 +438,12 @@ class Settings:
 
     @property
     def webauthn_enabled(self) -> bool:
-        """Whether WebAuthn is enabled."""
-        return self._get("WEBAUTHN_ENABLED", True)
+        """Whether WebAuthn is enabled — mirrors `conf.social`'s own `WEBAUTHN_ENABLED` (default
+        `False`, opt-in — it needs the `webauthn` extra installed). Fixed from a stale `True`
+        default here (spec z_aud_3, Wave G, task 12.1): this property predates any real consumer
+        on either adapter — Django's own conf module has always defaulted it off, so `True` here
+        was a pre-existing mismatch nothing had surfaced yet, not a deliberate divergence."""
+        return self._get("WEBAUTHN_ENABLED", False)
 
     @property
     def webauthn_rp_id(self) -> str:
@@ -423,6 +456,15 @@ class Settings:
         return self._get("WEBAUTHN_RP_NAME", "Tenxyte")
 
     @property
+    def webauthn_rp_origin(self) -> str | None:
+        """Explicit override for the expected WebAuthn origin (e.g. `http://localhost:5180` for a
+        dev server on a non-standard port). `py_webauthn` compares `clientDataJSON.origin` for
+        strict equality, so the default `rp_id`-derived origin (`http://localhost` / `https://
+        {rp_id}`, no port) only works when the frontend is actually served from that exact origin.
+        `None` (default) keeps the derived behavior unchanged."""
+        return self._get("WEBAUTHN_RP_ORIGIN", None)
+
+    @property
     def magic_link_enabled(self) -> bool:
         """Whether Magic Link authentication is enabled."""
         return self._get("MAGIC_LINK_ENABLED", True)
@@ -431,6 +473,188 @@ class Settings:
     def magic_link_expiry_minutes(self) -> int:
         """Magic link expiry time in minutes."""
         return self._get("MAGIC_LINK_EXPIRY_MINUTES", 15)
+
+    # ============================================================
+    # Force Password Change Settings (feature: force_password_change_on_first_login)
+    # ============================================================
+
+    @property
+    def force_password_change_on_first_login_enabled(self) -> bool:
+        """Whether a `must_change_password=True` account gets a restricted
+        `password_change_only`-scoped token at login/refresh instead of a full-scope one —
+        mirrors `conf.auth.AuthSettingsMixin`'s own `FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED`
+        (default `False`, opt-in — additive, same as the Django_Adapter's own default)."""
+        return self._get("FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED", False)
+
+    # ============================================================
+    # Social Auth Settings (spec z_aud_3, Wave G, task 12.1) — mirrors tenxyte.conf.social's
+    # defaults exactly (the client id/secret/key properties mirror Django's own `getattr(settings,
+    # "X", "")` pattern — a plain deployment secret, not a `conf`-namespaced setting there either).
+    # ============================================================
+
+    @property
+    def social_providers(self) -> list[str]:
+        """Enabled OAuth2 providers — mirrors `SOCIAL_PROVIDERS` (default: all five)."""
+        return self._get("SOCIAL_PROVIDERS", ["google", "github", "microsoft", "facebook", "apple"])
+
+    @property
+    def social_auto_merge_accounts(self) -> bool:
+        """Whether a social login with a verified email matching an existing local account is
+        auto-linked, or refused (asking the user to log in with email/password first to link
+        explicitly) — mirrors `SOCIAL_AUTO_MERGE_ACCOUNTS` (default `False`, a deliberate security
+        default per Django's own "R-05 Mitigation" comment in `social_auth_service.py`)."""
+        return self._get("SOCIAL_AUTO_MERGE_ACCOUNTS", False)
+
+    @property
+    def google_client_id(self) -> str:
+        return self._get("GOOGLE_CLIENT_ID", "")
+
+    @property
+    def google_client_secret(self) -> str:
+        return self._get("GOOGLE_CLIENT_SECRET", "")
+
+    @property
+    def github_client_id(self) -> str:
+        return self._get("GITHUB_CLIENT_ID", "")
+
+    @property
+    def github_client_secret(self) -> str:
+        return self._get("GITHUB_CLIENT_SECRET", "")
+
+    @property
+    def microsoft_client_id(self) -> str:
+        return self._get("MICROSOFT_CLIENT_ID", "")
+
+    @property
+    def microsoft_client_secret(self) -> str:
+        return self._get("MICROSOFT_CLIENT_SECRET", "")
+
+    @property
+    def facebook_app_id(self) -> str:
+        return self._get("FACEBOOK_APP_ID", "")
+
+    @property
+    def facebook_app_secret(self) -> str:
+        return self._get("FACEBOOK_APP_SECRET", "")
+
+    @property
+    def apple_client_id(self) -> str:
+        """Apple Services ID (OAuth client_id, e.g. `com.example.app.signin`)."""
+        return self._get("APPLE_CLIENT_ID", "")
+
+    @property
+    def apple_team_id(self) -> str:
+        return self._get("APPLE_TEAM_ID", "")
+
+    @property
+    def apple_key_id(self) -> str:
+        """Key ID of the Sign in with Apple private key (`.p8`)."""
+        return self._get("APPLE_KEY_ID", "")
+
+    @property
+    def apple_private_key(self) -> str:
+        """PEM content of the `.p8` private key — never a file path, the content itself."""
+        return self._get("APPLE_PRIVATE_KEY", "")
+
+    @property
+    def social_google_scopes(self) -> str:
+        return self._get("SOCIAL_GOOGLE_SCOPES", "openid email profile")
+
+    @property
+    def social_github_scopes(self) -> str:
+        return self._get("SOCIAL_GITHUB_SCOPES", "read:user user:email")
+
+    @property
+    def social_microsoft_scopes(self) -> str:
+        return self._get("SOCIAL_MICROSOFT_SCOPES", "openid email profile")
+
+    @property
+    def social_facebook_scopes(self) -> str:
+        return self._get("SOCIAL_FACEBOOK_SCOPES", "email,public_profile")
+
+    # ============================================================
+    # GDPR Settings (spec z_aud_3, Wave G chunk 3) — mirrors the one setting
+    # `AccountDeletionService` actually reads (`getattr(settings,
+    # "TENXYTE_ACCOUNT_DELETION_GRACE_PERIOD_DAYS", 30)`).
+    # ============================================================
+
+    @property
+    def account_deletion_grace_period_days(self) -> int:
+        """Days between a confirmed deletion request and account soft-deletion."""
+        return self._get("ACCOUNT_DELETION_GRACE_PERIOD_DAYS", 30)
+
+    # ============================================================
+    # AIRS Settings (spec z_aud_3, Wave F) — mirrors tenxyte.conf.airs's defaults exactly.
+    # ============================================================
+
+    @property
+    def airs_enabled(self) -> bool:
+        """Whether AIRS (AI agent delegation) is enabled."""
+        return self._get("AIRS_ENABLED", True)
+
+    @property
+    def airs_token_max_lifetime(self) -> int:
+        """Hard cap, in seconds, on an Agent Token's requested expiry."""
+        return self._get("AIRS_TOKEN_MAX_LIFETIME", 86400)
+
+    @property
+    def airs_default_expiry(self) -> int:
+        """Default Agent Token lifetime, in seconds, when `expires_in` isn't requested."""
+        return self._get("AIRS_DEFAULT_EXPIRY", 3600)
+
+    @property
+    def airs_require_explicit_permissions(self) -> bool:
+        """Whether Agent Token issuance must request at least one explicit permission."""
+        return self._get("AIRS_REQUIRE_EXPLICIT_PERMISSIONS", True)
+
+    @property
+    def airs_circuit_breaker_enabled(self) -> bool:
+        """Whether circuit-breaker guardrails (rate/total/failure thresholds) are enforced."""
+        return self._get("AIRS_CIRCUIT_BREAKER_ENABLED", True)
+
+    @property
+    def airs_default_max_rpm(self) -> int:
+        """Default max requests per minute for a newly issued Agent Token."""
+        return self._get("AIRS_DEFAULT_MAX_RPM", 60)
+
+    @property
+    def airs_default_max_total(self) -> int:
+        """Default max total requests over an Agent Token's lifetime."""
+        return self._get("AIRS_DEFAULT_MAX_TOTAL", 1000)
+
+    @property
+    def airs_default_max_failures(self) -> int:
+        """Default max failed requests before an Agent Token is suspended for anomaly."""
+        return self._get("AIRS_DEFAULT_MAX_FAILURES", 10)
+
+    @property
+    def airs_budget_tracking_enabled(self) -> bool:
+        """Whether usage-cost accumulation and budget-triggered suspension are enforced."""
+        return self._get("AIRS_BUDGET_TRACKING_ENABLED", False)
+
+    @property
+    def airs_confirmation_required(self) -> list[str]:
+        """Permission codes that always require HITL confirmation, even when the caller doesn't
+        explicitly request it — used by `require_agent_clearance` (task 9.2)."""
+        return self._get("AIRS_CONFIRMATION_REQUIRED", [])
+
+    # ============================================================
+    # Organizations feature-flag (spec z_aud_3, Wave E) — org_role_inheritance/org_max_depth/
+    # org_max_members already existed above (see "Organization Settings" section); this is the
+    # one org setting that section didn't have yet.
+    # ============================================================
+
+    @property
+    def organizations_enabled(self) -> bool:
+        """Whether the Organizations feature (Parity_Group E) is enabled — mirrors
+        `org_settings.ORGANIZATIONS_ENABLED` (default `False`). Read once at app-factory time
+        (`app.py`'s `_build_router`), not per-request — same as Django, whose org URLs are only
+        ever registered into `urlpatterns` if this was `True` when `urls.py` first loaded, so a
+        disabled deployment 404s on `/organizations/*` rather than returning a JSON
+        `ORG_FEATURE_DISABLED` body (that body only exists for the case Django's own decorators
+        defend against defensively: the setting flipping after urlconf load, which can't actually
+        happen within one running process)."""
+        return self._get("ORGANIZATIONS_ENABLED", False)
 
 
 # Global settings instance (will be initialized by framework adapters)

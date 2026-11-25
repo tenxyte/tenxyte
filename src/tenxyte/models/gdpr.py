@@ -71,7 +71,7 @@ class AccountDeletionRequest(models.Model):
     )
 
     class Meta:
-        db_table = "account_deletion_requests"
+        db_table = "tenxyte_account_deletion_requests"
         ordering: ClassVar[list] = ["-requested_at"]
         indexes: ClassVar[list] = [
             models.Index(fields=["user", "status"]),

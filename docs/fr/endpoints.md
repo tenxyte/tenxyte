@@ -160,11 +160,19 @@ Enregistrer un nouvel utilisateur.
   "first_name": "Jean",
   "last_name": "Dupont",
   "login": false,
+  "must_change_password": false,
   "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
 `email` ou `phone_country_code` + `phone_number` est requis.
 `login` : Si vrai, renvoie des jetons JWT pour une connexion immédiate.
+`must_change_password` : Si vrai, le compte est créé avec `must_change_password=true` — le
+prochain login émettra un jeton restreint `password_change_only` au lieu d'un jeton full-scope,
+tant que `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True` (voir
+[Force Password Change on First Login](#force-password-change-on-first-login)). Une alternative
+en un seul appel à l'inscription suivie d'un appel à l'endpoint admin `PATCH`. Combiner ce champ
+avec `login: true` renvoie quand même un jeton restreint, pas un jeton full-scope — l'émission
+immédiate du jeton passe par le même gating qu'une connexion normale.
 `device_info` : Informations optionnelles sur l'empreinte numérique de l'appareil (device fingerprinting).
 
 **Réponse `201` :**
@@ -213,6 +221,15 @@ Si `login: true` dans la requête, inclut également :
   "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop"
+}
+```
+
+Si `login: true` ET `must_change_password: true` dans la requête (et que la fonctionnalité est
+activée), l'`access_token` est restreint à la place, et la réponse porte en plus :
+```json
+{
+  "token_scope": "password_change_only",
+  "must_change_password": true
 }
 ```
 
@@ -980,14 +997,17 @@ Rafraîchir le jeton d'accès.
 ---
 
 ### `POST /logout/`
-Déconnexion (révoque le jeton de rafraîchissement + met le jeton d'accès sur liste noire).
+Déconnexion (révoque le jeton de rafraîchissement s'il est fourni, et/ou met le jeton d'accès de
+l'en-tête `Authorization` sur liste noire s'il est fourni). Au moins l'un des deux est requis — un
+client qui ne détient qu'un jeton d'accès (par exemple le jeton bootstrap `2fa_setup_only`, qui
+n'émet jamais de jeton de rafraîchissement) peut se déconnecter en n'envoyant que l'en-tête.
 
 **Requête :**
 ```json
 { "refresh_token": "eyJ..." }
 ```
 
-**En-têtes (optionnels) :**
+**En-têtes (requis si `refresh_token` est omis) :**
 ```
 Authorization: Bearer <access_token>
 ```
@@ -999,10 +1019,10 @@ Authorization: Bearer <access_token>
 
 > **Mode cookie :** Lorsque `TENXYTE_REFRESH_TOKEN_COOKIE_ENABLED=True`, le serveur efface également le cookie du jeton de rafraîchissement via `Set-Cookie` avec `max-age=0`.
 
-**Réponse `400` (Jeton de rafraîchissement manquant) :**
+**Réponse `400` (Ni refresh_token ni en-tête Authorization fournis) :**
 ```json
 {
-  "error": "refresh_token is required",
+  "error": "refresh_token or an Authorization header is required",
   "code": "MISSING_REFRESH_TOKEN"
 }
 ```
@@ -5090,8 +5110,38 @@ Tenxyte inclut un ensemble complet de points de terminaison pour la sécurité d
 | `GET` | `/ai/pending-actions/` | Lister les actions en attente (human-in-the-loop) |
 | `POST` | `/ai/pending-actions/<id>/approve/` | Approuver une action en attente |
 | `POST` | `/ai/pending-actions/<id>/reject/` | Rejeter une action en attente |
+| `GET` | `/ai/.well-known/airs/` | Document de découverte AIRS (non authentifié) |
 
 → Voir le [Guide AIRS](airs.md) pour la documentation complète des requêtes/réponses, les niveaux d'habilitation et la gestion du cycle de vie des agents.
+
+### `GET /ai/.well-known/airs/`
+
+Document de découverte non authentifié pour la [spécification ouverte AIRS/1.0](../../spec/airs/AIRS-1.0.md). Retourne la version de la spécification, les niveaux de conformité réellement appliqués par ce serveur, une carte des endpoints AIRS et les limites configurées — des capacités uniquement, jamais de données utilisateur ou de token.
+
+**Réponse `200` :**
+```json
+{
+  "airs_version": "1.0",
+  "conformance": ["core", "hitl", "guards", "trace"],
+  "endpoints": {
+    "tokens": "/api/v1/auth/ai/tokens/",
+    "heartbeat": "/api/v1/auth/ai/tokens/{id}/heartbeat/",
+    "report_usage": "/api/v1/auth/ai/tokens/{id}/report-usage/",
+    "pending_actions": "/api/v1/auth/ai/pending-actions/"
+  },
+  "limits": { "token_max_lifetime": 86400, "default_expiry": 3600 }
+}
+```
+
+`conformance` reflète les settings réels : `core`/`hitl`/`trace` sont présents dès que `TENXYTE_AIRS_ENABLED` est vrai ; `guards` uniquement si `TENXYTE_AIRS_CIRCUIT_BREAKER_ENABLED` est vrai ; `budget` uniquement si `TENXYTE_AIRS_BUDGET_TRACKING_ENABLED` est vrai.
+
+**Réponse `404` (`TENXYTE_AIRS_ENABLED = False`) :**
+```json
+{
+  "error": "This feature is not enabled",
+  "code": "FEATURE_DISABLED"
+}
+```
 
 ---
 
@@ -5108,7 +5158,13 @@ Cette fonctionnalité force un utilisateur à définir ou changer son mot de pas
 
 ### Flux
 
-**1. L'admin provisionne le compte :**
+**1. Provisionner le compte** — soit dès l'inscription en un seul appel :
+```http
+POST /api/v1/auth/register/
+
+{ "email": "user@example.com", "password": "TempPass123!", "must_change_password": true }
+```
+soit sur un compte existant via l'API admin :
 ```http
 PATCH /api/v1/auth/admin/users/<id>/
 Authorization: Bearer <jeton_admin>

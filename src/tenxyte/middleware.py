@@ -376,9 +376,16 @@ class AgentTokenMiddleware:
                     prompt_trace_id = None
 
             if auth_settings.AUDIT_LOGGING_ENABLED:
+                # Use agent_token.triggered_by rather than request.user: DRF's APIView.dispatch()
+                # unconditionally calls perform_authentication(), which touches request.user and,
+                # since JWTAuthentication doesn't recognize the AgentBearer scheme, resets it to
+                # AnonymousUser via DRF's Request.user setter — which also writes back onto this
+                # same underlying HttpRequest. By the time we get here, request.user not the
+                # delegating user we set above, and passing it to AuditLog.log's User foreign
+                # keys raised ValueError (a 500 on every successful agent mutation).
                 AuditLog.log(
                     action="suspicious_activity" if request.method == "DELETE" else "agent_action",
-                    user=request.user,
+                    user=agent_token.triggered_by,
                     ip_address=request.META.get("REMOTE_ADDR"),
                     user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
                     application=getattr(request, "application", None),
@@ -389,7 +396,7 @@ class AgentTokenMiddleware:
                         "status_code": response.status_code,
                     },
                     agent_token=agent_token,
-                    on_behalf_of=request.user,
+                    on_behalf_of=agent_token.triggered_by,
                     prompt_trace_id=prompt_trace_id,
                 )
 

@@ -1,0 +1,10 @@
+# Parity_Matrix exclusions (spec z_aud_3, Requirement 4.5) — justified, permanent gaps between
+# the Django_Adapter and the FastAPI_Adapter. Every entry needs a non-empty `reason`; an endpoint
+# that's simply not ported YET (its Parity_Group hasn't shipped) does NOT belong here — it shows
+# up as "pending" in the parity table and only fails CI once its group is named in --groups. This
+# file is for endpoints that will never be ported, or must diverge for a documented reason.
+#
+# [[exclusion]]
+# endpoint = "GET /admin/django-specific/"
+# reason = "Django admin integration, not applicable outside Django"
+

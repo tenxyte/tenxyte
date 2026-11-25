@@ -70,6 +70,7 @@ from .views.agent_views import (
     AgentTokenRevokeAllView,
     AgentTokenRevokeView,
     AgentTokenSuspendView,
+    AIRSDiscoveryView,
 )
 from .views.dashboard_views import (
     DashboardAuthView,
@@ -206,7 +207,7 @@ urlpatterns = [
     ),
     path("webauthn/credentials/", WebAuthnCredentialListView.as_view(), name="webauthn_credential_list"),
     path(
-        "webauthn/credentials/<int:credential_id>/",
+        "webauthn/credentials/<str:credential_id>/",
         WebAuthnCredentialDeleteView.as_view(),
         name="webauthn_credential_delete",
     ),
@@ -218,11 +219,16 @@ urlpatterns = [
     path("dashboard/organizations/", DashboardOrganizationsView.as_view(), name="dashboard_organizations"),
     # Agent / AIRS
     path("ai/tokens/", AgentTokenListCreateView.as_view(), name="agent_token_list_create"),
-    path("ai/tokens/<int:pk>/", AgentTokenDetailView.as_view(), name="agent_token_detail"),
-    path("ai/tokens/<int:pk>/revoke/", AgentTokenRevokeView.as_view(), name="agent_token_revoke"),
-    path("ai/tokens/<int:pk>/suspend/", AgentTokenSuspendView.as_view(), name="agent_token_suspend"),
-    path("ai/tokens/<int:pk>/heartbeat/", AgentTokenHeartbeatView.as_view(), name="agent_token_heartbeat"),
+    # `revoke-all/` must stay registered before `<str:pk>/` below -- unlike the old `<int:pk>`
+    # (which could never match a literal segment), Django's `str` path converter matches any
+    # non-empty, slash-free segment, so it would otherwise swallow "revoke-all" as a `pk` value
+    # and route here to the wrong view (found via a real regression: POST revoke-all/ started
+    # 405'ing once `<int:pk>` was changed to `<str:pk>` for the UUID PK migration).
     path("ai/tokens/revoke-all/", AgentTokenRevokeAllView.as_view(), name="agent_token_revoke_all"),
+    path("ai/tokens/<str:pk>/", AgentTokenDetailView.as_view(), name="agent_token_detail"),
+    path("ai/tokens/<str:pk>/revoke/", AgentTokenRevokeView.as_view(), name="agent_token_revoke"),
+    path("ai/tokens/<str:pk>/suspend/", AgentTokenSuspendView.as_view(), name="agent_token_suspend"),
+    path("ai/tokens/<str:pk>/heartbeat/", AgentTokenHeartbeatView.as_view(), name="agent_token_heartbeat"),
     path("ai/pending-actions/", AgentPendingActionListView.as_view(), name="agent_pending_action_list"),
     path(
         "ai/pending-actions/<str:token>/confirm/",
@@ -232,7 +238,8 @@ urlpatterns = [
     path(
         "ai/pending-actions/<str:token>/deny/", AgentPendingActionDenyView.as_view(), name="agent_pending_action_deny"
     ),
-    path("ai/tokens/<int:pk>/report-usage/", AgentTokenReportUsageView.as_view(), name="agent_token_report_usage"),
+    path("ai/tokens/<str:pk>/report-usage/", AgentTokenReportUsageView.as_view(), name="agent_token_report_usage"),
+    path("ai/.well-known/airs/", AIRSDiscoveryView.as_view(), name="airs_discovery"),
 ]
 
 # =============================================
@@ -268,8 +275,8 @@ if org_settings.ORGANIZATIONS_ENABLED:
         # Members
         path("organizations/members/", list_members, name="list_members"),
         path("organizations/members/add/", add_member, name="add_member"),
-        path("organizations/members/<int:user_id>/", update_member_role, name="update_member_role"),
-        path("organizations/members/<int:user_id>/remove/", remove_member, name="remove_member"),
+        path("organizations/members/<str:user_id>/", update_member_role, name="update_member_role"),
+        path("organizations/members/<str:user_id>/remove/", remove_member, name="remove_member"),
         # Invitations
         path("organizations/invitations/", invite_member, name="invite_member"),
         # Organization Roles

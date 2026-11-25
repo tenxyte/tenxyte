@@ -9,7 +9,10 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from tenxyte.core.settings import Settings
 
+from tenxyte.core.env_provider import get_env_or_dotenv
 from tenxyte.core.settings import SettingsProvider
+
+_UNSET = object()
 
 
 class DjangoSettingsProvider(SettingsProvider):
@@ -44,11 +47,14 @@ class DjangoSettingsProvider(SettingsProvider):
 
     def get(self, name: str, default: Any = None) -> Any:
         """
-        Get a setting value from Django settings.
+        Get a setting value, applying the unified priority (both adapters, see
+        `core/env_provider.py`'s module docstring): Django `settings.py` (Adapter_Custom) > OS
+        environment variable > `.env` file > `default` — the caller (`Settings._get()`) applies
+        its own preset tier beneath whatever this returns, same as before this tier existed.
 
         Args:
             name: Full setting name (e.g., 'TENXYTE_JWT_SECRET_KEY')
-            default: Default value if setting not found
+            default: Default value if setting not found anywhere
 
         Returns:
             The setting value or default
@@ -57,6 +63,10 @@ class DjangoSettingsProvider(SettingsProvider):
 
         if hasattr(settings, name):
             return getattr(settings, name)
+
+        env_value = get_env_or_dotenv(name, _UNSET)
+        if env_value is not _UNSET:
+            return env_value
 
         return default
 

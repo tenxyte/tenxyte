@@ -5,6 +5,7 @@ Framework-agnostic credential verification (identifier + password), including a
 timing-attack mitigation for account enumeration via login response latency.
 """
 
+import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
@@ -141,6 +142,58 @@ class AuthenticationService:
 
         if not self.user_lookup.check_password(user.id, password):
             self.user_lookup.record_failed_login(user.id)
+            return AuthResult(success=False, error="Invalid credentials", failure_reason="invalid_password")
+
+        return AuthResult(success=True, user=user)
+
+    async def _run_dummy_check_async(self, password: str) -> None:
+        await asyncio.to_thread(self._run_dummy_check, password)
+
+    async def authenticate_async(self, identifier: object, password: str) -> AuthResult:
+        """
+        Async twin of `authenticate` (JWT_Async_Pattern): each `PasswordUserLookup` operation
+        uses its native `*_async` sibling when the lookup provides one (detected via `hasattr` —
+        e.g. a SQLAlchemy-backed lookup built on `AsyncSession`), otherwise bridges the sync
+        method through `asyncio.to_thread`. Never a direct sync call from this async method.
+        """
+        lookup = self.user_lookup
+
+        if hasattr(lookup, "get_by_identifier_async"):
+            user = await lookup.get_by_identifier_async(identifier)
+        else:
+            user = await asyncio.to_thread(lookup.get_by_identifier, identifier)
+
+        if not user:
+            await self._run_dummy_check_async(password)
+            return AuthResult(success=False, error="Invalid credentials", failure_reason="user_not_found")
+
+        if not user.is_active:
+            return AuthResult(success=False, error="Account is inactive", failure_reason="account_inactive")
+
+        if user.metadata and user.metadata.get("is_banned"):
+            return AuthResult(success=False, error="Account has been banned", failure_reason="account_banned")
+
+        if hasattr(lookup, "is_account_locked_async"):
+            locked = await lookup.is_account_locked_async(user.id)
+        else:
+            locked = await asyncio.to_thread(lookup.is_account_locked, user.id)
+        if locked:
+            return AuthResult(
+                success=False,
+                error="Account has been locked due to too many failed login attempts",
+                failure_reason="account_locked",
+            )
+
+        if hasattr(lookup, "check_password_async"):
+            password_ok = await lookup.check_password_async(user.id, password)
+        else:
+            password_ok = await asyncio.to_thread(lookup.check_password, user.id, password)
+
+        if not password_ok:
+            if hasattr(lookup, "record_failed_login_async"):
+                await lookup.record_failed_login_async(user.id)
+            else:
+                await asyncio.to_thread(lookup.record_failed_login, user.id)
             return AuthResult(success=False, error="Invalid credentials", failure_reason="invalid_password")
 
         return AuthResult(success=True, user=user)

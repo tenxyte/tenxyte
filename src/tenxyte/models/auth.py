@@ -773,7 +773,7 @@ class Permission(AbstractPermission):
     """
 
     class Meta(AbstractPermission.Meta):
-        db_table = "permissions"
+        db_table = "tenxyte_permissions"
         swappable = "TENXYTE_PERMISSION_MODEL"
 
 
@@ -783,7 +783,7 @@ class Role(AbstractRole):
     """
 
     class Meta(AbstractRole.Meta):
-        db_table = "roles"
+        db_table = "tenxyte_roles"
         swappable = "TENXYTE_ROLE_MODEL"
 
 
@@ -796,5 +796,5 @@ class User(AbstractUser):
     """
 
     class Meta(AbstractUser.Meta):
-        db_table = "users"
+        db_table = "tenxyte_users"
         swappable = "TENXYTE_USER_MODEL"

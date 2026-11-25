@@ -8,6 +8,7 @@
 - [3. Human in the Loop (HITL)](#3-human-in-the-loop-hitl)
 - [4. Guardrails: PII Redaction & Budget Tracking](#4-guardrails-pii-redaction--budget-tracking)
 - [5. Forensic Audit](#5-forensic-audit)
+- [6. Discovery & the AIRS/1.0 Open Specification](#6-discovery--the-airs10-open-specification)
 - [Configuration Reference](#configuration-reference)
 
 ---
@@ -17,6 +18,8 @@
 Tenxyte AIRS is a comprehensive suite of responsibility, security, and safeguards for integrated AI agents. It addresses major challenges posed by LLMs and agentic models in production environments (e.g., EchoLeak, Shadow Escape, runaway spend).
 
 **Core principle**: An AI agent never acts on its own authority. It borrows a human user's identity and permissions via a scoped, time-limited token (`AgentToken`), and every action it takes is auditable, controllable, and suspendable.
+
+Everything on this page is a guide to Tenxyte's own implementation. The protocol itself — independent of Tenxyte, Django, or any implementation detail — is formalized as an open, versioned specification: **[AIRS/1.0](../../spec/airs/AIRS-1.0.md)** (CC BY 4.0). Tenxyte is that specification's reference implementation; see [§6](#6-discovery--the-airs10-open-specification) below.
 
 ---
 
@@ -314,6 +317,43 @@ POST /ai/tokens/{id}/some-action/
 Authorization: AgentBearer <raw_token>
 X-Prompt-Trace-ID: trace_7f3a2b9c-...
 ```
+
+---
+
+## 6. Discovery & the AIRS/1.0 Open Specification
+
+Tenxyte's AIRS implementation is formalized as **[AIRS/1.0](../../spec/airs/AIRS-1.0.md)**, a normative, framework-independent specification (RFC 2119 vocabulary, CC BY 4.0 license) covering the delegation model, the Agent Token lifecycle, the wire protocol, the HITL contract, Guardrail semantics, the normative REST surface, error codes, and discovery. Tenxyte is the spec's reference implementation — everything in sections 1–5 above is Tenxyte's own concrete behavior; the spec is what makes that behavior citable, testable, and reimplementable by third parties.
+
+### Discovery endpoint
+
+Any AIRS-aware client can introspect a running Tenxyte instance without prior configuration:
+
+```http
+GET /ai/.well-known/airs/
+```
+
+**Response `200`:**
+```json
+{
+  "airs_version": "1.0",
+  "conformance": ["core", "hitl", "guards", "trace"],
+  "endpoints": {
+    "tokens": "/api/v1/auth/ai/tokens/",
+    "heartbeat": "/api/v1/auth/ai/tokens/{id}/heartbeat/",
+    "report_usage": "/api/v1/auth/ai/tokens/{id}/report-usage/",
+    "pending_actions": "/api/v1/auth/ai/pending-actions/"
+  },
+  "limits": { "token_max_lifetime": 86400, "default_expiry": 3600 }
+}
+```
+
+- `conformance` lists only the [Conformance Levels](../../spec/airs/AIRS-1.0.md#10-conformance-levels) this specific instance actually enforces: `core`, `hitl`, and `trace` whenever `TENXYTE_AIRS_ENABLED` is true; `guards` only if `TENXYTE_AIRS_CIRCUIT_BREAKER_ENABLED` is true; `budget` only if `TENXYTE_AIRS_BUDGET_TRACKING_ENABLED` is true.
+- The endpoint is unauthenticated (`AllowAny`) and never returns user, tenant, or token data — capabilities only.
+- When `TENXYTE_AIRS_ENABLED = False`, it responds `404 FEATURE_DISABLED`, like every other AIRS endpoint.
+
+### Conformance suite
+
+Any implementation of AIRS/1.0 — Tenxyte included — can be checked against the specification with the black-box [AIRS Conformance Suite](../../spec/airs/conformance/), an HTTP-only pytest suite parameterized by base URL and credentials.
 
 ---
 

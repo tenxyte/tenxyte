@@ -1,28 +1,45 @@
 from django.conf import settings
 
+from tenxyte.core.env_provider import get_env_or_dotenv
+
 from .presets import SECURE_MODE_PRESETS
+
+_UNSET = object()
 
 
 class BaseSettingsMixin:
 
     def _get(self, name: str, default):
         """
-        Résout la valeur d'un setting en appliquant la priorité :
-        settings.py > preset > défaut.
+        Résout la valeur d'un setting en appliquant la priorité unifiée (les deux adaptateurs,
+        voir `core/env_provider.py`'s docstring de module) :
+        settings.py (Adapter_Custom) > variable d'environnement OS > fichier `.env` > preset >
+        défaut.
 
         Args:
             name: Nom du setting SANS le préfixe TENXYTE_ (ex: 'JWT_ACCESS_TOKEN_LIFETIME')
-            default: Valeur par défaut si ni settings.py ni preset ne définissent la valeur
+            default: Valeur par défaut si rien ne définit la valeur
+
+        `TENXYTE_SHORTCUT_SECURE_MODE`/`DEBUG` (utilisés ci-dessous pour choisir le preset actif)
+        restent lus uniquement depuis `settings.py`, sans ce nouveau palier — hors scope de cette
+        évolution, qui porte sur le setting demandé lui-même, pas sur la détection du mode.
         """
         from .presets import VALID_SECURE_MODES
 
         django_key = f"TENXYTE_{name}"
 
-        # 1. Valeur explicite dans settings.py — priorité absolue
+        # 1. Valeur explicite dans settings.py (Adapter_Custom) — priorité absolue
         if hasattr(settings, django_key):
             return getattr(settings, django_key)
 
-        # 2. Preset du mode actif
+        # 2. Variable d'environnement OS, puis fichier .env (python-dotenv, override=False —
+        # une vraie variable OS gagne toujours face au .env) — le palier partagé avec l'
+        # adaptateur FastAPI, voir get_env_or_dotenv().
+        env_value = get_env_or_dotenv(django_key, _UNSET)
+        if env_value is not _UNSET:
+            return env_value
+
+        # 3. Preset du mode actif
         mode = getattr(settings, "TENXYTE_SHORTCUT_SECURE_MODE", None)
         # Auto-activate development preset in DEBUG mode (zero-config DX)
         if mode is None and getattr(settings, "DEBUG", False):
@@ -42,7 +59,7 @@ class BaseSettingsMixin:
                 if name in preset:
                     return preset[name]
 
-        # 3. Défaut conf.py
+        # 4. Défaut conf.py
         return default
 
     @property

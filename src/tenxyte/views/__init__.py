@@ -8,6 +8,7 @@ from .agent_views import (
     AgentTokenRevokeAllView,
     AgentTokenRevokeView,
     AgentTokenSuspendView,
+    AIRSDiscoveryView,
 )
 from .application_views import ApplicationDetailView, ApplicationListView, ApplicationRegenerateView
 from .auth_views import LoginEmailView, LoginPhoneView, LogoutAllView, LogoutView, RefreshTokenView, RegisterView
@@ -58,6 +59,7 @@ from .user_views import (
 )
 
 __all__ = [
+    "AIRSDiscoveryView",
     "AgentPendingActionConfirmView",
     "AgentPendingActionDenyView",
     "AgentPendingActionListView",

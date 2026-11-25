@@ -130,6 +130,39 @@ class WebAuthnChallengeRepository(Protocol):
         ...
 
 
+@runtime_checkable
+class AsyncWebAuthnCredentialRepository(WebAuthnCredentialRepository, Protocol):
+    """
+    Async mirror of `WebAuthnCredentialRepository` (spec z_aud_3, Requirement 1.1) — one of the
+    request-path Async_Ports. Not yet consumed by `WebAuthnService`, which stays sync-only in
+    this phase (Requirement 2 does not ask for async WebAuthn service methods); this protocol
+    exists so an async adapter implementation has an official interface to satisfy.
+    """
+
+    async def get_by_credential_id_async(self, credential_id: str) -> WebAuthnCredential | None: ...
+
+    async def list_by_user_async(self, user_id: str) -> list[WebAuthnCredential]: ...
+
+    async def create_async(self, credential: WebAuthnCredential) -> WebAuthnCredential: ...
+
+    async def update_sign_count_async(self, credential_id: str, new_count: int) -> bool: ...
+
+    async def delete_async(self, credential_id: str, user_id: str) -> bool: ...
+
+
+@runtime_checkable
+class AsyncWebAuthnChallengeRepository(WebAuthnChallengeRepository, Protocol):
+    """Async mirror of `WebAuthnChallengeRepository` (spec z_aud_3, Requirement 1.1)."""
+
+    async def create_async(
+        self, challenge: str, operation: str, user_id: str | None = None, expiry_seconds: int = 300
+    ) -> WebAuthnChallenge: ...
+
+    async def get_by_id_async(self, challenge_id: str) -> WebAuthnChallenge | None: ...
+
+    async def consume_async(self, challenge_id: str) -> bool: ...
+
+
 class WebAuthnService:
     """
     Framework-agnostic WebAuthn/Passkeys service.
@@ -178,9 +211,14 @@ class WebAuthnService:
         self.rp_id = getattr(settings, "webauthn_rp_id", "localhost")
         self.rp_name = getattr(settings, "webauthn_rp_name", "Tenxyte")
         self.enabled = getattr(settings, "webauthn_enabled", True)
+        self.rp_origin = getattr(settings, "webauthn_rp_origin", None)
 
     def _get_origin(self) -> str:
-        """Get origin URL for WebAuthn."""
+        """Get origin URL for WebAuthn. Honors an explicit `webauthn_rp_origin` override (needed
+        when the frontend isn't served from the bare `rp_id`-derived origin, e.g. a dev server on
+        a non-standard port)."""
+        if self.rp_origin:
+            return self.rp_origin
         if self.rp_id == "localhost":
             return "http://localhost"
         return f"https://{self.rp_id}"
@@ -230,6 +268,14 @@ class WebAuthnService:
                 user_display_name=display_name or email,
                 challenge=raw_challenge.encode(),
                 exclude_credentials=[webauthn.PublicKeyCredentialDescriptor(id=cid.encode()) for cid in existing_ids],
+                # See the FastAPI adapter's mirrored `begin_registration_async` for why this is
+                # needed: without it, no `authenticatorSelection` is sent and the credential ends
+                # up non-discoverable, which breaks any usernameless (no-email) authentication
+                # flow relying on it. `PREFERRED`, not `REQUIRED`, to keep non-resident-capable
+                # authenticators registrable.
+                authenticator_selection=webauthn.helpers.structs.AuthenticatorSelectionCriteria(
+                    resident_key=webauthn.helpers.structs.ResidentKeyRequirement.PREFERRED,
+                ),
             )
 
             return (

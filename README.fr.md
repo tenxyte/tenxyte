@@ -19,7 +19,7 @@
 ### 1. Installation
 
 ```bash
-pip install tenxyte
+pip install tenxyte[django]
 ```
 
 > **Prérequis :** Python 3.10+, Django 4.2+ ou FastAPI 0.135+
@@ -189,13 +189,26 @@ Content-Type: application/json
 
 #### 6) Audit forensique : tracez "quel prompt a causé quelle action"
 
-Attachez `X-Prompt-Trace-ID` aux requêtes agent et Tenxyte le lie aux actions en attente et à la piste d'audit.
+Attachez `X-Prompt-Trace-ID` aux requêtes agent et Tenxyte le lie à la piste d'audit de cette action.
 
 ```http
 X-Prompt-Trace-ID: trace_7f3a2b9c-...
 ```
 
 > Vous voulez la référence complète (rédaction PII, paramètres, raisons de suspension, etc.) ? Consultez le **[Guide AIRS](airs.md)**.
+
+### AIRS est une spécification ouverte
+
+Ce protocole est formalisé dans **[AIRS/1.0](spec/airs/AIRS-1.0.md)** — une spécification
+normative sous licence CC BY 4.0, indépendante de Tenxyte ou de Django, avec sa propre
+**[suite de conformité](spec/airs/conformance/)** en boîte noire. Tenxyte en est l'implémentation
+de référence ; tout serveur peut l'implémenter, et tout framework d'agents peut la cibler :
+
+- **[`tenxyte-langchain`](integrations/langchain/)** — un connecteur LangChain/LangGraph en HTTP pur.
+- **[`tenxyte-mcp-server`](integrations/mcp-server/)** — un serveur MCP pour Claude Desktop et
+  les autres clients MCP.
+- **[Exemple CrewAI](examples/crewai/)** — émission, HITL et suspension budget de bout en bout,
+  sans clé API LLM requise.
 
 ---
 
@@ -459,8 +472,8 @@ Tenxyte est le seul package d'authentification conçu pour **les humains et les 
 ## Options d'Installation
 
 ```bash
-pip install tenxyte              # Inclut l'adaptateur Django (rétrocompatible)
-pip install tenxyte[core]        # Core uniquement — sans framework, à vous de choisir
+pip install tenxyte[django]      # Stack Django (défaut avant 1.0 ; désormais optionnel)
+pip install tenxyte              # Core uniquement (défaut depuis 1.0) — sans framework, à vous de choisir
 pip install tenxyte[fastapi]     # Adaptateur FastAPI + Core
 
 # Extras optionnels (fonctionnent avec n'importe quel adaptateur)
@@ -641,7 +654,7 @@ Tenxyte nécessite des tâches périodiques (nettoyage des tokens, purge OTP, ro
 
 ```bash
 git clone https://github.com/tenxyte/tenxyte.git
-pip install -e ".[dev]"
+pip install -e ".[django,dev]"
 pytest                               # 1553 tests, 100% de réussite
 pytest --cov=tenxyte --cov-report=html
 ```

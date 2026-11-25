@@ -1,0 +1,8 @@
+services:
+  tenxyte:
+    build:
+      context: ../..
+      dockerfile: examples/crewai/Dockerfile.tenxyte
+    ports:
+      - "8811:8811"
+    command: ["python", "-m", "spec.airs.conformance.tenxyte_ci.seed_and_serve", "--host", "0.0.0.0", "--port", "8811"]

@@ -1,6 +1,8 @@
 import pytest
+
 from tenxyte.core import settings
 from tenxyte.core.settings import Settings, SettingsProvider
+
 
 class DummyProviderForExceptions:
     def __init__(self, raise_attr=False, raise_key=False):
@@ -14,6 +16,7 @@ class DummyProviderForExceptions:
             raise KeyError("key")
         return default
 
+
 class DummyProvider:
     def __init__(self, mapping):
         self.mapping = mapping
@@ -21,14 +24,17 @@ class DummyProvider:
     def get(self, name, default=None):
         return self.mapping.get(name, default)
 
+
 def test_settings_provider_protocol():
     # Cover line 18 (...)
     class ProtocolInst:
         pass
+
     try:
         SettingsProvider.get(ProtocolInst(), "foo")
     except Exception:
         pass
+
 
 def test_exceptions_in_provider_get():
     s_attr = Settings(provider=DummyProviderForExceptions(raise_attr=True))
@@ -37,12 +43,14 @@ def test_exceptions_in_provider_get():
     s_key = Settings(provider=DummyProviderForExceptions(raise_key=True))
     assert s_key.base_url == "http://127.0.0.1:8000"
 
+
 def test_secure_mode_preset():
     # Covers lines 128-130
     s = Settings(provider=DummyProvider({"TENXYTE_SHORTCUT_SECURE_MODE": "enterprise"}))
     assert s.jwt_algorithm == "RS256"
     assert s.password_min_length == 16
     assert s.mfa_required is True
+
 
 def test_properties_defaults():
     s = Settings()
@@ -52,6 +60,20 @@ def test_properties_defaults():
     assert s.jwt_public_key is None
     assert s.max_login_attempts == 5
     assert s.breach_check_enabled is True
+    assert s.breach_check_reject is True
+    assert s.otp_login_validity_minutes == 10
+    assert s.otp_login_enabled is False
+    assert s.otp_login_auto_register is True
+    assert s.airs_enabled is True
+    assert s.airs_token_max_lifetime == 86400
+    assert s.airs_default_expiry == 3600
+    assert s.airs_require_explicit_permissions is True
+    assert s.airs_circuit_breaker_enabled is True
+    assert s.airs_default_max_rpm == 60
+    assert s.airs_default_max_total == 1000
+    assert s.airs_default_max_failures == 10
+    assert s.airs_budget_tracking_enabled is False
+    assert s.airs_confirmation_required == []
     assert s.mfa_required is False
     assert s.application_auth_enabled is True
     assert s.exempt_paths == ["/admin/", "/api/v1/health/", "/api/v1/docs/"]
@@ -63,9 +85,11 @@ def test_properties_defaults():
     assert s.audit_log_retention_days == 90
     assert s.simple_throttle_rules == {}
 
+
 def test_api_prefix_not_starting_with_slash():
     s = Settings(provider=DummyProvider({"TENXYTE_API_PREFIX": "my/prefix"}))
     assert s.api_prefix == "/my/prefix"
+
 
 def test_get_settings_exception():
     # Covers 358-363, 369-370
@@ -74,7 +98,7 @@ def test_get_settings_exception():
         settings._settings = None
         with pytest.raises(RuntimeError):
             settings.get_settings()
-        
+
         # Now init
         instance = settings.init(DummyProvider({}))
         assert instance is not None

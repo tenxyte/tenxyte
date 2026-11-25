@@ -351,6 +351,10 @@ Typiquement, vous créez votre premier super-utilisateur via la ligne de command
 python manage.py createsuperuser
 ```
 
+Sur l'adaptateur FastAPI, utilisez plutôt `python -m tenxyte.adapters.fastapi.createsuperuser` —
+voir le [Démarrage Rapide FastAPI](fastapi_quickstart.md#6-creer-un-compte-administrateur) pour
+les détails.
+
 *Note : Les super-utilisateurs n'ont pas besoin de se voir attribuer explicitement les rôles RBAC `admin` ou `super_admin`.*
 
 ### 2. Rôles Admin RBAC (`super_admin` ou `admin`)

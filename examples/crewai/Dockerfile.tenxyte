@@ -1,0 +1,14 @@
+# Ephemeral Tenxyte demo backend for the CrewAI example — reuses the same demo project the AIRS
+# Conformance Suite's CI job stands up (spec/airs/conformance/tenxyte_ci/), including its
+# @require_agent_clearance-protected demo endpoints (conformance_probe, hitl_probe).
+FROM python:3.12-slim
+
+WORKDIR /app
+COPY pyproject.toml README.md ./
+COPY src ./src
+RUN pip install --no-cache-dir -e ".[django]" httpx
+
+COPY spec ./spec
+
+EXPOSE 8000
+CMD ["python", "-m", "spec.airs.conformance.tenxyte_ci.seed_and_serve", "--port", "8000"]

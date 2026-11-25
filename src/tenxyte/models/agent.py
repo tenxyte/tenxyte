@@ -73,7 +73,7 @@ class AgentToken(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "agent_tokens"
+        db_table = "tenxyte_agent_tokens"
         indexes: ClassVar[list] = [
             models.Index(fields=["status", "expires_at"]),
             models.Index(fields=["triggered_by", "status"]),
@@ -126,7 +126,7 @@ class AgentPendingAction(models.Model):
     prompt_trace_id = models.CharField(max_length=128, null=True, blank=True)
 
     class Meta:
-        db_table = "agent_pending_actions"
+        db_table = "tenxyte_agent_pending_actions"
 
     def __str__(self):
         return f"PendingAction {self.endpoint} for {self.agent_token_id}"

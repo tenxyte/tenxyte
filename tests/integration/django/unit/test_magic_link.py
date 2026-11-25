@@ -454,6 +454,31 @@ class TestMagicLinkVerifyView:
 
         assert resp.status_code == 200
         assert 'access' in resp.data
+        assert isinstance(resp.data['access'], str)
+
+    @override_settings(TENXYTE_MAGIC_LINK_ENABLED=True, TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True)
+    def test_verify_forced_account_gets_restricted_token(self):
+        """Feature: force_password_change_on_first_login — magic-link login previously bypassed
+        this entirely (no gating call anywhere on this path); an account provisioned with
+        must_change_password=True (e.g. to force setting a real password after logging in purely
+        via magic link, so the user isn't permanently locked to email access) must get the same
+        restricted password_change_only token a forced-change email/phone login gets."""
+        user = _user("forced_magic@example.com")
+        user.must_change_password = True
+        user.save(update_fields=["must_change_password"])
+        app = _app("ForcedMagicApp")
+        instance, raw_token = MagicLinkToken.generate(user=user, application=app)
+
+        factory = APIRequestFactory()
+        with patch('rest_framework.throttling.SimpleRateThrottle.allow_request', return_value=True):
+            req = factory.get(f'/magic-link/verify/?token={raw_token}')
+            req.application = app
+            resp = MagicLinkVerifyView.as_view()(req)
+
+        assert resp.status_code == 200
+        assert isinstance(resp.data['access'], str)
+        assert resp.data['token_scope'] == 'password_change_only'
+        assert resp.data['must_change_password'] is True
 
     @override_settings(TENXYTE_MAGIC_LINK_ENABLED=True)
     def test_verify_returns_400_for_missing_token(self):

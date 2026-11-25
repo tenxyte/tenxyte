@@ -49,7 +49,7 @@ class MagicLinkToken(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "magic_link_tokens"
+        db_table = "tenxyte_magic_link_tokens"
 
     @staticmethod
     def _hash_token(token: str) -> str:

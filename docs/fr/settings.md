@@ -23,12 +23,31 @@
 - [Organisations (B2B)](#organizations-b2b) (8)
 - [Modèles Interchangeables (Swappable Models)](#swappable-models) (4)
 
-Tous les paramètres de Tenxyte sont préfixés par `TENXYTE_` et possèdent des valeurs par défaut raisonnables.
-Surchargez-les dans le fichier `settings.py` de votre projet Django. Le `DjangoSettingsProvider` de l'adaptateur Django lit automatiquement ces valeurs et les transmet au Core agnostique — aucune configuration supplémentaire n'est requise.
+Tous les paramètres de Tenxyte sont préfixés par `TENXYTE_` et possèdent des valeurs par défaut
+raisonnables. Les **noms** de paramètres sont identiques sur les deux adaptateurs (la même liste
+sur cette page s'applique que vous utilisiez Django ou FastAPI) — seule la façon de les
+*renseigner* diffère selon l'adaptateur.
 
 ---
 
 ## Priorité des Paramètres
+
+Les deux adaptateurs résolvent chaque paramètre `TENXYTE_*` via la même chaîne à quatre niveaux :
+
+**`Adapter_Custom` > variable d'environnement OS > fichier `.env` > préréglage > défaut**
+
+1. **`Adapter_Custom`** — la source de configuration principale propre à l'adaptateur, vérifiée en premier :
+   - **Django** : une variable dans le `settings.py` de votre projet (ex. `TENXYTE_JWT_SECRET_KEY = "..."`). `DjangoSettingsProvider`/`BaseSettingsMixin` la lisent automatiquement — aucune configuration supplémentaire requise.
+   - **FastAPI** : un `SettingsProvider` personnalisé que vous passez vous-même (`Settings(provider=MonProvider())`) — pertinent uniquement si vous n'utilisez pas le `EnvSettingsProvider` par défaut.
+2. **Variable d'environnement OS** — une vraie variable d'environnement, ex. `export TENXYTE_JWT_SECRET_KEY="..."` (ou `$env:TENXYTE_JWT_SECRET_KEY = "..."` sous PowerShell). C'est le **seul** mécanisme que le quickstart FastAPI utilise — FastAPI n'a pas d'équivalent `settings.py`, donc ce niveau est en pratique son `Adapter_Custom`. Définir une variable OS nue ne configure **pas** automatiquement Django — définissez-la plutôt dans `settings.py`, sauf si votre propre `settings.py` la lit explicitement (ex. `TENXYTE_JWT_SECRET_KEY = os.environ["TENXYTE_JWT_SECRET_KEY"]`, un motif Django courant mais pas automatique).
+3. **Fichier `.env`** — un fichier `.env` dans le répertoire de travail de votre projet, chargé automatiquement via `python-dotenv` (une dépendance Core sur les deux adaptateurs). Une vraie variable d'environnement OS gagne toujours face à une valeur `.env` — un `.env` oublié dans une image Docker ne peut jamais écraser silencieusement un vrai secret de production.
+4. **Préréglage / défaut** — les valeurs du préréglage `TENXYTE_SHORTCUT_SECURE_MODE`, puis la valeur par défaut codée en dur de chaque paramètre (documentée plus bas pour chacun).
+
+**Piège courant** : une variable d'environnement OS (`export`/`$env:`) ne dure que le temps de la session shell où elle a été définie — rouvrir un terminal ou démarrer un nouveau shell la fait disparaître. Si vous redémarrez un processus et qu'un paramètre revient soudainement à sa valeur par défaut, c'est presque toujours la raison ; un fichier `.env` survit entre les sessions et est généralement le meilleur choix au-delà d'une surcharge ponctuelle.
+
+---
+
+## Shortcut Secure Mode
 
 `TENXYTE_SHORTCUT_SECURE_MODE` applique une combinaison prédéfinie de paramètres de sécurité en une seule ligne. Les paramètres individuels ont toujours la priorité sur le préréglage.
 
@@ -169,25 +188,46 @@ Voir [`POST /login/otp/request/`](endpoints.md#post-loginotprequest) et [`POST /
 
 ## Changement de Mot de Passe Forcé à la Première Connexion
 
-Force un utilisateur provisionné à définir ou changer son mot de passe avant d'accéder à quoi que ce soit d'autre. Lorsque cette fonctionnalité est activée et qu'un compte a `must_change_password=True`, les endpoints de connexion émettent un jeton d'accès à portée restreinte (`scope: "password_change_only"`) au lieu d'un jeton pleine portée. Tous les endpoints protégés sauf `/password/change/`, `/password/set-initial/` et `/logout/` retournent `403 INSUFFICIENT_SCOPE` jusqu'au changement de mot de passe.
+Force un utilisateur provisionné à définir ou changer son mot de passe avant d'accéder à quoi que ce soit d'autre. Lorsque cette fonctionnalité est activée et qu'un compte a `must_change_password=True`, les endpoints de connexion émettent un jeton d'accès à portée restreinte (`scope: "password_change_only"`) au lieu d'un jeton pleine portée. Tous les endpoints protégés sauf `/password/change/`, `/password/set-initial/` et `/logout/` retournent `403 INSUFFICIENT_SCOPE` jusqu'au changement de mot de passe. **Implémenté à l'identique sur les deux adaptateurs** — le `resolve_forced_password_change_scope` de l'adaptateur Django (`views/auth_views.py`) et celui de l'adaptateur FastAPI (`routers/auth.py`) sont deux implémentations indépendantes du même comportement (`must_change_password` ne fait pas partie du `User` Core agnostique du framework, donc la logique d'aucun des deux adaptateurs ne vit dans `tenxyte.core`). S'applique à **tous** les parcours de connexion qui émettent des jetons, pas seulement email/téléphone/OTP par mot de passe : le login social (`POST /social/<provider>/`) et le magic link (`GET /magic-link/verify/`) le vérifient aussi désormais — utile pour forcer la définition d'un vrai mot de passe après une inscription sociale ou par magic link, afin que le compte ne reste pas définitivement dépendant de ce provider ou de l'accès à l'email.
 
 | Paramètre | Défaut | Description |
 |---|---|---|
 | `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED` | `False` | Active l'émission et l'enforcement du jeton à portée restreinte. **Désactivé par défaut** — aucune restriction de jeton n'est appliquée tant que ce paramètre n'est pas `True`. Le flag `must_change_password` est toujours stocké et lisible indépendamment de ce paramètre. |
 
-**Configuration minimale :**
+**Configuration minimale (Django) :**
 ```python
 # settings.py
 TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED = True
 ```
 
-**Provisionnement d'un utilisateur avec changement forcé (API admin) :**
-```http
-PATCH /api/v1/auth/admin/users/<id>/
-Authorization: Bearer <jeton_admin>
-
-{ "must_change_password": true }
+**Configuration minimale (FastAPI)** — même variable d'environnement `TENXYTE_*`, aucun `settings.py` à modifier (voir [Priorité des Paramètres](#priorite-des-parametres)) :
+```bash
+# .env
+TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=true
 ```
+
+**Provisionnement d'un utilisateur avec changement forcé — deux moyens, sur les deux adaptateurs :**
+
+1. Dès l'inscription (un seul appel, aucun jeton admin nécessaire — `must_change_password` est un
+   champ optionnel du corps de la requête d'inscription elle-même) :
+   ```http
+   POST /api/v1/auth/register/   # Django — notez le préfixe /auth/
+   POST /api/v1/register/        # FastAPI — pas de préfixe /auth/ par défaut
+
+   { "email": "user@example.com", "password": "...", "must_change_password": true }
+   ```
+   Combiner ce champ avec `"login": true` dans le même appel passe quand même par le même gating
+   qu'une connexion normale — le jeton renvoyé est bien le jeton restreint `password_change_only`,
+   pas un jeton full-scope, ce raccourci ne permet donc pas de contourner la restriction.
+
+2. Sur un compte existant (API admin) :
+   ```http
+   PATCH /api/v1/auth/admin/users/<id>/   # Django — notez le préfixe /auth/
+   PATCH /api/v1/admin/users/<id>/        # FastAPI — pas de préfixe /auth/ par défaut
+   Authorization: Bearer <jeton_admin>
+
+   { "must_change_password": true }
+   ```
 
 **Champ du modèle User ajouté par cette fonctionnalité :**
 
@@ -322,7 +362,7 @@ En-têtes par défaut :
 
 | Paramètre | Défaut | Description |
 |---|---|---|
-| `TENXYTE_SOCIAL_PROVIDERS` | `['google', 'github', 'microsoft', 'facebook']` | Fournisseurs OAuth2 activés. |
+| `TENXYTE_SOCIAL_PROVIDERS` | `['google', 'github', 'microsoft', 'facebook', 'apple']` | Fournisseurs OAuth2 activés. |
 | `TENXYTE_SOCIAL_AUTO_MERGE_ACCOUNTS` | `False` | Fusionne automatiquement la connexion sociale avec un compte e-mail existant. |
 | `TENXYTE_SOCIAL_REQUIRE_VERIFIED_EMAIL` | `True` | Rejette la connexion sociale si l'e-mail n'est pas vérifié par le fournisseur. |
 | `GOOGLE_CLIENT_ID` | `''` | Identifiant client Google OAuth. |
@@ -333,6 +373,17 @@ En-têtes par défaut :
 | `MICROSOFT_CLIENT_SECRET` | `''` | Secret client Microsoft Azure AD. |
 | `FACEBOOK_APP_ID` | `''` | Identifiant d'application Facebook. |
 | `FACEBOOK_APP_SECRET` | `''` | Secret d'application Facebook. |
+| `APPLE_CLIENT_ID` | `''` | Services ID Apple (`client_id` OAuth, ex: `com.example.app.signin`). |
+| `APPLE_TEAM_ID` | `''` | Team ID du compte développeur Apple (10 caractères). |
+| `APPLE_KEY_ID` | `''` | Key ID de la clé privée « Sign in with Apple » (`.p8`). |
+| `APPLE_PRIVATE_KEY` | `''` | Contenu PEM de la clé privée `.p8` (le contenu, jamais un chemin de fichier). Utilisé pour signer un JWT `client_secret` ES256 éphémère à chaque échange de token — jamais persisté. |
+
+> **Sign in with Apple :** contrairement aux autres fournisseurs, le `client_secret` d'Apple n'est
+> pas une valeur statique à configurer — Tenxyte génère un JWT signé ES256 de courte durée à partir
+> de `APPLE_TEAM_ID` / `APPLE_CLIENT_ID` / `APPLE_KEY_ID` / `APPLE_PRIVATE_KEY` à chaque échange de
+> code d'autorisation. Voir [`endpoints.md`](endpoints.md#connexion-sociale-multi-fournisseurs)
+> pour la forme de la requête/réponse, l'exigence `form_post`, et le comportement du relais privé
+> d'email.
 
 ### Scopes OAuth par Fournisseur
 

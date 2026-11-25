@@ -33,6 +33,16 @@ class RegisterSerializer(serializers.Serializer):
         default="",
         help_text="Device info au format v1 (ex: v=1|os=windows;osv=11|device=desktop)",
     )
+    must_change_password = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text=(
+            "Si True, le compte est créé avec must_change_password=True (feature: "
+            "force_password_change_on_first_login) : le prochain login émettra un token "
+            "restreint password_change_only au lieu d'un token full-scope, tant que "
+            "TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED est activé côté serveur."
+        ),
+    )
 
     def validate_device_info(self, value):
         if value:

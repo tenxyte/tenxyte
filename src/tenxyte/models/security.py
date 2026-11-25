@@ -13,6 +13,7 @@ from typing import ClassVar
 
 import bcrypt
 from django.conf import settings
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -43,7 +44,7 @@ class BlacklistedToken(models.Model):
     reason = models.CharField(max_length=100, blank=True)  # logout, password_change, security, etc.
 
     class Meta:
-        db_table = "blacklisted_tokens"
+        db_table = "tenxyte_blacklisted_tokens"
 
     def __str__(self):
         return f"Blacklisted: {self.token_jti[:20]}..."
@@ -160,11 +161,16 @@ class AuditLog(models.Model):
         null=True,
         blank=True,
     )
-    details = models.JSONField(default=dict, blank=True)  # Additional context
+    # `DjangoJSONEncoder` (not the stdlib default) is required now that model PKs are UUID: several
+    # services build this dict with a raw `.id` value (e.g. `{"organization_id": organization.id}`
+    # in `services/organization_service.py`) rather than `str(...)`-ing it first, and the stdlib
+    # `json.JSONEncoder` `TypeError`s on a raw `uuid.UUID` — a real crash this migration surfaced,
+    # not a hypothetical one. `DjangoJSONEncoder` already handles UUID (and datetime/Decimal).
+    details = models.JSONField(default=dict, blank=True, encoder=DjangoJSONEncoder)  # Additional context
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
-        db_table = "audit_logs"
+        db_table = "tenxyte_audit_logs"
         ordering: ClassVar[list] = ["-created_at"]
 
     def __str__(self):
@@ -264,7 +270,7 @@ class PasswordHistory(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = "password_history"
+        db_table = "tenxyte_password_history"
         ordering: ClassVar[list] = ["-created_at"]
 
     @classmethod

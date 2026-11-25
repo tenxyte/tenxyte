@@ -2,7 +2,7 @@
 Views for Social Login Multi-Provider authentication.
 
 Endpoint générique: POST {API_PREFIX}/auth/social/<provider>/
-Providers supportés: google, github, microsoft, facebook
+Providers supportés: google, github, microsoft, facebook, apple
 """
 
 from typing import ClassVar
@@ -25,12 +25,13 @@ class SocialAuthView(APIView):
     POST {API_PREFIX}/auth/social/<provider>/
     Authentification via un provider social OAuth2.
 
-    Providers supportés: google, github, microsoft, facebook
+    Providers supportés: google, github, microsoft, facebook, apple
 
     Accepte:
     - access_token: token d'accès OAuth2
     - code + redirect_uri: authorization code flow
-    - id_token: pour Google uniquement
+    - id_token: pour Google et Apple
+    - user (Apple uniquement): payload de première autorisation ({"name": {"firstName", "lastName"}})
     """
 
     permission_classes: ClassVar[list] = [AllowAny]
@@ -52,7 +53,7 @@ class SocialAuthView(APIView):
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.PATH,
                 required=True,
-                enum=["google", "github", "microsoft", "facebook"],
+                enum=["google", "github", "microsoft", "facebook", "apple"],
                 description="Provider OAuth2 à utiliser",
             )
         ],
@@ -68,7 +69,15 @@ class SocialAuthView(APIView):
                     required=False, allow_blank=True, help_text="PKCE code_verifier (recommended)"
                 ),
                 "id_token": serializers.CharField(
-                    required=False, allow_blank=True, help_text="Google ID token uniquement"
+                    required=False, allow_blank=True, help_text="Google ou Apple ID token"
+                ),
+                "user": serializers.JSONField(
+                    required=False,
+                    help_text=(
+                        "Apple uniquement — payload de première autorisation transmis par Apple "
+                        '(ex: {"name": {"firstName": "...", "lastName": "..."}}). '
+                        "Absent lors des connexions suivantes."
+                    ),
                 ),
                 "device_info": serializers.CharField(
                     required=False, allow_blank=True, help_text="Informations device (optionnel)"
@@ -122,7 +131,7 @@ class SocialAuthView(APIView):
                 value={
                     "error": "Provider 'linkedin' is not supported or not enabled.",
                     "code": "PROVIDER_NOT_SUPPORTED",
-                    "supported_providers": ["google", "github", "microsoft", "facebook"],
+                    "supported_providers": ["google", "github", "microsoft", "facebook", "apple"],
                 },
             ),
             OpenApiExample(
@@ -143,7 +152,7 @@ class SocialAuthView(APIView):
                 {
                     "error": f"Provider '{provider_name}' is not supported or not enabled.",
                     "code": "PROVIDER_NOT_SUPPORTED",
-                    "supported_providers": ["google", "github", "microsoft", "facebook"],
+                    "supported_providers": ["google", "github", "microsoft", "facebook", "apple"],
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -181,17 +190,21 @@ class SocialAuthView(APIView):
 
             code_verifier = request.data.get("code_verifier", None)
             tokens = oauth_provider.exchange_code(request.data["code"], redirect_uri, code_verifier=code_verifier)
-            if tokens and tokens.get("access_token"):
+            if tokens and provider_name == "apple" and tokens.get("id_token"):
+                # Apple has no userinfo endpoint — identity comes from the id_token, validated
+                # against Apple's JWKS (fail-closed).
+                user_data = oauth_provider.verify_id_token(tokens["id_token"])
+            elif tokens and tokens.get("access_token"):
                 user_data = oauth_provider.get_user_info(tokens["access_token"])
 
-        elif request.data.get("id_token") and provider_name == "google":
-            # Google-specific: verify id_token directly
+        elif request.data.get("id_token") and provider_name in ("google", "apple"):
+            # Google/Apple-specific: verify id_token directly
             user_data = oauth_provider.verify_id_token(request.data["id_token"])
 
         else:
             return Response(
                 {
-                    "error": "Provide access_token, code+redirect_uri, or id_token (Google only).",
+                    "error": "Provide access_token, code+redirect_uri, or id_token (Google/Apple only).",
                     "code": "MISSING_CREDENTIALS",
                 },
                 status=status.HTTP_400_BAD_REQUEST,
@@ -205,6 +218,19 @@ class SocialAuthView(APIView):
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+
+        # Apple's First_Auth_User_Payload: the `user` field is sent by Apple only on the very
+        # first authorization and is never present in the id_token — it must be merged in here.
+        # Absent on subsequent logins: proceed with empty name fields, never fail.
+        if provider_name == "apple":
+            first_auth_payload = request.data.get("user")
+            if isinstance(first_auth_payload, dict):
+                name = first_auth_payload.get("name") or {}
+                if isinstance(name, dict):
+                    if name.get("firstName"):
+                        user_data["first_name"] = name["firstName"]
+                    if name.get("lastName"):
+                        user_data["last_name"] = name["lastName"]
 
         # Authenticate / create user
         social_service = SocialAuthService()
@@ -256,7 +282,7 @@ class SocialAuthCallbackView(APIView):
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.PATH,
                 required=True,
-                enum=["google", "github", "microsoft", "facebook"],
+                enum=["google", "github", "microsoft", "facebook", "apple"],
                 description="Provider OAuth2",
             ),
             OpenApiParameter(
@@ -364,14 +390,20 @@ class SocialAuthCallbackView(APIView):
         # Exchange code for tokens
         try:
             tokens = oauth_provider.exchange_code(code, redirect_uri)
-            if not tokens or not tokens.get("access_token"):
+            token_present = tokens and (
+                tokens.get("access_token") or (provider_name == "apple" and tokens.get("id_token"))
+            )
+            if not token_present:
                 return Response(
                     {"error": "Failed to exchange authorization code", "code": "CODE_EXCHANGE_FAILED"},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
 
-            # Get user info
-            user_data = oauth_provider.get_user_info(tokens["access_token"])
+            # Get user info — Apple has no userinfo endpoint, identity comes from its id_token.
+            if provider_name == "apple":
+                user_data = oauth_provider.verify_id_token(tokens["id_token"])
+            else:
+                user_data = oauth_provider.get_user_info(tokens["access_token"])
             if not user_data:
                 return Response(
                     {"error": f"Could not retrieve user data from {provider_name}", "code": "PROVIDER_AUTH_FAILED"},
@@ -399,7 +431,7 @@ class SocialAuthCallbackView(APIView):
 
             return Response(data)
 
-        except Exception:  # noqa: BLE001, RUF100
+        except Exception:
             import logging
 
             logging.getLogger(__name__).exception("OAuth callback failed")

@@ -527,7 +527,7 @@ class WebAuthnCredentialDeleteView(APIView):
         },
     )
     @require_jwt
-    def delete(self, request, credential_id: int):
+    def delete(self, request, credential_id: str):
         """Delete credential using Core service."""
         service = get_core_webauthn_service()
         success, error_msg = service.delete_credential(credential_id=str(credential_id), user_id=str(request.user.id))

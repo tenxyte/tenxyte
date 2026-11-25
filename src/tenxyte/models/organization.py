@@ -431,7 +431,7 @@ class Organization(AbstractOrganization):
     """
 
     class Meta(AbstractOrganization.Meta):
-        db_table = "organizations"
+        db_table = "tenxyte_organizations"
         swappable = "TENXYTE_ORGANIZATION_MODEL"
 
 
@@ -443,7 +443,7 @@ class OrganizationRole(AbstractOrganizationRole):
     """
 
     class Meta(AbstractOrganizationRole.Meta):
-        db_table = "organization_roles"
+        db_table = "tenxyte_organization_roles"
         swappable = "TENXYTE_ORGANIZATION_ROLE_MODEL"
 
 
@@ -455,7 +455,7 @@ class OrganizationMembership(AbstractOrganizationMembership):
     """
 
     class Meta(AbstractOrganizationMembership.Meta):
-        db_table = "organization_memberships"
+        db_table = "tenxyte_organization_memberships"
         swappable = "TENXYTE_ORGANIZATION_MEMBERSHIP_MODEL"
 
 
@@ -465,7 +465,7 @@ class OrganizationInvitation(AbstractOrganizationInvitation):
     """
 
     class Meta(AbstractOrganizationInvitation.Meta):
-        db_table = "organization_invitations"
+        db_table = "tenxyte_organization_invitations"
 
 
 # =============================================================================

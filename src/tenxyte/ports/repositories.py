@@ -51,6 +51,7 @@ class User:
     mfa_type: MFAType = MFAType.NONE
     mfa_secret: str | None = None
     email_verified: bool = False
+    phone_verified: bool = False
     created_at: datetime | None = None
     updated_at: datetime | None = None
     last_login: datetime | None = None

@@ -20,7 +20,7 @@
 ### 1. Install
 
 ```bash
-pip install tenxyte
+pip install tenxyte[django]
 ```
 
 > **Requirements:** Python 3.10+, Django 4.2+ or FastAPI 0.135+
@@ -460,8 +460,8 @@ Tenxyte is the only auth package built for **both human users and AI agents**, w
 ## Installation Options
 
 ```bash
-pip install tenxyte              # Includes Django adapter (backward compatible)
-pip install tenxyte[core]        # Core only — no framework, bring your own
+pip install tenxyte[django]      # Django stack (default before 1.0; now opt-in)
+pip install tenxyte              # Core only (default since 1.0) — no framework, bring your own
 pip install tenxyte[fastapi]     # FastAPI adapter + Core
 
 # Optional Extras (work with any adapter)
@@ -642,7 +642,7 @@ Tenxyte requires periodic tasks (token cleanup, OTP purge, audit log rotation) t
 
 ```bash
 git clone https://github.com/tenxyte/tenxyte.git
-pip install -e ".[dev]"
+pip install -e ".[django,dev]"
 pytest                               # 1553 tests, 100% pass rate
 pytest --cov=tenxyte --cov-report=html
 ```

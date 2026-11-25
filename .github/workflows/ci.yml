@@ -100,8 +100,8 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install -e ".[django,dev]"
           pip install "django==${{ matrix.django-version }}.*"
-          pip install -e ".[dev]"
 
       - name: Run Django integration tests
         run: |
@@ -120,12 +120,386 @@ jobs:
           path: coverage-django.xml
 
   # ===========================================================================
+  # FastAPI_Adapter tests (spec z_aud_3, Requirement 5.3) — no Django dependency; its own
+  # Reference_Stack (SQLAlchemy 2.0 async + aiosqlite) is exercised directly, matching the
+  # core-tests job's shape (full matrix plain, coverage gate on one representative version).
+  # ===========================================================================
+  fastapi-tests:
+    name: FastAPI Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-fastapi-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-fastapi-${{ matrix.python-version }}-
+
+      - name: Install FastAPI adapter dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # webauthn (spec z_aud_3, Wave G, task 12.1): unlike the Django adapter's own test
+          # suite (which mocks the library out entirely, so django-tests never installs it),
+          # this adapter's WebAuthn tests call the real py_webauthn crypto functions — no mocks,
+          # consistent with every other test suite in this port.
+          pip install -e ".[fastapi,webauthn,dev]"
+
+      - name: Run FastAPI adapter tests
+        run: |
+          pytest tests/integration/fastapi/ -p no:django --no-cov -q
+
+      - name: Run tests with coverage (Python 3.12 only)
+        if: matrix.python-version == '3.12'
+        run: |
+          pytest tests/integration/fastapi/ -p no:django -o "addopts=" --cov=tenxyte.adapters.fastapi --cov-report=xml:coverage-fastapi.xml --cov-report=term --cov-fail-under=90 -q
+
+      - name: Upload FastAPI adapter coverage
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-fastapi
+          path: coverage-fastapi.xml
+
+  # ===========================================================================
+  # Install matrix — verifies the 1.0 packaging inversion (Requirement 2) in clean venvs:
+  # Core-only default install, opt-in [django] extra, deprecated [core] no-op alias, and extra
+  # combination. See specs/z_aud_1 design.md "Correctness Properties" / manual_tests.md MT-1.
+  # ===========================================================================
+  install-matrix:
+    name: Install Matrix (tenxyte${{ matrix.target }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ["", "[django]", "[core]", "[django,webauthn]"]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build and install in a clean venv (tenxyte${{ matrix.target }})
+        run: |
+          python -m venv /tmp/install-matrix-venv
+          source /tmp/install-matrix-venv/bin/activate
+          python -m pip install --upgrade pip build
+          python -m build --wheel --outdir /tmp/dist .
+          pip install "$(ls /tmp/dist/*.whl)${{ matrix.target }}"
+
+      - name: Smoke test — import and version
+        run: |
+          source /tmp/install-matrix-venv/bin/activate
+          python -c "import tenxyte; print('tenxyte version:', tenxyte.__version__)"
+
+      - name: Smoke test — Core-only targets have no Django and Core is usable
+        if: matrix.target == '' || matrix.target == '[core]'
+        run: |
+          source /tmp/install-matrix-venv/bin/activate
+          python -c "
+          import sys
+          try:
+              import django
+              sys.exit('FAIL: django should NOT be installed for target \"${{ matrix.target }}\"')
+          except ImportError:
+              pass
+          from tenxyte.core.jwt_service import JWTService
+          from tenxyte.core.totp_service import TOTPService
+          print('Core-only smoke OK: no Django, Core services importable')
+          "
+          python -c "
+          import tenxyte
+          try:
+              tenxyte.setup({})
+              exit('FAIL: setup() should have raised TenxyteMissingDependencyError')
+          except tenxyte.TenxyteMissingDependencyError as e:
+              assert 'pip install tenxyte[django]' in str(e), e
+              print('Import_Guard smoke OK:', e)
+          "
+
+      - name: Smoke test — Django-stack targets have Django and the full stack
+        if: matrix.target == '[django]' || matrix.target == '[django,webauthn]'
+        run: |
+          source /tmp/install-matrix-venv/bin/activate
+          python -c "
+          import django, rest_framework, corsheaders, drf_spectacular, google.auth
+          import tenxyte
+          assert callable(tenxyte.setup)
+          assert tenxyte.AbstractUser is not None
+          print('Django-stack smoke OK: full stack + Import_Guard transparency')
+          "
+
+      - name: Smoke test — webauthn extra present
+        if: matrix.target == '[django,webauthn]'
+        run: |
+          source /tmp/install-matrix-venv/bin/activate
+          python -c "import webauthn; print('webauthn extra OK')"
+
+  # ===========================================================================
+  # AIRS integration packages (spec z_aud_2, task 7.2) — tenxyte-langchain and tenxyte-mcp-server
+  # each have their own test suite, run against a mocked AIRS backend (respx), across the same
+  # Python matrix as the rest of CI. Includes each package's import-graph check (Property 11:
+  # neither package may ever import `tenxyte`).
+  # ===========================================================================
+  integrations-tests:
+    name: "${{ matrix.package }} (Python ${{ matrix.python-version }})"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [langchain, mcp-server]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install ${{ matrix.package }}
+        working-directory: integrations/${{ matrix.package }}
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run tests
+        working-directory: integrations/${{ matrix.package }}
+        run: pytest tests/
+
+  # ===========================================================================
+  # Contract_Suite + Parity_Matrix (spec z_aud_3, task 3.2/5.3, Property 2) — the same contract
+  # tests run against both adapters via the `api` fixture (tests/contract/conftest.py), plus a
+  # parity_matrix gate scoped to the groups shipped so far (Group A only, for now).
+  # ===========================================================================
+  contract-parity:
+    name: Contract_Suite + Parity_Matrix
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[django,fastapi,dev]"
+
+      - name: Run the Contract_Suite against both adapters
+        run: |
+          pytest tests/contract/ -q
+
+      - name: Run the Parity_Matrix (gated on shipped groups only)
+        env:
+          # get_django_routes() calls django.setup() directly (not via pytest, which already
+          # resolves this from pyproject.toml's [tool.pytest.ini_options] for the step above) —
+          # this was a pre-existing gap: without this, the step raises ImproperlyConfigured.
+          DJANGO_SETTINGS_MODULE: tests.integration.django.settings
+        run: |
+          python scripts/parity_matrix.py --groups=A,B,C,D,E,F,G
+
+  # ===========================================================================
+  # Contract_Fixtures — OpenAPI export + drift check (spec z_aud_3, Requirement 6.6, task 14.1,
+  # Property 12). See scripts/export_openapi.py's own module docstring for why the drift gate is
+  # scoped to path/method/status-code comparison against openapi_drift_exceptions.toml rather
+  # than full response-body schema equality.
+  # ===========================================================================
+  openapi-drift:
+    name: OpenAPI export + drift
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[django,fastapi,dev]"
+
+      - name: Run scripts/export_openapi.py + scripts/parity_matrix.py unit tests
+        env:
+          DJANGO_SETTINGS_MODULE: tests.integration.django.settings
+        run: |
+          pytest tests/test_export_openapi.py tests/test_parity_matrix.py --no-cov -q
+
+      - name: Export both adapters' OpenAPI documents and check drift
+        env:
+          DJANGO_SETTINGS_MODULE: tests.integration.django.settings
+        run: |
+          python scripts/export_openapi.py --check-drift
+
+      - name: Upload OpenAPI exports
+        uses: actions/upload-artifact@v7
+        with:
+          name: openapi-exports
+          path: openapi/
+
+  # ===========================================================================
+  # AIRS Conformance Suite (spec z_aud_2, task 4.4) — the spec/airs/AIRS-1.0.md ↔ implementation
+  # lock: runs the black-box HTTP suite (spec/airs/conformance/) against a real ephemeral Tenxyte
+  # instance, all Conformance Levels enabled, then proves it discriminates by running it against
+  # the deliberately non-conformant negative_mock server and asserting THAT run fails.
+  # ===========================================================================
+  airs-conformance:
+    name: AIRS Conformance Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[django,dev]"
+          pip install httpx
+
+      - name: Start the ephemeral Tenxyte instance
+        run: |
+          python -m spec.airs.conformance.tenxyte_ci.seed_and_serve --port 8811 > server.log 2>&1 &
+          for _ in $(seq 1 30); do
+            grep -q '"base_url"' server.log && break
+            sleep 1
+          done
+          grep -m1 '"base_url"' server.log > spec/airs/conformance/tenxyte_ci/_ci_info.json
+          cat spec/airs/conformance/tenxyte_ci/_ci_info.json
+
+      - name: Run the Conformance Suite against Tenxyte (positive path — Property 4)
+        run: |
+          JWT=$(python -c "import json; print(json.load(open('spec/airs/conformance/tenxyte_ci/_ci_info.json'))['user_jwt'])")
+          pytest spec/airs/conformance -q -m "not negative_control" --no-cov \
+            -p spec.airs.conformance.tenxyte_ci.revoke_permission_hook \
+            --airs-base-url "http://127.0.0.1:8811" \
+            --airs-discovery-path "/api/v1/auth/ai/.well-known/airs/" \
+            --airs-user-jwt "$JWT" \
+            --airs-conformance-probe-path "/api/v1/auth/ai/_conformance_probe/" \
+            --airs-hitl-probe-path "/api/v1/auth/ai/_hitl_probe/"
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: airs-conformance-server-log
+          path: server.log
+
+      - name: Run the negative control (Property 4, negative half)
+        run: |
+          pytest spec/airs/conformance/negative_mock -q --no-cov
+
+  # ===========================================================================
+  # AIRS Conformance Suite against FastAPI (spec z_aud_3, Wave F, task 9.2, Property 11) — the
+  # exact same black-box suite as the job above, unmodified, run against a real ephemeral
+  # FastAPI_Adapter instance instead of Django, proving AIRS conformance is adapter-independent.
+  # Two Conformance Suite tests skip here by design (not a gap): `revoke_delegating_user_permission`
+  # (the Reference_Stack has no RBAC tables yet — see airs_service.py's module docstring) and
+  # --airs-audit-log-path (no public admin endpoint serializes prompt_trace_id in either adapter
+  # yet — see spec/airs/AIRS-1.0.md's Annex A). No negative-control re-run needed: that half of
+  # Property 4 only tests the suite's own discriminating power, already proven by the job above.
+  # ===========================================================================
+  airs-conformance-fastapi:
+    name: AIRS Conformance Suite (FastAPI)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[fastapi,dev]"
+          pip install httpx
+
+      - name: Start the ephemeral FastAPI Tenxyte instance
+        run: |
+          python -m spec.airs.conformance.tenxyte_ci_fastapi.seed_and_serve --port 8812 > server.log 2>&1 &
+          for _ in $(seq 1 30); do
+            grep -q '"base_url"' server.log && break
+            sleep 1
+          done
+          grep -m1 '"base_url"' server.log > spec/airs/conformance/tenxyte_ci_fastapi/_ci_info.json
+          cat spec/airs/conformance/tenxyte_ci_fastapi/_ci_info.json
+
+      - name: Run the Conformance Suite against FastAPI (Property 11)
+        run: |
+          JWT=$(python -c "import json; print(json.load(open('spec/airs/conformance/tenxyte_ci_fastapi/_ci_info.json'))['user_jwt'])")
+          pytest spec/airs/conformance -q -m "not negative_control" --no-cov \
+            --airs-base-url "http://127.0.0.1:8812" \
+            --airs-discovery-path "/api/v1/ai/.well-known/airs/" \
+            --airs-user-jwt "$JWT" \
+            --airs-conformance-probe-path "/api/v1/ai/_conformance_probe/" \
+            --airs-hitl-probe-path "/api/v1/ai/_hitl_probe/"
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: airs-conformance-fastapi-server-log
+          path: server.log
+
+  # ===========================================================================
+  # Async_Purity_Check (spec z_aud_3, Requirement 5.4, Property 7) — scripts/check_async_purity.py
+  # walks adapters/fastapi/ for blocking patterns in async def bodies. Pure AST/stdlib, no install
+  # of tenxyte itself needed (the checker only reads source text, never imports the package).
+  # ===========================================================================
+  async-purity:
+    name: Async Purity Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run scripts/check_async_purity.py
+        run: python scripts/check_async_purity.py
+
+  # ===========================================================================
   # Upload combined coverage to Codecov
   # ===========================================================================
   coverage:
     name: Upload Coverage
     runs-on: ubuntu-latest
-    needs: [core-tests, django-tests]
+    needs: [core-tests, django-tests, fastapi-tests]
     if: always()
 
     steps:
@@ -142,6 +516,13 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: coverage-django
+          path: coverage/
+        continue-on-error: true
+
+      - name: Download FastAPI coverage
+        uses: actions/download-artifact@v8
+        with:
+          name: coverage-fastapi
           path: coverage/
         continue-on-error: true
 

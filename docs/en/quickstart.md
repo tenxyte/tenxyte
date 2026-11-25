@@ -17,7 +17,7 @@
 ## 1. Install
 
 ```bash
-pip install tenxyte
+pip install tenxyte[django]
 ```
 
 ## 2. Configure `settings.py`
@@ -74,6 +74,24 @@ This single command executes:
 | `--no-app` | Skip creating the default Application |
 | `--app-name "My App"` | Custom name for the default Application |
 
+`python manage.py tenxyte_quickstart` is the idiomatic way to run this for a real Django project
+(you already have a `manage.py`). If you're comparing/testing both adapters side by side, or don't
+have a `manage.py` handy, `python -m tenxyte.adapters.django.quickstart` runs the exact same
+command — the Django counterpart of `python -m tenxyte.adapters.fastapi.quickstart`'s invocation
+style — and takes the same three flags:
+
+```bash
+python -m tenxyte.adapters.django.quickstart
+```
+
+No `DJANGO_SETTINGS_MODULE=...` needed in front of it when run from your project's root: it's
+auto-discovered, in order, from an already-set OS environment variable, a `.env` file, or your
+project's own `manage.py` (parsed, not executed). Only set it explicitly if none of those apply:
+
+```bash
+DJANGO_SETTINGS_MODULE=myproject.settings python -m tenxyte.adapters.django.quickstart
+```
+
 ## 4. Create an Admin Account
 
 Some features and views (like the Django Admin Panel or RBAC configuration) require an administrator account. You can create your initial Superuser using the standard Django command:
@@ -83,6 +101,14 @@ python manage.py createsuperuser
 ```
 
 Follow the prompts to set your email and password. This account is created with `is_staff=True` and `is_superuser=True`, granting you full access to all endpoints, including the built-in `http://localhost:8000/admin/` interface.
+
+`python -m tenxyte.adapters.django.createsuperuser` runs the exact same, unmodified Django command
+(`DJANGO_SETTINGS_MODULE` auto-discovered the same way as step 3's quickstart) — the Django
+counterpart of `python -m tenxyte.adapters.fastapi.createsuperuser`'s invocation style:
+
+```bash
+python -m tenxyte.adapters.django.createsuperuser
+```
 
 ## ✅ Ready!
 

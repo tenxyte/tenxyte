@@ -1,17 +1,38 @@
 """
 Tests for core env_provider - targeting 100% coverage of
 src/tenxyte/core/env_provider.py
-"""
-import os
-import pytest
-from unittest.mock import patch, MagicMock
 
-from tenxyte.core.env_provider import EnvSettingsProvider, get_env_settings
+Real `.env` files (no mocked imports) for every dotenv-related test — `python-dotenv` is a real,
+always-installed Core dependency now (spec: unified settings priority, `Adapter_Custom > OS env >
+.env > preset > default`), so there's no "not installed" fallback branch left to simulate, and
+mocking `builtins.__import__` to fake dotenv's presence/absence would test a mock, not the real
+priority chain the feature is actually for.
+"""
+
+import os
+from unittest.mock import patch
+
+import pytest
+
+import tenxyte.core.env_provider as env_provider_module
+from tenxyte.core.env_provider import EnvSettingsProvider, ensure_dotenv_loaded, get_env_or_dotenv, get_env_settings
+
+
+@pytest.fixture(autouse=True)
+def _reset_dotenv_loaded_flag():
+    """`ensure_dotenv_loaded()`'s once-per-process cache would otherwise leak between tests —
+    each test that cares about a specific `.env` file passes `dotenv_path` explicitly (which
+    always reloads, see the function's own docstring), but resetting the flag keeps the
+    default-discovery tests isolated from whichever test ran first."""
+    env_provider_module._dotenv_loaded = False
+    yield
+    env_provider_module._dotenv_loaded = False
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # __init__  (lines 99-110)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def test_init_no_dotenv():
     """Line 99: basic init without dotenv."""
@@ -19,30 +40,91 @@ def test_init_no_dotenv():
     assert provider.prefix == "TENXYTE_"
 
 
-def test_init_with_dotenv_available():
-    """Lines 102-105: dotenv_path provided and python-dotenv available."""
-    with patch("tenxyte.core.env_provider.EnvSettingsProvider.__init__", wraps=EnvSettingsProvider.__init__) as _:
-        with patch.dict("sys.modules", {"dotenv": MagicMock()}):
-            # We need to actually run the init, so let's patch the import inside
-            pass
+def test_init_with_real_dotenv_file_loads_values(tmp_path):
+    """An explicit `dotenv_path` pointing at a real `.env` file on disk actually populates
+    `os.environ` — no mocking, a real file read by real python-dotenv."""
+    dotenv_file = tmp_path / "test.env"
+    dotenv_file.write_text("TENXYTE_FROM_DOTENV_FILE=hello-from-file\n", encoding="utf-8")
 
-    # More direct approach: patch the import inside __init__
-    mock_dotenv = MagicMock()
-    with patch("builtins.__import__", side_effect=lambda name, *a, **kw: mock_dotenv if name == "dotenv" else __import__(name, *a, **kw)):
-        EnvSettingsProvider(dotenv_path="/tmp/test.env")
-    mock_dotenv.load_dotenv.assert_called_once()
+    os.environ.pop("TENXYTE_FROM_DOTENV_FILE", None)
+    try:
+        EnvSettingsProvider(dotenv_path=str(dotenv_file))
+        assert os.environ["TENXYTE_FROM_DOTENV_FILE"] == "hello-from-file"
+    finally:
+        os.environ.pop("TENXYTE_FROM_DOTENV_FILE", None)
 
 
-def test_init_with_dotenv_missing():
-    """Lines 106-110: dotenv_path provided but python-dotenv not installed."""
-    with patch("builtins.__import__", side_effect=ImportError("No module")):
-        with pytest.raises(ImportError, match="python-dotenv"):
-            EnvSettingsProvider(dotenv_path="/tmp/test.env")
+def test_init_with_missing_dotenv_path_does_not_raise(tmp_path):
+    """A `dotenv_path` pointing at a file that doesn't exist is not an error — python-dotenv
+    itself treats a missing file as "nothing to load", not a failure, and there's no reason for
+    this adapter to be stricter than the library it wraps."""
+    EnvSettingsProvider(dotenv_path=str(tmp_path / "does-not-exist.env"))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Unified priority chain: Adapter_Custom > OS env > .env > preset > default
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def test_real_os_env_wins_over_dotenv_file(tmp_path):
+    """The core guarantee of the new tier: a real OS environment variable is never shadowed by a
+    `.env` file, even when the `.env` file also defines the same key."""
+    dotenv_file = tmp_path / "test.env"
+    dotenv_file.write_text("TENXYTE_PRIORITY_CHECK=from-dotenv\n", encoding="utf-8")
+
+    with patch.dict(os.environ, {"TENXYTE_PRIORITY_CHECK": "from-real-os-env"}):
+        EnvSettingsProvider(dotenv_path=str(dotenv_file))
+        assert os.environ["TENXYTE_PRIORITY_CHECK"] == "from-real-os-env"
+
+
+def test_dotenv_file_fills_gap_when_os_env_unset(tmp_path):
+    """When the real OS environment doesn't have the variable at all, the `.env` value is used —
+    the actual reason this feature exists."""
+    dotenv_file = tmp_path / "test.env"
+    dotenv_file.write_text("TENXYTE_ONLY_IN_DOTENV=from-dotenv-only\n", encoding="utf-8")
+
+    os.environ.pop("TENXYTE_ONLY_IN_DOTENV", None)
+    try:
+        provider = EnvSettingsProvider(dotenv_path=str(dotenv_file))
+        assert provider.get("TENXYTE_ONLY_IN_DOTENV") == "from-dotenv-only"
+    finally:
+        os.environ.pop("TENXYTE_ONLY_IN_DOTENV", None)
+
+
+def test_get_env_or_dotenv_returns_default_when_unset():
+    assert get_env_or_dotenv("TENXYTE_DOES_NOT_EXIST_ANYWHERE", "fallback") == "fallback"
+
+
+def test_get_env_or_dotenv_applies_type_conversion():
+    with patch.dict(os.environ, {"TENXYTE_MFA_REQUIRED": "true"}):
+        assert get_env_or_dotenv("TENXYTE_MFA_REQUIRED") is True
+
+
+def test_ensure_dotenv_loaded_default_case_only_loads_once(tmp_path, monkeypatch):
+    """Auto-discovery (`dotenv_path=None`) shouldn't re-walk the filesystem on every call —
+    verified by pointing python-dotenv's own default search at a real file via a changed cwd and
+    confirming a second call doesn't re-apply (the flag short-circuits it)."""
+    dotenv_file = tmp_path / ".env"
+    dotenv_file.write_text("TENXYTE_ONCE_CHECK=first-load\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+
+    os.environ.pop("TENXYTE_ONCE_CHECK", None)
+    try:
+        ensure_dotenv_loaded()
+        assert os.environ["TENXYTE_ONCE_CHECK"] == "first-load"
+
+        # Change the file — a second default call must NOT re-read it (already "loaded").
+        dotenv_file.write_text("TENXYTE_ONCE_CHECK=second-load\n", encoding="utf-8")
+        ensure_dotenv_loaded()
+        assert os.environ["TENXYTE_ONCE_CHECK"] == "first-load"
+    finally:
+        os.environ.pop("TENXYTE_ONCE_CHECK", None)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # get()  (lines 124-140)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def test_get_prefixed_name():
     """Lines 134-138: name already has prefix."""
@@ -87,6 +169,7 @@ def test_get_prefixed_not_found():
 # _convert_type  (lines 144-156)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def test_convert_bool():
     """Lines 144-145."""
     provider = EnvSettingsProvider()
@@ -123,6 +206,7 @@ def test_convert_plain_string():
 # _parse_bool / _parse_list  (lines 161, 166-168)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def test_parse_bool_truthy():
     """Line 161."""
     for v in ("true", "1", "yes", "on", "enabled", "TRUE", "Yes"):
@@ -148,6 +232,7 @@ def test_parse_list_values():
 # from_env  (line 188)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def test_from_env():
     """Line 188."""
     provider = EnvSettingsProvider.from_env()
@@ -157,6 +242,7 @@ def test_from_env():
 # ═══════════════════════════════════════════════════════════════════════════════
 # get_env_settings  (lines 208-211)
 # ═══════════════════════════════════════════════════════════════════════════════
+
 
 def test_get_env_settings():
     """Lines 208-211."""

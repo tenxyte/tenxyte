@@ -70,7 +70,12 @@ class DjangoUserRepository(UserRepository):
             status=status,
             mfa_type=mfa_type,
             mfa_secret=getattr(django_user, "totp_secret", None),
-            email_verified=getattr(django_user, "email_verified", False),
+            # NOTE: was `getattr(django_user, "email_verified", False)` — the model field is
+            # `is_email_verified` (see models/auth.py), so that always fell through to the
+            # default False regardless of actual status. Found and fixed while adding
+            # phone_verified alongside it (spec z_aud_3, Wave C).
+            email_verified=getattr(django_user, "is_email_verified", False),
+            phone_verified=getattr(django_user, "is_phone_verified", False),
             created_at=getattr(django_user, "created_at", None),
             updated_at=getattr(django_user, "updated_at", None),
             last_login=getattr(django_user, "last_login", None),

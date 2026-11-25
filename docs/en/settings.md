@@ -23,8 +23,26 @@
 - [Organizations (B2B)](#organizations-b2b) (8)
 - [Swappable Models](#swappable-models) (4)
 
-All Tenxyte settings are prefixed with `TENXYTE_` and have sensible defaults.
-Override them in your Django `settings.py`. The Django adapter's `DjangoSettingsProvider` automatically reads these values and feeds them to the framework-agnostic Core — no additional configuration is required.
+All Tenxyte settings are prefixed with `TENXYTE_` and have sensible defaults. The setting
+**names** are identical across both adapters (the same list on this page applies whether you're
+using Django or FastAPI) — only *how* you set them differs, per adapter.
+
+---
+
+## Settings Priority
+
+Both adapters resolve every `TENXYTE_*` setting through the same four-tier chain:
+
+**`Adapter_Custom` > OS environment variable > `.env` file > preset > default**
+
+1. **`Adapter_Custom`** — the adapter's own primary configuration source, checked first:
+   - **Django**: a variable in your project's `settings.py` (e.g. `TENXYTE_JWT_SECRET_KEY = "..."`). `DjangoSettingsProvider`/`BaseSettingsMixin` read this automatically — no extra configuration needed.
+   - **FastAPI**: an explicit `SettingsProvider` subclass you pass yourself (`Settings(provider=MyProvider())`) — only relevant if you're not using the default `EnvSettingsProvider`.
+2. **OS environment variable** — a real environment variable, e.g. `export TENXYTE_JWT_SECRET_KEY="..."` (or `$env:TENXYTE_JWT_SECRET_KEY = "..."` on PowerShell). This is the *only* mechanism the FastAPI quickstart uses — FastAPI has no `settings.py` equivalent, so this tier is effectively its `Adapter_Custom` in practice. Setting a bare OS variable does **not** automatically configure Django — set it in `settings.py` instead, unless your own `settings.py` explicitly reads it (e.g. `TENXYTE_JWT_SECRET_KEY = os.environ["TENXYTE_JWT_SECRET_KEY"]`, a common Django pattern but not automatic).
+3. **`.env` file** — a `.env` file in your project's working directory, loaded automatically via `python-dotenv` (a Core dependency on both adapters). Real OS environment variables always win over a `.env` value — a `.env` accidentally left in a Docker image can never silently shadow a real deployment secret.
+4. **Preset / default** — `TENXYTE_SHORTCUT_SECURE_MODE`'s preset values, then each setting's own hard-coded default (documented per-setting below).
+
+**Gotcha**: an OS environment variable (`export`/`$env:`) only lasts for the shell session it was set in — reopening a terminal or starting a fresh shell loses it. If you restart a process and a setting suddenly reverts to its default, this is almost always why; a `.env` file survives across sessions and is usually the better choice for anything beyond a one-off override.
 
 ---
 
@@ -169,25 +187,46 @@ See [`POST /login/otp/request/`](endpoints.md#post-loginotprequest) and [`POST /
 
 ## Force Password Change on First Login
 
-Forces a provisioned user to set or change their password before accessing anything else. When enabled and a user account has `must_change_password=True`, login endpoints issue a restricted-scope access token (`scope: "password_change_only"`) instead of a full-scope token. All protected endpoints except `/password/change/`, `/password/set-initial/`, and `/logout/` return `403 INSUFFICIENT_SCOPE` until the password is changed.
+Forces a provisioned user to set or change their password before accessing anything else. When enabled and a user account has `must_change_password=True`, login endpoints issue a restricted-scope access token (`scope: "password_change_only"`) instead of a full-scope token. All protected endpoints except `/password/change/`, `/password/set-initial/`, and `/logout/` return `403 INSUFFICIENT_SCOPE` until the password is changed. **Implemented identically on both adapters** — the Django adapter's `resolve_forced_password_change_scope` (`views/auth_views.py`) and the FastAPI adapter's `resolve_forced_password_change_scope` (`routers/auth.py`) are independent implementations of the same behavior (`must_change_password` isn't part of the framework-agnostic Core `User`, so neither adapter's logic lives in `tenxyte.core`). Applies to **every** login path that issues tokens, not just email/phone/OTP password login: social auth (`POST /social/<provider>/`) and magic link (`GET /magic-link/verify/`) also check it — useful for forcing a real password to be set after a social or magic-link signup, so the account isn't permanently locked to that provider or to email access.
 
 | Setting | Default | Description |
 |---|---|---|
 | `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED` | `False` | Enable the restricted-scope token issuance and enforcement. **Disabled by default** — no token restriction is applied until this is `True`. The `must_change_password` flag is always stored and readable regardless of this setting. |
 
-**Minimal setup:**
+**Minimal setup (Django):**
 ```python
 # settings.py
 TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED = True
 ```
 
-**Provisioning a user with forced password change (admin API):**
-```http
-PATCH /api/v1/auth/admin/users/<id>/
-Authorization: Bearer <admin_token>
-
-{ "must_change_password": true }
+**Minimal setup (FastAPI)** — same `TENXYTE_*` environment variable, no `settings.py` to edit (see [Settings Priority](#settings-priority)):
+```bash
+# .env
+TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=true
 ```
+
+**Provisioning a user with forced password change — two ways, both adapters:**
+
+1. At registration time (one call, no admin token needed — `must_change_password` is an optional
+   field on the register request body itself):
+   ```http
+   POST /api/v1/auth/register/   # Django — note the /auth/ prefix
+   POST /api/v1/register/        # FastAPI — no /auth/ prefix by default
+
+   { "email": "user@example.com", "password": "...", "must_change_password": true }
+   ```
+   Combining this with `"login": true` in the same request still goes through the same gating as a
+   normal login — the token returned is the restricted `password_change_only` one, not a full-scope
+   token, so this shortcut can't be used to bypass the restriction.
+
+2. On an existing account (admin API):
+   ```http
+   PATCH /api/v1/auth/admin/users/<id>/   # Django — note the /auth/ prefix
+   PATCH /api/v1/admin/users/<id>/        # FastAPI — no /auth/ prefix by default
+   Authorization: Bearer <admin_token>
+
+   { "must_change_password": true }
+   ```
 
 **User model field added by this feature:**
 
@@ -322,7 +361,7 @@ Default headers:
 
 | Setting | Default | Description |
 |---|---|---|
-| `TENXYTE_SOCIAL_PROVIDERS` | `['google', 'github', 'microsoft', 'facebook']` | Enabled OAuth2 providers. |
+| `TENXYTE_SOCIAL_PROVIDERS` | `['google', 'github', 'microsoft', 'facebook', 'apple']` | Enabled OAuth2 providers. |
 | `TENXYTE_SOCIAL_AUTO_MERGE_ACCOUNTS` | `False` | Automatically merge social login with existing email account. |
 | `TENXYTE_SOCIAL_REQUIRE_VERIFIED_EMAIL` | `True` | Reject social login if the email is not verified by the provider. |
 | `GOOGLE_CLIENT_ID` | `''` | Google OAuth Client ID. |
@@ -333,6 +372,16 @@ Default headers:
 | `MICROSOFT_CLIENT_SECRET` | `''` | Microsoft Azure AD Client Secret. |
 | `FACEBOOK_APP_ID` | `''` | Facebook App ID. |
 | `FACEBOOK_APP_SECRET` | `''` | Facebook App Secret. |
+| `APPLE_CLIENT_ID` | `''` | Apple Services ID (OAuth `client_id`, e.g. `com.example.app.signin`). |
+| `APPLE_TEAM_ID` | `''` | Apple Developer Team ID (10 characters). |
+| `APPLE_KEY_ID` | `''` | Key ID of the "Sign in with Apple" private key (`.p8`). |
+| `APPLE_PRIVATE_KEY` | `''` | PEM content of the `.p8` private key (the key's content, never a file path). Used to sign an ephemeral ES256 `client_secret` JWT on every token exchange — never persisted. |
+
+> **Apple Sign-In:** unlike the other providers, Apple's `client_secret` is not a static value you
+> configure — Tenxyte generates a short-lived ES256-signed JWT from `APPLE_TEAM_ID` /
+> `APPLE_CLIENT_ID` / `APPLE_KEY_ID` / `APPLE_PRIVATE_KEY` on every authorization code exchange.
+> See [`endpoints.md`](endpoints.md#social-login-multi-provider) for the request/response shape,
+> the `form_post` requirement, and the private relay email behavior.
 
 ### Per-Provider OAuth Scopes
 

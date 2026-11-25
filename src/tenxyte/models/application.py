@@ -140,5 +140,5 @@ class Application(AbstractApplication):
     """
 
     class Meta(AbstractApplication.Meta):
-        db_table = "applications"
+        db_table = "tenxyte_applications"
         swappable = "TENXYTE_APPLICATION_MODEL"

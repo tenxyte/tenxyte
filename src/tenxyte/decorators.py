@@ -1,6 +1,7 @@
 import logging
 from functools import wraps
 
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
 
 from tenxyte.adapters.django import get_django_settings
@@ -144,7 +145,11 @@ def require_jwt(view_func=None, *, allowed_scopes=None):
                 request.jwt_payload = payload
                 request.jwt_scope = scope
 
-            except User.DoesNotExist:
+            except (User.DoesNotExist, ValidationError):
+                # ValidationError covers a malformed user_id (a forged token, or an old
+                # pre-UUID-migration token whose claim is still an integer) -- an ID that matches
+                # no real user must fail cleanly (401), not crash with a 500 (found via a real
+                # regression after PKs moved to UUID).
                 return JsonResponse({"error": "User not found", "code": "USER_NOT_FOUND"}, status=401)
 
             # Enforcement du scope : un token restreint (scope non vide) ne peut

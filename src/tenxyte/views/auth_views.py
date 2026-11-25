@@ -321,6 +321,7 @@ class RegisterView(APIView):
             )
 
         login_after = serializer.validated_data.pop("login", False)
+        must_change_password = serializer.validated_data.pop("must_change_password", False)
         device_info = serializer.validated_data.pop("device_info", "") or build_device_info_from_user_agent(
             request.META.get("HTTP_USER_AGENT", "")
         )
@@ -379,13 +380,18 @@ class RegisterView(APIView):
 
             return Response({"error": error, "code": "REGISTRATION_FAILED"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Generate and send OTPs for verification (using legacy OTPService for now)
         # Convert Core user to Django user for legacy compatibility
         from ..models import get_user_model
 
         UserModel = get_user_model()
+        django_user = UserModel.objects.get(id=user.id)
+
+        if must_change_password:
+            django_user.must_change_password = True
+            django_user.save(update_fields=["must_change_password"])
+
+        # Generate and send OTPs for verification (using legacy OTPService for now)
         try:
-            django_user = UserModel.objects.get(id=user.id)
             otp_service = get_otp_service()
 
             if django_user.email:
@@ -431,6 +437,22 @@ class RegisterView(APIView):
                     "refresh_expires_in": get_core_settings().jwt_refresh_token_lifetime,
                 }
             )
+
+            # Force password change gating (feature: force_password_change_on_first_login).
+            # A caller could otherwise set must_change_password=True at registration and
+            # request login=True in the same call to walk away with a full-scope token,
+            # bypassing the restriction entirely — must be checked here too, not just on
+            # the regular login endpoints.
+            _forced_scope = resolve_forced_password_change_scope(django_user)
+            if _forced_scope == "password_change_only":
+                restricted_token, _jti, _expires_at = jwt_service.generate_access_token(
+                    user_id=user.id,
+                    application_id=app_id,
+                    extra_claims={"scope": "password_change_only"},
+                )
+                response_data["access_token"] = restricted_token
+                response_data["token_scope"] = "password_change_only"
+                response_data["must_change_password"] = True
 
         return Response(response_data, status=status.HTTP_201_CREATED)
 
@@ -1338,7 +1360,11 @@ class RefreshTokenView(APIView):
 class LogoutView(APIView):
     """
     POST {API_PREFIX}/auth/logout/
-    Déconnexion (révoque le refresh token)
+    Déconnexion (révoque le refresh token et/ou blackliste l'access token)
+
+    `refresh_token` n'est requis que si l'un des deux est absent — un client qui ne détient qu'un
+    access token (par exemple le token bootstrap 2fa_setup_only, qui n'émet jamais de refresh
+    token) peut se déconnecter en fournissant uniquement l'en-tête Authorization.
     """
 
     permission_classes: ClassVar[list] = [AllowAny]
@@ -1346,15 +1372,15 @@ class LogoutView(APIView):
     @extend_schema(
         tags=["Auth"],
         summary="Déconnexion",
-        description="Révoque le refresh token fourni pour déconnecter l'utilisateur. "
-        "Si un access token est fourni dans l'en-tête Authorization, "
-        "il est également blacklisté pour une déconnexion immédiate.",
+        description="Révoque le refresh token fourni (si présent) pour déconnecter l'utilisateur. "
+        "Si un access token est fourni dans l'en-tête Authorization, il est également blacklisté "
+        "pour une déconnexion immédiate. Au moins l'un des deux doit être fourni.",
         parameters=[
             OpenApiParameter(
                 name="Authorization",
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.HEADER,
-                description="Bearer token pour blacklistage immédiat (optionnel)",
+                description="Bearer token pour blacklistage immédiat (requis si refresh_token est absent)",
                 required=False,
                 pattern="Bearer [a-zA-Z0-9._-]+",
             )
@@ -1393,11 +1419,6 @@ class LogoutView(APIView):
             )
 
         refresh_token_str = serializer.validated_data.get("refresh_token", "")
-        if not refresh_token_str:
-            return Response(
-                {"error": "refresh_token is required", "code": "MISSING_REFRESH_TOKEN"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         # Extract access token from Authorization header for blacklisting
         access_token = None
@@ -1405,36 +1426,48 @@ class LogoutView(APIView):
         if auth_header.startswith("Bearer "):
             access_token = auth_header[7:]
 
+        # A refresh_token used to be mandatory here, unconditionally — but a client holding only
+        # an access token (no refresh token at all, e.g. the short-lived 2fa_setup_only bootstrap
+        # token issued to an admin with no 2FA configured yet, which never issues one) had no way
+        # to log out at all, even though blacklisting just the access token below is a perfectly
+        # well-defined operation on its own. Only reject when there is truly nothing to act on.
+        if not refresh_token_str and not access_token:
+            return Response(
+                {"error": "refresh_token or an Authorization header is required", "code": "MISSING_REFRESH_TOKEN"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         jwt_service = get_core_jwt_service()
 
-        # Revoke refresh token (DB-backed or JWT)
-        try:
-            # First try as a DB opaque token
-            from tenxyte.models import RefreshToken
-
-            token_obj = RefreshToken.get_by_raw_token(serializer.validated_data["refresh_token"])
-            if hasattr(token_obj, "revoke"):
-                token_obj.revoke()
-            else:
-                token_obj.is_revoked = True
-                token_obj.save(update_fields=["is_revoked"])
-        except Exception:  # noqa: BLE001
-            # If not in DB, try to blacklist as a JWT refresh token
+        if refresh_token_str:
+            # Revoke refresh token (DB-backed or JWT)
             try:
-                decoded = jwt_service.decode_token(serializer.validated_data["refresh_token"])
-                if decoded:
-                    jwt_service.blacklist_token(
-                        jti=decoded.jti, expires_at=decoded.exp, user_id=decoded.user_id, reason="logout"
-                    )
-            except Exception:
-                logger.debug("Failed to blacklist refresh token during logout", exc_info=True)
+                # First try as a DB opaque token
+                from tenxyte.models import RefreshToken
+
+                token_obj = RefreshToken.get_by_raw_token(serializer.validated_data["refresh_token"])
+                if hasattr(token_obj, "revoke"):
+                    token_obj.revoke()
+                else:
+                    token_obj.is_revoked = True
+                    token_obj.save(update_fields=["is_revoked"])
+            except Exception:  # noqa: BLE001
+                # If not in DB, try to blacklist as a JWT refresh token
+                try:
+                    decoded = jwt_service.decode_token(serializer.validated_data["refresh_token"])
+                    if decoded:
+                        jwt_service.blacklist_token_by_jti(
+                            jti=decoded.jti, expires_at=decoded.exp, user_id=decoded.user_id, reason="logout"
+                        )
+                except Exception:
+                    logger.debug("Failed to blacklist refresh token during logout", exc_info=True)
 
         # Blacklist access token if provided
         if access_token:
             try:
                 decoded = jwt_service.decode_token(access_token)
                 if decoded:
-                    jwt_service.blacklist_token(
+                    jwt_service.blacklist_token_by_jti(
                         jti=decoded.jti, expires_at=decoded.exp, user_id=decoded.user_id, reason="logout"
                     )
             except Exception:
@@ -1496,7 +1529,7 @@ class LogoutAllView(APIView):
             try:
                 decoded = jwt_service.decode_token(access_token)
                 if decoded:
-                    jwt_service.blacklist_token(
+                    jwt_service.blacklist_token_by_jti(
                         jti=decoded.jti, expires_at=decoded.exp, user_id=decoded.user_id, reason="logout_all"
                     )
             except Exception:

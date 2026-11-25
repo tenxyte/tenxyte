@@ -160,11 +160,19 @@ Register a new user.
   "first_name": "John",
   "last_name": "Doe",
   "login": false,
+  "must_change_password": false,
   "device_info": "v=1|os=windows;osv=11|device=desktop"
 }
 ```
 `email` or `phone_country_code` + `phone_number` is required.
 `login`: If true, returns JWT tokens for immediate login.
+`must_change_password`: If true, the account is created with `must_change_password=true` — the
+next login issues a restricted `password_change_only` token instead of a full-scope one, as long
+as `TENXYTE_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN_ENABLED=True` (see
+[Force Password Change on First Login](#force-password-change-on-first-login)). A one-call
+alternative to registering then calling the admin `PATCH` endpoint. Combining this with
+`login: true` still returns a restricted token, not a full-scope one — the immediate token
+issuance is gated exactly like a normal login.
 `device_info`: Optional device fingerprinting info.
 
 **Response `201`:**
@@ -213,6 +221,15 @@ If `login: true` in request, also includes:
   "expires_in": 900,
   "refresh_expires_in": 86400,
   "device_summary": "Windows 11 Desktop"
+}
+```
+
+If `login: true` AND `must_change_password: true` in request (and the feature is enabled), the
+`access_token` is restricted instead, and the response additionally carries:
+```json
+{
+  "token_scope": "password_change_only",
+  "must_change_password": true
 }
 ```
 
@@ -977,14 +994,17 @@ Refresh the access token.
 ---
 
 ### `POST /logout/`
-Logout (revokes refresh token + blacklists access token).
+Logout (revokes refresh token if provided, and/or blacklists the access token from the
+`Authorization` header if provided). At least one of the two is required — a client holding only
+an access token (e.g. the short-lived `2fa_setup_only` bootstrap token, which never issues a
+refresh token) can still log out by sending just the header.
 
 **Request:**
 ```json
 { "refresh_token": "eyJ..." }
 ```
 
-**Headers (optional):**
+**Headers (required if `refresh_token` is omitted):**
 ```
 Authorization: Bearer <access_token>
 ```
@@ -996,10 +1016,10 @@ Authorization: Bearer <access_token>
 { "message": "Logged out successfully" }
 ```
 
-**Response `400` (Missing refresh token):**
+**Response `400` (Neither refresh_token nor Authorization header provided):**
 ```json
 {
-  "error": "refresh_token is required",
+  "error": "refresh_token or an Authorization header is required",
   "code": "MISSING_REFRESH_TOKEN"
 }
 ```
@@ -5052,8 +5072,38 @@ Tenxyte includes a full set of AI/Agent Identity & Runtime Security endpoints fo
 | `GET` | `/ai/pending-actions/` | List pending human-in-the-loop actions |
 | `POST` | `/ai/pending-actions/<id>/approve/` | Approve a pending action |
 | `POST` | `/ai/pending-actions/<id>/reject/` | Reject a pending action |
+| `GET` | `/ai/.well-known/airs/` | AIRS discovery document (unauthenticated) |
 
 → See [AIRS Guide](airs.md) for full request/response documentation, clearance levels, and agent lifecycle management.
+
+### `GET /ai/.well-known/airs/`
+
+Unauthenticated discovery document for the [AIRS/1.0 open specification](../../spec/airs/AIRS-1.0.md). Returns the spec version, the Conformance Levels this server actually enforces, a map of the AIRS endpoints, and the configured limits — capabilities only, never any user or token data.
+
+**Response `200`:**
+```json
+{
+  "airs_version": "1.0",
+  "conformance": ["core", "hitl", "guards", "trace"],
+  "endpoints": {
+    "tokens": "/api/v1/auth/ai/tokens/",
+    "heartbeat": "/api/v1/auth/ai/tokens/{id}/heartbeat/",
+    "report_usage": "/api/v1/auth/ai/tokens/{id}/report-usage/",
+    "pending_actions": "/api/v1/auth/ai/pending-actions/"
+  },
+  "limits": { "token_max_lifetime": 86400, "default_expiry": 3600 }
+}
+```
+
+`conformance` reflects live settings: `core`/`hitl`/`trace` are present whenever `TENXYTE_AIRS_ENABLED` is true; `guards` only if `TENXYTE_AIRS_CIRCUIT_BREAKER_ENABLED` is true; `budget` only if `TENXYTE_AIRS_BUDGET_TRACKING_ENABLED` is true.
+
+**Response `404` (`TENXYTE_AIRS_ENABLED = False`):**
+```json
+{
+  "error": "This feature is not enabled",
+  "code": "FEATURE_DISABLED"
+}
+```
 
 ---
 
@@ -5070,7 +5120,13 @@ This feature forces a user to set or change their password before accessing anyt
 
 ### Flow
 
-**1. Admin provisions the account:**
+**1. Provision the account** — either at registration time in one call:
+```http
+POST /api/v1/auth/register/
+
+{ "email": "user@example.com", "password": "TempPass123!", "must_change_password": true }
+```
+or on an existing account via the admin API:
 ```http
 PATCH /api/v1/auth/admin/users/<id>/
 Authorization: Bearer <admin_token>
