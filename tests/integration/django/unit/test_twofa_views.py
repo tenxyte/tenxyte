@@ -117,7 +117,7 @@ class TestTwoFactorSetupView:
         user = _user("setup2fa1@test.com", twofa=False)
 
         setup_data = TOTPSetupResult(
-            secret="JBSWY3DPEHPK3PXP",
+            secret="JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
             qr_code="data:image/png;base64,abc",
             provisioning_uri="otpauth://totp/...",
             backup_codes=["code1", "code2"],

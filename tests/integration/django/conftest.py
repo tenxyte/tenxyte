@@ -185,7 +185,7 @@ def user_with_2fa(db):
     )
     user.set_password("TestPassword123!")
     user.is_2fa_enabled = True
-    user.totp_secret = "JBSWY3DPEHPK3PXP"
+    user.totp_secret = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP"
     user.backup_codes = [
         "hash1",
         "hash2",
