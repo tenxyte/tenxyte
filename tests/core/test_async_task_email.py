@@ -166,6 +166,10 @@ class TestCoreTaskServiceEnqueueAsync:
 
 # ─── adapters/django/task_service.py error paths ─────────────────────────────
 
+@pytest.mark.skipif(
+    __import__("importlib.util").util.find_spec("django") is None,
+    reason="Django adapter tests require django (not installed in Core-only CI)",
+)
 class TestDjangoTaskServiceErrorPaths:
     def test_run_in_thread_exception_is_caught(self, caplog):
         """Lines 10-13: exception raised inside _run_in_thread is swallowed + logged."""

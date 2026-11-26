@@ -100,7 +100,7 @@ django = [
 fastapi = [
     "fastapi>=0.135",
     "uvicorn>=0.40",
-    "sqlalchemy>=2.0",
+    "sqlalchemy[asyncio]>=2.0",
     "python-multipart>=0.0.9",
     "pydantic>=2.12",
     # Reference_Stack (spec z_aud_3, Requirement 3.2): SQLAlchemy 2.0 async + Alembic.
@@ -155,7 +155,7 @@ all = [
     "google-auth-oauthlib>=1.2",
     "fastapi>=0.135",
     "uvicorn>=0.40",
-    "sqlalchemy>=2.0",
+    "sqlalchemy[asyncio]>=2.0",
     "python-multipart>=0.0.9",
     "twilio>=9.0",
     "sendgrid>=6.10",

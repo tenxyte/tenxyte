@@ -240,6 +240,12 @@ jobs:
           source /tmp/install-matrix-venv/bin/activate
           python -c "
           import django, rest_framework, corsheaders, drf_spectacular, google.auth
+          from django.conf import settings
+          settings.configure(
+              INSTALLED_APPS=['django.contrib.auth', 'django.contrib.contenttypes', 'tenxyte'],
+              AUTH_USER_MODEL='tenxyte.User',
+          )
+          django.setup()
           import tenxyte
           assert callable(tenxyte.setup)
           assert tenxyte.AbstractUser is not None
@@ -399,7 +405,7 @@ jobs:
       - name: Run the Conformance Suite against Tenxyte (positive path — Property 4)
         run: |
           JWT=$(python -c "import json; print(json.load(open('spec/airs/conformance/tenxyte_ci/_ci_info.json'))['user_jwt'])")
-          pytest spec/airs/conformance -q -m "not negative_control" --no-cov \
+          PYTHONPATH=. python -m pytest spec/airs/conformance -q -m "not negative_control" --no-cov \
             -p spec.airs.conformance.tenxyte_ci.revoke_permission_hook \
             --airs-base-url "http://127.0.0.1:8811" \
             --airs-discovery-path "/api/v1/auth/ai/.well-known/airs/" \
@@ -416,7 +422,7 @@ jobs:
 
       - name: Run the negative control (Property 4, negative half)
         run: |
-          pytest spec/airs/conformance/negative_mock -q --no-cov
+          PYTHONPATH=. python -m pytest spec/airs/conformance/negative_mock -q --no-cov
 
   # ===========================================================================
   # AIRS Conformance Suite against FastAPI (spec z_aud_3, Wave F, task 9.2, Property 11) — the
@@ -459,7 +465,7 @@ jobs:
       - name: Run the Conformance Suite against FastAPI (Property 11)
         run: |
           JWT=$(python -c "import json; print(json.load(open('spec/airs/conformance/tenxyte_ci_fastapi/_ci_info.json'))['user_jwt'])")
-          pytest spec/airs/conformance -q -m "not negative_control" --no-cov \
+          PYTHONPATH=. python -m pytest spec/airs/conformance -q -m "not negative_control" --no-cov \
             --airs-base-url "http://127.0.0.1:8812" \
             --airs-discovery-path "/api/v1/ai/.well-known/airs/" \
             --airs-user-jwt "$JWT" \

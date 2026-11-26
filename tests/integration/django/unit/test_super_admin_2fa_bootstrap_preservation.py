@@ -78,7 +78,7 @@ def _make_user(
         "is_2fa_enabled": twofa_enabled,
     }
     if twofa_enabled:
-        kwargs["totp_secret"] = "JBSWY3DPEHPK3PXP"
+        kwargs["totp_secret"] = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP"
     if phone is not None:
         kwargs["phone_country_code"] = phone[0]
         kwargs["phone_number"] = phone[1]
