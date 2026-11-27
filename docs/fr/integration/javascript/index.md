@@ -13,6 +13,7 @@ Le SDK JS Tenxyte est un monorepo livrant trois packages :
 | [`@tenxyte/core`](https://www.npmjs.com/package/@tenxyte/core) | SDK core agnostique au framework — fonctionne dans Node.js, les navigateurs et tout runtime JS | [Guide Core](core.md) |
 | [`@tenxyte/react`](https://www.npmjs.com/package/@tenxyte/react) | Hooks React avec re-render automatique lors des changements d'état d'authentification | [Guide React](react.md) |
 | [`@tenxyte/vue`](https://www.npmjs.com/package/@tenxyte/vue) | Composables Vue 3 avec refs réactives | [Guide Vue](vue.md) |
+| `@tenxyte/registry` | Blocs UI shadcn copier-coller pour React & Vue 3 (12 flows + tokens `--tx-*`) | [Guide Blocs UI](ui.md) |
 
 ---
 

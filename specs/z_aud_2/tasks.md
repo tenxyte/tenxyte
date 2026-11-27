@@ -57,14 +57,10 @@ marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - **Property 3: La découverte ne divulgue jamais de données** (états de base générés)
     - **Validates: Requirements 2.4**
 
-  - [ ] 2.6 Exposer la découverte dans le SDK JS
-    - **Écart mesuré le 2026-09-22** : `ai/.well-known/airs/` existe sur les deux adapters, mais
-      `@tenxyte/core` n'a aucune méthode pour l'appeler — le module `ai` couvre les tokens agents
-      et les pending actions, pas l'introspection. Un client JS ne peut donc pas découvrir les
-      niveaux de conformité du backend auquel il parle, ce qui est précisément l'usage visé par
-      la Requirement 2.
-    - Ajouter `ai.getDiscovery()` au module `ai` du SDK ; tracé avec le reste du rattrapage en
-      **z_aud_3 tâche 15.0** (monorepo `tenxyte-js`). Aucun changement côté Python.
+  - [x] 2.6 Exposer la découverte dans le SDK JS
+    - **Fait et publié (2026-11-25)** : `ai.getDiscovery()` (`GET /ai/.well-known/airs/`) livré et
+      publié dans `@tenxyte/core@0.10.0` (monorepo `tenxyte-js`, commit `a4be3b6`), couvert par
+      `packages/core/tests/modules/ai.test.ts` et `tests/contract/path-conformance.test.ts`.
     - _Requirements: 2.1, 2.2_
 
   - [x] 2.5 Documenter la découverte

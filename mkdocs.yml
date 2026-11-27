@@ -58,6 +58,7 @@ nav:
       - 'Architecture Guide': architecture.md
       - 'Custom Adapters': custom_adapters.md
       - 'Async Guide': async_guide.md
+      - 'Adapter Parity Table': parity_table.md
   - 'API Reference':
       - 'API Endpoints': endpoints.md
       - 'Data Schemas': schemas.md
@@ -74,6 +75,7 @@ nav:
       - '@tenxyte/core': integration/javascript/core.md
       - '@tenxyte/react': integration/javascript/react.md
       - '@tenxyte/vue': integration/javascript/vue.md
+      - 'UI Blocks (@tenxyte/registry)': integration/javascript/ui.md
   - 'Operations & Maintenance':
       - 'Periodic Tasks': periodic_tasks.md
       - 'Troubleshooting': troubleshooting.md
