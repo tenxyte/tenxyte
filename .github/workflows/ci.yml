@@ -164,7 +164,9 @@ jobs:
       - name: Run tests with coverage (Python 3.12 only)
         if: matrix.python-version == '3.12'
         run: |
-          pytest tests/integration/fastapi/ -p no:django -o "addopts=" --cov=tenxyte.adapters.fastapi --cov-report=xml:coverage-fastapi.xml --cov-report=term --cov-fail-under=90 -q
+          coverage run --concurrency=greenlet,thread --source=tenxyte.adapters.fastapi -m pytest tests/integration/fastapi/ -p no:django -o "addopts=" -q
+          coverage xml -o coverage-fastapi.xml
+          coverage report --fail-under=90
 
       - name: Upload FastAPI adapter coverage
         if: matrix.python-version == '3.12'
@@ -315,7 +317,7 @@ jobs:
 
       - name: Run the Contract_Suite against both adapters
         run: |
-          pytest tests/contract/ -q
+          pytest tests/contract/ --no-cov -q
 
       - name: Run the Parity_Matrix (gated on shipped groups only)
         env:
