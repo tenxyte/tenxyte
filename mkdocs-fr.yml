@@ -64,6 +64,7 @@ nav:
       - "Guide d'Architecture": architecture.md
       - 'Adaptateurs Personnalisés': custom_adapters.md
       - 'Guide Asynchrone': async_guide.md
+      - 'Table de Parité': parity_table.md
   - 'Référence API':
       - "Points d'Accès API": endpoints.md
       - 'Schémas de Données': schemas.md
@@ -80,6 +81,7 @@ nav:
       - '@tenxyte/core': integration/javascript/core.md
       - '@tenxyte/react': integration/javascript/react.md
       - '@tenxyte/vue': integration/javascript/vue.md
+      - 'Blocs UI (@tenxyte/registry)': integration/javascript/ui.md
   - 'Opérations & Maintenance':
       - 'Tâches Périodiques': periodic_tasks.md
       - 'Dépannage': troubleshooting.md

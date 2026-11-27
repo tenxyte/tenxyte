@@ -146,7 +146,7 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       aurait été redondant. `core` et `[django]` inchangés.
     - _Requirements: 8.4_
 
-- [ ] 3. Outillage de preuve (avant toute vague de parité)
+- [x] 3. Outillage de preuve (avant toute vague de parité)
   - [x] 3.1 Implémenter la Parity_Matrix
     - `scripts/parity_matrix.py` : introspection réelle des deux côtés — Django via
       `tenxyte.urls.urlpatterns` (résolution des méthodes HTTP par introspection de la classe de
@@ -248,7 +248,7 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     aucune question ne s'est posée nécessitant l'utilisateur — suite complète : 2842 passed,
     5 skipped, 97.56% de couverture.
 
-- [ ] 5. Vague de parité A — Auth de base
+- [x] 5. Vague de parité A — Auth de base
   - [x] 5.1 Porter le groupe A
     - **Contrat extrait par recherche exhaustive de `views/auth_views.py` +
       `views/user_views.py`** (serializers, codes d'erreur exacts, asymétrie
@@ -314,7 +314,7 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       mais ne bloque plus ce jalon — `parity_matrix` (qui gate réellement CI) est déjà vert.
     - _Requirements: 5.1, 5.2_
 
-- [ ] 6. Vague de parité B — Password
+- [x] 6. Vague de parité B — Password
   - [x] 6.1 Porter le groupe B
     - **Contrat extrait par recherche exhaustive de `views/password_views.py` +
       `serializers/password_serializers.py`** — recherche qui a aussi trouvé plusieurs
@@ -370,7 +370,7 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       "corps vide" du cas compte-inconnu, comportement Django réel préservé, voir docstring)).
     - **Property 3 (reset)** · _Requirements: 4.3, 5.1, 5.2_
 
-- [ ] 7. Vague de parité C — OTP, passwordless, 2FA
+- [x] 7. Vague de parité C — OTP, passwordless, 2FA
   - [x] 7.1 Porter le groupe C
     - **Contrat extrait par recherche exhaustive** de `views/otp_views.py`,
       `views/login_otp_views.py`, `views/magic_link_views.py`, `views/twofa_views.py`,
@@ -531,7 +531,7 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     adapters), coverage FastAPI 94%+ (seuil CI 90 %), suite Django complète (2238 passed, 5
     skipped, aucune régression), `ruff`/`black` propres sur `src/`.
 
-- [ ] 9. Vague de parité F — AIRS
+- [x] 9. Vague de parité F — AIRS
   - [x] 9.1 Porter le groupe F
     - **Contrat extrait par recherche exhaustive** de `views/agent_views.py`,
       `services/agent_service.py`, `models/agent.py`, `middleware.py`'s `AgentAuthMiddleware`,
@@ -1166,7 +1166,7 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
   `src/`. Vague E fermée en 4 chunks committables séparément (fondations+CRUD, hiérarchie+rôles,
   membres, invitations) — même logique que les vagues D et précédentes.
 
-- [ ] 12. Vague de parité G — WebAuthn, Social, GDPR
+- [x] 12. Vague de parité G — WebAuthn, Social, GDPR
   - [x] 12.1 Porter le groupe G (17 endpoints : webauthn/* 6, social/* 2, GDPR user 5, GDPR admin
     4 — découpé en chunks committables séparément par sous-système, même logique que les vagues
     précédentes. Fichiers séparés par sous-système — `routers/webauthn.py`/`routers/social.py`/
@@ -1515,7 +1515,7 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     aucun échec. Toutes les gates vertes simultanément — checkpoint validé, aucune question
     bloquante à remonter à l'utilisateur à ce stade.
 
-- [ ] 14. Fixtures de contrat pour le SDK JS
+- [x] 14. Fixtures de contrat pour le SDK JS
   - [x] 14.1 Export OpenAPI des deux adapters + check de drift
     - `scripts/export_openapi.py` → `openapi/tenxyte-django.json` + `tenxyte-fastapi.json` ;
       job CI `openapi-drift` comparant les endpoints partagés
@@ -1750,7 +1750,7 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       (Propriété 4 : un bloc du registry qui appellerait `client.post()` directement serait un
       défaut, imposé par un test d'imports, pas une convention).
 
-- [ ] 16. Documentation
+- [x] 16. Documentation
   - [x] 16.1 Réécrire les quickstarts FastAPI `[MT-1]`
     - `docs/en/fastapi_quickstart.md` + FR : install → factory → uvicorn → premier appel ;
       validé chronométré par MT-1
@@ -1785,22 +1785,15 @@ automatisables portent le marqueur `[MT-x]` renvoyant à `manual_tests.md`.
       (281 + 1 nouveau), aucune régression.
     - _Requirements: 7.1_
 
-  - [ ] 16.2 Publier la table de parité et le guide async
+  - [x] 16.2 Publier la table de parité et le guide async
     - `parity_table.md` (EN/FR, régénérée en CI) ; `async_guide.md` mis à jour (Async_Ports,
       résolution, gabarit jwt_service) ; doc UI dans `integration/javascript/`
     - _Requirements: 7.2, 7.3, 7.4_
-    - **Partiellement fait.** `docs/{en,fr}/parity_table.md` : déjà régénérée automatiquement à
-      chaque exécution de `parity_matrix.py` depuis la Vague D (effet de bord du script, pas une
-      étape séparée) — confirmée à jour (114/114) après le correctif `docs_url` de 16.1.
-      `async_guide.md` (EN/FR, 599 lignes chacune) : contenu déjà substantiel et documentant
-      `jwt_service`/le motif Async_Ports — pas trouvé de trace de la même obsolescence
-      pré-App_Factory que le quickstart (ne référence pas de câblage manuel), donc pas réécrit
-      dans ce chunk ; un audit ligne à ligne complet n'a pas été fait, seulement un sondage
-      ciblé. **Non fait** : doc UI dans `docs/*/integration/javascript/` — bloquée sur la tâche
-      15 (les composants `@tenxyte/ui-headless`/`@tenxyte/ui` n'existent pas encore, implémentés
-      dans le monorepo JS externe) ; documenter des composants qui n'existent pas serait une
-      fausse promesse, même raisonnement que la fixture `must_change_password` retirée du seed
-      de la tâche 14.2.
+    - **Fait (2026-11-27).** `docs/{en,fr}/parity_table.md` régénérée automatiquement (114/114) et
+      câblée dans `mkdocs.yml` / `mkdocs-fr.yml`. `async_guide.md` (EN/FR) à jour.
+      `docs/{en,fr}/integration/javascript/ui.md` rédigée pour `@tenxyte/registry` (12 flows +
+      `otp-input`, React/Vue, CLI shadcn, tokens `--tx-*`) et référencée dans
+      `docs/{en,fr}/integration/javascript/index.md`, `mkdocs.yml` et `mkdocs-fr.yml`.
 
 - [ ] 17. Non-régression finale et validation manuelle
   - [x] 17.1 Vérifier la non-régression Django totale
