@@ -56,6 +56,14 @@ _POST_1_0_CORE_ADDITIONS = frozenset(
     }
 )
 
+# Intentional post-1.0 version-specifier refinements on existing packages (maps the current
+# normalized requirement back to its 0.9.6.4 baseline for Property 12 equivalence).
+_POST_1_0_CONSTRAINT_REFINEMENTS = {
+    # DRF 3.17.0 / 3.17.1 call `Q.referenced_base_fields` directly (added in Django 5.1),
+    # breaking Django 4.2 / 5.0 on models with conditional UniqueConstraints; fixed in 3.17.2.
+    "djangorestframework>=3.16,!=3.17.0,!=3.17.1": "djangorestframework>=3.16",
+}
+
 _CORE_ONLY_PACKAGE_NAMES = frozenset(
     {
         "PyJWT",
@@ -128,7 +136,9 @@ def test_property_12_dependency_set_equivalence(pyproject_data):
     deps = pyproject_data["project"]["dependencies"]
     django_extra = pyproject_data["project"]["optional-dependencies"]["django"]
 
-    union = {_normalize(d) for d in deps} | {_normalize(d) for d in django_extra}
+    union = {_POST_1_0_CONSTRAINT_REFINEMENTS.get(_normalize(d), _normalize(d)) for d in deps} | {
+        _POST_1_0_CONSTRAINT_REFINEMENTS.get(_normalize(d), _normalize(d)) for d in django_extra
+    }
     union -= {_normalize(d) for d in deps if _package_name(d) in _POST_1_0_CORE_ADDITIONS}
     legacy = {_normalize(d) for d in _LEGACY_0_9_DEPENDENCIES}
 
