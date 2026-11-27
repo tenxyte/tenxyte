@@ -139,26 +139,26 @@ avec référence croisée depuis les tâches concernées (marqueur `[MT-x]`).
   - Ensure all tests pass (including install-matrix), ask the user if questions arise.
   - ✅ Full suite green after packaging inversion (see task 10.1 for the final run).
 
-- [ ] 6. Politique de sécurité et divulgation
+- [x] 6. Politique de sécurité et divulgation
   - [x] 6.1 Rédiger `SECURITY.md`
     - Racine du dépôt : versions supportées (1.0.x ✅ / 0.9.x critiques 6 mois / < 0.9 ❌),
       canal GitHub PVR exclusif, SLA (72 h / 7 j / 14-30-90 j), embargo ≤ 90 j, crédit,
       périmètre in/out, processus advisory→CVE, lien `docs/security-audit/`
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
-  - [ ] 6.2 Activer GitHub Private Vulnerability Reporting `[MT-4]`
-    - Action manuelle sur le dépôt ; vérification consignée dans `manual_tests.md` §4
+  - [x] 6.2 Activer GitHub Private Vulnerability Reporting `[MT-4]`
+    - Action manuelle sur le dépôt ; confirmée activée par l'utilisateur le 2026-11-27.
     - _Requirements: 3.8_
 
-- [ ] 7. Signature et attestation des releases
+- [x] 7. Signature et attestation des releases
   - [x] 7.1 Migrer `publish.yml` vers Trusted Publishing + attestations
     - `permissions: id-token: write`, `environment: pypi`, `pypa/gh-action-pypi-publish` avec
       `attestations: true`, suppression de toute référence au token PyPI
     - _Requirements: 4.1, 4.2, 4.3_
 
-  - [ ] 7.2 Configurer le Trusted Publisher côté PyPI et l'environnement GitHub `[MT-5]`
-    - Actions manuelles (PyPI pending publisher, environnement `pypi` protégé, purge du secret) ;
-      vérification consignée dans `manual_tests.md` §5
+  - [x] 7.2 Configurer le Trusted Publisher côté PyPI et l'environnement GitHub `[MT-5]`
+    - Confirmé configuré par l'utilisateur le 2026-11-27 (`tenxyte/tenxyte`, workflow `publish.yml`,
+      environment `pypi`).
     - _Requirements: 4.1, 4.3_
 
   - [x] 7.3 Documenter la procédure de release et de vérification
