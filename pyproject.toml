@@ -89,7 +89,7 @@ core = []
 # Was the default install before 1.0.0 — see docs/en/MIGRATION_GUIDE.md "0.9 -> 1.0".
 django = [
     "django>=4.2",
-    "djangorestframework>=3.16",
+    "djangorestframework>=3.16,!=3.17.0,!=3.17.1",
     "django-cors-headers>=4.4",
     "drf-spectacular>=0.27",
     "google-auth>=2.49.1",
@@ -148,7 +148,7 @@ webauthn = [
 # Everything: Django stack + FastAPI stack + every feature/database extra.
 all = [
     "django>=4.2",
-    "djangorestframework>=3.16",
+    "djangorestframework>=3.16,!=3.17.0,!=3.17.1",
     "django-cors-headers>=4.4",
     "drf-spectacular>=0.27",
     "google-auth>=2.49.1",
