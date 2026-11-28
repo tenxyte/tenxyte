@@ -127,7 +127,6 @@ async def _seed_via_sql(session_factory) -> dict:
     """Fixtures with no API-reachable creation path (verified by grepping each router — see
     module docstring). Idempotent — `docker compose up` on an already-seeded volume (if one was
     kept around) must not error, matching the Django precedent's `get_or_create` convention."""
-    import bcrypt
     import pyotp
     from sqlalchemy import select
 
@@ -142,6 +141,7 @@ async def _seed_via_sql(session_factory) -> dict:
         UserDB,
         WebAuthnCredentialDB,
     )
+    from tenxyte.core.auth_service import hash_password
     from tenxyte.ports.repositories import MFAType
 
     totp_secret = pyotp.random_base32()
@@ -150,7 +150,7 @@ async def _seed_via_sql(session_factory) -> dict:
 
     async with session_factory() as session:
         def _hash(pw: str) -> str:
-            return bcrypt.hashpw(pw.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+            return hash_password(pw)
 
         async def _get_or_create_user(email: str, **fields) -> UserDB:
             existing = (await session.execute(select(UserDB).where(UserDB.email == email))).scalar_one_or_none()
@@ -248,11 +248,13 @@ async def _seed_via_sql(session_factory) -> dict:
             phone_number=PHONE_USER_NUMBER,
         )
 
-        # password.setInitial : password_hash=None (pas _hash(...)) est le point entier de cette
-        # fixture — voir le commentaire sur MUST_CHANGE_PHONE_USER_EMAIL plus haut.
+        # password.setInitial : password_hash="" (et has_usable_password=False) est le point entier
+        # de cette fixture — `UserDB.to_port_model()` mappe `""` vers `None` pour `/password/set-initial/`
+        # tout en respectant la contrainte `NOT NULL` de `tenxyte_users.password` (parité Django).
         must_change_phone_user = await _get_or_create_user(
             MUST_CHANGE_PHONE_USER_EMAIL,
-            password_hash=None,
+            password_hash="",
+            has_usable_password=False,
             is_active=True,
             phone_verified=True,
             phone_country_code=MUST_CHANGE_PHONE_USER_COUNTRY_CODE,
