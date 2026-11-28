@@ -22,14 +22,15 @@ from django.db import migrations
 def normalize_phone_country_code(apps, schema_editor):
     """Retire le '+' (et les espaces superflus) des indicatifs stockés."""
     User = apps.get_model("tenxyte", "User")
-    users = User.objects.exclude(phone_country_code__isnull=True).exclude(phone_country_code="")
+    db_alias = schema_editor.connection.alias
+    users = User.objects.using(db_alias).exclude(phone_country_code__isnull=True).exclude(phone_country_code="")
 
     updated = 0
     for user in users:
         normalized = user.phone_country_code.strip().lstrip("+")
         if normalized != user.phone_country_code:
             user.phone_country_code = normalized
-            user.save(update_fields=["phone_country_code"])
+            user.save(using=db_alias, update_fields=["phone_country_code"])
             updated += 1
 
     if updated > 0:

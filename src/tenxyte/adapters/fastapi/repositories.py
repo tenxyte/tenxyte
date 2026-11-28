@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from tenxyte.adapters.fastapi.models import UserDB
+from tenxyte.adapters.fastapi.repositories_async import _apply_status_filter
 from tenxyte.ports.repositories import MFAType, User, UserRepository
 
 
@@ -31,10 +32,10 @@ class FastAPIUserRepository(UserRepository):
     def create(self, user: User) -> User:
         db_user = UserDB(
             id=user.id,
-            email=user.email,
-            password_hash=user.password_hash,
-            first_name=user.first_name,
-            last_name=user.last_name,
+            email=user.email or None,
+            password_hash=user.password_hash or "",
+            first_name=user.first_name or "",
+            last_name=user.last_name or "",
             is_active=user.is_active,
             is_superuser=user.is_superuser,
             is_staff=user.is_staff,
@@ -45,7 +46,7 @@ class FastAPIUserRepository(UserRepository):
             created_at=user.created_at,
             updated_at=user.updated_at,
             last_login=user.last_login,
-            user_metadata=user.metadata,
+            user_metadata=user.metadata or None,
         )
         self.session.add(db_user)
         self.session.commit()
@@ -58,10 +59,10 @@ class FastAPIUserRepository(UserRepository):
         if not db_user:
             raise ValueError(f"User with ID {user.id} not found")
 
-        db_user.email = user.email
-        db_user.password_hash = user.password_hash
-        db_user.first_name = user.first_name
-        db_user.last_name = user.last_name
+        db_user.email = user.email or None
+        db_user.password_hash = user.password_hash or ""
+        db_user.first_name = user.first_name or ""
+        db_user.last_name = user.last_name or ""
         db_user.is_active = user.is_active
         db_user.is_superuser = user.is_superuser
         db_user.is_staff = user.is_staff
@@ -94,7 +95,7 @@ class FastAPIUserRepository(UserRepository):
             if "is_active" in filters:
                 stmt = stmt.where(UserDB.is_active == filters["is_active"])
             if "status" in filters:
-                stmt = stmt.where(UserDB.status == filters["status"])
+                stmt = _apply_status_filter(stmt, filters["status"])
             if "email" in filters:
                 stmt = stmt.where(UserDB.email == filters["email"])
 
@@ -108,7 +109,7 @@ class FastAPIUserRepository(UserRepository):
             if "is_active" in filters:
                 stmt = stmt.where(UserDB.is_active == filters["is_active"])
             if "status" in filters:
-                stmt = stmt.where(UserDB.status == filters["status"])
+                stmt = _apply_status_filter(stmt, filters["status"])
             if "email" in filters:
                 stmt = stmt.where(UserDB.email == filters["email"])
         return self.session.execute(stmt).scalar_one()

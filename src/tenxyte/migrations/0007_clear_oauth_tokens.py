@@ -22,10 +22,11 @@ from django.db import migrations, models
 def clear_oauth_tokens(apps, schema_editor):
     """Efface tous les tokens OAuth stockés en clair."""
     SocialConnection = apps.get_model("tenxyte", "SocialConnection")
-    count = SocialConnection.objects.exclude(access_token="", refresh_token="").count()
+    db_alias = schema_editor.connection.alias
+    count = SocialConnection.objects.using(db_alias).exclude(access_token="", refresh_token="").count()
 
     if count > 0:
-        SocialConnection.objects.update(access_token="", refresh_token="")
+        SocialConnection.objects.using(db_alias).update(access_token="", refresh_token="")
         print(f"\n  ⚠️  [R10 Audit] {count} connexion(s) sociale(s) : tokens OAuth effacés.")
         print("  ℹ️  Les utilisateurs restent connectés via leurs JWT Tenxyte.\n")
 

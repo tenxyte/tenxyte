@@ -56,7 +56,6 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
-import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, Request
@@ -92,7 +91,7 @@ from tenxyte.adapters.fastapi.schemas import (
 from tenxyte.adapters.fastapi.security import AuthContext, require_jwt
 from tenxyte.adapters.fastapi.serialization import serialize_user as _serialize_user
 from tenxyte.adapters.fastapi.totp_storage import SQLAlchemyTOTPStorage
-from tenxyte.core.auth_service import AuthenticationService
+from tenxyte.core.auth_service import AuthenticationService, hash_password
 from tenxyte.core.cache_service import CacheService
 from tenxyte.core.jwt_service import JWTService
 from tenxyte.core.settings import Settings
@@ -187,7 +186,7 @@ async def register(
             details={"password": ["Password must be at most 72 bytes when UTF-8 encoded"]},
         )
 
-    hashed = bcrypt.hashpw(password_bytes, bcrypt.gensalt(rounds=settings.bcrypt_rounds)).decode("utf-8")
+    hashed = hash_password(body.password, rounds=settings.bcrypt_rounds)
     new_user = User(
         id=str(uuid4()),
         email=body.email,
@@ -424,7 +423,7 @@ async def refresh_token_view(
     access_token, _jti, expires_at = jwt_service.generate_access_token(user_id=row.user_id, application_id=app_id)
     await revoke_refresh_token_row(session, row)
     new_refresh_token = await _issue_refresh_token(
-        session, row.user_id, lifetime_seconds=settings.jwt_refresh_token_lifetime, device_id=row.device_id
+        session, row.user_id, lifetime_seconds=settings.jwt_refresh_token_lifetime, device_id=row.device_info
     )
 
     user_repo = SQLAlchemyAsyncUserRepository(session)
@@ -512,11 +511,19 @@ async def logout_all(
 
 
 @router.get("/me/")
-async def get_me(auth: AuthContext = Depends(require_jwt(allow_any_scope=True))):  # noqa: B008
+async def get_me(
+    session: AsyncSession = Depends(get_db_session),  # noqa: B008
+    auth: AuthContext = Depends(require_jwt(allow_any_scope=True)),  # noqa: B008
+):
     # Parity note: Django's MeView authenticates via plain DRF IsAuthenticated, not
     # @require_jwt, so it never inspects the scope claim — a restricted-scope token (e.g. the
     # 2fa_setup_only bootstrap token) is accepted here too, unlike me/roles/ below.
-    return _serialize_user(auth.user)
+    from tenxyte.adapters.fastapi import rbac_service
+
+    data = _serialize_user(auth.user)
+    data["roles"] = await rbac_service.get_all_role_codes_async(session, auth.user.id)
+    data["permissions"] = await rbac_service.effective_permission_codes_async(session, auth.user.id)
+    return data
 
 
 @router.patch("/me/")

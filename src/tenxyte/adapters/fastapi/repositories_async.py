@@ -14,7 +14,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tenxyte.adapters.fastapi.models_sa import UserDB
 from tenxyte.ports.async_repositories import AsyncUserRepository
-from tenxyte.ports.repositories import MFAType, User
+from tenxyte.ports.repositories import MFAType, User, UserStatus
+
+
+def _apply_status_filter(stmt, status_val: UserStatus | str):
+    resolved = status_val if isinstance(status_val, UserStatus) else UserStatus(str(status_val))
+    if resolved == UserStatus.SUSPENDED:
+        return stmt.where((UserDB.is_banned.is_(True)) | (UserDB.is_deleted.is_(True)) | (UserDB.is_locked.is_(True)))
+    if resolved in (UserStatus.INACTIVE, UserStatus.PENDING):
+        return stmt.where(UserDB.is_active.is_(False))
+    return stmt.where(
+        UserDB.is_active.is_(True),
+        UserDB.is_banned.is_(False),
+        UserDB.is_locked.is_(False),
+        UserDB.is_deleted.is_(False),
+    )
 
 
 class SQLAlchemyAsyncUserRepository(AsyncUserRepository):
@@ -46,10 +60,10 @@ class SQLAlchemyAsyncUserRepository(AsyncUserRepository):
         metadata = user.metadata or {}
         db_user = UserDB(
             id=user.id,
-            email=user.email,
-            password_hash=user.password_hash,
-            first_name=user.first_name,
-            last_name=user.last_name,
+            email=user.email or None,
+            password_hash=user.password_hash or "",
+            first_name=user.first_name or "",
+            last_name=user.last_name or "",
             is_active=user.is_active,
             is_superuser=user.is_superuser,
             is_staff=user.is_staff,
@@ -61,7 +75,7 @@ class SQLAlchemyAsyncUserRepository(AsyncUserRepository):
             created_at=user.created_at,
             updated_at=user.updated_at,
             last_login=user.last_login,
-            user_metadata=metadata,
+            user_metadata=metadata or None,
             # Wave A follow-up (login/phone): phone_country_code/phone_number are stored as
             # dedicated indexed columns, mirrored in from Core's generic metadata dict — the port
             # dataclass itself has no dedicated phone fields (see models_sa.py's docstring).
@@ -78,10 +92,10 @@ class SQLAlchemyAsyncUserRepository(AsyncUserRepository):
         if not db_user:
             raise ValueError(f"User with ID {user.id} not found")
 
-        db_user.email = user.email
-        db_user.password_hash = user.password_hash
-        db_user.first_name = user.first_name
-        db_user.last_name = user.last_name
+        db_user.email = user.email or None
+        db_user.password_hash = user.password_hash or ""
+        db_user.first_name = user.first_name or ""
+        db_user.last_name = user.last_name or ""
         db_user.is_active = user.is_active
         db_user.is_superuser = user.is_superuser
         db_user.is_staff = user.is_staff
@@ -111,7 +125,7 @@ class SQLAlchemyAsyncUserRepository(AsyncUserRepository):
             if "is_active" in filters:
                 stmt = stmt.where(UserDB.is_active == filters["is_active"])
             if "status" in filters:
-                stmt = stmt.where(UserDB.status == filters["status"])
+                stmt = _apply_status_filter(stmt, filters["status"])
             if "email" in filters:
                 stmt = stmt.where(UserDB.email == filters["email"])
         stmt = stmt.offset(skip).limit(limit)
@@ -124,7 +138,7 @@ class SQLAlchemyAsyncUserRepository(AsyncUserRepository):
             if "is_active" in filters:
                 stmt = stmt.where(UserDB.is_active == filters["is_active"])
             if "status" in filters:
-                stmt = stmt.where(UserDB.status == filters["status"])
+                stmt = _apply_status_filter(stmt, filters["status"])
             if "email" in filters:
                 stmt = stmt.where(UserDB.email == filters["email"])
         return (await self.session.execute(stmt)).scalar_one()

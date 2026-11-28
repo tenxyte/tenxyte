@@ -6,6 +6,8 @@ from .auth_service import (
     AuthenticationService,
     AuthResult,
     PasswordUserLookup,
+    hash_password,
+    verify_password,
 )
 from .cache_service import (
     CacheService,
@@ -132,4 +134,6 @@ __all__ = [  # noqa: RUF022
     "AuthenticationService",
     "AuthResult",
     "PasswordUserLookup",
+    "hash_password",
+    "verify_password",
 ]

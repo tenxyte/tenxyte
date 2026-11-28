@@ -18,10 +18,9 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-import bcrypt
-
 from tenxyte.adapters.fastapi.models_sa import UserDB
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
+from tenxyte.core.auth_service import verify_password
 from tenxyte.core.cache_service import CacheService
 from tenxyte.core.settings import Settings
 from tenxyte.ports.repositories import User
@@ -71,13 +70,7 @@ class _BasePasswordLookup:
         user = await self.user_repo.get_by_id(user_id)
         if not user or not user.password_hash:
             return False
-        password_bytes = password.encode("utf-8")
-        if len(password_bytes) > 72:
-            # bcrypt hard-fails past 72 bytes — no stored hash can legitimately correspond to a
-            # password this long anyway (registration itself rejects it), so this is simply a
-            # wrong password, not an error.
-            return False
-        return bcrypt.checkpw(password_bytes, user.password_hash.encode("utf-8"))
+        return verify_password(password, user.password_hash)
 
     async def record_failed_login_async(self, user_id: str) -> None:
         key = _failed_login_key(user_id)

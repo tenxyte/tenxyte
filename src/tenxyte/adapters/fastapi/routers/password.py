@@ -46,7 +46,6 @@ from __future__ import annotations
 
 import logging
 
-import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, Request, Response
@@ -65,6 +64,7 @@ from tenxyte.adapters.fastapi.schemas import (
     SetInitialPasswordRequest,
 )
 from tenxyte.adapters.fastapi.security import AuthContext, require_jwt
+from tenxyte.core.auth_service import hash_password, verify_password
 from tenxyte.core.jwt_service import JWTService
 from tenxyte.core.settings import Settings
 
@@ -130,7 +130,7 @@ async def change_password(
     _raise_if_weak(body.new_password, settings)
 
     if body.current_password:
-        if not bcrypt.checkpw(body.current_password.encode("utf-8"), user.password_hash.encode("utf-8")):
+        if not verify_password(body.current_password, user.password_hash):
             raise TenxyteAPIError("Current password is incorrect", code="INVALID_PASSWORD", status_code=400)
     elif body.otp_code:
         # OTP-based reauth isn't implemented yet (reuses a login-type OTP in Django, out of this
@@ -151,8 +151,7 @@ async def change_password(
     strength_result = password_strength.validate(body.new_password, settings)
 
     user_repo = SQLAlchemyAsyncUserRepository(session)
-    hashed = bcrypt.hashpw(body.new_password.encode("utf-8"), bcrypt.gensalt(rounds=settings.bcrypt_rounds))
-    user.password_hash = hashed.decode("utf-8")
+    user.password_hash = hash_password(body.new_password, rounds=settings.bcrypt_rounds)
     await user_repo.update(user)
 
     # The current access token itself isn't blacklisted here — matching the Django_Adapter's
@@ -255,8 +254,7 @@ async def password_reset_confirm(
     # hard-rejects a breached password here, only flags it in the response.
     breach_ok, _breach_error = await breach_check.check_password_async(body.new_password, settings)
 
-    hashed = bcrypt.hashpw(body.new_password.encode("utf-8"), bcrypt.gensalt(rounds=settings.bcrypt_rounds))
-    user.password_hash = hashed.decode("utf-8")
+    user.password_hash = hash_password(body.new_password, rounds=settings.bcrypt_rounds)
     await user_repo.update(user)
 
     tokens_revoked = await revoke_all_for_user(session, user.id)
@@ -297,8 +295,7 @@ async def set_initial_password(
         raise TenxyteAPIError(breach_error, code="PASSWORD_BREACHED", status_code=400)
 
     user_repo = SQLAlchemyAsyncUserRepository(session)
-    hashed = bcrypt.hashpw(body.new_password.encode("utf-8"), bcrypt.gensalt(rounds=settings.bcrypt_rounds))
-    user.password_hash = hashed.decode("utf-8")
+    user.password_hash = hash_password(body.new_password, rounds=settings.bcrypt_rounds)
     await user_repo.update(user)
 
     response_data = {"message": "Password set successfully"}

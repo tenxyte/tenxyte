@@ -8,13 +8,13 @@ inline), not just against Django's implementation.
 import asyncio
 import uuid
 
-import bcrypt
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from tenxyte.adapters.fastapi.app import create_tenxyte_app
 from tenxyte.adapters.fastapi.models_sa import ApplicationDB
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
+from tenxyte.core.auth_service import hash_password
 from tenxyte.core.env_provider import EnvSettingsProvider
 from tenxyte.core.settings import Settings
 from tenxyte.ports.repositories import User
@@ -60,7 +60,7 @@ async def _seed_application(app) -> None:
 
 async def _create_user(app, *, email: str, is_superuser: bool = False) -> User:
     session_factory = app.state.tenxyte_session_factory
-    password_hash = bcrypt.hashpw(b"correct-horse-battery-staple", bcrypt.gensalt()).decode("utf-8")
+    password_hash = hash_password("correct-horse-battery-staple")
     async with session_factory() as session:
         repo = SQLAlchemyAsyncUserRepository(session)
         return await repo.create(
@@ -590,16 +590,17 @@ async def test_wellformed_trace_id_is_durably_persisted():
 
         from sqlalchemy import select
 
-        from tenxyte.adapters.fastapi.models_sa import AgentActionLogDB
+        from tenxyte.adapters.fastapi.models_sa import AuditLogDB
 
         session_factory = app.state.tenxyte_session_factory
         async with session_factory() as session:
             row = (
-                await session.execute(select(AgentActionLogDB).where(AgentActionLogDB.prompt_trace_id == trace_id))
+                await session.execute(select(AuditLogDB).where(AuditLogDB.prompt_trace_id == trace_id))
             ).scalar_one_or_none()
 
     assert row is not None
     assert row.agent_token_id == issued["id"]
+    assert row.action == "agent_action"
 
 
 @pytest.mark.anyio
@@ -622,12 +623,12 @@ async def test_malformed_trace_id_is_not_persisted():
 
         from sqlalchemy import select
 
-        from tenxyte.adapters.fastapi.models_sa import AgentActionLogDB
+        from tenxyte.adapters.fastapi.models_sa import AuditLogDB
 
         session_factory = app.state.tenxyte_session_factory
         async with session_factory() as session:
             rows = (
-                (await session.execute(select(AgentActionLogDB).where(AgentActionLogDB.agent_token_id == issued["id"])))
+                (await session.execute(select(AuditLogDB).where(AuditLogDB.agent_token_id == issued["id"])))
                 .scalars()
                 .all()
             )

@@ -52,7 +52,6 @@ import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
-import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, Request
@@ -75,6 +74,7 @@ from tenxyte.adapters.fastapi.schemas import LoginOTPRequestRequest, LoginOTPVer
 from tenxyte.adapters.fastapi.serialization import serialize_user
 from tenxyte.adapters.fastapi.throttling import _get_client_ip
 from tenxyte.adapters.fastapi.totp_storage import SQLAlchemyTOTPStorage
+from tenxyte.core.auth_service import hash_password
 from tenxyte.core.cache_service import CacheService
 from tenxyte.core.jwt_service import JWTService
 from tenxyte.core.settings import Settings
@@ -125,9 +125,7 @@ async def login_otp_request(
     if user is None and settings.otp_login_auto_register:
         # Passwordless account: a random, never-shown password — nobody, including the account's
         # own owner, authenticates with it; only OTP codes do.
-        password_hash = bcrypt.hashpw(
-            secrets.token_urlsafe(32).encode("utf-8"), bcrypt.gensalt(rounds=settings.bcrypt_rounds)
-        ).decode("utf-8")
+        password_hash = hash_password(secrets.token_urlsafe(32), rounds=settings.bcrypt_rounds)
         new_user = User(
             id=str(uuid.uuid4()),
             email=f"{uuid.uuid4()}@passwordless.invalid",

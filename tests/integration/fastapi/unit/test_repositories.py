@@ -1,10 +1,12 @@
-import pytest
 from datetime import datetime, timezone
+
+import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
 from tenxyte.adapters.fastapi.models import Base
 from tenxyte.adapters.fastapi.repositories import FastAPIUserRepository
-from tenxyte.ports.repositories import User, UserStatus, MFAType
+from tenxyte.ports.repositories import MFAType, User, UserStatus
 
 # Setup in-memory SQLite for testing
 engine = create_engine("sqlite:///:memory:")
@@ -84,7 +86,11 @@ def test_repo_list_all(repo):
     assert active_users[0].id == "l1"
     
     status_users = repo.list_all(filters={"status": UserStatus.ACTIVE})
-    assert len(status_users) == 2
+    assert len(status_users) == 1
+    assert status_users[0].id == "l1"
+    inactive_users = repo.list_all(filters={"status": UserStatus.INACTIVE})
+    assert len(inactive_users) == 1
+    assert inactive_users[0].id == "l2"
     
     email_users = repo.list_all(filters={"email": "l2@user.com"})
     assert len(email_users) == 1
@@ -95,7 +101,8 @@ def test_repo_count(repo):
     
     assert repo.count() == 2
     assert repo.count(filters={"is_active": True}) == 1
-    assert repo.count(filters={"status": UserStatus.ACTIVE}) == 2
+    assert repo.count(filters={"status": UserStatus.ACTIVE}) == 1
+    assert repo.count(filters={"status": UserStatus.INACTIVE}) == 1
     assert repo.count(filters={"email": "c1@user.com"}) == 1
 
 def test_repo_update_last_login(repo):

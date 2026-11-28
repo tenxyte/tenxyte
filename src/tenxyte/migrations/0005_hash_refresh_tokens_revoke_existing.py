@@ -25,7 +25,8 @@ from django.db import migrations
 def revoke_all_plaintext_tokens(apps, schema_editor):
     """Révoque tous les tokens existants (stockés en clair, incompatibles avec le nouveau schéma SHA-256)."""
     RefreshToken = apps.get_model("tenxyte", "RefreshToken")
-    count = RefreshToken.objects.filter(is_revoked=False).update(is_revoked=True)
+    db_alias = schema_editor.connection.alias
+    count = RefreshToken.objects.using(db_alias).filter(is_revoked=False).update(is_revoked=True)
     if count > 0:
         print(f"\n  ⚠️  [R1 Audit] {count} refresh token(s) révoqué(s) (migration vers SHA-256).")
         print("  ⚠️  Les utilisateurs doivent se reconnecter.\n")

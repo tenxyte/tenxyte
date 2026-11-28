@@ -8,13 +8,13 @@ not, for generated emails/passwords. Django_Adapter parity: `RegisterView` retur
 import asyncio
 import uuid
 
-import bcrypt
 from httpx import ASGITransport, AsyncClient
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from tenxyte.adapters.fastapi.app import create_tenxyte_app
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
+from tenxyte.core.auth_service import hash_password
 from tenxyte.core.env_provider import EnvSettingsProvider
 from tenxyte.core.settings import Settings
 from tenxyte.ports.repositories import User
@@ -58,7 +58,7 @@ async def _run_scenario(email: str, password: str) -> tuple[tuple[int, dict], tu
         session_factory = app.state.tenxyte_session_factory
         async with session_factory() as session:
             repo = SQLAlchemyAsyncUserRepository(session)
-            hashed = bcrypt.hashpw(b"some-other-password-1", bcrypt.gensalt()).decode("utf-8")
+            hashed = hash_password("some-other-password-1")
             await repo.create(User(id=str(uuid.uuid4()), email=email, password_hash=hashed, is_active=True))
 
         transport = ASGITransport(app=app)

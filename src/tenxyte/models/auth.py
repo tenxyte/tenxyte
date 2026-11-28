@@ -14,7 +14,6 @@ import secrets
 from datetime import timedelta
 from typing import ClassVar
 
-import bcrypt
 from django.contrib.auth.models import BaseUserManager
 from django.db import models
 from django.utils import timezone
@@ -355,24 +354,15 @@ class AbstractUser(models.Model):
         return self.is_superuser
 
     def set_password(self, raw_password: str):
-        import hashlib
-
         from ..conf import auth_settings
+        from ..core.auth_service import hash_password
 
-        pre_hash = hashlib.sha256(
-            raw_password.encode("utf-8")
-        ).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
-        self.password = bcrypt.hashpw(
-            pre_hash.encode("utf-8"), bcrypt.gensalt(rounds=auth_settings.BCRYPT_ROUNDS)
-        ).decode("utf-8")
+        self.password = hash_password(raw_password, rounds=auth_settings.BCRYPT_ROUNDS)
 
     def check_password(self, raw_password: str) -> bool:
-        import hashlib
+        from ..core.auth_service import verify_password
 
-        pre_hash = hashlib.sha256(
-            raw_password.encode("utf-8")
-        ).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
-        return bcrypt.checkpw(pre_hash.encode("utf-8"), self.password.encode("utf-8"))
+        return verify_password(raw_password, self.password)
 
     def lock_account(self, duration_minutes: int = 30):
         """Lock account with exponential backoff support.

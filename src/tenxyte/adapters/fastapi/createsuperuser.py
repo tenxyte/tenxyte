@@ -24,11 +24,10 @@ import getpass
 import sys
 from uuid import uuid4
 
-import bcrypt
-
 from tenxyte.adapters.fastapi import db as db_module
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
 from tenxyte.adapters.fastapi.settings import get_default_settings
+from tenxyte.core.auth_service import hash_password
 from tenxyte.ports.repositories import User
 
 
@@ -71,7 +70,7 @@ async def create_superuser(database_url: str, email: str, password: str) -> None
             if existing is not None:
                 raise ValueError(f'A user with email "{email}" already exists.')
 
-            hashed = bcrypt.hashpw(password_bytes, bcrypt.gensalt(rounds=settings.bcrypt_rounds)).decode("utf-8")
+            hashed = hash_password(password, rounds=settings.bcrypt_rounds)
             await repo.create(
                 User(
                     id=str(uuid4()),
