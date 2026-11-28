@@ -201,7 +201,7 @@ marqueur `[MT-x]` renvoyant à `manual_tests.md`.
     - _Requirements: 7.3_
 
 - [ ] 11. Distribution et publication
-  - [ ] 11.1 Publier les deux packages `[MT-1]`
+  - [x] 11.1 Publier les deux packages `[MT-1]`
     - TestPyPI puis PyPI (`tenxyte-langchain` 0.1.0, `tenxyte-mcp-server` 0.1.0) via le pipeline
       Trusted Publishing (Phase 1) ou workflow dédié équivalent ; installation vérifiée
       (`pip install`, `uvx tenxyte-mcp-server`)
