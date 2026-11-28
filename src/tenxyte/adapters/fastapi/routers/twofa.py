@@ -21,7 +21,6 @@ accept.
 
 from __future__ import annotations
 
-import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, Request
@@ -36,6 +35,7 @@ from tenxyte.adapters.fastapi.schemas import (
 )
 from tenxyte.adapters.fastapi.security import AuthContext, require_jwt
 from tenxyte.adapters.fastapi.totp_storage import SQLAlchemyTOTPStorage
+from tenxyte.core.auth_service import verify_password
 from tenxyte.core.jwt_service import JWTService
 from tenxyte.core.totp_service import TOTPService
 
@@ -133,9 +133,7 @@ async def twofa_disable(
         raise TenxyteAPIError("Code is required", code="CODE_REQUIRED", status_code=400)
 
     if body.password:
-        if not auth.user.password_hash or not bcrypt.checkpw(
-            body.password.encode("utf-8"), auth.user.password_hash.encode("utf-8")
-        ):
+        if not auth.user.password_hash or not verify_password(body.password, auth.user.password_hash):
             raise TenxyteAPIError("Current password is incorrect", code="INVALID_PASSWORD", status_code=400)
     elif body.otp_code:
         # OTP-based reauth isn't implemented yet (see module docstring) — treated as "no

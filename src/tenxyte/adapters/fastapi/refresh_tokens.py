@@ -42,7 +42,7 @@ async def issue_refresh_token(
     row = RefreshTokenDB(
         user_id=user_id,
         token_hash=hash_token(raw_token),
-        device_id=device_id,
+        device_info=device_id or "",
         ip_address=ip_address,
         expires_at=datetime.now(timezone.utc) + timedelta(seconds=lifetime_seconds),
     )
@@ -61,7 +61,7 @@ async def redeem_refresh_token(session: AsyncSession, raw_token: str) -> Refresh
     row = (await session.execute(stmt)).scalar_one_or_none()
     if row is None:
         return None
-    if row.revoked_at is not None:
+    if row.is_revoked:
         return None
 
     expires_at = row.expires_at if row.expires_at.tzinfo else row.expires_at.replace(tzinfo=timezone.utc)
@@ -78,7 +78,8 @@ async def redeem_refresh_token(session: AsyncSession, raw_token: str) -> Refresh
 
 
 async def revoke_refresh_token_row(session: AsyncSession, row: RefreshTokenDB) -> None:
-    row.revoked_at = datetime.now(timezone.utc)
+    row.is_revoked = True
+    row.last_used_at = datetime.now(timezone.utc)
     await session.commit()
 
 
@@ -93,10 +94,11 @@ async def revoke_refresh_token(session: AsyncSession, raw_token: str) -> bool:
 
 async def revoke_all_for_user(session: AsyncSession, user_id: str) -> int:
     """Revoke every still-live refresh token for a user (logout/all). Returns the count revoked."""
-    stmt = select(RefreshTokenDB).where(RefreshTokenDB.user_id == user_id, RefreshTokenDB.revoked_at.is_(None))
+    stmt = select(RefreshTokenDB).where(RefreshTokenDB.user_id == user_id, RefreshTokenDB.is_revoked.is_(False))
     rows = (await session.execute(stmt)).scalars().all()
     now = datetime.now(timezone.utc)
     for row in rows:
-        row.revoked_at = now
+        row.is_revoked = True
+        row.last_used_at = now
     await session.commit()
     return len(rows)

@@ -18,7 +18,6 @@ register+login=True-in-one-call gating edge case — see the tests right before
 
 import uuid
 
-import bcrypt
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
@@ -26,6 +25,7 @@ from sqlalchemy import select
 from tenxyte.adapters.fastapi.app import create_tenxyte_app
 from tenxyte.adapters.fastapi.models_sa import UserDB
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
+from tenxyte.core.auth_service import hash_password
 from tenxyte.core.env_provider import EnvSettingsProvider
 from tenxyte.core.settings import Settings
 from tenxyte.ports.repositories import User
@@ -76,7 +76,7 @@ async def _create_user(
     app, *, email: str, password: str = "TempPass123!", is_superuser: bool = False, must_change_password: bool = False
 ) -> User:
     session_factory = app.state.tenxyte_session_factory
-    hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    hashed = hash_password(password)
     async with session_factory() as session:
         repo = SQLAlchemyAsyncUserRepository(session)
         user = await repo.create(
@@ -410,17 +410,16 @@ async def test_register_with_must_change_password_and_login_gets_restricted_toke
     able to walk away with a full-scope token — the immediate token issuance has to go through the
     same gating as a normal login, not the plain `generate_new_token_pair` shortcut."""
     app = _build_app()
-    async with app.router.lifespan_context(app):
-        async with await _client(app) as client:
-            register_resp = await client.post(
-                "/api/v1/register/",
-                json={
-                    "email": "immediate@example.com",
-                    "password": "TempPass123!",
-                    "must_change_password": True,
-                    "login": True,
-                },
-            )
+    async with app.router.lifespan_context(app), await _client(app) as client:
+        register_resp = await client.post(
+            "/api/v1/register/",
+            json={
+                "email": "immediate@example.com",
+                "password": "TempPass123!",
+                "must_change_password": True,
+                "login": True,
+            },
+        )
     assert register_resp.status_code == 201
     body = register_resp.json()
     assert body["token_scope"] == "password_change_only"
@@ -432,12 +431,11 @@ async def test_register_with_must_change_password_and_login_gets_restricted_toke
 @pytest.mark.anyio
 async def test_register_with_must_change_password_false_and_login_gets_full_scope_token():
     app = _build_app()
-    async with app.router.lifespan_context(app):
-        async with await _client(app) as client:
-            register_resp = await client.post(
-                "/api/v1/register/",
-                json={"email": "normal-login@example.com", "password": "TempPass123!", "login": True},
-            )
+    async with app.router.lifespan_context(app), await _client(app) as client:
+        register_resp = await client.post(
+            "/api/v1/register/",
+            json={"email": "normal-login@example.com", "password": "TempPass123!", "login": True},
+        )
     assert register_resp.status_code == 201
     body = register_resp.json()
     assert "token_scope" not in body
@@ -484,7 +482,7 @@ async def test_login_otp_verify_also_issues_restricted_token():
                 User(
                     id=str(uuid.uuid4()),
                     email="otp-forced@example.com",
-                    password_hash=bcrypt.hashpw(b"TempPass123!", bcrypt.gensalt()).decode("utf-8"),
+                    password_hash=hash_password("TempPass123!"),
                     is_active=True,
                     metadata={"phone_country_code": "+1", "phone_number": "5551234567"},
                 )

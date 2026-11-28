@@ -63,11 +63,93 @@ def _as_aware(dt: datetime) -> datetime:
 # ============================================================
 
 
+class SQLAlchemyTokenBlacklistService:
+    """DB-backed `AsyncTokenBlacklistService` over `tenxyte_blacklisted_tokens`.
+
+    Shares the exact same `tenxyte_blacklisted_tokens` table as Django's `BlacklistedToken`
+    so a JWT revoked in Django is immediately rejected by FastAPI and vice versa, even across
+    restarts. User-level revocation timestamps (`revoke_all_user_tokens_async`) stay in memory
+    (mirroring Django's cache-based user revocation).
+    """
+
+    def __init__(self, session_factory):
+        self._session_factory = session_factory
+        self._user_revocations: dict[str, datetime] = {}
+
+    def is_blacklisted(self, jti: str) -> bool:
+        raise NotImplementedError("Use is_blacklisted_async in the async FastAPI Reference_Stack.")
+
+    def is_user_revoked(self, user_id: str, token_iat: datetime) -> bool:
+        revoked_at = self._user_revocations.get(user_id)
+        if revoked_at is None:
+            return False
+        iat_aware = token_iat if token_iat.tzinfo else token_iat.replace(tzinfo=timezone.utc)
+        return iat_aware < revoked_at
+
+    def revoke_all_user_tokens(self, user_id: str) -> datetime:
+        now = datetime.now(timezone.utc)
+        self._user_revocations[user_id] = now
+        return now
+
+    def blacklist_token(
+        self, jti: str, expires_at: datetime, user_id: str | None = None, reason: str = ""
+    ) -> bool:
+        raise NotImplementedError("Use blacklist_token_async in the async FastAPI Reference_Stack.")
+
+    async def is_blacklisted_async(self, jti: str) -> bool:
+        async with self._session_factory() as session:
+            stmt = select(BlacklistedTokenDB).where(BlacklistedTokenDB.token_jti == jti)
+            row = (await session.execute(stmt)).scalar_one_or_none()
+            if row is None:
+                return False
+            return _as_aware(row.expires_at) > datetime.now(timezone.utc)
+
+    async def is_user_revoked_async(self, user_id: str, token_iat: datetime) -> bool:
+        return self.is_user_revoked(user_id, token_iat)
+
+    async def revoke_all_user_tokens_async(self, user_id: str) -> datetime:
+        return self.revoke_all_user_tokens(user_id)
+
+    async def blacklist_token_async(
+        self, jti: str, expires_at: datetime, user_id: str | None = None, reason: str = ""
+    ) -> bool:
+        async with self._session_factory() as session:
+            existing = (
+                await session.execute(select(BlacklistedTokenDB).where(BlacklistedTokenDB.token_jti == jti))
+            ).scalar_one_or_none()
+            if existing is None:
+                session.add(
+                    BlacklistedTokenDB(
+                        token_jti=jti,
+                        user_id=user_id,
+                        expires_at=expires_at,
+                        reason=reason,
+                    )
+                )
+                await session.commit()
+        return True
+
+
 async def record_blacklisted_token_async(
     session: AsyncSession, jwt_service: JWTService, token: str, *, user_id: str | None = None, reason: str = ""
 ) -> None:
     decoded = await jwt_service.decode_token_async(token, check_blacklist=False)
     if not decoded or not decoded.jti:
+        return
+    existing = (
+        await session.execute(select(BlacklistedTokenDB).where(BlacklistedTokenDB.token_jti == decoded.jti))
+    ).scalar_one_or_none()
+    if existing is not None:
+        changed = False
+        resolved_user_id = user_id or decoded.user_id
+        if existing.user_id is None and resolved_user_id:
+            existing.user_id = resolved_user_id
+            changed = True
+        if not existing.reason and reason:
+            existing.reason = reason
+            changed = True
+        if changed:
+            await session.commit()
         return
     session.add(
         BlacklistedTokenDB(
@@ -342,7 +424,7 @@ async def serialize_refresh_token_admin_async(session: AsyncSession, token: Refr
         "application_name": await _application_name(session, token.application_id),
         "device_info": token.device_info,
         "ip_address": token.ip_address,
-        "is_revoked": token.revoked_at is not None,
+        "is_revoked": token.is_revoked,
         "is_expired": _as_aware(token.expires_at) < datetime.now(timezone.utc),
         "expires_at": token.expires_at.isoformat(),
         "created_at": token.created_at.isoformat(),
@@ -377,7 +459,7 @@ async def list_refresh_tokens_admin_async(
         count_stmt = count_stmt.where(RefreshTokenDB.application_id == application_id)
 
     if is_revoked is not None:
-        clause = RefreshTokenDB.revoked_at.is_not(None) if is_revoked else RefreshTokenDB.revoked_at.is_(None)
+        clause = RefreshTokenDB.is_revoked.is_(True) if is_revoked else RefreshTokenDB.is_revoked.is_(False)
         stmt = stmt.where(clause)
         count_stmt = count_stmt.where(clause)
 

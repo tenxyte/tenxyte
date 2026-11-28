@@ -20,7 +20,8 @@ from django.db import migrations, models
 def log_totp_migration_info(apps, schema_editor):
     """Informe de l'impact de la migration TOTP."""
     User = apps.get_model("tenxyte", "User")
-    count = User.objects.filter(is_2fa_enabled=True).count()
+    db_alias = schema_editor.connection.alias
+    count = User.objects.using(db_alias).filter(is_2fa_enabled=True).count()
     if count > 0:
         print(f"\n  ℹ️  [R2 Audit] {count} utilisateur(s) avec 2FA actif.")
         print("  ℹ️  Les totp_secrets seront chiffrés au prochain accès via l'ORM (django-cryptography).")

@@ -1,3 +1,5 @@
+from tenxyte.core.auth_service import hash_password
+
 """
 Tests for the Wave A auth router (spec z_aud_3, task 5.1) — register, login/email, refresh,
 logout, logout/all, me (GET/PATCH), me/roles — against a real app, a real ephemeral aiosqlite
@@ -6,7 +8,6 @@ database, and real signed tokens (no mocks).
 
 import uuid
 
-import bcrypt
 import pyotp
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -57,7 +58,7 @@ async def _create_user(
     phone_number: str | None = None,
 ) -> User:
     session_factory = app.state.tenxyte_session_factory
-    hashed = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    hashed = hash_password(password)
     metadata = {}
     if phone_country_code and phone_number:
         metadata = {"phone_country_code": phone_country_code, "phone_number": phone_number}

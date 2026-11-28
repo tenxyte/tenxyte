@@ -5,13 +5,13 @@ against a real ephemeral aiosqlite database (no mocks): real bcrypt hashing, rea
 check, real `is_superuser`/`is_staff` flags.
 """
 
-import bcrypt
 import pytest
 from sqlalchemy import select
 
 from tenxyte.adapters.fastapi import db as db_module
 from tenxyte.adapters.fastapi.createsuperuser import create_superuser
 from tenxyte.adapters.fastapi.models_sa import UserDB
+from tenxyte.core.auth_service import verify_password
 
 
 @pytest.mark.anyio
@@ -26,7 +26,7 @@ async def test_create_superuser_end_to_end(tmp_path):
         assert user.is_superuser is True
         assert user.is_staff is True
         assert user.is_active is True
-        assert bcrypt.checkpw(b"Correct-Horse-Battery-1!", user.password_hash.encode("utf-8"))
+        assert verify_password("Correct-Horse-Battery-1!", user.password_hash)
     await engine.dispose()
 
 

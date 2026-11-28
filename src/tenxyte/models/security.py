@@ -11,7 +11,6 @@ import logging
 from datetime import timedelta
 from typing import ClassVar
 
-import bcrypt
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
@@ -306,15 +305,11 @@ class PasswordHistory(models.Model):
         """
         recent_passwords = cls.objects.filter(user=user).order_by("-created_at")[:check_count]
 
+        from ..core.auth_service import verify_password
+
         for history in recent_passwords:
             try:
-                import hashlib
-
-                pre_hash = hashlib.sha256(
-                    raw_password.encode("utf-8")
-                ).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
-                if bcrypt.checkpw(pre_hash.encode("utf-8"), history.password_hash.encode("utf-8")):
-
+                if verify_password(raw_password, history.password_hash):
                     return True
             except Exception:
                 logger.debug("Password history hash comparison failed for entry %s", history.pk, exc_info=True)

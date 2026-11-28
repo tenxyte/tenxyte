@@ -102,7 +102,7 @@ async def _auth_summary_async(session: AsyncSession) -> dict:
         (await session.execute(select(LoginAttemptDB).where(LoginAttemptDB.created_at >= today))).scalars().all()
     )
     active_refresh = await _count(
-        session, select(RefreshTokenDB).where(RefreshTokenDB.revoked_at.is_(None), RefreshTokenDB.expires_at > now)
+        session, select(RefreshTokenDB).where(RefreshTokenDB.is_revoked.is_(False), RefreshTokenDB.expires_at > now)
     )
     return {
         "total_logins_today": sum(1 for r in login_rows if r.success),
@@ -212,14 +212,14 @@ async def _login_by_method_async(session: AsyncSession, since: datetime) -> dict
 async def _token_stats_async(session: AsyncSession, today: datetime) -> dict:
     now = datetime.now(timezone.utc)
     active_refresh = await _count(
-        session, select(RefreshTokenDB).where(RefreshTokenDB.revoked_at.is_(None), RefreshTokenDB.expires_at > now)
+        session, select(RefreshTokenDB).where(RefreshTokenDB.is_revoked.is_(False), RefreshTokenDB.expires_at > now)
     )
     refreshed_today = await _count(
         session, select(AuditLogDB).where(AuditLogDB.action == "token_refresh", AuditLogDB.created_at >= today)
     )
     revoked_today = await _count(
         session,
-        select(RefreshTokenDB).where(RefreshTokenDB.revoked_at.is_not(None), RefreshTokenDB.last_used_at >= today),
+        select(RefreshTokenDB).where(RefreshTokenDB.is_revoked.is_(True), RefreshTokenDB.last_used_at >= today),
     )
     return {
         "active_refresh_tokens": active_refresh,

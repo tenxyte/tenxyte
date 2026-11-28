@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
 from tenxyte.adapters.fastapi import db as db_module
+from tenxyte.adapters.fastapi.admin_security_service import SQLAlchemyTokenBlacklistService
 from tenxyte.adapters.fastapi.application_auth import ApplicationAuthMiddleware
 from tenxyte.adapters.fastapi.errors import register_exception_handlers
 from tenxyte.adapters.fastapi.routers.admin_security import router as admin_security_router
@@ -32,7 +33,7 @@ from tenxyte.adapters.fastapi.routers.webauthn import router as webauthn_router
 from tenxyte.adapters.fastapi.settings import get_default_settings
 from tenxyte.core.cache_service import InMemoryCacheService
 from tenxyte.core.email_service import ConsoleEmailService
-from tenxyte.core.jwt_service import InMemoryTokenBlacklistService, JWTService
+from tenxyte.core.jwt_service import JWTService
 from tenxyte.core.settings import Settings
 from tenxyte.core.totp_service import TOTPService
 
@@ -127,7 +128,7 @@ def create_tenxyte_app(
         app.state.tenxyte_settings = resolved_settings
         app.state.tenxyte_engine = engine
         app.state.tenxyte_session_factory = session_factory
-        app.state.tenxyte_blacklist_service = InMemoryTokenBlacklistService()
+        app.state.tenxyte_blacklist_service = SQLAlchemyTokenBlacklistService(session_factory)
         app.state.tenxyte_jwt_service = JWTService(
             settings=resolved_settings, blacklist_service=app.state.tenxyte_blacklist_service
         )

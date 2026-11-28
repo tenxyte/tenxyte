@@ -6,12 +6,12 @@ applications/* — against a real app, a real ephemeral aiosqlite database, and 
 
 import uuid
 
-import bcrypt
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from tenxyte.adapters.fastapi.app import create_tenxyte_app
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
+from tenxyte.core.auth_service import hash_password
 from tenxyte.core.env_provider import EnvSettingsProvider
 from tenxyte.core.settings import Settings
 from tenxyte.ports.repositories import User
@@ -41,7 +41,7 @@ async def _client(app):
 
 async def _admin_headers(app) -> dict:
     session_factory = app.state.tenxyte_session_factory
-    password_hash = bcrypt.hashpw(b"correct-horse-battery-staple", bcrypt.gensalt()).decode("utf-8")
+    password_hash = hash_password("correct-horse-battery-staple")
     async with session_factory() as session:
         repo = SQLAlchemyAsyncUserRepository(session)
         admin = await repo.create(
@@ -168,7 +168,7 @@ async def test_application_endpoints_require_permission():
     app = _build_app()
     async with app.router.lifespan_context(app):
         session_factory = app.state.tenxyte_session_factory
-        password_hash = bcrypt.hashpw(b"correct-horse-battery-staple", bcrypt.gensalt()).decode("utf-8")
+        password_hash = hash_password("correct-horse-battery-staple")
         async with session_factory() as session:
             repo = SQLAlchemyAsyncUserRepository(session)
             regular = await repo.create(

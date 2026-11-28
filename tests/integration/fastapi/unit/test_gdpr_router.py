@@ -6,7 +6,6 @@ bcrypt password hashes, and real TOTP codes (`pyotp`) for the 2FA-gate fix. No m
 
 import uuid
 
-import bcrypt
 import pyotp
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -14,6 +13,7 @@ from httpx import ASGITransport, AsyncClient
 from tenxyte.adapters.fastapi.app import create_tenxyte_app
 from tenxyte.adapters.fastapi.rbac_service import assign_role_async, create_permission_async, create_role_async
 from tenxyte.adapters.fastapi.repositories_async import SQLAlchemyAsyncUserRepository
+from tenxyte.core.auth_service import hash_password
 from tenxyte.core.env_provider import EnvSettingsProvider
 from tenxyte.core.settings import Settings
 from tenxyte.ports.repositories import MFAType, User
@@ -52,7 +52,7 @@ async def _create_user(
     mfa_secret: str | None = None,
 ) -> User:
     session_factory = app.state.tenxyte_session_factory
-    password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    password_hash = hash_password(password)
     async with session_factory() as session:
         repo = SQLAlchemyAsyncUserRepository(session)
         return await repo.create(

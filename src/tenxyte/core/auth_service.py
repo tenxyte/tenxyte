@@ -6,6 +6,7 @@ timing-attack mitigation for account enumeration via login response latency.
 """
 
 import asyncio
+import hashlib
 import logging
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
@@ -16,6 +17,32 @@ from tenxyte.core.settings import Settings
 from tenxyte.ports.repositories import User
 
 logger = logging.getLogger(__name__)
+
+
+def hash_password(raw_password: str, rounds: int = 12) -> str:
+    """Canonical Tenxyte password hash: SHA-256 hex pre-hash followed by bcrypt.
+
+    Shared by both Django (`AbstractUser.set_password`) and FastAPI adapters so
+    password hashes stored in `tenxyte_users.password` are 100% portable across
+    frameworks without re-hashing or password resets.
+    """
+    pre_hash = hashlib.sha256(
+        raw_password.encode("utf-8")
+    ).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
+    return bcrypt.hashpw(pre_hash.encode("utf-8"), bcrypt.gensalt(rounds=rounds)).decode("utf-8")
+
+
+def verify_password(raw_password: str, stored_hash: str) -> bool:
+    """Verify a raw password against a canonical Tenxyte hash (SHA-256 + bcrypt)."""
+    if not raw_password or not stored_hash:
+        return False
+    pre_hash = hashlib.sha256(
+        raw_password.encode("utf-8")
+    ).hexdigest()  # lgtm[py/weak-sensitive-data-hashing] codeql[py/weak-sensitive-data-hashing]
+    try:
+        return bcrypt.checkpw(pre_hash.encode("utf-8"), stored_hash.encode("utf-8"))
+    except ValueError:
+        return False
 
 # Fixed plaintext hashed into the dummy comparison. Never compared against a real
 # password — only its bcrypt cost (shared with real hashes via Settings.bcrypt_rounds)

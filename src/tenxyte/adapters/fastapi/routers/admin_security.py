@@ -146,7 +146,7 @@ async def revoke_refresh_token_admin(
     token = await admin_security_service.get_refresh_token_by_id_async(session, token_id)
     if token is None:
         raise TenxyteAPIError("Refresh token not found", code="NOT_FOUND", status_code=404)
-    if token.revoked_at is not None:
+    if token.is_revoked:
         raise TenxyteAPIError("Token already revoked", code="ALREADY_REVOKED", status_code=400)
 
     await revoke_refresh_token_row(session, token)

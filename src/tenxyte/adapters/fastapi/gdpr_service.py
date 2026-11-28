@@ -163,10 +163,10 @@ async def verify_reauth_async(user: User, *, password: str, otp_code: str) -> Re
     repository's own hash check is done by the caller, this only decides which branch to take);
     the `otp_code` branch is unimplemented (see module docstring), so it always fails
     `OTP_INVALID` rather than silently succeeding."""
-    import bcrypt
+    from tenxyte.core.auth_service import verify_password
 
     if password:
-        if user.password_hash and bcrypt.checkpw(password.encode("utf-8"), user.password_hash.encode("utf-8")):
+        if user.password_hash and verify_password(password, user.password_hash):
             return ReauthResult(ok=True)
         return ReauthResult(ok=False, error_code="INVALID_PASSWORD", error_message="Current password is incorrect")
     if otp_code:
@@ -440,7 +440,7 @@ async def export_user_data_async(session: AsyncSession, user: User, *, ip_addres
                 "last_used_at": rt.last_used_at.isoformat() if rt.last_used_at else None,
                 "ip_address": rt.ip_address,
                 "device_info": rt.device_info,
-                "is_revoked": rt.revoked_at is not None,
+                "is_revoked": rt.is_revoked,
             }
             for rt in refresh_tokens
         ],

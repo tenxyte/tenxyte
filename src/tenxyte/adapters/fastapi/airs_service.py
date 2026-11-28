@@ -42,7 +42,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tenxyte.adapters.fastapi.errors import TenxyteAPIError
-from tenxyte.adapters.fastapi.models_sa import AgentActionLogDB, AgentPendingActionDB, AgentTokenDB
+from tenxyte.adapters.fastapi.models_sa import AgentPendingActionDB, AgentTokenDB, AuditLogDB, PermissionDB
 from tenxyte.core.cache_service import CacheService
 from tenxyte.core.settings import Settings
 from tenxyte.ports.repositories import User
@@ -101,7 +101,15 @@ async def log_agent_action_async(
     own "don't persist a null trace id" posture. See `AgentActionLogDB`'s docstring."""
     if prompt_trace_id is None:
         return
-    session.add(AgentActionLogDB(agent_token_id=agent_token.id, endpoint=endpoint, prompt_trace_id=prompt_trace_id))
+    session.add(
+        AuditLogDB(
+            action="agent_action",
+            agent_token_id=agent_token.id,
+            on_behalf_of_id=agent_token.triggered_by_user_id,
+            prompt_trace_id=prompt_trace_id,
+            details={"endpoint": endpoint},
+        )
+    )
     await session.commit()
 
 
@@ -160,6 +168,21 @@ async def create_async(
         dms_kwargs["heartbeat_required_every"] = dead_mans_switch["heartbeat_required_every"]
         dms_kwargs["last_heartbeat_at"] = datetime.now(timezone.utc)
 
+    perm_rows: list[PermissionDB] = []
+    if granted_permissions:
+        unique_codes = list(dict.fromkeys(granted_permissions))
+        existing_rows = (
+            (await session.execute(select(PermissionDB).where(PermissionDB.code.in_(unique_codes)))).scalars().all()
+        )
+        by_code = {p.code: p for p in existing_rows}
+        for code in unique_codes:
+            perm = by_code.get(code)
+            if perm is None:
+                perm = PermissionDB(code=code, name=code, description="")
+                session.add(perm)
+                by_code[code] = perm
+            perm_rows.append(perm)
+
     raw_token = _generate_token()
     row = AgentTokenDB(
         token_hash=_hash_token(raw_token),
@@ -167,9 +190,9 @@ async def create_async(
         triggered_by_user_id=triggered_by.id,
         application_id=application_id,
         organization_id=organization_id,
-        granted_permissions=list(granted_permissions),
         expires_at=datetime.now(timezone.utc) + timedelta(seconds=expires_in),
         budget_limit_usd=Decimal(str(budget_limit_usd)) if budget_limit_usd is not None else None,
+        granted_permission_rows=perm_rows,
         **cb_kwargs,
         **dms_kwargs,
     )
