@@ -91,9 +91,7 @@ class SQLAlchemyTokenBlacklistService:
         self._user_revocations[user_id] = now
         return now
 
-    def blacklist_token(
-        self, jti: str, expires_at: datetime, user_id: str | None = None, reason: str = ""
-    ) -> bool:
+    def blacklist_token(self, jti: str, expires_at: datetime, user_id: str | None = None, reason: str = "") -> bool:
         raise NotImplementedError("Use blacklist_token_async in the async FastAPI Reference_Stack.")
 
     async def is_blacklisted_async(self, jti: str) -> bool:

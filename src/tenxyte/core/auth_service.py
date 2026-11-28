@@ -44,6 +44,7 @@ def verify_password(raw_password: str, stored_hash: str) -> bool:
     except ValueError:
         return False
 
+
 # Fixed plaintext hashed into the dummy comparison. Never compared against a real
 # password — only its bcrypt cost (shared with real hashes via Settings.bcrypt_rounds)
 # matters for the timing mitigation to hold.
